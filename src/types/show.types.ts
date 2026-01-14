@@ -1,0 +1,41 @@
+export interface RecordingVersion {
+  identifier: string;
+  title: string;
+  source?: string; // e.g., "sbd" (soundboard), "aud" (audience), "matrix"
+  downloads?: number; // All-time download count
+}
+
+export interface GratefulDeadShow {
+  date: string;
+  year: string;
+  venue?: string;
+  location?: string;
+  versions: RecordingVersion[]; // All recording versions of this show
+  primaryIdentifier: string; // The main/default version to display
+  title: string;
+}
+
+export interface ShowDetail {
+  identifier: string;
+  title: string;
+  date: string;
+  year: string;
+  venue?: string;
+  location?: string;
+  description?: string;
+  tracks: Track[];
+  allVersions?: RecordingVersion[]; // All available versions for this show
+}
+
+export interface Track {
+  id: string; // filename
+  title: string;
+  duration?: number; // seconds
+  format: string;
+  streamUrl: string;
+  trackNumber?: number;
+}
+
+export interface ShowsByYear {
+  [year: string]: GratefulDeadShow[];
+}

@@ -1,25 +1,27 @@
 {
   "expo": {
-    "name": "grateful-dead-player",
+    "name": "Grateful Dead Player",
     "slug": "grateful-dead-player",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1a1a1a"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gratefuldead.player"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1a1a1a"
       },
+      "package": "com.gratefuldead.player",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
