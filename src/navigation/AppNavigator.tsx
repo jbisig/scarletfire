@@ -93,7 +93,7 @@ function FavoritesStack() {
       <Stack.Screen
         name="Favorites"
         component={FavoritesScreen}
-        options={{ title: 'Favorite Shows' }}
+        options={{ title: 'Favorites' }}
       />
       <Stack.Screen
         name="ShowDetail"

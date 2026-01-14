@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -19,9 +20,11 @@ import { formatDate } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
+type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
 
 export function ShowDetailScreen() {
   const route = useRoute<ShowDetailRouteProp>();
+  const navigation = useNavigation<ShowDetailNavigationProp>();
   const { getShowDetail } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
   const { isFavorite, addFavorite, removeFavorite } = useFavorites();
@@ -35,6 +38,11 @@ export function ShowDetailScreen() {
     loadShowDetail(route.params.identifier);
   }, [route.params.identifier]);
 
+  const formatDateMMDDYYYY = (date: string) => {
+    const [year, month, day] = date.split('-');
+    return `${month}/${day}/${year}`;
+  };
+
   const loadShowDetail = async (identifier: string) => {
     setIsLoading(true);
     setError(null);
@@ -43,6 +51,13 @@ export function ShowDetailScreen() {
       const detail = await getShowDetail(identifier);
       setShow(detail);
       setSelectedVersion(identifier);
+
+      // Update navigation title with show date
+      if (detail.date) {
+        navigation.setOptions({
+          title: formatDateMMDDYYYY(detail.date),
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load show');
     } finally {
@@ -168,8 +183,6 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   title: {
     fontSize: 24,

@@ -24,10 +24,6 @@ export function VersionPicker({ versions, selectedVersion, onVersionChange }: Ve
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        Recording Version (Top {versions.length}):
-      </Text>
-
       {/* Current Selection Button */}
       <TouchableOpacity
         style={styles.selector}
@@ -110,16 +106,7 @@ export function VersionPicker({ versions, selectedVersion, onVersionChange }: Ve
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ff6b6b',
-    marginBottom: 8,
+    marginTop: 12,
   },
   selector: {
     backgroundColor: '#2a2a2a',
