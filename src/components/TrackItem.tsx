@@ -39,7 +39,8 @@ export function TrackItem({ track, isPlaying, onPress }: TrackItemProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#333',

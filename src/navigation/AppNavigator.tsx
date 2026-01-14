@@ -7,6 +7,9 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
 import { SOTDScreen } from '../screens/SOTDScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
+import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
+import { ClassicsScreen } from '../screens/ClassicsScreen';
+import { GratefulDead101Screen } from '../screens/GratefulDead101Screen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { View, StyleSheet } from 'react-native';
@@ -16,6 +19,9 @@ export type RootStackParamList = {
   ShowDetail: { identifier: string };
   SOTD: undefined;
   Favorites: undefined;
+  DiscoverLanding: undefined;
+  Classics: undefined;
+  GratefulDead101: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -49,33 +55,6 @@ function TapesStack() {
   );
 }
 
-// Stack navigator for SOTD tab
-function SOTDStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#1a1a1a',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="SOTD"
-        component={SOTDScreen}
-        options={{ title: 'Show of the Day' }}
-      />
-      <Stack.Screen
-        name="ShowDetail"
-        component={ShowDetailScreen}
-        options={{ title: 'Show Details' }}
-      />
-    </Stack.Navigator>
-  );
-}
 
 // Stack navigator for Favorites tab
 function FavoritesStack() {
@@ -105,6 +84,49 @@ function FavoritesStack() {
   );
 }
 
+// Stack navigator for Discover tab
+function DiscoverStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1a1a1a',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="DiscoverLanding"
+        component={DiscoverLandingScreen}
+        options={{ title: 'Discover' }}
+      />
+      <Stack.Screen
+        name="SOTD"
+        component={SOTDScreen}
+        options={{ title: 'Show of the Day' }}
+      />
+      <Stack.Screen
+        name="Classics"
+        component={ClassicsScreen}
+        options={{ title: 'Classic Shows' }}
+      />
+      <Stack.Screen
+        name="GratefulDead101"
+        component={GratefulDead101Screen}
+        options={{ title: 'Grateful Dead 101' }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{ title: 'Show Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export function AppNavigator() {
   const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
 
@@ -119,8 +141,8 @@ export function AppNavigator() {
 
               if (route.name === 'TapesTab') {
                 iconName = focused ? 'albums' : 'albums-outline';
-              } else if (route.name === 'SOTDTab') {
-                iconName = focused ? 'star' : 'star-outline';
+              } else if (route.name === 'DiscoverTab') {
+                iconName = focused ? 'compass' : 'compass-outline';
               } else if (route.name === 'FavoritesTab') {
                 iconName = focused ? 'heart' : 'heart-outline';
               } else {
@@ -154,9 +176,9 @@ export function AppNavigator() {
             options={{ tabBarLabel: 'Tapes' }}
           />
           <Tab.Screen
-            name="SOTDTab"
-            component={SOTDStack}
-            options={{ tabBarLabel: 'SOTD' }}
+            name="DiscoverTab"
+            component={DiscoverStack}
+            options={{ tabBarLabel: 'Discover' }}
           />
           <Tab.Screen
             name="FavoritesTab"
