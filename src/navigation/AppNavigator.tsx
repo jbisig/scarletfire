@@ -131,6 +131,17 @@ export function AppNavigator() {
             tabBarStyle: {
               backgroundColor: '#1a1a1a',
               borderTopColor: '#333',
+              paddingTop: 8,
+              paddingBottom: 32,
+              height: 89,
+            },
+            tabBarItemStyle: {
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+            tabBarLabelStyle: {
+              marginTop: 4,
+              marginBottom: 0,
             },
           })}
         >
@@ -150,7 +161,9 @@ export function AppNavigator() {
             options={{ tabBarLabel: 'Favorites' }}
           />
         </Tab.Navigator>
-        <MiniPlayer onPress={() => {}} />
+        <View style={styles.miniPlayerContainer}>
+          <MiniPlayer onPress={() => {}} />
+        </View>
       </View>
     </NavigationContainer>
   );
@@ -160,5 +173,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  miniPlayerContainer: {
+    position: 'absolute',
+    bottom: 89,
+    left: 0,
+    right: 0,
+    zIndex: 999,
   },
 });

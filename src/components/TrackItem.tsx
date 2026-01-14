@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   trackNumber: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#999',
     textAlign: 'center',
   },
@@ -60,11 +60,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#ffffff',
   },
   duration: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#999',
     marginLeft: 12,
   },

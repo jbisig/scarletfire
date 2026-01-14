@@ -91,11 +91,13 @@ export function HomeScreen() {
         renderItem={({ item }) => (
           <ShowCard show={item} onPress={handleShowPress} />
         )}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-          </View>
-        )}
+        renderSectionHeader={({ section: { title } }) =>
+          selectedYear ? null : (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{title}</Text>
+            </View>
+          )
+        }
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled
       />
