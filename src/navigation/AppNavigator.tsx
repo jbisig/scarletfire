@@ -44,7 +44,7 @@ function TapesStack() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Grateful Dead Archive' }}
+        options={{ title: 'Scarlet>fire' }}
       />
       <Stack.Screen
         name="ShowDetail"
