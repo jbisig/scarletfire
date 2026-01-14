@@ -5,10 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
 import { ShowDetail, Track } from '../types/show.types';
@@ -21,6 +24,7 @@ export function ShowDetailScreen() {
   const route = useRoute<ShowDetailRouteProp>();
   const { getShowDetail } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
+  const { isFavorite, addFavorite, removeFavorite } = useFavorites();
 
   const [show, setShow] = useState<ShowDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +62,26 @@ export function ShowDetailScreen() {
     }
   };
 
+  const handleToggleFavorite = () => {
+    if (show) {
+      const showToSave = {
+        date: show.date,
+        year: show.year,
+        venue: show.venue,
+        location: show.location,
+        versions: show.allVersions || [],
+        primaryIdentifier: show.identifier,
+        title: show.title,
+      };
+
+      if (isFavorite(show.identifier)) {
+        removeFavorite(show.identifier);
+      } else {
+        addFavorite(showToSave);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -80,6 +104,22 @@ export function ShowDetailScreen() {
         <Text style={styles.title}>{show.venue || show.title}</Text>
         <Text style={styles.date}>{formatDate(show.date)}</Text>
         {show.location && <Text style={styles.location}>{show.location}</Text>}
+
+        {/* Save Button */}
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleToggleFavorite}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isFavorite(show.identifier) ? 'heart' : 'heart-outline'}
+            size={24}
+            color={isFavorite(show.identifier) ? '#ff6b6b' : '#fff'}
+          />
+          <Text style={styles.saveButtonText}>
+            {isFavorite(show.identifier) ? 'Saved' : 'Save Show'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Version Picker */}
         {show.allVersions && show.allVersions.length > 1 && (
@@ -146,6 +186,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999999',
     marginBottom: 12,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginLeft: 8,
   },
   tracksContainer: {
     paddingVertical: 16,

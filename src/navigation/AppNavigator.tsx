@@ -1,44 +1,155 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
+import { SOTDScreen } from '../screens/SOTDScreen';
+import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { View, StyleSheet } from 'react-native';
 
 export type RootStackParamList = {
   Home: undefined;
   ShowDetail: { identifier: string };
+  SOTD: undefined;
+  Favorites: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
+
+// Stack navigator for Tapes tab
+function TapesStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1a1a1a',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: 'Grateful Dead Archive' }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{ title: 'Show Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Stack navigator for SOTD tab
+function SOTDStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1a1a1a',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="SOTD"
+        component={SOTDScreen}
+        options={{ title: 'Show of the Day' }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{ title: 'Show Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Stack navigator for Favorites tab
+function FavoritesStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1a1a1a',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{ title: 'Favorite Shows' }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{ title: 'Show Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
 
 export function AppNavigator() {
   return (
     <NavigationContainer>
       <View style={styles.container}>
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: {
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName: keyof typeof Ionicons.glyphMap;
+
+              if (route.name === 'TapesTab') {
+                iconName = focused ? 'albums' : 'albums-outline';
+              } else if (route.name === 'SOTDTab') {
+                iconName = focused ? 'star' : 'star-outline';
+              } else if (route.name === 'FavoritesTab') {
+                iconName = focused ? 'heart' : 'heart-outline';
+              } else {
+                iconName = 'help-outline';
+              }
+
+              return <Ionicons name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: '#ff6b6b',
+            tabBarInactiveTintColor: '#999',
+            tabBarStyle: {
               backgroundColor: '#1a1a1a',
+              borderTopColor: '#333',
             },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
+          })}
         >
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: 'Grateful Dead Archive' }}
+          <Tab.Screen
+            name="TapesTab"
+            component={TapesStack}
+            options={{ tabBarLabel: 'Tapes' }}
           />
-          <Stack.Screen
-            name="ShowDetail"
-            component={ShowDetailScreen}
-            options={{ title: 'Show Details' }}
+          <Tab.Screen
+            name="SOTDTab"
+            component={SOTDStack}
+            options={{ tabBarLabel: 'SOTD' }}
           />
-        </Stack.Navigator>
+          <Tab.Screen
+            name="FavoritesTab"
+            component={FavoritesStack}
+            options={{ tabBarLabel: 'Favorites' }}
+          />
+        </Tab.Navigator>
         <MiniPlayer onPress={() => {}} />
       </View>
     </NavigationContainer>

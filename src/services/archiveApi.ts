@@ -120,6 +120,69 @@ class ArchiveApiService {
   }
 
   /**
+   * Get top N shows sorted by downloads
+   */
+  async getTopShows(count: number = 365): Promise<GratefulDeadShow[]> {
+    try {
+      const query = 'collection:GratefulDead AND mediatype:etree';
+      const params = {
+        q: query,
+        'fl[]': ['identifier', 'title', 'date', 'venue', 'coverage', 'year', 'downloads'],
+        sort: 'downloads desc',
+        rows: count * 10, // Fetch more to account for duplicates
+        output: 'json'
+      };
+
+      const response = await axios.get<ArchiveSearchResponse>(SEARCH_URL, { params });
+
+      // Group by date and get unique shows
+      const showsByDate = new Map<string, {
+        doc: ArchiveDoc;
+        maxDownloads: number;
+      }>();
+
+      response.data.response.docs.forEach(doc => {
+        const existing = showsByDate.get(doc.date);
+        const downloads = doc.downloads || 0;
+
+        if (!existing || downloads > existing.maxDownloads) {
+          showsByDate.set(doc.date, {
+            doc,
+            maxDownloads: downloads,
+          });
+        }
+      });
+
+      // Convert to GratefulDeadShow array
+      const shows: GratefulDeadShow[] = Array.from(showsByDate.values())
+        .map(({ doc }) => {
+          const version: RecordingVersion = {
+            identifier: doc.identifier,
+            title: doc.title,
+            source: this.extractSource(doc.identifier),
+            downloads: doc.downloads || 0,
+          };
+
+          return {
+            date: doc.date,
+            year: doc.year || doc.date.split('-')[0],
+            venue: doc.venue,
+            location: doc.coverage,
+            versions: [version],
+            primaryIdentifier: doc.identifier,
+            title: doc.title,
+          };
+        })
+        .slice(0, count);
+
+      return shows;
+    } catch (error) {
+      console.error('Error fetching top shows:', error);
+      throw new Error('Failed to fetch top shows');
+    }
+  }
+
+  /**
    * Extract source type from identifier (sbd, aud, matrix, etc.)
    */
   private extractSource(identifier: string): string {
