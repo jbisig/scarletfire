@@ -114,7 +114,10 @@ export function ShowDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       <View style={styles.headerContainer}>
         <Text style={styles.title}>{show.venue || show.title}</Text>
         <Text style={styles.date}>{formatDate(show.date)}</Text>
@@ -217,6 +220,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginLeft: 8,
+  },
+  scrollContent: {
+    paddingBottom: 180,
   },
   tracksContainer: {
     paddingVertical: 16,

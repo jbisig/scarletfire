@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
+    paddingBottom: 180,
   },
   sectionHeader: {
     backgroundColor: '#333',

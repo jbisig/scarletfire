@@ -84,7 +84,10 @@ export function SOTDScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       <View style={styles.content}>
         <View style={styles.header}>
           <Ionicons name="star" size={48} color="#ff6b6b" />
@@ -136,6 +139,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  scrollContent: {
+    paddingBottom: 180,
   },
   centerContainer: {
     flex: 1,
