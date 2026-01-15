@@ -14,19 +14,20 @@ import {
 } from '../constants/api';
 
 /**
- * Configure axios instance with default settings
- */
-const axiosInstance = axios.create({
-  timeout: ARCHIVE_CONFIG.TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-/**
  * Service for interacting with the Internet Archive API
  */
 class ArchiveApiService {
+  /**
+   * Get axios config with timeout
+   */
+  private getAxiosConfig() {
+    return {
+      timeout: ARCHIVE_CONFIG.TIMEOUT,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+  }
   /**
    * Handle API errors consistently
    */
@@ -67,7 +68,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
       return response.data.response.docs;
     } catch (error) {
       this.handleError(error, 'Failed to fetch shows');
@@ -152,7 +153,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
 
       // Group by date and get unique shows with highest downloads
       const showsByDate = new Map<string, {
@@ -225,7 +226,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
 
       // Sort by downloads and return top versions
       return response.data.response.docs
@@ -401,8 +402,9 @@ class ArchiveApiService {
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
     try {
-      const response = await axiosInstance.get<ArchiveMetadataResponse>(
-        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`
+      const response = await axios.get<ArchiveMetadataResponse>(
+        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`,
+        this.getAxiosConfig()
       );
 
       const { metadata, files } = response.data;
