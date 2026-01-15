@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { archiveApi } from '../services/archiveApi';
+import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -35,19 +36,8 @@ export function SongListScreen() {
       setIsLoading(true);
       setError(null);
 
-      const songVersionsMap = await archiveApi.getSongVersions();
-
-      // Convert map to array and sort alphabetically
-      const songArray: SongItem[] = Array.from(songVersionsMap.entries())
-        .map(([title, performances]) => ({
-          title,
-          performanceCount: performances.length,
-          performances,
-        }))
-        .filter(song => song.performanceCount >= 3) // Only show songs with 3+ performances
-        .sort((a, b) => a.title.localeCompare(b.title));
-
-      setSongs(songArray);
+      // Use hard-coded song list (pre-filtered for 3+ performances)
+      setSongs(GRATEFUL_DEAD_SONGS);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load songs');
     } finally {
@@ -55,7 +45,8 @@ export function SongListScreen() {
     }
   };
 
-  const handleSongPress = (song: SongItem) => {
+  const handleSongPress = async (song: SongItem) => {
+    // Navigate to performances screen - it will fetch actual performances on-demand
     navigation.navigate('SongPerformances', {
       songTitle: song.title,
       performances: song.performances,

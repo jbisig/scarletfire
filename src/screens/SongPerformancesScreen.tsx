@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,32 @@ export function SongPerformancesScreen() {
   const { loadTrack } = usePlayer();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
 
-  const { songTitle, performances } = route.params;
+  const { songTitle, performances: initialPerformances } = route.params;
+  const [performances, setPerformances] = useState<Performance[]>(initialPerformances || []);
+  const [isLoadingPerformances, setIsLoadingPerformances] = useState(false);
+
+  useEffect(() => {
+    // If performances is empty, fetch them on-demand
+    if (performances.length === 0) {
+      loadPerformances();
+    }
+  }, []);
+
+  const loadPerformances = async () => {
+    try {
+      setIsLoadingPerformances(true);
+
+      // Fetch the full song catalog to find performances of this specific song
+      const songVersionsMap = await archiveApi.getSongVersions();
+      const songPerformances = songVersionsMap.get(songTitle) || [];
+
+      setPerformances(songPerformances);
+    } catch (error) {
+      console.error('Failed to load performances:', error);
+    } finally {
+      setIsLoadingPerformances(false);
+    }
+  };
 
   const handlePerformancePress = async (performance: Performance) => {
     try {
@@ -85,6 +110,25 @@ export function SongPerformancesScreen() {
       </TouchableOpacity>
     );
   };
+
+  if (isLoadingPerformances) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.songTitle} numberOfLines={2}>
+            {songTitle}
+          </Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#ff6b6b" />
+          <Text style={styles.loadingText}>Loading performances...</Text>
+          <Text style={styles.loadingSubtext}>
+            Searching through the archive for all performances of this song
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -154,5 +198,23 @@ const styles = StyleSheet.create({
   performanceVenue: {
     fontSize: 14,
     color: '#999',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginTop: 16,
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
