@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -40,7 +41,11 @@ export function SongPerformancesScreen() {
       const matchingShows = allDocs.filter(doc => doc.date === performance.date);
 
       if (matchingShows.length === 0) {
-        console.error('No shows found for date:', performance.date);
+        Alert.alert(
+          'Recording Not Available',
+          `No recording found for ${formatDate(performance.date)}${performance.venue ? ` at ${performance.venue}` : ''}.\n\nThis show was performed but may not have been recorded or isn't available in the Archive yet.`,
+          [{ text: 'OK' }]
+        );
         return;
       }
 
@@ -69,10 +74,19 @@ export function SongPerformancesScreen() {
         // Load and play the matching track
         await loadTrack(matchingTrack, showDetail, showDetail.tracks);
       } else {
-        console.warn('Could not find matching track for:', songTitle);
+        Alert.alert(
+          'Song Not Found',
+          `Could not find "${songTitle}" in this recording. The setlist may not match the available tracks.`,
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
       console.error('Failed to load performance:', error);
+      Alert.alert(
+        'Error Loading Show',
+        'Unable to load this performance. Please try another one.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoadingIdentifier(null);
     }
