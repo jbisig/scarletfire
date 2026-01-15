@@ -32,8 +32,23 @@ export function SongPerformancesScreen() {
     try {
       setLoadingIdentifier(performance.identifier);
 
-      // Fetch the show details
-      const showDetail = await archiveApi.getShowDetail(performance.identifier, false);
+      // Search for shows on this date to find the real identifier
+      const year = performance.date.split('-')[0];
+      const allDocs = await archiveApi.searchShows(0, 100, year);
+
+      // Find show(s) matching this date
+      const matchingShows = allDocs.filter(doc => doc.date === performance.date);
+
+      if (matchingShows.length === 0) {
+        console.error('No shows found for date:', performance.date);
+        return;
+      }
+
+      // Use the first matching show (most downloads)
+      const bestShow = matchingShows.sort((a, b) => (b.downloads || 0) - (a.downloads || 0))[0];
+
+      // Fetch the show details using the real identifier
+      const showDetail = await archiveApi.getShowDetail(bestShow.identifier, false);
 
       // Find the track that matches this song
       const matchingTrack = showDetail.tracks.find(track => {
@@ -53,6 +68,8 @@ export function SongPerformancesScreen() {
       if (matchingTrack) {
         // Load and play the matching track
         await loadTrack(matchingTrack, showDetail, showDetail.tracks);
+      } else {
+        console.warn('Could not find matching track for:', songTitle);
       }
     } catch (error) {
       console.error('Failed to load performance:', error);
