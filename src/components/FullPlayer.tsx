@@ -12,16 +12,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { formatDate, formatTime } from '../utils/formatters';
 
-// Full player modal component
 interface FullPlayerProps {
   visible: boolean;
   onClose: () => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const PROGRESS_BAR_WIDTH = screenWidth - 48; // Account for padding
 
-export function FullPlayer({ visible, onClose }: FullPlayerProps) {
+/**
+ * Full-screen player modal with playback controls
+ */
+export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
   const progressBarRef = useRef<View>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -30,36 +31,38 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
   const isDraggingRef = useRef(false);
   const barMeasurements = useRef({ pageX: 0, width: 0 });
 
-  const calculatePositionFromTouch = (pageX: number) => {
+  const calculatePositionFromTouch = (pageX: number): number => {
     if (barMeasurements.current.width === 0) return 0;
     const relativeX = pageX - barMeasurements.current.pageX;
     const percentage = Math.max(0, Math.min(1, relativeX / barMeasurements.current.width));
     return percentage * state.duration;
   };
 
-  const handleProgressTouch = (evt: any) => {
+  const handleProgressTouch = (evt: any): void => {
     if (isDraggingRef.current) return;
-    progressBarRef.current?.measure((x, y, width, height, barPageX, pageY) => {
+    progressBarRef.current?.measure((x, y, width, height, barPageX) => {
       barMeasurements.current = { pageX: barPageX, width };
       const position = calculatePositionFromTouch(evt.nativeEvent.pageX);
       seekTo(position);
     });
   };
 
-  const handleRewind = () => {
+  const handleRewind = (): void => {
     const now = Date.now();
     const timeSinceLastTap = now - lastRewindTapRef.current;
 
     if (timeSinceLastTap < 300) {
+      // Double tap - go to previous track
       previousTrack();
       lastRewindTapRef.current = 0;
     } else {
+      // Single tap - restart current track
       seekTo(0);
       lastRewindTapRef.current = now;
     }
   };
 
-  // Progress bar pan responder
+  // Progress bar pan responder for dragging
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -67,15 +70,13 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
       onPanResponderGrant: (evt) => {
         isDraggingRef.current = true;
         setIsDragging(true);
-        // Measure once at the start
-        progressBarRef.current?.measure((x, y, width, height, barPageX, pageY) => {
+        progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
           const position = calculatePositionFromTouch(evt.nativeEvent.pageX);
           setDragPosition(position);
         });
       },
       onPanResponderMove: (evt) => {
-        // Use cached measurements for smooth dragging
         const position = calculatePositionFromTouch(evt.nativeEvent.pageX);
         setDragPosition(position);
       },
@@ -90,18 +91,13 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
     })
   ).current;
 
-  // Swipe down to dismiss pan responder
+  // Swipe down to dismiss gesture
   const swipeDownResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Activate if swiping down more than 10px and more vertical than horizontal
         return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
       },
-      onPanResponderMove: (evt, gestureState) => {
-        // Could add visual feedback here if desired
-      },
       onPanResponderRelease: (evt, gestureState) => {
-        // Close if swiped down more than 100 pixels
         if (gestureState.dy > 100) {
           onClose();
         }
@@ -122,14 +118,14 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
       onRequestClose={onClose}
     >
       <View style={styles.container} {...swipeDownResponder.panHandlers}>
-        {/* Header with close button */}
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="chevron-down" size={32} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Spacer to push content down */}
+        {/* Spacer */}
         <View style={{ flex: 1 }} />
 
         {/* Track Info */}
@@ -137,7 +133,6 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
           <Text style={styles.trackTitle} numberOfLines={2}>
             {state.currentTrack.title}
           </Text>
-
           <Text style={styles.showInfo} numberOfLines={1}>
             {state.currentShow?.venue}
           </Text>
@@ -158,9 +153,7 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
             <View style={styles.progressBarBackground}>
               <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
             </View>
-            <View
-              style={[styles.progressThumb, { left: `${progress * 100}%` }]}
-            />
+            <View style={[styles.progressThumb, { left: `${progress * 100}%` }]} />
           </TouchableOpacity>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
@@ -170,25 +163,12 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
 
         {/* Controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity
-            onPress={handleRewind}
-            style={styles.controlButton}
-          >
-            <Ionicons
-              name="play-skip-back"
-              size={40}
-              color="#fff"
-            />
+          <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
+            <Ionicons name="play-skip-back" size={40} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => {
-              if (state.isPlaying) {
-                pause();
-              } else {
-                play();
-              }
-            }}
+            onPress={() => state.isPlaying ? pause() : play()}
             style={styles.playButton}
             activeOpacity={0.8}
           >
@@ -214,7 +194,9 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
       </View>
     </Modal>
   );
-}
+});
+
+FullPlayer.displayName = 'FullPlayer';
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -83,12 +83,12 @@ export function ShowDetailScreen() {
     }
   };
 
-  const handleTrackPress = (track: Track) => {
+  const handleTrackPress = useCallback((track: Track) => {
     if (show) {
       setJustPressedTrackId(track.id);
       loadTrack(track, show, show.tracks);
     }
-  };
+  }, [show, loadTrack]);
 
   const handleToggleFavorite = () => {
     if (show) {

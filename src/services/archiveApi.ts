@@ -1,17 +1,47 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import {
   ArchiveSearchResponse,
   ArchiveMetadataResponse,
   ArchiveDoc
 } from '../types/archive.types';
 import { GratefulDeadShow, ShowDetail, Track, ShowsByYear, RecordingVersion } from '../types/show.types';
+import {
+  ARCHIVE_CONFIG,
+  ARCHIVE_ENDPOINTS,
+  SEARCH_LIMITS,
+  AUDIO_FORMATS,
+  SOURCE_TYPES,
+} from '../constants/api';
 
-const BASE_URL = 'https://archive.org';
-const SEARCH_URL = `${BASE_URL}/advancedsearch.php`;
-const METADATA_URL = `${BASE_URL}/metadata`;
-const DOWNLOAD_URL = `${BASE_URL}/download`;
+/**
+ * Configure axios instance with default settings
+ */
+const axiosInstance = axios.create({
+  timeout: ARCHIVE_CONFIG.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
+/**
+ * Service for interacting with the Internet Archive API
+ */
 class ArchiveApiService {
+  /**
+   * Handle API errors consistently
+   */
+  private handleError(error: unknown, context: string): never {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError;
+      if (axiosError.response) {
+        throw new Error(`${context}: Server responded with ${axiosError.response.status}`);
+      } else if (axiosError.request) {
+        throw new Error(`${context}: No response received from server`);
+      }
+    }
+    throw new Error(`${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
   /**
    * Search for Grateful Dead shows
    * @param page Page number (0-indexed)
@@ -20,7 +50,7 @@ class ArchiveApiService {
    */
   async searchShows(
     page: number = 0,
-    rows: number = 100,
+    rows: number = SEARCH_LIMITS.DEFAULT_PAGE_SIZE,
     year?: string
   ): Promise<ArchiveDoc[]> {
     try {
@@ -38,12 +68,10 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(SEARCH_URL, { params });
-
+      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
       return response.data.response.docs;
     } catch (error) {
-      console.error('Error searching shows:', error);
-      throw new Error('Failed to fetch shows from Internet Archive');
+      this.handleError(error, 'Failed to fetch shows');
     }
   }
 
@@ -51,20 +79,16 @@ class ArchiveApiService {
    * Get shows organized by year, with multiple recordings aggregated
    */
   async getShowsByYear(): Promise<ShowsByYear> {
-    // Fetch shows from 1965-1995 (Grateful Dead active years)
-    // Increase limit to get all recordings (there are many versions per show)
-    const allDocs = await this.searchShows(0, 50000);
-
-    console.log(`Fetched ${allDocs.length} recordings from Internet Archive`);
+    const allDocs = await this.searchShows(0, SEARCH_LIMITS.MAX_SHOWS);
 
     // Group by date to aggregate multiple recordings of the same show
-    const showsByDate: Map<string, {
+    const showsByDate = new Map<string, {
       date: string;
       year: string;
       venue?: string;
       location?: string;
       versions: RecordingVersion[];
-    }> = new Map();
+    }>();
 
     allDocs.forEach(doc => {
       const existing = showsByDate.get(doc.date);
@@ -91,10 +115,10 @@ class ArchiveApiService {
     // Convert to ShowsByYear format
     const showsByYear: ShowsByYear = {};
     showsByDate.forEach((showData) => {
-      // Sort versions by downloads (descending) and take top 5
+      // Sort versions by downloads (descending) and take top versions
       const sortedVersions = showData.versions
         .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, 5);
+        .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
 
       const show: GratefulDeadShow = {
         date: showData.date,
@@ -112,30 +136,26 @@ class ArchiveApiService {
       showsByYear[show.year].push(show);
     });
 
-    const years = Object.keys(showsByYear).sort();
-    console.log(`Shows organized into ${years.length} years: ${years[0]} - ${years[years.length - 1]}`);
-    console.log(`Total unique shows: ${showsByDate.size}`);
-
     return showsByYear;
   }
 
   /**
    * Get top N shows sorted by downloads
    */
-  async getTopShows(count: number = 365): Promise<GratefulDeadShow[]> {
+  async getTopShows(count: number = SEARCH_LIMITS.TOP_SHOWS_COUNT): Promise<GratefulDeadShow[]> {
     try {
       const query = 'collection:GratefulDead AND mediatype:etree';
       const params = {
         q: query,
         'fl[]': ['identifier', 'title', 'date', 'venue', 'coverage', 'year', 'downloads'],
         sort: 'downloads desc',
-        rows: count * 10, // Fetch more to account for duplicates
+        rows: count * SEARCH_LIMITS.TOP_SHOWS_MULTIPLIER,
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(SEARCH_URL, { params });
+      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
 
-      // Group by date and get unique shows
+      // Group by date and get unique shows with highest downloads
       const showsByDate = new Map<string, {
         doc: ArchiveDoc;
         maxDownloads: number;
@@ -177,8 +197,7 @@ class ArchiveApiService {
 
       return shows;
     } catch (error) {
-      console.error('Error fetching top shows:', error);
-      throw new Error('Failed to fetch top shows');
+      this.handleError(error, 'Failed to fetch top shows');
     }
   }
 
@@ -187,15 +206,15 @@ class ArchiveApiService {
    */
   private extractSource(identifier: string): string {
     const lowerIdent = identifier.toLowerCase();
-    if (lowerIdent.includes('sbd')) return 'Soundboard';
-    if (lowerIdent.includes('aud')) return 'Audience';
-    if (lowerIdent.includes('matrix')) return 'Matrix';
-    if (lowerIdent.includes('fm')) return 'FM Broadcast';
-    return 'Unknown';
+    if (lowerIdent.includes('sbd')) return SOURCE_TYPES.SOUNDBOARD;
+    if (lowerIdent.includes('aud')) return SOURCE_TYPES.AUDIENCE;
+    if (lowerIdent.includes('matrix')) return SOURCE_TYPES.MATRIX;
+    if (lowerIdent.includes('fm')) return SOURCE_TYPES.FM_BROADCAST;
+    return SOURCE_TYPES.UNKNOWN;
   }
 
   /**
-   * Get top 5 most popular versions of a show by date
+   * Get top versions of a show by date
    */
   async getShowVersions(date: string): Promise<RecordingVersion[]> {
     try {
@@ -203,13 +222,13 @@ class ArchiveApiService {
       const params = {
         q: query,
         'fl[]': ['identifier', 'title', 'downloads'],
-        rows: 100,
+        rows: SEARCH_LIMITS.MAX_SHOW_VERSIONS,
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(SEARCH_URL, { params });
+      const response = await axiosInstance.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
 
-      // Sort by downloads and return top 5
+      // Sort by downloads and return top versions
       return response.data.response.docs
         .map(doc => ({
           identifier: doc.identifier,
@@ -218,11 +237,54 @@ class ArchiveApiService {
           downloads: doc.downloads || 0,
         }))
         .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, 5);
+        .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
     } catch (error) {
-      console.error('Error fetching show versions:', error);
+      // Return empty array on error to allow graceful degradation
       return [];
     }
+  }
+
+  /**
+   * Parse duration from various formats (MM:SS, HH:MM:SS, or seconds)
+   */
+  private parseDuration(lengthStr: string | undefined): number | undefined {
+    if (!lengthStr) return undefined;
+
+    // Check if it's in time format (contains colon)
+    if (lengthStr.includes(':')) {
+      const parts = lengthStr.split(':').map(p => parseFloat(p));
+      if (parts.some(isNaN)) return undefined;
+
+      if (parts.length === 2) {
+        // MM:SS format
+        return parts[0] * 60 + parts[1];
+      } else if (parts.length === 3) {
+        // HH:MM:SS format
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      }
+    }
+
+    // Try parsing as a number (seconds)
+    const parsed = parseFloat(lengthStr);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+
+  /**
+   * Filter and sort audio files for optimal streaming
+   */
+  private selectAudioFiles(files: any[]): any[] {
+    const supportedFormats = [
+      AUDIO_FORMATS.VBR_MP3,
+      AUDIO_FORMATS.FLAC,
+      AUDIO_FORMATS.MP3_64,
+      AUDIO_FORMATS.MP3_128,
+    ];
+
+    const audioFiles = files.filter(file => supportedFormats.includes(file.format));
+
+    // Prefer MP3 for streaming (smaller file size, better compatibility)
+    const mp3Files = audioFiles.filter(file => file.format.includes('MP3'));
+    return mp3Files.length > 0 ? mp3Files : audioFiles;
   }
 
   /**
@@ -230,70 +292,23 @@ class ArchiveApiService {
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
     try {
-      const response = await axios.get<ArchiveMetadataResponse>(
-        `${METADATA_URL}/${identifier}`
+      const response = await axiosInstance.get<ArchiveMetadataResponse>(
+        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`
       );
 
       const { metadata, files } = response.data;
+      const audioFiles = this.selectAudioFiles(files);
 
-      // Filter for audio files (MP3 or FLAC)
-      const audioFiles = files.filter(file =>
-        file.format === 'VBR MP3' ||
-        file.format === 'Flac' ||
-        file.format === '64Kbps MP3' ||
-        file.format === '128Kbps MP3'
-      );
-
-      // Prefer MP3 for streaming (smaller file size)
-      const mp3Files = audioFiles.filter(file => file.format.includes('MP3'));
-      const tracksToUse = mp3Files.length > 0 ? mp3Files : audioFiles;
-
-      const tracks: Track[] = tracksToUse
+      const tracks: Track[] = audioFiles
         .map((file, index) => {
-          // Parse duration - Archive.org can return it in different formats
-          let duration: number | undefined;
-          if (file.length) {
-            // Check if it's in MM:SS or HH:MM:SS format
-            if (file.length.includes(':')) {
-              const parts = file.length.split(':').map(p => parseFloat(p));
-              if (parts.length === 2) {
-                // MM:SS format
-                duration = parts[0] * 60 + parts[1];
-              } else if (parts.length === 3) {
-                // HH:MM:SS format
-                duration = parts[0] * 3600 + parts[1] * 60 + parts[2];
-              }
-            } else {
-              // Assume it's a number in seconds
-              const parsed = parseFloat(file.length);
-              if (!isNaN(parsed)) {
-                duration = parsed;
-              }
-            }
-
-            if (!duration || isNaN(duration)) {
-              console.warn(`Invalid duration for ${file.name}: ${file.length}`);
-            }
-          }
-
-          // Debug log first few tracks to see what we're getting
-          if (index < 3) {
-            console.log(`Track ${index + 1} data:`, {
-              name: file.name,
-              title: file.title,
-              lengthRaw: file.length,
-              durationParsed: duration,
-              format: file.format,
-              track: file.track,
-            });
-          }
+          const duration = this.parseDuration(file.length);
 
           return {
             id: file.name,
             title: file.title || file.name.replace(/\.\w+$/, ''),
             duration,
             format: file.format,
-            streamUrl: `${DOWNLOAD_URL}/${identifier}/${encodeURIComponent(file.name)}`,
+            streamUrl: `${ARCHIVE_ENDPOINTS.DOWNLOAD}/${identifier}/${encodeURIComponent(file.name)}`,
             trackNumber: parseInt(file.track || String(index + 1))
           };
         })
@@ -317,11 +332,9 @@ class ArchiveApiService {
         allVersions
       };
     } catch (error) {
-      console.error('Error fetching show detail:', error);
-      throw new Error('Failed to fetch show details');
+      this.handleError(error, 'Failed to fetch show details');
     }
   }
-
 }
 
 export const archiveApi = new ArchiveApiService();

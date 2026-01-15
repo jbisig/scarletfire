@@ -8,7 +8,11 @@ interface ShowCardProps {
   onPress: (show: GratefulDeadShow) => void;
 }
 
-export function ShowCard({ show, onPress }: ShowCardProps) {
+/**
+ * Show card component for displaying Grateful Dead show information
+ * Memoized to prevent unnecessary re-renders in lists
+ */
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
   return (
     <TouchableOpacity
       style={styles.container}
@@ -28,7 +32,9 @@ export function ShowCard({ show, onPress }: ShowCardProps) {
       )}
     </TouchableOpacity>
   );
-}
+});
+
+ShowCard.displayName = 'ShowCard';
 
 const styles = StyleSheet.create({
   container: {

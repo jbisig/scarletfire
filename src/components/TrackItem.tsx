@@ -9,7 +9,11 @@ interface TrackItemProps {
   onPress: (track: Track) => void;
 }
 
-export function TrackItem({ track, isPlaying, onPress }: TrackItemProps) {
+/**
+ * Individual track item component
+ * Memoized to prevent unnecessary re-renders
+ */
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress }) => {
   return (
     <TouchableOpacity
       style={[styles.container, isPlaying && styles.playing]}
@@ -34,7 +38,9 @@ export function TrackItem({ track, isPlaying, onPress }: TrackItemProps) {
       </Text>
     </TouchableOpacity>
   );
-}
+});
+
+TrackItem.displayName = 'TrackItem';
 
 const styles = StyleSheet.create({
   container: {
