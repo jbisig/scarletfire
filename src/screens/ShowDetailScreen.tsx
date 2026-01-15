@@ -163,9 +163,6 @@ export function ShowDetailScreen() {
       </View>
 
       <View style={styles.tracksContainer}>
-        <Text style={styles.tracksTitle}>
-          Tracks ({show.tracks.length})
-        </Text>
         {show.tracks.map((track) => (
           <TrackItem
             key={track.id}
@@ -239,12 +236,5 @@ const styles = StyleSheet.create({
   },
   tracksContainer: {
     paddingVertical: 16,
-  },
-  tracksTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    paddingHorizontal: 20,
-    marginBottom: 12,
   },
 });

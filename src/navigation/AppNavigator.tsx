@@ -10,6 +10,8 @@ import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { ClassicsScreen } from '../screens/ClassicsScreen';
 import { GratefulDead101Screen } from '../screens/GratefulDead101Screen';
+import { SongListScreen } from '../screens/SongListScreen';
+import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { View, StyleSheet } from 'react-native';
@@ -22,6 +24,11 @@ export type RootStackParamList = {
   DiscoverLanding: undefined;
   Classics: undefined;
   GratefulDead101: undefined;
+  SongList: undefined;
+  SongPerformances: {
+    songTitle: string;
+    performances: Array<{ date: string; identifier: string; venue?: string }>;
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -117,6 +124,16 @@ function DiscoverStack() {
         name="GratefulDead101"
         component={GratefulDead101Screen}
         options={{ title: 'Grateful Dead 101' }}
+      />
+      <Stack.Screen
+        name="SongList"
+        component={SongListScreen}
+        options={{ title: 'Song Versions' }}
+      />
+      <Stack.Screen
+        name="SongPerformances"
+        component={SongPerformancesScreen}
+        options={{ title: 'Performances' }}
       />
       <Stack.Screen
         name="ShowDetail"

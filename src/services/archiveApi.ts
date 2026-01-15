@@ -288,6 +288,116 @@ class ArchiveApiService {
   }
 
   /**
+   * Get all unique songs with their performances across shows
+   * This is an expensive operation that fetches many shows
+   */
+  async getSongVersions(): Promise<Map<string, Array<{ date: string; identifier: string; venue?: string }>>> {
+    try {
+      // Fetch a large sample of shows to get diverse song list
+      const allDocs = await this.searchShows(0, 5000);
+
+      const songToShows = new Map<string, Array<{ date: string; identifier: string; venue?: string }>>();
+
+      // Fetch details for a sample of shows to build song index
+      // We'll fetch the top 500 most popular shows for better song coverage
+      const topShows = allDocs
+        .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
+        .slice(0, 500);
+
+      // Process shows in batches to avoid overwhelming the API
+      const batchSize = 50;
+      for (let i = 0; i < topShows.length; i += batchSize) {
+        const batch = topShows.slice(i, i + batchSize);
+        const showPromises = batch.map(doc =>
+          this.getShowDetail(doc.identifier, false).catch(() => null)
+        );
+
+        const shows = await Promise.all(showPromises);
+
+        shows.forEach(show => {
+          if (!show) return;
+
+          show.tracks.forEach(track => {
+            // Normalize song title (remove track numbers, clean up)
+            const songTitle = this.normalizeSongTitle(track.title);
+            if (!songTitle) return;
+
+            if (!songToShows.has(songTitle)) {
+              songToShows.set(songTitle, []);
+            }
+
+            const performances = songToShows.get(songTitle)!;
+            // Avoid duplicates by checking if show already exists
+            if (!performances.some(p => p.identifier === show.identifier)) {
+              performances.push({
+                date: show.date,
+                identifier: show.identifier,
+                venue: show.venue,
+              });
+            }
+          });
+        });
+
+        // Small delay between batches to be respectful to the API
+        if (i + batchSize < topShows.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      // Sort performances by date for each song
+      songToShows.forEach(performances => {
+        performances.sort((a, b) => a.date.localeCompare(b.date));
+      });
+
+      return songToShows;
+    } catch (error) {
+      this.handleError(error, 'Failed to fetch song versions');
+    }
+  }
+
+  /**
+   * Normalize song title by removing common prefixes and cleaning up
+   */
+  private normalizeSongTitle(title: string): string {
+    if (!title) return '';
+
+    // Remove common patterns
+    let normalized = title
+      // Remove track numbers at start (e.g., "01 ", "1. ", "Track 1: ")
+      .replace(/^\d+[\s.-]*/, '')
+      .replace(/^Track\s+\d+[\s:]*/, '')
+      // Remove leading/trailing whitespace
+      .trim()
+      // Remove version indicators
+      .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
+      .replace(/\s*[#]\d+.*$/i, '')
+      // Clean up common suffixes
+      .replace(/\s*\(.*?\)\s*$/, '')
+      .replace(/\s*\[.*?\]\s*$/, '')
+      // Remove "Jam" suffix but keep song name
+      .replace(/\s+[Jj]am\s*$/, '');
+
+    // Skip non-musical tracks
+    const skipPatterns = [
+      /^tuning/i,
+      /^talk/i,
+      /^announce/i,
+      /^intro/i,
+      /^crowd/i,
+      /^applause/i,
+      /^silence/i,
+      /^unknown/i,
+      /^banter/i,
+    ];
+
+    if (skipPatterns.some(pattern => pattern.test(normalized))) {
+      return '';
+    }
+
+    return normalized;
+  }
+
+  /**
    * Get detailed metadata for a specific show
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
