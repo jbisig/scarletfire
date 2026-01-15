@@ -27,15 +27,17 @@ class ArchiveApiService {
    * Helper to build query string from params object
    */
   private buildQueryString(params: Record<string, any>): string {
-    const searchParams = new URLSearchParams();
+    const parts: string[] = [];
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach(v => searchParams.append(key, String(v)));
+        value.forEach(v => {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`);
+        });
       } else if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
+        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
       }
     });
-    return searchParams.toString();
+    return parts.join('&');
   }
 
   /**
