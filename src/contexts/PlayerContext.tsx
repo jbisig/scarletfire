@@ -12,7 +12,8 @@ const initialState: PlayerState = {
   position: 0,
   duration: 0,
   playlist: [],
-  currentTrackIndex: -1
+  currentTrackIndex: -1,
+  shouldAutoPlay: false
 };
 
 function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
@@ -25,14 +26,15 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         currentShow: action.show,
         playlist: action.playlist,
         currentTrackIndex: trackIndex,
-        isLoading: true
+        isLoading: true,
+        shouldAutoPlay: true
       };
 
     case 'PLAY':
       return { ...state, isPlaying: true };
 
     case 'PAUSE':
-      return { ...state, isPlaying: false };
+      return { ...state, isPlaying: false, shouldAutoPlay: false };
 
     case 'STOP':
       return initialState;
@@ -54,7 +56,8 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[nextIndex],
           currentTrackIndex: nextIndex,
-          isLoading: true
+          isLoading: true,
+          shouldAutoPlay: true
         };
       }
       return state;
@@ -66,7 +69,8 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[prevIndex],
           currentTrackIndex: prevIndex,
-          isLoading: true
+          isLoading: true,
+          shouldAutoPlay: true
         };
       }
       return state;
@@ -110,14 +114,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
           // Auto-advance to next track when current track finishes
           if (status.isLoaded && status.didJustFinish) {
+            console.log('PlayerContext: Track finished, advancing to next');
             dispatch({ type: 'NEXT_TRACK' });
           }
         }
       ).then(() => {
-        console.log('PlayerContext: Track loaded, isPlaying:', state.isPlaying);
-        if (state.isPlaying) {
+        console.log('PlayerContext: Track loaded, shouldAutoPlay:', state.shouldAutoPlay);
+        if (state.shouldAutoPlay) {
           audioService.play().then(() => {
             console.log('PlayerContext: Playing started');
+            dispatch({ type: 'PLAY' });
           }).catch((error) => {
             console.error('PlayerContext: Play failed:', error);
           });
@@ -130,7 +136,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
-    dispatch({ type: 'PLAY' }); // Auto-play when track is loaded
   };
 
   const play = async () => {

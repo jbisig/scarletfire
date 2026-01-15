@@ -10,6 +10,7 @@ export interface PlayerState {
   duration: number; // milliseconds
   playlist: Track[];
   currentTrackIndex: number;
+  shouldAutoPlay: boolean;
 }
 
 export type PlayerAction =
