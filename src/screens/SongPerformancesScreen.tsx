@@ -22,6 +22,48 @@ interface Performance {
   venue?: string;
 }
 
+// Calculate string similarity using Levenshtein distance
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+
+  const costs: number[] = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) {
+      costs[s2.length] = lastValue;
+    }
+  }
+
+  const maxLength = Math.max(s1.length, s2.length);
+  const distance = costs[s2.length];
+  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
+}
+
+function normalizeTrackTitle(title: string): string {
+  return title
+    .replace(/^\d+[\s.-]*/, '')
+    .replace(/^Track\s+\d+[\s:]*/, '')
+    .trim()
+    .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
+    .replace(/\s*[#]\d+.*$/i, '')
+    .replace(/\s*\(.*?\)\s*$/, '')
+    .replace(/\s*\[.*?\]\s*$/, '')
+    .replace(/\s+[Jj]am\s*$/, '');
+}
+
 export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
   const { loadTrack } = usePlayer();
@@ -36,24 +78,24 @@ export function SongPerformancesScreen() {
       // Fetch the show details using the real Archive.org identifier
       const showDetail = await archiveApi.getShowDetail(performance.identifier, false);
 
-      // Find the track that matches this song
-      const matchingTrack = showDetail.tracks.find(track => {
-        const normalizedTitle = track.title
-          .replace(/^\d+[\s.-]*/, '')
-          .replace(/^Track\s+\d+[\s:]*/, '')
-          .trim()
-          .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
-          .replace(/\s*[#]\d+.*$/i, '')
-          .replace(/\s*\(.*?\)\s*$/, '')
-          .replace(/\s*\[.*?\]\s*$/, '')
-          .replace(/\s+[Jj]am\s*$/, '');
+      // Find the track that matches this song using fuzzy matching
+      let bestMatch = null;
+      let bestScore = 0;
+      const SIMILARITY_THRESHOLD = 0.85; // 85% similarity required
 
-        return normalizedTitle.toLowerCase() === songTitle.toLowerCase();
-      });
+      for (const track of showDetail.tracks) {
+        const normalizedTitle = normalizeTrackTitle(track.title);
+        const similarity = calculateSimilarity(normalizedTitle, songTitle);
 
-      if (matchingTrack) {
+        if (similarity > bestScore) {
+          bestScore = similarity;
+          bestMatch = track;
+        }
+      }
+
+      if (bestMatch && bestScore >= SIMILARITY_THRESHOLD) {
         // Load and play the matching track
-        await loadTrack(matchingTrack, showDetail, showDetail.tracks);
+        await loadTrack(bestMatch, showDetail, showDetail.tracks);
       } else {
         Alert.alert(
           'Song Not Found',

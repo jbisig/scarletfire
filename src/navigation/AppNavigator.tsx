@@ -34,8 +34,8 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-// Stack navigator for Tapes tab
-function TapesStack() {
+// Stack navigator for Shows tab
+function ShowsStack() {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -52,6 +52,39 @@ function TapesStack() {
         name="Home"
         component={HomeScreen}
         options={{ title: 'Scarlet>fire' }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{ title: 'Show Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Stack navigator for Songs tab
+function SongsStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1a1a1a',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="SongList"
+        component={SongListScreen}
+        options={{ title: 'Songs' }}
+      />
+      <Stack.Screen
+        name="SongPerformances"
+        component={SongPerformancesScreen}
+        options={{ title: 'Performances' }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -126,16 +159,6 @@ function DiscoverStack() {
         options={{ title: 'Grateful Dead 101' }}
       />
       <Stack.Screen
-        name="SongList"
-        component={SongListScreen}
-        options={{ title: 'Song Versions' }}
-      />
-      <Stack.Screen
-        name="SongPerformances"
-        component={SongPerformancesScreen}
-        options={{ title: 'Performances' }}
-      />
-      <Stack.Screen
         name="ShowDetail"
         component={ShowDetailScreen}
         options={{ title: 'Show Details' }}
@@ -156,8 +179,10 @@ export function AppNavigator() {
             tabBarIcon: ({ focused, color, size }) => {
               let iconName: keyof typeof Ionicons.glyphMap;
 
-              if (route.name === 'TapesTab') {
+              if (route.name === 'ShowsTab') {
                 iconName = focused ? 'albums' : 'albums-outline';
+              } else if (route.name === 'SongsTab') {
+                iconName = focused ? 'musical-notes' : 'musical-notes-outline';
               } else if (route.name === 'DiscoverTab') {
                 iconName = focused ? 'compass' : 'compass-outline';
               } else if (route.name === 'FavoritesTab') {
@@ -188,9 +213,14 @@ export function AppNavigator() {
           })}
         >
           <Tab.Screen
-            name="TapesTab"
-            component={TapesStack}
-            options={{ tabBarLabel: 'Tapes' }}
+            name="ShowsTab"
+            component={ShowsStack}
+            options={{ tabBarLabel: 'Shows' }}
+          />
+          <Tab.Screen
+            name="SongsTab"
+            component={SongsStack}
+            options={{ tabBarLabel: 'Songs' }}
           />
           <Tab.Screen
             name="DiscoverTab"

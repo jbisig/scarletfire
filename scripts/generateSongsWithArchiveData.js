@@ -72,6 +72,20 @@ function cleanSongName(name) {
     .replace(/\*+$/, '')
     .replace(/\?+$/, '')
     .replace(/\s*\[.*?\]\s*$/, '')
+    // Remove parenthetical annotations at start or end
+    .replace(/^\(acoustic\)\s*/i, '')
+    .replace(/^\(electric\)\s*/i, '')
+    .replace(/^\(late\)\s*/i, '')
+    .replace(/^\(early\)\s*/i, '')
+    .replace(/^\(reprise\)\s*/i, '')
+    .replace(/\s*\(acoustic\)\s*$/i, '')
+    .replace(/\s*\(electric\)\s*$/i, '')
+    .replace(/\s*\(late\)\s*$/i, '')
+    .replace(/\s*\(early\)\s*$/i, '')
+    .replace(/\s*\(reprise\)\s*$/i, '')
+    // Remove "- electric sets", "- set 2", etc.
+    .replace(/\s*-\s*electric\s+sets?\s*$/i, '')
+    .replace(/\s*-\s*set\s+\d+\s*$/i, '')
     .trim();
 
   const skipPatterns = [

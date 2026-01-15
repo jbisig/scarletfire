@@ -68,24 +68,6 @@ export function DiscoverLandingScreen() {
               <Ionicons name="chevron-forward" size={24} color="#ff6b6b" />
             </View>
           </TouchableOpacity>
-
-          {/* Song Versions Card */}
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('SongList')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.cardIconContainer}>
-              <Ionicons name="musical-notes" size={32} color="#ff6b6b" />
-            </View>
-            <Text style={styles.cardTitle}>Song Versions</Text>
-            <Text style={styles.cardDescription}>
-              Browse songs alphabetically and explore different performances across the years
-            </Text>
-            <View style={styles.cardArrow}>
-              <Ionicons name="chevron-forward" size={24} color="#ff6b6b" />
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>

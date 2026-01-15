@@ -27,7 +27,7 @@ export function ShowDetailScreen() {
   const navigation = useNavigation<ShowDetailNavigationProp>();
   const { getShowDetail } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
-  const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+  const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
 
   const [show, setShow] = useState<ShowDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,10 +102,10 @@ export function ShowDetailScreen() {
         title: show.title,
       };
 
-      if (isFavorite(show.identifier)) {
-        removeFavorite(show.identifier);
+      if (isShowFavorite(show.identifier)) {
+        removeFavoriteShow(show.identifier);
       } else {
-        addFavorite(showToSave);
+        addFavoriteShow(showToSave);
       }
     }
   };
@@ -143,12 +143,12 @@ export function ShowDetailScreen() {
           activeOpacity={0.7}
         >
           <Ionicons
-            name={isFavorite(show.identifier) ? 'heart' : 'heart-outline'}
+            name={isShowFavorite(show.identifier) ? 'heart' : 'heart-outline'}
             size={24}
-            color={isFavorite(show.identifier) ? '#ff6b6b' : '#fff'}
+            color={isShowFavorite(show.identifier) ? '#ff6b6b' : '#fff'}
           />
           <Text style={styles.saveButtonText}>
-            {isFavorite(show.identifier) ? 'Saved' : 'Save Show'}
+            {isShowFavorite(show.identifier) ? 'Saved' : 'Save Show'}
           </Text>
         </TouchableOpacity>
 

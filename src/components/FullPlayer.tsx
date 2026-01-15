@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { formatDate, formatTime } from '../utils/formatters';
 
 interface FullPlayerProps {
@@ -24,6 +25,7 @@ const { width: screenWidth } = Dimensions.get('window');
  */
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
+  const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const progressBarRef = useRef<View>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
@@ -59,6 +61,27 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       // Single tap - restart current track
       seekTo(0);
       lastRewindTapRef.current = now;
+    }
+  };
+
+  const handleToggleFavoriteSong = (): void => {
+    if (!state.currentTrack || !state.currentShow) return;
+
+    const trackId = state.currentTrack.id;
+    const showIdentifier = state.currentShow.identifier;
+
+    if (isSongFavorite(trackId, showIdentifier)) {
+      removeFavoriteSong(trackId, showIdentifier);
+    } else {
+      const favoriteSong: FavoriteSong = {
+        trackId: state.currentTrack.id,
+        trackTitle: state.currentTrack.title,
+        showIdentifier: state.currentShow.identifier,
+        showDate: state.currentShow.date,
+        venue: state.currentShow.venue,
+        streamUrl: state.currentTrack.streamUrl,
+      };
+      addFavoriteSong(favoriteSong);
     }
   };
 
@@ -139,6 +162,34 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           <Text style={styles.showDate} numberOfLines={1}>
             {state.currentShow?.date && formatDate(state.currentShow.date)}
           </Text>
+
+          {/* Save Song Button */}
+          {state.currentTrack && state.currentShow && (
+            <TouchableOpacity
+              style={styles.saveSongButton}
+              onPress={handleToggleFavoriteSong}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={
+                  isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
+                    ? 'heart'
+                    : 'heart-outline'
+                }
+                size={24}
+                color={
+                  isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
+                    ? '#ff6b6b'
+                    : '#fff'
+                }
+              />
+              <Text style={styles.saveSongButtonText}>
+                {isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
+                  ? 'Saved'
+                  : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Progress Bar */}
@@ -234,6 +285,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  saveSongButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+    marginTop: 8,
+  },
+  saveSongButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   progressContainer: {
     marginBottom: 20,
