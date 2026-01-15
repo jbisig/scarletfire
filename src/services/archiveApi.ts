@@ -21,10 +21,11 @@ class ArchiveApiService {
    * Handle API errors consistently
    */
   private handleError(error: unknown, context: string): never {
-    if (axios.isAxiosError(error)) {
-      if (error.response) {
-        throw new Error(`${context}: Server responded with ${error.response.status}`);
-      } else if (error.request) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const err = error as any;
+      if (err.response) {
+        throw new Error(`${context}: Server responded with ${err.response.status}`);
+      } else if (err.request) {
         throw new Error(`${context}: No response received from server`);
       }
     }
