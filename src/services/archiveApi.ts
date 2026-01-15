@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import {
   ArchiveSearchResponse,
   ArchiveMetadataResponse,
@@ -32,10 +32,9 @@ class ArchiveApiService {
    */
   private handleError(error: unknown, context: string): never {
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      if (axiosError.response) {
-        throw new Error(`${context}: Server responded with ${axiosError.response.status}`);
-      } else if (axiosError.request) {
+      if (error.response) {
+        throw new Error(`${context}: Server responded with ${error.response.status}`);
+      } else if (error.request) {
         throw new Error(`${context}: No response received from server`);
       }
     }
