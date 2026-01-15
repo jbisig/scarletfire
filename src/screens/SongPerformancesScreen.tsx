@@ -33,27 +33,8 @@ export function SongPerformancesScreen() {
     try {
       setLoadingIdentifier(performance.identifier);
 
-      // Search for shows on this date to find the real identifier
-      const year = performance.date.split('-')[0];
-      const allDocs = await archiveApi.searchShows(0, 100, year);
-
-      // Find show(s) matching this date
-      const matchingShows = allDocs.filter(doc => doc.date === performance.date);
-
-      if (matchingShows.length === 0) {
-        Alert.alert(
-          'Recording Not Available',
-          `No recording found for ${formatDate(performance.date)}${performance.venue ? ` at ${performance.venue}` : ''}.\n\nThis show was performed but may not have been recorded or isn't available in the Archive yet.`,
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      // Use the first matching show (most downloads)
-      const bestShow = matchingShows.sort((a, b) => (b.downloads || 0) - (a.downloads || 0))[0];
-
-      // Fetch the show details using the real identifier
-      const showDetail = await archiveApi.getShowDetail(bestShow.identifier, false);
+      // Fetch the show details using the real Archive.org identifier
+      const showDetail = await archiveApi.getShowDetail(performance.identifier, false);
 
       // Find the track that matches this song
       const matchingTrack = showDetail.tracks.find(track => {
