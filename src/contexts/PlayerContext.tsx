@@ -107,6 +107,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (state.currentTrack && state.isLoading) {
       console.log('PlayerContext: Loading track', state.currentTrack.title);
+      console.log('PlayerContext: shouldAutoPlay =', state.shouldAutoPlay);
+
+      const shouldPlay = state.shouldAutoPlay; // Capture current value
+
       audioService.loadTrack(
         state.currentTrack,
         (status: AVPlaybackStatus) => {
@@ -119,8 +123,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         }
       ).then(() => {
-        console.log('PlayerContext: Track loaded, shouldAutoPlay:', state.shouldAutoPlay);
-        if (state.shouldAutoPlay) {
+        console.log('PlayerContext: Track loaded, should play:', shouldPlay);
+        if (shouldPlay) {
           audioService.play().then(() => {
             console.log('PlayerContext: Playing started');
             dispatch({ type: 'PLAY' });
@@ -132,7 +136,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         console.error('PlayerContext: Load track failed:', error);
       });
     }
-  }, [state.currentTrack]);
+  }, [state.currentTrack, state.isLoading, state.shouldAutoPlay]);
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
