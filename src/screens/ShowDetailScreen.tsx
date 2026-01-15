@@ -33,10 +33,22 @@ export function ShowDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
+  const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
 
   useEffect(() => {
     loadShowDetail(route.params.identifier);
   }, [route.params.identifier]);
+
+  useEffect(() => {
+    // Clear justPressedTrackId when the track is actually loading or playing
+    if (
+      justPressedTrackId &&
+      playerState.currentTrack?.id === justPressedTrackId &&
+      (playerState.isLoading || playerState.isPlaying)
+    ) {
+      setJustPressedTrackId(null);
+    }
+  }, [playerState.currentTrack?.id, playerState.isLoading, playerState.isPlaying, justPressedTrackId]);
 
   const formatDateMMDDYYYY = (date: string) => {
     const [year, month, day] = date.split('-');
@@ -73,6 +85,7 @@ export function ShowDetailScreen() {
 
   const handleTrackPress = (track: Track) => {
     if (show) {
+      setJustPressedTrackId(track.id);
       loadTrack(track, show, show.tracks);
     }
   };
@@ -158,8 +171,8 @@ export function ShowDetailScreen() {
             key={track.id}
             track={track}
             isPlaying={
-              playerState.currentTrack?.id === track.id &&
-              playerState.isPlaying
+              playerState.currentTrack?.id === track.id ||
+              justPressedTrackId === track.id
             }
             onPress={handleTrackPress}
           />

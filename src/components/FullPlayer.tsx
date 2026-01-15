@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,12 @@ import {
   TouchableOpacity,
   Dimensions,
   PanResponder,
-  Animated,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { formatDate, formatTime } from '../utils/formatters';
 
-// Full player modal component with scrolling title and fade effects
+// Full player modal component
 interface FullPlayerProps {
   visible: boolean;
   onClose: () => void;
@@ -31,51 +29,6 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
   const lastRewindTapRef = useRef<number>(0);
   const isDraggingRef = useRef(false);
   const barMeasurements = useRef({ pageX: 0, width: 0 });
-  const swipeStartY = useRef(0);
-
-  // Scrolling title animation
-  const scrollAnim = useRef(new Animated.Value(0)).current;
-  const [titleWidth, setTitleWidth] = useState(0);
-  const [shouldScroll, setShouldScroll] = useState(false);
-
-  useEffect(() => {
-    // Reset animation when track changes or modal closes
-    scrollAnim.setValue(0);
-    scrollAnim.stopAnimation();
-    setTitleWidth(0);
-    setShouldScroll(false);
-  }, [state.currentTrack?.id, visible]);
-
-  useEffect(() => {
-    // Start scrolling animation when modal is visible and title is too long
-    if (visible && state.currentTrack && shouldScroll) {
-      // Wait 2 seconds, then start scrolling
-      const timeoutId = setTimeout(() => {
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(scrollAnim, {
-              toValue: -250, // Scroll 250px to the left to reveal end of text
-              duration: 5000,
-              useNativeDriver: true,
-            }),
-            Animated.delay(1500),
-            Animated.timing(scrollAnim, {
-              toValue: 0,
-              duration: 5000,
-              useNativeDriver: true,
-            }),
-            Animated.delay(1500),
-          ])
-        ).start();
-      }, 2000);
-
-      return () => {
-        clearTimeout(timeoutId);
-        scrollAnim.stopAnimation();
-        scrollAnim.setValue(0);
-      };
-    }
-  }, [visible, state.currentTrack, scrollAnim, shouldScroll]);
 
   const calculatePositionFromTouch = (pageX: number) => {
     if (barMeasurements.current.width === 0) return 0;
@@ -176,58 +129,14 @@ export function FullPlayer({ visible, onClose }: FullPlayerProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Album Art Placeholder */}
-        <View style={styles.albumArtContainer}>
-          <View style={styles.albumArtPlaceholder}>
-            <Ionicons name="musical-notes" size={80} color="#ff6b6b" />
-          </View>
-        </View>
+        {/* Spacer to push content down */}
+        <View style={{ flex: 1 }} />
 
         {/* Track Info */}
         <View style={styles.trackInfoContainer}>
-          {/* Scrolling title */}
-          <View style={styles.titleScrollContainer}>
-            <Animated.View
-              style={[
-                shouldScroll ? styles.titleWrapper : styles.titleWrapperCentered,
-                { transform: [{ translateX: shouldScroll ? scrollAnim : 0 }] }
-              ]}
-            >
-              <Text
-                style={styles.trackTitle}
-                onLayout={(e) => {
-                  const width = e.nativeEvent.layout.width;
-                  setTitleWidth(width);
-                  // Check if text is wider than container
-                  if (width > screenWidth - 48) {
-                    setShouldScroll(true);
-                  }
-                }}
-              >
-                {state.currentTrack.title}
-              </Text>
-            </Animated.View>
-            {/* Left fade gradient - only show when scrolling */}
-            {shouldScroll && (
-              <LinearGradient
-                colors={['rgba(26, 26, 26, 1)', 'rgba(26, 26, 26, 0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.gradientLeft}
-                pointerEvents="none"
-              />
-            )}
-            {/* Right fade gradient - only show when scrolling */}
-            {shouldScroll && (
-              <LinearGradient
-                colors={['rgba(26, 26, 26, 0)', 'rgba(26, 26, 26, 1)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.gradientRight}
-                pointerEvents="none"
-              />
-            )}
-          </View>
+          <Text style={styles.trackTitle} numberOfLines={2}>
+            {state.currentTrack.title}
+          </Text>
 
           <Text style={styles.showInfo} numberOfLines={1}>
             {state.currentShow?.venue}
@@ -317,70 +226,21 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'flex-start',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   closeButton: {
     padding: 8,
-  },
-  albumArtContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  albumArtPlaceholder: {
-    width: 320,
-    height: 320,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333',
   },
   trackInfoContainer: {
     marginBottom: 40,
     alignItems: 'center',
   },
-  titleScrollContainer: {
-    width: screenWidth,
-    marginHorizontal: -24,
-    marginBottom: 12,
-    paddingHorizontal: 24,
-    alignItems: 'flex-start',
-    position: 'relative',
-    height: 36,
-    overflow: 'hidden',
-  },
-  titleWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    width: 1000,
-  },
-  titleWrapperCentered: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
   trackTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#ffffff',
-    flexWrap: 'nowrap',
-  },
-  gradientLeft: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 80,
-  },
-  gradientRight: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 80,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   showInfo: {
     fontSize: 18,

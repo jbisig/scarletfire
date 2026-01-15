@@ -17,13 +17,16 @@ class AudioService {
     try {
       // Unload previous track
       if (this.sound) {
+        console.log('[AUDIO SERVICE] Unloading previous track');
         await this.sound.unloadAsync();
+        this.sound = null;
       }
 
+      console.log('[AUDIO SERVICE] Setting new status update callback');
       this.onStatusUpdate = onStatusUpdate;
 
-      console.log('Loading track:', track.title);
-      console.log('Stream URL:', track.streamUrl);
+      console.log('[AUDIO SERVICE] Loading track:', track.title);
+      console.log('[AUDIO SERVICE] Stream URL:', track.streamUrl);
 
       const { sound } = await Audio.Sound.createAsync(
         { uri: track.streamUrl },
@@ -32,10 +35,10 @@ class AudioService {
       );
 
       this.sound = sound;
-      console.log('Track loaded successfully');
+      console.log('[AUDIO SERVICE] Track loaded successfully');
       return sound;
     } catch (error) {
-      console.error('Failed to load track:', error);
+      console.error('[AUDIO SERVICE] Failed to load track:', error);
       throw error;
     }
   }

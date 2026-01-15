@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, useEffect, useRef } from 'react';
 import { AVPlaybackStatus } from 'expo-av';
 import { PlayerState, PlayerAction } from '../types/player.types';
 import { Track, ShowDetail } from '../types/show.types';
@@ -20,6 +20,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case 'LOAD_TRACK':
       const trackIndex = action.playlist.findIndex(t => t.id === action.track.id);
+      console.log('[REDUCER] LOAD_TRACK:', action.track.title, 'index:', trackIndex, 'shouldAutoPlay: true');
       return {
         ...state,
         currentTrack: action.track,
@@ -31,16 +32,20 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       };
 
     case 'PLAY':
+      console.log('[REDUCER] PLAY');
       return { ...state, isPlaying: true };
 
     case 'PAUSE':
+      console.log('[REDUCER] PAUSE - setting shouldAutoPlay to false');
       return { ...state, isPlaying: false, shouldAutoPlay: false };
 
     case 'STOP':
+      console.log('[REDUCER] STOP');
       return initialState;
 
     case 'UPDATE_STATUS':
       if (!action.status.isLoaded) return state;
+
       return {
         ...state,
         isLoading: false,
@@ -51,7 +56,9 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
 
     case 'NEXT_TRACK':
       const nextIndex = state.currentTrackIndex + 1;
+      console.log('[REDUCER] NEXT_TRACK - currentIndex:', state.currentTrackIndex, 'nextIndex:', nextIndex, 'playlist length:', state.playlist.length);
       if (nextIndex < state.playlist.length) {
+        console.log('[REDUCER] NEXT_TRACK - Loading:', state.playlist[nextIndex].title, 'shouldAutoPlay: true');
         return {
           ...state,
           currentTrack: state.playlist[nextIndex],
@@ -60,11 +67,14 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           shouldAutoPlay: true
         };
       }
+      console.log('[REDUCER] NEXT_TRACK - No more tracks in playlist');
       return state;
 
     case 'PREVIOUS_TRACK':
       const prevIndex = state.currentTrackIndex - 1;
+      console.log('[REDUCER] PREVIOUS_TRACK - currentIndex:', state.currentTrackIndex, 'prevIndex:', prevIndex);
       if (prevIndex >= 0) {
+        console.log('[REDUCER] PREVIOUS_TRACK - Loading:', state.playlist[prevIndex].title, 'shouldAutoPlay: true');
         return {
           ...state,
           currentTrack: state.playlist[prevIndex],
@@ -73,6 +83,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           shouldAutoPlay: true
         };
       }
+      console.log('[REDUCER] PREVIOUS_TRACK - Already at first track');
       return state;
 
     case 'SEEK':
@@ -98,6 +109,8 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
+  const isAdvancingTrackRef = useRef(false);
+  const currentLoadingTrackIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     audioService.initialize();
@@ -105,35 +118,67 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-load track when currentTrack changes
   useEffect(() => {
-    if (state.currentTrack && state.isLoading) {
-      console.log('PlayerContext: Loading track', state.currentTrack.title);
-      console.log('PlayerContext: shouldAutoPlay =', state.shouldAutoPlay);
+    console.log('[EFFECT] useEffect triggered');
+    console.log('[EFFECT] currentTrack:', state.currentTrack?.title);
+    console.log('[EFFECT] isLoading:', state.isLoading);
+    console.log('[EFFECT] shouldAutoPlay:', state.shouldAutoPlay);
 
+    if (state.currentTrack && state.isLoading) {
+      console.log('=== [EFFECT] Starting track load ===');
+      console.log('[EFFECT] Track:', state.currentTrack.title);
+      console.log('[EFFECT] isPlaying:', state.isPlaying);
+      console.log('[EFFECT] currentTrackIndex:', state.currentTrackIndex);
+
+      const trackId = state.currentTrack.id; // Capture track ID
       const shouldPlay = state.shouldAutoPlay; // Capture current value
+      currentLoadingTrackIdRef.current = trackId;
 
       audioService.loadTrack(
         state.currentTrack,
         (status: AVPlaybackStatus) => {
-          dispatch({ type: 'UPDATE_STATUS', status });
+          // If we're already advancing tracks, ignore callbacks from the old track
+          if (isAdvancingTrackRef.current) {
+            console.log('[CALLBACK] Ignoring callback - already advancing to next track');
+            return;
+          }
 
           // Auto-advance to next track when current track finishes
           if (status.isLoaded && status.didJustFinish) {
-            console.log('PlayerContext: Track finished, advancing to next');
+            console.log('=== [CALLBACK] Track finished! ===');
+            console.log('[CALLBACK] Setting advancing flag and dispatching NEXT_TRACK');
+            isAdvancingTrackRef.current = true;
             dispatch({ type: 'NEXT_TRACK' });
+            return;
           }
+
+          dispatch({ type: 'UPDATE_STATUS', status });
         }
       ).then(() => {
-        console.log('PlayerContext: Track loaded, should play:', shouldPlay);
+        console.log('[EFFECT] Resetting advancing flag');
+        isAdvancingTrackRef.current = false;
+        console.log('=== [EFFECT] Track loaded successfully ===');
+        console.log('[EFFECT] Loaded track ID:', trackId, 'Current track ID:', state.currentTrack?.id);
+
+        // Only play if we're still on the same track
+        if (currentLoadingTrackIdRef.current !== trackId) {
+          console.log('[EFFECT] Track changed during load, skipping play');
+          return;
+        }
+
+        console.log('[EFFECT] shouldPlay (captured):', shouldPlay);
         if (shouldPlay) {
+          console.log('[EFFECT] Calling audioService.play()...');
           audioService.play().then(() => {
-            console.log('PlayerContext: Playing started');
+            console.log('[EFFECT] audioService.play() succeeded');
             dispatch({ type: 'PLAY' });
           }).catch((error) => {
-            console.error('PlayerContext: Play failed:', error);
+            console.error('[EFFECT] audioService.play() FAILED:', error);
           });
+        } else {
+          console.log('[EFFECT] Skipping auto-play (shouldPlay is false)');
         }
       }).catch((error) => {
-        console.error('PlayerContext: Load track failed:', error);
+        console.error('[EFFECT] Load track FAILED:', error);
       });
     }
   }, [state.currentTrack, state.isLoading, state.shouldAutoPlay]);
