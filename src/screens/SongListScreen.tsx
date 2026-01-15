@@ -12,6 +12,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { archiveApi } from '../services/archiveApi';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
+import { generateSongData } from '../utils/generateSongData';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -26,10 +27,25 @@ export function SongListScreen() {
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     loadSongs();
+    // TEMPORARY: Generate full song data with performances
+    generateFullSongData();
   }, []);
+
+  const generateFullSongData = async () => {
+    if (isGenerating) return; // Prevent multiple runs
+    setIsGenerating(true);
+
+    try {
+      console.log('🎸 Starting song data generation...');
+      await generateSongData();
+    } catch (error) {
+      console.error('Failed to generate song data:', error);
+    }
+  };
 
   const loadSongs = async () => {
     try {
@@ -140,6 +156,15 @@ export function SongListScreen() {
 
   return (
     <View style={styles.container}>
+      {isGenerating && (
+        <View style={styles.generatingBanner}>
+          <ActivityIndicator size="small" color="#ff6b6b" style={styles.bannerSpinner} />
+          <View style={styles.bannerTextContainer}>
+            <Text style={styles.bannerText}>Generating full performance data...</Text>
+            <Text style={styles.bannerSubtext}>This will take 10-15 minutes. Check Metro logs for progress.</Text>
+          </View>
+        </View>
+      )}
       <FlatList
         data={renderFlatListData()}
         renderItem={({ item }) => {
@@ -227,6 +252,30 @@ const styles = StyleSheet.create({
   },
   performanceCount: {
     fontSize: 14,
+    color: '#999',
+  },
+  generatingBanner: {
+    backgroundColor: '#2a2a2a',
+    borderBottomWidth: 2,
+    borderBottomColor: '#ff6b6b',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bannerSpinner: {
+    marginRight: 12,
+  },
+  bannerTextContainer: {
+    flex: 1,
+  },
+  bannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  bannerSubtext: {
+    fontSize: 12,
     color: '#999',
   },
 });
