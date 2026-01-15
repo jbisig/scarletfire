@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {
   ArchiveSearchResponse,
   ArchiveMetadataResponse,
@@ -21,15 +20,22 @@ class ArchiveApiService {
    * Handle API errors consistently
    */
   private handleError(error: unknown, context: string): never {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const err = error as any;
-      if (err.response) {
-        throw new Error(`${context}: Server responded with ${err.response.status}`);
-      } else if (err.request) {
-        throw new Error(`${context}: No response received from server`);
-      }
-    }
     throw new Error(`${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
+  /**
+   * Helper to build query string from params object
+   */
+  private buildQueryString(params: Record<string, any>): string {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(v => searchParams.append(key, String(v)));
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    return searchParams.toString();
   }
 
   /**
@@ -58,8 +64,15 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
-      return response.data.response.docs;
+      const queryString = this.buildQueryString(params);
+      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: ArchiveSearchResponse = await response.json();
+      return data.response.docs;
     } catch (error) {
       this.handleError(error, 'Failed to fetch shows');
     }
@@ -143,7 +156,14 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
+      const queryString = this.buildQueryString(params);
+      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: ArchiveSearchResponse = await response.json();
 
       // Group by date and get unique shows with highest downloads
       const showsByDate = new Map<string, {
@@ -151,7 +171,7 @@ class ArchiveApiService {
         maxDownloads: number;
       }>();
 
-      response.data.response.docs.forEach(doc => {
+      data.response.docs.forEach(doc => {
         const existing = showsByDate.get(doc.date);
         const downloads = doc.downloads || 0;
 
@@ -216,10 +236,17 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
+      const queryString = this.buildQueryString(params);
+      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: ArchiveSearchResponse = await response.json();
 
       // Sort by downloads and return top versions
-      return response.data.response.docs
+      return data.response.docs
         .map(doc => ({
           identifier: doc.identifier,
           title: doc.title,
@@ -392,11 +419,14 @@ class ArchiveApiService {
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
     try {
-      const response = await axios.get<ArchiveMetadataResponse>(
-        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`
-      );
+      const response = await fetch(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
 
-      const { metadata, files } = response.data;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: ArchiveMetadataResponse = await response.json();
+      const { metadata, files } = data;
       const audioFiles = this.selectAudioFiles(files);
 
       const tracks: Track[] = audioFiles
