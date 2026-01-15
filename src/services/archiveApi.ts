@@ -18,17 +18,6 @@ import {
  */
 class ArchiveApiService {
   /**
-   * Get axios config with timeout
-   */
-  private getAxiosConfig() {
-    return {
-      timeout: ARCHIVE_CONFIG.TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-  }
-  /**
    * Handle API errors consistently
    */
   private handleError(error: unknown, context: string): never {
@@ -68,7 +57,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
       return response.data.response.docs;
     } catch (error) {
       this.handleError(error, 'Failed to fetch shows');
@@ -153,7 +142,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
 
       // Group by date and get unique shows with highest downloads
       const showsByDate = new Map<string, {
@@ -226,7 +215,7 @@ class ArchiveApiService {
         output: 'json'
       };
 
-      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params, ...this.getAxiosConfig() });
+      const response = await axios.get<ArchiveSearchResponse>(ARCHIVE_ENDPOINTS.SEARCH, { params });
 
       // Sort by downloads and return top versions
       return response.data.response.docs
@@ -403,8 +392,7 @@ class ArchiveApiService {
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
     try {
       const response = await axios.get<ArchiveMetadataResponse>(
-        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`,
-        this.getAxiosConfig()
+        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`
       );
 
       const { metadata, files } = response.data;
