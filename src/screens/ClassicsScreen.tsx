@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { EraPicker } from '../components/EraPicker';
@@ -89,16 +88,6 @@ export function ClassicsScreen() {
       {/* Classic Shows List */}
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <Ionicons name="trophy" size={48} color="#ff6b6b" />
-            <Text style={styles.headerTitle}>
-              {selectedEra ? `${selectedEra.name} Era Classics` : 'Classic Shows'}
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              {displayShows.length} legendary {displayShows.length === 1 ? 'performance' : 'performances'}
-            </Text>
-          </View>
-
           <View style={styles.showsList}>
             {displayShows.map((show) => (
               <ShowCard key={show.date} show={show} onPress={handleShowPress} />
@@ -133,26 +122,9 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   content: {
-    padding: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
+    paddingVertical: 8,
   },
   showsList: {
-    gap: 8,
-    marginHorizontal: -8,
+    gap: 0,
   },
 });

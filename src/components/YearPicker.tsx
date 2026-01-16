@@ -6,9 +6,10 @@ interface YearPickerProps {
   years: string[];
   selectedYear: string | null;
   onYearChange: (year: string | null) => void;
+  compact?: boolean;
 }
 
-export function YearPicker({ years, selectedYear, onYearChange }: YearPickerProps) {
+export function YearPicker({ years, selectedYear, onYearChange, compact = false }: YearPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSelect = (year: string | null) => {
@@ -19,16 +20,16 @@ export function YearPicker({ years, selectedYear, onYearChange }: YearPickerProp
   const displayText = selectedYear || 'All Years';
 
   return (
-    <View style={styles.container}>
+    <View style={compact ? styles.compactContainer : styles.container}>
       {/* Current Selection Button */}
       <TouchableOpacity
-        style={styles.selector}
+        style={compact ? styles.compactSelector : styles.selector}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={styles.selectorContent}>
-          <Text style={styles.yearText}>{displayText}</Text>
-          <Ionicons name="chevron-down" size={20} color="#ff6b6b" />
+        <View style={compact ? styles.compactSelectorContent : styles.selectorContent}>
+          <Text style={compact ? styles.compactYearText : styles.yearText}>{displayText}</Text>
+          <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
         </View>
       </TouchableOpacity>
 
@@ -181,5 +182,28 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: '#ff6b6b',
+  },
+  compactContainer: {
+    // No padding for compact mode
+  },
+  compactSelector: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#444',
+    overflow: 'hidden',
+  },
+  compactSelectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  compactYearText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

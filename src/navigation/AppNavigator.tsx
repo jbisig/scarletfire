@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
-import { SOTDScreen } from '../screens/SOTDScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { ClassicsScreen } from '../screens/ClassicsScreen';
@@ -19,7 +18,6 @@ import { View, StyleSheet } from 'react-native';
 export type RootStackParamList = {
   Home: undefined;
   ShowDetail: { identifier: string };
-  SOTD: undefined;
   Favorites: undefined;
   DiscoverLanding: undefined;
   Classics: undefined;
@@ -45,13 +43,15 @@ function ShowsStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontFamily: 'FamiljenGrotesk',
+          fontSize: 18,
         },
       }}
     >
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Scarlet>fire' }}
+        options={{ title: 'Shows' }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -73,6 +73,8 @@ function SongsStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontFamily: 'FamiljenGrotesk',
+          fontSize: 18,
         },
       }}
     >
@@ -107,6 +109,8 @@ function FavoritesStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontFamily: 'FamiljenGrotesk',
+          fontSize: 18,
         },
       }}
     >
@@ -135,6 +139,8 @@ function DiscoverStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontFamily: 'FamiljenGrotesk',
+          fontSize: 18,
         },
       }}
     >
@@ -142,11 +148,6 @@ function DiscoverStack() {
         name="DiscoverLanding"
         component={DiscoverLandingScreen}
         options={{ title: 'Discover' }}
-      />
-      <Stack.Screen
-        name="SOTD"
-        component={SOTDScreen}
-        options={{ title: 'Show of the Day' }}
       />
       <Stack.Screen
         name="Classics"

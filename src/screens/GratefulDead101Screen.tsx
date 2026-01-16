@@ -127,8 +127,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 42,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginTop: 16,
     marginBottom: 8,

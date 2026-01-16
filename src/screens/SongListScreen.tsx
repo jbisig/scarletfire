@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -22,9 +24,11 @@ interface SongItem {
 
 export function SongListScreen() {
   const navigation = useNavigation<SongListNavigationProp>();
+  const searchInputRef = useRef<TextInput>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadSongs();
@@ -50,6 +54,22 @@ export function SongListScreen() {
       songTitle: song.title,
       performances: song.performances,
     });
+  };
+
+  // Filter songs based on search query
+  const filteredSongs = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return songs;
+    }
+    const query = searchQuery.toLowerCase();
+    return songs.filter(song =>
+      song.title.toLowerCase().includes(query)
+    );
+  }, [songs, searchQuery]);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    searchInputRef.current?.blur();
   };
 
   const renderSongItem = ({ item }: { item: SongItem }) => (
@@ -81,7 +101,7 @@ export function SongListScreen() {
     let currentLetter = '';
     let currentData: SongItem[] = [];
 
-    songs.forEach(song => {
+    filteredSongs.forEach(song => {
       const firstLetter = song.title[0].toUpperCase();
       if (firstLetter !== currentLetter) {
         if (currentData.length > 0) {
@@ -139,20 +159,51 @@ export function SongListScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={renderFlatListData()}
-        renderItem={({ item }) => {
-          if (item.type === 'header') {
-            return renderSectionHeader(item.letter!);
+      {/* Fixed Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+        <TextInput
+          ref={searchInputRef}
+          style={styles.searchInput}
+          placeholder="Search songs..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={handleClearSearch}
+            style={styles.clearButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close-circle" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Songs List */}
+      {filteredSongs.length === 0 && searchQuery.trim() ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>No songs found matching "{searchQuery}"</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={renderFlatListData()}
+          renderItem={({ item }) => {
+            if (item.type === 'header') {
+              return renderSectionHeader(item.letter!);
+            }
+            return renderSongItem({ item: item.item! });
+          }}
+          keyExtractor={(item, index) =>
+            item.type === 'header' ? `header-${item.letter}` : `song-${item.item!.title}-${index}`
           }
-          return renderSongItem({ item: item.item! });
-        }}
-        keyExtractor={(item, index) =>
-          item.type === 'header' ? `header-${item.letter}` : `song-${item.item!.title}-${index}`
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={true}
-      />
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={true}
+        />
+      )}
     </View>
   );
 }
@@ -161,6 +212,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
   },
   centerContainer: {
     flex: 1,
@@ -179,6 +251,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ff6b6b',
     marginBottom: 16,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
     textAlign: 'center',
   },
   retryButton: {
@@ -203,8 +280,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333',
   },
   sectionHeaderText: {
-    fontSize: 18,
+    fontSize: 27,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ff6b6b',
   },
   songItem: {

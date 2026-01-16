@@ -56,8 +56,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   venue: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 4,
   },

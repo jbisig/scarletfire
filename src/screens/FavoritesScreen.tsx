@@ -216,8 +216,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 12,
   },
@@ -245,8 +246,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   songTitle: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '600',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 4,
   },

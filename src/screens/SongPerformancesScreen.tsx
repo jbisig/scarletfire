@@ -174,8 +174,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
   },
   songTitle: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 8,
   },

@@ -9,14 +9,19 @@ import {
   PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { formatDate, formatTime } from '../utils/formatters';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 interface FullPlayerProps {
   visible: boolean;
   onClose: () => void;
 }
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -24,6 +29,7 @@ const { width: screenWidth } = Dimensions.get('window');
  * Full-screen player modal with playback controls
  */
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
+  const navigation = useNavigation<NavigationProp>();
   const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const progressBarRef = useRef<View>(null);
@@ -83,6 +89,12 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       };
       addFavoriteSong(favoriteSong);
     }
+  };
+
+  const handleNavigateToShow = (): void => {
+    if (!state.currentShow) return;
+    onClose(); // Close the full player first
+    navigation.navigate('ShowDetail', { identifier: state.currentShow.identifier });
   };
 
   // Progress bar pan responder for dragging
@@ -156,12 +168,22 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           <Text style={styles.trackTitle} numberOfLines={2}>
             {state.currentTrack.title}
           </Text>
-          <Text style={styles.showInfo} numberOfLines={1}>
-            {state.currentShow?.venue}
-          </Text>
-          <Text style={styles.showDate} numberOfLines={1}>
-            {state.currentShow?.date && formatDate(state.currentShow.date)}
-          </Text>
+
+          {/* Clickable Show Info */}
+          {state.currentShow && (
+            <TouchableOpacity
+              onPress={handleNavigateToShow}
+              activeOpacity={0.7}
+              style={styles.showLinkContainer}
+            >
+              <Text style={styles.showInfo} numberOfLines={1}>
+                {state.currentShow.venue}
+              </Text>
+              <Text style={styles.showDate}>
+                {formatDate(state.currentShow.date)}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Save Song Button */}
           {state.currentTrack && state.currentShow && (
@@ -269,23 +291,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trackTitle: {
-    fontSize: 28,
+    fontSize: 42,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     textAlign: 'center',
     marginBottom: 12,
   },
+  showLinkContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   showInfo: {
     fontSize: 18,
-    color: '#999',
+    color: '#ff6b6b',
     textAlign: 'center',
     marginBottom: 4,
   },
   showDate: {
     fontSize: 16,
-    color: '#999',
+    color: '#ff6b6b',
     textAlign: 'center',
-    marginBottom: 16,
   },
   saveSongButton: {
     flexDirection: 'row',

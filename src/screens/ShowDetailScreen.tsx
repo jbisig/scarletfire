@@ -198,8 +198,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 8,
   },
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   scrollContent: {
-    paddingBottom: 180,
+    paddingBottom: 90,
   },
   tracksContainer: {
     paddingVertical: 16,

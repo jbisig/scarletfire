@@ -25,7 +25,9 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSAppleMusicUsageDescription": "This app streams audio from the Internet Archive.",
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -55,7 +57,8 @@
         {
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

@@ -159,8 +159,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 42,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginTop: 16,
     marginBottom: 8,
@@ -185,8 +186,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   venue: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
     color: '#ffffff',
     marginBottom: 8,
   },
