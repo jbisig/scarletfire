@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ type SortType = 'performanceDate' | 'stars';
 export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
   const { showsByYear, isLoading } = useShows();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
   const [sortType, setSortType] = useState<SortType>('performanceDate');
@@ -43,6 +44,11 @@ export function ClassicsScreen() {
       setClassicShows(classics);
     }
   }, [showsByYear]);
+
+  // Scroll to top when era changes
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, [selectedEra]);
 
   const getSortLabel = (sort: SortType): string => {
     switch (sort) {
@@ -126,7 +132,7 @@ export function ClassicsScreen() {
       </View>
 
       {/* Classic Shows List */}
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollViewRef} style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <View style={styles.showsList}>
             {sortedAndFilteredShows.map((show) => (
