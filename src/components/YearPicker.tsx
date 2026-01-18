@@ -27,10 +27,17 @@ export function YearPicker({ years, selectedYear, onYearChange, compact = false 
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={compact ? styles.compactSelectorContent : styles.selectorContent}>
-          <Text style={compact ? styles.compactYearText : styles.yearText}>{displayText}</Text>
-          <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
-        </View>
+        {compact ? (
+          <>
+            <Text style={styles.compactYearText}>{displayText}</Text>
+            <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
+          </>
+        ) : (
+          <View style={styles.selectorContent}>
+            <Text style={styles.yearText}>{displayText}</Text>
+            <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
+          </View>
+        )}
       </TouchableOpacity>
 
       {/* Dropdown Modal */}
@@ -187,22 +194,16 @@ const styles = StyleSheet.create({
     // No padding for compact mode
   },
   compactSelector: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#444',
-    overflow: 'hidden',
-  },
-  compactSelectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#333',
+    borderRadius: 6,
     gap: 6,
   },
   compactYearText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     color: '#ffffff',
   },
