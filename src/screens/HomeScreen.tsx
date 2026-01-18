@@ -139,10 +139,25 @@ export function HomeScreen() {
           sectionIndex: 0,
           itemIndex: 0,
           animated: false,
+          viewOffset: 0,
         });
       }, 100);
     }
   }, [showsByYear, selectedYear, searchQuery]);
+
+  // Ensure scroll position is at the very top on initial mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      sectionListRef.current?.scrollToLocation({
+        sectionIndex: 0,
+        itemIndex: 0,
+        animated: false,
+        viewOffset: 0,
+      });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleShowPress = (show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
@@ -287,7 +302,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
-    paddingVertical: 8,
     paddingBottom: 180,
   },
 });
