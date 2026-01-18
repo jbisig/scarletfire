@@ -27,10 +27,8 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={styles.selectorContent}>
-          <Text style={styles.eraText}>{displayText}</Text>
-          <Ionicons name="chevron-down" size={20} color="#ff6b6b" />
-        </View>
+        <Text style={styles.eraText}>{displayText}</Text>
+        <Ionicons name="chevron-down" size={18} color="#ff6b6b" />
       </TouchableOpacity>
 
       {/* Dropdown Modal */}
@@ -113,26 +111,19 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    // No padding needed
   },
   selector: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#444',
-    overflow: 'hidden',
-  },
-  selectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#333',
+    borderRadius: 6,
+    gap: 6,
   },
   eraText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
   },
