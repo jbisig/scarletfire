@@ -75,14 +75,14 @@ export function ClassicsScreen() {
       case 'performanceDate':
         return shows.sort((a, b) => a.date.localeCompare(b.date));
       case 'stars':
-        // Sort by star rating: 3-star (tier 1) → 2-star (tier 2) → 1-star (tier 3)
+        // Sort by star rating: 3-star shows first, then 2-star, then 1-star
         // Then by date within same tier
         return shows.sort((a, b) => {
-          const tierA = a.classicTier || 999; // No tier goes last
-          const tierB = b.classicTier || 999;
+          const tierA = a.classicTier || -1; // No tier goes last
+          const tierB = b.classicTier || -1;
 
           if (tierA !== tierB) {
-            return tierA - tierB; // tier 1 (3 stars) comes before tier 2 (2 stars), etc.
+            return tierB - tierA; // Higher tier number = more stars, comes first
           }
           return a.date.localeCompare(b.date);
         });
