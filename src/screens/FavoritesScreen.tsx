@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -21,6 +22,8 @@ import { archiveApi } from '../services/archiveApi';
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
 type TabType = 'shows' | 'songs';
+type SongSortType = 'alphabetical' | 'dateSaved' | 'performanceDate';
+type ShowSortType = 'dateSaved' | 'performanceDate';
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -28,6 +31,83 @@ export function FavoritesScreen() {
   const { loadTrack } = usePlayer();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
+  const [songSortType, setSongSortType] = useState<SongSortType>('alphabetical');
+  const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDate');
+  const [showSongSortModal, setShowSongSortModal] = useState(false);
+  const [showShowSortModal, setShowShowSortModal] = useState(false);
+
+  // Sort songs based on selected sort type
+  const sortedSongs = useMemo(() => {
+    const songs = [...favoriteSongs];
+
+    switch (songSortType) {
+      case 'alphabetical':
+        return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
+
+      case 'dateSaved':
+        return songs.sort((a, b) => {
+          // Songs without savedAt go to the top (oldest)
+          if (!a.savedAt && !b.savedAt) return 0;
+          if (!a.savedAt) return -1;
+          if (!b.savedAt) return 1;
+          // Oldest saves at top, newest at bottom (ascending order)
+          return a.savedAt - b.savedAt;
+        });
+
+      case 'performanceDate':
+        return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+
+      default:
+        return songs;
+    }
+  }, [favoriteSongs, songSortType]);
+
+  // Sort shows based on selected sort type
+  const sortedShows = useMemo(() => {
+    const shows = [...favoriteShows];
+
+    switch (showSortType) {
+      case 'dateSaved':
+        return shows.sort((a, b) => {
+          // Shows without savedAt go to the top (oldest)
+          if (!a.savedAt && !b.savedAt) return 0;
+          if (!a.savedAt) return -1;
+          if (!b.savedAt) return 1;
+          // Oldest saves at top, newest at bottom (ascending order)
+          return a.savedAt - b.savedAt;
+        });
+
+      case 'performanceDate':
+        return shows.sort((a, b) => a.date.localeCompare(b.date));
+
+      default:
+        return shows;
+    }
+  }, [favoriteShows, showSortType]);
+
+  const getSongSortLabel = (sortType: SongSortType): string => {
+    switch (sortType) {
+      case 'alphabetical':
+        return 'Alphabetical';
+      case 'dateSaved':
+        return 'Date Saved';
+      case 'performanceDate':
+        return 'Performance Date';
+      default:
+        return 'Sort';
+    }
+  };
+
+  const getShowSortLabel = (sortType: ShowSortType): string => {
+    switch (sortType) {
+      case 'dateSaved':
+        return 'Date Saved';
+      case 'performanceDate':
+        return 'Performance Date';
+      default:
+        return 'Sort';
+    }
+  };
 
   const handleShowPress = (show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
@@ -76,14 +156,29 @@ export function FavoritesScreen() {
     }
 
     return (
-      <FlatList
-        data={favoriteShows}
-        keyExtractor={(item) => item.primaryIdentifier}
-        renderItem={({ item }) => (
-          <ShowCard show={item} onPress={handleShowPress} />
-        )}
-        contentContainerStyle={styles.listContent}
-      />
+      <View style={styles.songsTabContainer}>
+        {/* Sort Button */}
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setShowShowSortModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="filter" size={18} color="#ff6b6b" />
+          <Text style={styles.sortButtonText}>
+            Sort: {getShowSortLabel(showSortType)}
+          </Text>
+          <Ionicons name="chevron-down" size={18} color="#999" />
+        </TouchableOpacity>
+
+        <FlatList
+          data={sortedShows}
+          keyExtractor={(item) => item.primaryIdentifier}
+          renderItem={({ item }) => (
+            <ShowCard show={item} onPress={handleShowPress} />
+          )}
+          contentContainerStyle={styles.listContent}
+        />
+      </View>
     );
   };
 
@@ -101,8 +196,22 @@ export function FavoritesScreen() {
     }
 
     return (
-      <FlatList
-        data={favoriteSongs}
+      <View style={styles.songsTabContainer}>
+        {/* Sort Button */}
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setShowSongSortModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="filter" size={18} color="#ff6b6b" />
+          <Text style={styles.sortButtonText}>
+            Sort: {getSongSortLabel(songSortType)}
+          </Text>
+          <Ionicons name="chevron-down" size={18} color="#999" />
+        </TouchableOpacity>
+
+        <FlatList
+          data={sortedSongs}
         keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
         renderItem={({ item }) => {
           const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
@@ -137,6 +246,7 @@ export function FavoritesScreen() {
         }}
         contentContainerStyle={styles.listContent}
       />
+      </View>
     );
   };
 
@@ -166,6 +276,112 @@ export function FavoritesScreen() {
 
       {/* Tab Content */}
       {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
+
+      {/* Song Sort Modal */}
+      <Modal
+        visible={showSongSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSongSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSongSortModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort By</Text>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSongSortType('alphabetical');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Alphabetical</Text>
+              {songSortType === 'alphabetical' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSongSortType('dateSaved');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Date Saved</Text>
+              {songSortType === 'dateSaved' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSongSortType('performanceDate');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Performance Date</Text>
+              {songSortType === 'performanceDate' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Show Sort Modal */}
+      <Modal
+        visible={showShowSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowShowSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowShowSortModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort By</Text>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setShowSortType('dateSaved');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Date Saved</Text>
+              {showSortType === 'dateSaved' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setShowSortType('performanceDate');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Performance Date</Text>
+              {showSortType === 'performanceDate' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -261,5 +477,57 @@ const styles = StyleSheet.create({
   songVenue: {
     fontSize: 13,
     color: '#999',
+  },
+  songsTabContainer: {
+    flex: 1,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#2a2a2a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+    gap: 8,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
+    color: '#ffffff',
+    marginBottom: 20,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  sortOptionText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
   },
 });

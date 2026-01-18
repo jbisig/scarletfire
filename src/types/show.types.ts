@@ -13,6 +13,7 @@ export interface GratefulDeadShow {
   versions: RecordingVersion[]; // All recording versions of this show
   primaryIdentifier: string; // The main/default version to display
   title: string;
+  savedAt?: number; // Unix timestamp when the show was saved
 }
 
 export interface ShowDetail {

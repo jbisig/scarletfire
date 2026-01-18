@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ShowsByYear, ShowDetail } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
+import showsData from '../data/shows.json';
 
 interface ShowsContextType {
-  showsByYear: ShowsByYear | null;
+  showsByYear: ShowsByYear;
   isLoading: boolean;
   error: string | null;
-  loadShows: () => Promise<void>;
   showDetailsCache: Map<string, ShowDetail>;
   getShowDetail: (identifier: string) => Promise<ShowDetail>;
 }
@@ -14,26 +14,11 @@ interface ShowsContextType {
 const ShowsContext = createContext<ShowsContextType | undefined>(undefined);
 
 export function ShowsProvider({ children }: { children: React.ReactNode }) {
-  const [showsByYear, setShowsByYear] = useState<ShowsByYear | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Load shows from static data immediately
+  const [showsByYear] = useState<ShowsByYear>(showsData as ShowsByYear);
+  const [isLoading] = useState(false);
+  const [error] = useState<string | null>(null);
   const [showDetailsCache] = useState(new Map<string, ShowDetail>());
-
-  const loadShows = useCallback(async () => {
-    if (showsByYear) return; // Already loaded
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const shows = await archiveApi.getShowsByYear();
-      setShowsByYear(shows);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load shows');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showsByYear]);
 
   const getShowDetail = useCallback(async (identifier: string): Promise<ShowDetail> => {
     // Check cache first
@@ -53,7 +38,6 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
         showsByYear,
         isLoading,
         error,
-        loadShows,
         showDetailsCache,
         getShowDetail
       }}

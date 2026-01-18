@@ -39,15 +39,11 @@ export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const sectionListRef = useRef<SectionList<any>>(null);
   const searchInputRef = useRef<TextInput>(null);
-  const { showsByYear, isLoading, error, loadShows } = useShows();
+  const { showsByYear, isLoading, error } = useShows();
   const [sections, setSections] = useState<Array<{ title: string; data: GratefulDeadShow[] }>>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    loadShows();
-  }, []);
 
   // Filter shows based on search query
   const filterShows = (shows: GratefulDeadShow[], query: string): GratefulDeadShow[] => {

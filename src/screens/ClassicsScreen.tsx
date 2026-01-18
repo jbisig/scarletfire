@@ -19,13 +19,9 @@ type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cla
 
 export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
-  const { showsByYear, isLoading, loadShows } = useShows();
+  const { showsByYear, isLoading } = useShows();
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
-
-  useEffect(() => {
-    loadShows();
-  }, []);
 
   useEffect(() => {
     if (showsByYear) {

@@ -19,12 +19,8 @@ type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamLis
 
 export function GratefulDead101Screen() {
   const navigation = useNavigation<GratefulDead101ScreenNavigationProp>();
-  const { showsByYear, isLoading, loadShows } = useShows();
+  const { showsByYear, isLoading } = useShows();
   const [beginnerShows, setBeginnerShows] = useState<GratefulDeadShow[]>([]);
-
-  useEffect(() => {
-    loadShows();
-  }, []);
 
   useEffect(() => {
     if (showsByYear) {
