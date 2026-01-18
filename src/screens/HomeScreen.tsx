@@ -135,12 +135,7 @@ export function HomeScreen() {
 
       // Scroll to top when year selection or search query changes
       setTimeout(() => {
-        sectionListRef.current?.scrollToLocation({
-          sectionIndex: 0,
-          itemIndex: 0,
-          animated: false,
-          viewOffset: 0,
-        });
+        sectionListRef.current?.scrollToOffset({ offset: 0, animated: false });
       }, 100);
     }
   }, [showsByYear, selectedYear, searchQuery]);
@@ -148,13 +143,8 @@ export function HomeScreen() {
   // Ensure scroll position is at the very top on initial mount
   useEffect(() => {
     const timer = setTimeout(() => {
-      sectionListRef.current?.scrollToLocation({
-        sectionIndex: 0,
-        itemIndex: 0,
-        animated: false,
-        viewOffset: 0,
-      });
-    }, 150);
+      sectionListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }, 200);
 
     return () => clearTimeout(timer);
   }, []);
@@ -244,6 +234,8 @@ export function HomeScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onScrollBeginDrag={Keyboard.dismiss}
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
         />
       )}
     </View>
