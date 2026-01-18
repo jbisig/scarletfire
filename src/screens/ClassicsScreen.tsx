@@ -16,7 +16,7 @@ import { ShowCard } from '../components/ShowCard';
 import { EraPicker } from '../components/EraPicker';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { ERAS, CLASSIC_SHOW_DATES, Era } from '../constants/classicShows';
+import { ERAS, Era } from '../constants/classicShows';
 
 type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Classics'>;
 type SortType = 'performanceDate' | 'stars';
@@ -31,17 +31,14 @@ export function ClassicsScreen() {
 
   useEffect(() => {
     if (showsByYear) {
-      // Get all shows and filter for classic shows
+      // Get all shows and filter for classic shows (any show with a star rating)
       const allShows: GratefulDeadShow[] = [];
       Object.keys(showsByYear).forEach(year => {
         allShows.push(...showsByYear[year]);
       });
 
-      const classics = allShows.filter(show => {
-        // Extract just the date part (YYYY-MM-DD) from the ISO timestamp
-        const dateOnly = show.date.split('T')[0];
-        return CLASSIC_SHOW_DATES.includes(dateOnly);
-      });
+      // Filter for shows with a classicTier (1, 2, or 3 stars)
+      const classics = allShows.filter(show => show.classicTier !== undefined);
 
       setClassicShows(classics);
     }
