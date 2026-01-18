@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TextInput,
   Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -162,54 +163,56 @@ export function SongListScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Fixed Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput
-          ref={searchInputRef}
-          style={styles.searchInput}
-          placeholder="Search songs..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={handleClearSearch}
-            style={styles.clearButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close-circle" size={20} color="#999" />
-          </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        {/* Fixed Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            ref={searchInputRef}
+            style={styles.searchInput}
+            placeholder="Search songs..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={handleClearSearch}
+              style={styles.clearButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Songs List */}
+        {filteredSongs.length === 0 && searchQuery.trim() ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No songs found matching "{searchQuery}"</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={renderFlatListData()}
+            renderItem={({ item }) => {
+              if (item.type === 'header') {
+                return renderSectionHeader(item.letter!);
+              }
+              return renderSongItem({ item: item.item! });
+            }}
+            keyExtractor={(item, index) =>
+              item.type === 'header' ? `header-${item.letter}` : `song-${item.item!.title}-${index}`
+            }
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+          />
         )}
       </View>
-
-      {/* Songs List */}
-      {filteredSongs.length === 0 && searchQuery.trim() ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No songs found matching "{searchQuery}"</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={renderFlatListData()}
-          renderItem={({ item }) => {
-            if (item.type === 'header') {
-              return renderSectionHeader(item.letter!);
-            }
-            return renderSongItem({ item: item.item! });
-          }}
-          keyExtractor={(item, index) =>
-            item.type === 'header' ? `header-${item.letter}` : `song-${item.item!.title}-${index}`
-          }
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
-          keyboardShouldPersistTaps="handled"
-        />
-      )}
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
