@@ -15,9 +15,11 @@ interface ShowCardProps {
  */
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
   // Render star icons based on tier
+  // Tier 1 = 3 stars, Tier 2 = 2 stars, Tier 3 = 1 star
   const renderStars = (tier: 1 | 2 | 3) => {
     const stars = [];
-    for (let i = 0; i < tier; i++) {
+    const starCount = 4 - tier; // tier 1 → 3 stars, tier 2 → 2 stars, tier 3 → 1 star
+    for (let i = 0; i < starCount; i++) {
       stars.push(
         <Ionicons
           key={i}
