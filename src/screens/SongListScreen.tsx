@@ -206,6 +206,7 @@ export function SongListScreen() {
           }
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
         />
       )}
     </View>
