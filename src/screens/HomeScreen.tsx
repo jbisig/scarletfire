@@ -135,7 +135,14 @@ export function HomeScreen() {
 
       // Scroll to top when year selection or search query changes
       setTimeout(() => {
-        sectionListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        if (sectionData.length > 0) {
+          sectionListRef.current?.scrollToLocation({
+            sectionIndex: 0,
+            itemIndex: 0,
+            animated: false,
+            viewPosition: 0,
+          });
+        }
       }, 100);
     }
   }, [showsByYear, selectedYear, searchQuery]);
@@ -143,11 +150,18 @@ export function HomeScreen() {
   // Ensure scroll position is at the very top on initial mount
   useEffect(() => {
     const timer = setTimeout(() => {
-      sectionListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      if (sections.length > 0) {
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex: 0,
+          itemIndex: 0,
+          animated: false,
+          viewPosition: 0,
+        });
+      }
     }, 200);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [sections]);
 
   const handleShowPress = (show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
