@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -239,9 +241,11 @@ export function FavoritesScreen() {
         </View>
 
         {sortedAndFilteredShows.length === 0 && showSearchQuery.trim() ? (
-          <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No shows found matching "{showSearchQuery}"</Text>
-          </View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>No shows found matching "{showSearchQuery}"</Text>
+            </View>
+          </TouchableWithoutFeedback>
         ) : (
           <FlatList
             data={sortedAndFilteredShows}
@@ -251,6 +255,8 @@ export function FavoritesScreen() {
             )}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onScrollBeginDrag={Keyboard.dismiss}
           />
         )}
       </View>
@@ -310,9 +316,11 @@ export function FavoritesScreen() {
         </View>
 
         {sortedAndFilteredSongs.length === 0 && songSearchQuery.trim() ? (
-          <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No songs found matching "{songSearchQuery}"</Text>
-          </View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>No songs found matching "{songSearchQuery}"</Text>
+            </View>
+          </TouchableWithoutFeedback>
         ) : (
           <FlatList
             data={sortedAndFilteredSongs}
@@ -350,6 +358,8 @@ export function FavoritesScreen() {
             }}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onScrollBeginDrag={Keyboard.dismiss}
           />
         )}
       </View>

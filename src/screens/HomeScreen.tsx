@@ -7,6 +7,8 @@ import {
   SectionList,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -208,9 +210,11 @@ export function HomeScreen() {
 
       {/* Shows List */}
       {sections.length === 0 && searchQuery.trim() ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No shows found matching "{searchQuery}"</Text>
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No shows found matching "{searchQuery}"</Text>
+          </View>
+        </TouchableWithoutFeedback>
       ) : (
         <SectionList
           ref={sectionListRef}
@@ -223,6 +227,8 @@ export function HomeScreen() {
           contentContainerStyle={styles.listContent}
           stickySectionHeadersEnabled={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={Keyboard.dismiss}
         />
       )}
     </View>
