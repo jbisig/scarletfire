@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
@@ -16,12 +19,15 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { ERAS, CLASSIC_SHOW_DATES, Era } from '../constants/classicShows';
 
 type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Classics'>;
+type SortType = 'performanceDate' | 'stars';
 
 export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
   const { showsByYear, isLoading } = useShows();
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
+  const [sortType, setSortType] = useState<SortType>('performanceDate');
+  const [showSortModal, setShowSortModal] = useState(false);
 
   useEffect(() => {
     if (showsByYear) {
@@ -37,11 +43,53 @@ export function ClassicsScreen() {
         return CLASSIC_SHOW_DATES.includes(dateOnly);
       });
 
-      // Sort by date
-      classics.sort((a, b) => a.date.localeCompare(b.date));
       setClassicShows(classics);
     }
   }, [showsByYear]);
+
+  const getSortLabel = (sort: SortType): string => {
+    switch (sort) {
+      case 'performanceDate':
+        return 'Performance Date';
+      case 'stars':
+        return 'Stars';
+      default:
+        return 'Sort';
+    }
+  };
+
+  // Filter by era and sort based on sort type
+  const sortedAndFilteredShows = useMemo(() => {
+    let shows = [...classicShows];
+
+    // Filter by era
+    if (selectedEra) {
+      shows = shows.filter(show => {
+        const showYear = parseInt(show.year);
+        return showYear >= selectedEra.startYear && showYear <= selectedEra.endYear;
+      });
+    }
+
+    // Sort based on selected sort type
+    switch (sortType) {
+      case 'performanceDate':
+        return shows.sort((a, b) => a.date.localeCompare(b.date));
+      case 'stars':
+        // Sort by tier (higher tier = more stars = first)
+        // Then by date within same tier
+        return shows.sort((a, b) => {
+          const tierA = a.classicTier || 999; // No tier goes last
+          const tierB = b.classicTier || 999;
+
+          if (tierA !== tierB) {
+            return tierA - tierB; // Lower tier number = more stars
+          }
+          return a.date.localeCompare(b.date);
+        });
+      default:
+        return shows;
+    }
+  }, [classicShows, selectedEra, sortType]);
 
   const handleShowPress = (show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
@@ -49,16 +97,6 @@ export function ClassicsScreen() {
 
   const handleEraChange = (era: Era | null) => {
     setSelectedEra(era);
-  };
-
-  const getDisplayShows = () => {
-    if (selectedEra) {
-      return classicShows.filter(show => {
-        const showYear = parseInt(show.year);
-        return showYear >= selectedEra.startYear && showYear <= selectedEra.endYear;
-      });
-    }
-    return classicShows;
   };
 
   if (isLoading) {
@@ -70,27 +108,81 @@ export function ClassicsScreen() {
     );
   }
 
-  const displayShows = getDisplayShows();
-
   return (
     <View style={styles.container}>
-      {/* Era Picker */}
-      <EraPicker
-        eras={ERAS}
-        selectedEra={selectedEra}
-        onEraChange={handleEraChange}
-      />
+      {/* Era Picker and Sort Button */}
+      <View style={styles.filtersContainer}>
+        <EraPicker
+          eras={ERAS}
+          selectedEra={selectedEra}
+          onEraChange={handleEraChange}
+        />
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setShowSortModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="filter" size={18} color="#ff6b6b" />
+          <Text style={styles.sortButtonText}>{getSortLabel(sortType)}</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Classic Shows List */}
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <View style={styles.showsList}>
-            {displayShows.map((show) => (
+            {sortedAndFilteredShows.map((show) => (
               <ShowCard key={show.date} show={show} onPress={handleShowPress} />
             ))}
           </View>
         </View>
       </ScrollView>
+
+      {/* Sort Modal */}
+      <Modal
+        visible={showSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSortModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort By</Text>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSortType('performanceDate');
+                setShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Performance Date</Text>
+              {sortType === 'performanceDate' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSortType('stars');
+                setShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Stars</Text>
+              {sortType === 'stars' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -99,6 +191,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  filtersContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#1a1a1a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#333',
+    borderRadius: 6,
+    gap: 6,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   scrollContainer: {
     flex: 1,
@@ -122,5 +238,39 @@ const styles = StyleSheet.create({
   },
   showsList: {
     gap: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
+    color: '#ffffff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  sortOptionText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
   },
 });
