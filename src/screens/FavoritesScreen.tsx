@@ -20,6 +20,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { formatDate } from '../utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
@@ -32,6 +33,7 @@ export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
   const { favoriteShows, favoriteSongs, isLoading } = useFavorites();
   const { loadTrack } = usePlayer();
+  const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [songSortType, setSongSortType] = useState<SongSortType>('alphabetical');
@@ -327,6 +329,7 @@ export function FavoritesScreen() {
             keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
             renderItem={({ item }) => {
               const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
+              const playCount = getPlayCount(item.trackTitle, item.showIdentifier);
 
               return (
                 <TouchableOpacity
@@ -339,9 +342,19 @@ export function FavoritesScreen() {
                     <Text style={styles.songTitle} numberOfLines={2}>
                       {item.trackTitle}
                     </Text>
-                    <Text style={styles.songDate}>
-                      {formatDate(item.showDate)}
-                    </Text>
+                    <View style={styles.songMetaRow}>
+                      <Text style={styles.songDate}>
+                        {formatDate(item.showDate)}
+                      </Text>
+                      {playCount > 0 && (
+                        <View style={styles.playCountBadge}>
+                          <Ionicons name="play-circle" size={12} color="#ff6b6b" />
+                          <Text style={styles.playCountText}>
+                            {playCount} {playCount === 1 ? 'play' : 'plays'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     {item.venue && (
                       <Text style={styles.songVenue} numberOfLines={1}>
                         {item.venue}
@@ -584,11 +597,30 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 4,
   },
+  songMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
   songDate: {
     fontSize: 14,
     fontWeight: '500',
     color: '#ff6b6b',
-    marginBottom: 2,
+  },
+  playCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 3,
+  },
+  playCountText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ff6b6b',
   },
   songVenue: {
     fontSize: 13,
