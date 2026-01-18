@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp } from '@react-navigation/native';
@@ -15,8 +16,11 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 import { formatDate } from '../utils/formatters';
+import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { StarRating } from '../components/StarRating';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
+type SortType = 'date' | 'rating';
 
 interface Performance {
   date: string;
@@ -71,8 +75,39 @@ export function SongPerformancesScreen() {
   const { loadTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
+  const [sortType, setSortType] = useState<SortType>('date');
+  const [showSortModal, setShowSortModal] = useState(false);
 
   const { songTitle, performances } = route.params;
+
+  // Sort performances based on selected sort type
+  const sortedPerformances = useMemo(() => {
+    const performancesWithRatings = performances.map(perf => ({
+      ...perf,
+      rating: getSongPerformanceRating(songTitle, perf.date),
+    }));
+
+    switch (sortType) {
+      case 'rating':
+        // Sort by rating (1-3, with 1 being best), then by date
+        // Unrated performances go to the end
+        return performancesWithRatings.sort((a, b) => {
+          if (a.rating === null && b.rating === null) {
+            return a.date.localeCompare(b.date);
+          }
+          if (a.rating === null) return 1;
+          if (b.rating === null) return -1;
+          if (a.rating !== b.rating) {
+            return a.rating - b.rating; // Lower tier number = better rating
+          }
+          return a.date.localeCompare(b.date);
+        });
+
+      case 'date':
+      default:
+        return performancesWithRatings.sort((a, b) => a.date.localeCompare(b.date));
+    }
+  }, [performances, sortType, songTitle]);
 
   const handlePerformancePress = async (performance: Performance) => {
     try {
@@ -121,6 +156,7 @@ export function SongPerformancesScreen() {
   const renderPerformanceItem = ({ item }: { item: Performance }) => {
     const isLoading = loadingIdentifier === item.identifier;
     const playCount = getPlayCount(songTitle, item.identifier);
+    const performanceRating = getSongPerformanceRating(songTitle, item.date);
 
     return (
       <TouchableOpacity
@@ -131,7 +167,12 @@ export function SongPerformancesScreen() {
       >
         <View style={styles.performanceInfo}>
           <View style={styles.performanceHeader}>
-            <Text style={styles.performanceDate}>{formatDate(item.date)}</Text>
+            <View style={styles.dateWithStars}>
+              <Text style={styles.performanceDate}>{formatDate(item.date)}</Text>
+              {performanceRating && (
+                <StarRating tier={performanceRating} size={14} />
+              )}
+            </View>
             {playCount > 0 && (
               <View style={styles.playCountBadge}>
                 <Ionicons name="play-circle" size={14} color="#ff6b6b" />
@@ -154,24 +195,91 @@ export function SongPerformancesScreen() {
     );
   };
 
+  const getSortLabel = (type: SortType): string => {
+    switch (type) {
+      case 'rating':
+        return 'Rating';
+      case 'date':
+        return 'Date';
+      default:
+        return 'Sort';
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.songTitle} numberOfLines={2}>
           {songTitle}
         </Text>
-        <Text style={styles.performanceCount}>
-          {performances.length} performance{performances.length !== 1 ? 's' : ''}
-        </Text>
+        <View style={styles.performanceCountRow}>
+          <Text style={styles.performanceCount}>
+            {performances.length} performance{performances.length !== 1 ? 's' : ''}
+          </Text>
+          <TouchableOpacity
+            style={styles.sortButton}
+            onPress={() => setShowSortModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter" size={18} color="#ff6b6b" />
+            <Text style={styles.sortButtonText}>{getSortLabel(sortType)}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
-        data={performances}
+        data={sortedPerformances}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={true}
       />
+
+      {/* Sort Modal */}
+      <Modal
+        visible={showSortModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSortModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort By</Text>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSortType('date');
+                setShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Performance Date</Text>
+              {sortType === 'date' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sortOption}
+              onPress={() => {
+                setSortType('rating');
+                setShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortOptionText}>Rating (Best First)</Text>
+              {sortType === 'rating' && (
+                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -194,9 +302,28 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 8,
   },
+  performanceCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   performanceCount: {
     fontSize: 16,
     color: '#999',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#333',
+    borderRadius: 6,
+    gap: 6,
+  },
+  sortButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   listContent: {
     paddingBottom: 180,
@@ -220,6 +347,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
+  dateWithStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   performanceDate: {
     fontSize: 16,
     fontWeight: '600',
@@ -242,5 +374,38 @@ const styles = StyleSheet.create({
   performanceVenue: {
     fontSize: 14,
     color: '#999',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: 'FamiljenGrotesk',
+    color: '#ffffff',
+    marginBottom: 20,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  sortOptionText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
   },
 });

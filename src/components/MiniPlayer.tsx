@@ -2,7 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { formatDate } from '../utils/formatters';
+import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { StarRating } from './StarRating';
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -10,11 +13,22 @@ interface MiniPlayerProps {
 
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause } = usePlayer();
+  const { getPlayCount } = usePlayCounts();
 
   if (!state.currentTrack) return null;
 
   // Calculate progress percentage
   const progress = state.duration > 0 ? (state.position / state.duration) * 100 : 0;
+
+  // Get play count for current track
+  const playCount = state.currentTrack && state.currentShow
+    ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
+    : 0;
+
+  // Get performance rating
+  const performanceRating = state.currentTrack && state.currentShow
+    ? getSongPerformanceRating(state.currentTrack.title, state.currentShow.date)
+    : null;
 
   return (
     <View style={styles.wrapper}>
@@ -27,9 +41,22 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
           <Text style={styles.trackTitle} numberOfLines={1}>
             {state.currentTrack.title}
           </Text>
-          <Text style={styles.showTitle} numberOfLines={1}>
-            {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
-          </Text>
+          <View style={styles.showInfoRow}>
+            {performanceRating && (
+              <StarRating tier={performanceRating} size={12} />
+            )}
+            <Text style={styles.showTitle} numberOfLines={1}>
+              {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
+            </Text>
+            {playCount > 0 && (
+              <View style={styles.playCountBadge}>
+                <Ionicons name="play-circle" size={10} color="#ff6b6b" />
+                <Text style={styles.playCountText}>
+                  {playCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <TouchableOpacity
@@ -76,9 +103,29 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 2,
   },
+  showInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   showTitle: {
     fontSize: 12,
     color: '#999',
+    flex: 1,
+  },
+  playCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 3,
+  },
+  playCountText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ff6b6b',
   },
   playButton: {
     padding: 8,

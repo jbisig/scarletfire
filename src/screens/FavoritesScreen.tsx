@@ -22,6 +22,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
+import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { StarRating } from '../components/StarRating';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
@@ -330,6 +332,7 @@ export function FavoritesScreen() {
             renderItem={({ item }) => {
               const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
               const playCount = getPlayCount(item.trackTitle, item.showIdentifier);
+              const performanceRating = getSongPerformanceRating(item.trackTitle, item.showDate);
 
               return (
                 <TouchableOpacity
@@ -346,6 +349,9 @@ export function FavoritesScreen() {
                       <Text style={styles.songDate}>
                         {formatDate(item.showDate)}
                       </Text>
+                      {performanceRating && (
+                        <StarRating tier={performanceRating} size={14} />
+                      )}
                       {playCount > 0 && (
                         <View style={styles.playCountBadge}>
                           <Ionicons name="play-circle" size={12} color="#ff6b6b" />
