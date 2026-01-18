@@ -135,13 +135,9 @@ export function HomeScreen() {
 
       // Scroll to top when year selection or search query changes
       setTimeout(() => {
-        if (sectionData.length > 0) {
-          sectionListRef.current?.scrollToLocation({
-            sectionIndex: 0,
-            itemIndex: 0,
-            animated: false,
-            viewPosition: 0,
-          });
+        const scrollResponder = sectionListRef.current?.getScrollResponder();
+        if (scrollResponder && 'scrollTo' in scrollResponder) {
+          (scrollResponder as any).scrollTo({ x: 0, y: 0, animated: false });
         }
       }, 100);
     }
@@ -150,15 +146,11 @@ export function HomeScreen() {
   // Ensure scroll position is at the very top on initial mount
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (sections.length > 0) {
-        sectionListRef.current?.scrollToLocation({
-          sectionIndex: 0,
-          itemIndex: 0,
-          animated: false,
-          viewPosition: 0,
-        });
+      const scrollResponder = sectionListRef.current?.getScrollResponder();
+      if (scrollResponder && 'scrollTo' in scrollResponder) {
+        (scrollResponder as any).scrollTo({ x: 0, y: 0, animated: false });
       }
-    }, 200);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [sections]);
