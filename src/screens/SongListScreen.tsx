@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -49,6 +50,9 @@ export function SongListScreen() {
   };
 
   const handleSongPress = async (song: SongItem) => {
+    // Dismiss keyboard to prevent double-tap issue
+    Keyboard.dismiss();
+
     // Navigate to performances screen with full performance data
     navigation.navigate('SongPerformances', {
       songTitle: song.title,
