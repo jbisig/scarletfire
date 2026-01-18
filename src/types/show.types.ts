@@ -14,6 +14,7 @@ export interface GratefulDeadShow {
   primaryIdentifier: string; // The main/default version to display
   title: string;
   savedAt?: number; // Unix timestamp when the show was saved
+  classicTier?: 1 | 2 | 3; // Star rating tier (1=3 stars, 2=2 stars, 3=1 star)
 }
 
 export interface ShowDetail {

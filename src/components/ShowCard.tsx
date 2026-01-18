@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate } from '../utils/formatters';
 
@@ -13,13 +14,37 @@ interface ShowCardProps {
  * Memoized to prevent unnecessary re-renders in lists
  */
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
+  // Render star icons based on tier
+  const renderStars = (tier: 1 | 2 | 3) => {
+    const stars = [];
+    for (let i = 0; i < tier; i++) {
+      stars.push(
+        <Ionicons
+          key={i}
+          name="star"
+          size={16}
+          color="#FFD700"
+          style={{ marginRight: 2 }}
+        />
+      );
+    }
+    return stars;
+  };
+
   return (
     <TouchableOpacity
       style={styles.container}
       onPress={() => onPress(show)}
       activeOpacity={0.7}
     >
-      <Text style={styles.date}>{formatDate(show.date)}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.date}>{formatDate(show.date)}</Text>
+        {show.classicTier && (
+          <View style={styles.starsContainer}>
+            {renderStars(show.classicTier)}
+          </View>
+        )}
+      </View>
       {show.venue && (
         <Text style={styles.venue} numberOfLines={1}>
           {show.venue}
@@ -49,11 +74,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   date: {
     fontSize: 14,
     color: '#ff6b6b',
     fontWeight: '600',
-    marginBottom: 6,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   venue: {
     fontSize: 24,

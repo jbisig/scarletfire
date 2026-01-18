@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { ShowsByYear, ShowDetail } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import showsData from '../data/shows.json';
+import { getClassicTier } from '../data/classicShowsTiers';
 
 interface ShowsContextType {
   showsByYear: ShowsByYear;
@@ -14,8 +15,21 @@ interface ShowsContextType {
 const ShowsContext = createContext<ShowsContextType | undefined>(undefined);
 
 export function ShowsProvider({ children }: { children: React.ReactNode }) {
-  // Load shows from static data immediately
-  const [showsByYear] = useState<ShowsByYear>(showsData as ShowsByYear);
+  // Load shows from static data and enrich with classic tier data
+  const showsByYear = useMemo(() => {
+    const rawShowsByYear = showsData as ShowsByYear;
+    const enrichedShowsByYear: ShowsByYear = {};
+
+    Object.keys(rawShowsByYear).forEach(year => {
+      enrichedShowsByYear[year] = rawShowsByYear[year].map(show => {
+        const tier = getClassicTier(show.date);
+        return tier ? { ...show, classicTier: tier } : show;
+      });
+    });
+
+    return enrichedShowsByYear;
+  }, []);
+
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
   const [showDetailsCache] = useState(new Map<string, ShowDetail>());
