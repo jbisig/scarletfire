@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
 import { favoritesCloudService } from '../services/favoritesCloudService';
+import { getClassicTier } from '../data/classicShowsTiers';
 
 const FAVORITES_SHOWS_STORAGE_KEY = '@grateful_dead_favorites_shows';
 const FAVORITES_SONGS_STORAGE_KEY = '@grateful_dead_favorites_songs';
@@ -38,6 +39,14 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
 
+  // Helper function to enrich shows with classic tier data
+  const enrichShowsWithTier = (shows: GratefulDeadShow[]): GratefulDeadShow[] => {
+    return shows.map(show => {
+      const tier = getClassicTier(show.date);
+      return tier ? { ...show, classicTier: tier } : show;
+    });
+  };
+
   // Load favorites from AsyncStorage on mount
   useEffect(() => {
     loadFavorites();
@@ -61,7 +70,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         const sorted = parsed.sort((a: GratefulDeadShow, b: GratefulDeadShow) =>
           a.date.localeCompare(b.date)
         );
-        setFavoriteShows(sorted);
+        const enriched = enrichShowsWithTier(sorted);
+        setFavoriteShows(enriched);
       } else {
         // Load shows from new storage
         const storedShows = await AsyncStorage.getItem(FAVORITES_SHOWS_STORAGE_KEY);
@@ -70,7 +80,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           const sorted = parsed.sort((a: GratefulDeadShow, b: GratefulDeadShow) =>
             a.date.localeCompare(b.date)
           );
-          setFavoriteShows(sorted);
+          const enriched = enrichShowsWithTier(sorted);
+          setFavoriteShows(enriched);
         }
       }
 
@@ -122,6 +133,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         ),
       ].sort((a, b) => a.date.localeCompare(b.date));
 
+      // Enrich merged shows with classic tier data
+      const enrichedShows = enrichShowsWithTier(mergedShows);
+
       // Merge cloud + local songs (deduplicate by trackId + showIdentifier)
       const mergedSongs = [
         ...favoriteSongs,
@@ -136,13 +150,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return a.showDate.localeCompare(b.showDate);
       });
 
-      setFavoriteShows(mergedShows);
+      setFavoriteShows(enrichedShows);
       setFavoriteSongs(mergedSongs);
 
       // Save merged back to both local and cloud
-      await AsyncStorage.setItem(FAVORITES_SHOWS_STORAGE_KEY, JSON.stringify(mergedShows));
+      await AsyncStorage.setItem(FAVORITES_SHOWS_STORAGE_KEY, JSON.stringify(enrichedShows));
       await AsyncStorage.setItem(FAVORITES_SONGS_STORAGE_KEY, JSON.stringify(mergedSongs));
-      await favoritesCloudService.syncFavorites(userId, mergedShows, mergedSongs);
+      await favoritesCloudService.syncFavorites(userId, enrichedShows, mergedSongs);
     } catch (error) {
       console.error('Failed to sync from cloud:', error);
     }
@@ -159,8 +173,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, [favoriteSongs]);
 
   const addFavoriteShow = async (show: GratefulDeadShow) => {
-    // Add timestamp when saving
-    const showWithTimestamp = { ...show, savedAt: Date.now() };
+    // Add timestamp and enrich with tier data
+    const tier = getClassicTier(show.date);
+    const enrichedShow = tier ? { ...show, classicTier: tier } : show;
+    const showWithTimestamp = { ...enrichedShow, savedAt: Date.now() };
     const newFavorites = [...favoriteShows, showWithTimestamp].sort((a, b) =>
       a.date.localeCompare(b.date)
     );
