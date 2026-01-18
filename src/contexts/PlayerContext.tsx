@@ -1,8 +1,9 @@
-import React, { createContext, useReducer, useContext, useEffect, useRef } from 'react';
-import { AVPlaybackStatus } from 'expo-av';
+import React, { createContext, useReducer, useContext, useEffect, useRef, useState } from 'react';
+import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction } from '../types/player.types';
 import { Track, ShowDetail } from '../types/show.types';
 import { audioService } from '../services/audioService';
+import { usePlayCounts } from './PlayCountsContext';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -31,7 +32,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       };
 
     case 'PLAY':
-      return { ...state, isPlaying: true };
+      return { ...state, isPlaying: true, isLoading: false };
 
     case 'PAUSE':
       return { ...state, isPlaying: false, shouldAutoPlay: false };
@@ -39,16 +40,15 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
     case 'STOP':
       return initialState;
 
-    case 'UPDATE_STATUS':
-      if (!action.status.isLoaded) return state;
-
+    case 'UPDATE_POSITION':
       return {
         ...state,
-        isLoading: false,
-        position: action.status.positionMillis || 0,
-        duration: action.status.durationMillis || 0,
-        isPlaying: action.status.isPlaying
+        position: action.position,
+        duration: action.duration,
       };
+
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.isLoading };
 
     case 'NEXT_TRACK':
       const nextIndex = state.currentTrackIndex + 1;
@@ -57,8 +57,9 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[nextIndex],
           currentTrackIndex: nextIndex,
-          isLoading: true,
-          shouldAutoPlay: true
+          // Don't set isLoading - track is already in the queue
+          position: 0,
+          duration: 0,
         };
       }
       return state;
@@ -70,8 +71,9 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[prevIndex],
           currentTrackIndex: prevIndex,
-          isLoading: true,
-          shouldAutoPlay: true
+          // Don't set isLoading - track is already in the queue
+          position: 0,
+          duration: 0,
         };
       }
       return state;
@@ -101,6 +103,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
   const isAdvancingTrackRef = useRef(false);
   const currentLoadingTrackIdRef = useRef<string | null>(null);
+  const hasRecordedPlayRef = useRef(false);
+  const { recordTrackPlay } = usePlayCounts();
 
   useEffect(() => {
     audioService.initialize();
@@ -115,23 +119,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
       audioService.loadTrack(
         state.currentTrack,
-        (status: AVPlaybackStatus) => {
-          // Ignore callbacks from old track if we're advancing
-          if (isAdvancingTrackRef.current) {
-            return;
-          }
-
-          // Auto-advance to next track when current track finishes
-          if (status.isLoaded && status.didJustFinish) {
-            isAdvancingTrackRef.current = true;
-            dispatch({ type: 'NEXT_TRACK' });
-            return;
-          }
-
-          dispatch({ type: 'UPDATE_STATUS', status });
-        }
+        state.currentShow || undefined,
+        state.playlist  // Pass full playlist for gapless playback
       ).then(() => {
         isAdvancingTrackRef.current = false;
+        dispatch({ type: 'SET_LOADING', isLoading: false });
 
         // Only play if we're still on the same track (prevent race condition)
         if (currentLoadingTrackIdRef.current !== trackId) {
@@ -142,16 +134,93 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           audioService.play().then(() => {
             dispatch({ type: 'PLAY' });
           }).catch((error) => {
-            // Error is already logged by audioService
             console.error('Auto-play failed:', error.message);
           });
         }
       }).catch((error) => {
-        // Error is already logged by audioService
         console.error('Track load failed:', error.message);
+        dispatch({ type: 'SET_LOADING', isLoading: false });
       });
     }
   }, [state.currentTrack, state.isLoading, state.shouldAutoPlay]);
+
+  // Listen to playback state changes from native audio player
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackState, (event) => {
+      const playbackState = event.state;
+
+      // Debug logging from Swift
+      if (event.debug) {
+        console.log('[SWIFT DEBUG]', event.debug);
+      }
+
+      if (playbackState === 'playing') {
+        dispatch({ type: 'PLAY' });
+      } else if (playbackState === 'paused') {
+        dispatch({ type: 'PAUSE' });
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Listen to track changes for gapless playback
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackTrackChanged, () => {
+      console.log('Track changed - gapless playback working!');
+      // Auto-advance to next track in our state when native player advances
+      isAdvancingTrackRef.current = true;
+      dispatch({ type: 'NEXT_TRACK' });
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Listen to queue end event (all tracks finished)
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
+      console.log('Playback queue ended');
+      dispatch({ type: 'STOP' });
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Update position and duration from native audio player progress events
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, (data) => {
+      const position = data.position * 1000; // Convert seconds to milliseconds
+      const duration = data.duration * 1000;
+      dispatch({ type: 'UPDATE_POSITION', position, duration });
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Reset recording flag when track changes
+  useEffect(() => {
+    hasRecordedPlayRef.current = false;
+  }, [state.currentTrack?.id, state.currentShow?.identifier]);
+
+  // Monitor playback progress for 50% threshold
+  useEffect(() => {
+    if (
+      !hasRecordedPlayRef.current &&
+      state.isPlaying &&
+      state.currentTrack &&
+      state.currentShow &&
+      state.duration > 0 &&
+      state.position >= state.duration * 0.5
+    ) {
+      // Record the play (reached 50% threshold)
+      hasRecordedPlayRef.current = true;
+      recordTrackPlay(
+        state.currentTrack.title,
+        state.currentShow.identifier,
+        state.currentShow.date
+      );
+    }
+  }, [state.position, state.duration, state.isPlaying, state.currentTrack, state.currentShow, recordTrackPlay]);
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
@@ -185,12 +254,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const nextTrack = () => {
-    dispatch({ type: 'NEXT_TRACK' });
+  const nextTrack = async () => {
+    try {
+      // Call native skip - this will trigger playback-track-changed event
+      // which will update our state
+      await audioService.skipToNext();
+    } catch (error) {
+      console.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
+    }
   };
 
-  const previousTrack = () => {
-    dispatch({ type: 'PREVIOUS_TRACK' });
+  const previousTrack = async () => {
+    try {
+      console.log('previousTrack called - dispatching PREVIOUS_TRACK action');
+
+      // Manually dispatch PREVIOUS_TRACK to update React state
+      // (Native code won't send playback-track-changed for backward skip)
+      dispatch({ type: 'PREVIOUS_TRACK' });
+
+      // Call native skip to rebuild queue from previous track
+      await audioService.skipToPrevious();
+      console.log('audioService.skipToPrevious() completed');
+    } catch (error) {
+      console.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
+    }
   };
 
   const seekTo = async (position: number) => {

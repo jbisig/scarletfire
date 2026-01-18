@@ -5,6 +5,8 @@ import { useFonts } from 'expo-font';
 import { PlayerProvider } from './src/contexts/PlayerContext';
 import { ShowsProvider } from './src/contexts/ShowsContext';
 import { FavoritesProvider } from './src/contexts/FavoritesContext';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 export default function App() {
@@ -19,14 +21,18 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ShowsProvider>
-        <FavoritesProvider>
-          <PlayerProvider>
-            <AppNavigator />
-            <StatusBar style="light" />
-          </PlayerProvider>
-        </FavoritesProvider>
-      </ShowsProvider>
+      <AuthProvider>
+        <ShowsProvider>
+          <FavoritesProvider>
+            <PlayCountsProvider>
+              <PlayerProvider>
+                <AppNavigator />
+                <StatusBar style="light" />
+              </PlayerProvider>
+            </PlayCountsProvider>
+          </FavoritesProvider>
+        </ShowsProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

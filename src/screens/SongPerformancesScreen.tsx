@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 import { formatDate } from '../utils/formatters';
 
@@ -67,6 +69,7 @@ function normalizeTrackTitle(title: string): string {
 export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
   const { loadTrack } = usePlayer();
+  const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
 
   const { songTitle, performances } = route.params;
@@ -117,6 +120,7 @@ export function SongPerformancesScreen() {
 
   const renderPerformanceItem = ({ item }: { item: Performance }) => {
     const isLoading = loadingIdentifier === item.identifier;
+    const playCount = getPlayCount(songTitle, item.identifier);
 
     return (
       <TouchableOpacity
@@ -126,7 +130,17 @@ export function SongPerformancesScreen() {
         disabled={isLoading}
       >
         <View style={styles.performanceInfo}>
-          <Text style={styles.performanceDate}>{formatDate(item.date)}</Text>
+          <View style={styles.performanceHeader}>
+            <Text style={styles.performanceDate}>{formatDate(item.date)}</Text>
+            {playCount > 0 && (
+              <View style={styles.playCountBadge}>
+                <Ionicons name="play-circle" size={14} color="#ff6b6b" />
+                <Text style={styles.playCountText}>
+                  {playCount} {playCount === 1 ? 'play' : 'plays'}
+                </Text>
+              </View>
+            )}
+          </View>
           {item.venue && (
             <Text style={styles.performanceVenue} numberOfLines={2}>
               {item.venue}
@@ -200,11 +214,30 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
+  performanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   performanceDate: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ff6b6b',
-    marginBottom: 4,
+  },
+  playCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  playCountText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ff6b6b',
   },
   performanceVenue: {
     fontSize: 14,
