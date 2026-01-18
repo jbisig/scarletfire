@@ -13,7 +13,9 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { AuthNavigator } from './AuthNavigator';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -34,6 +36,8 @@ const Tab = createBottomTabNavigator();
 
 // Stack navigator for Shows tab
 function ShowsStack() {
+  const { logout, showLogin, state: authState } = useAuth();
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -51,7 +55,33 @@ function ShowsStack() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Shows' }}
+        options={{
+          title: 'Shows',
+          headerRight: () => {
+            if (authState.isAuthenticated) {
+              // Show logout button for authenticated users
+              return (
+                <TouchableOpacity
+                  onPress={logout}
+                  style={{ marginRight: 16 }}
+                >
+                  <Ionicons name="log-out-outline" size={24} color="#ff6b6b" />
+                </TouchableOpacity>
+              );
+            } else if (authState.hasSkippedLogin) {
+              // Show login button for users who skipped
+              return (
+                <TouchableOpacity
+                  onPress={showLogin}
+                  style={{ marginRight: 16 }}
+                >
+                  <Ionicons name="log-in-outline" size={24} color="#ff6b6b" />
+                </TouchableOpacity>
+              );
+            }
+            return null;
+          },
+        }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -170,11 +200,29 @@ function DiscoverStack() {
 
 export function AppNavigator() {
   const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
+  const { state: authState } = useAuth();
+
+  // Show loading while checking auth
+  if (authState.isLoading) {
+    return (
+      <NavigationContainer>
+        <View style={[styles.container, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color="#ff6b6b" />
+        </View>
+      </NavigationContainer>
+    );
+  }
+
+  // Show auth flow if not authenticated and hasn't skipped
+  const showAuthFlow = !authState.isAuthenticated && !authState.hasSkippedLogin;
 
   return (
     <NavigationContainer>
-      <View style={styles.container}>
-        <Tab.Navigator
+      {showAuthFlow ? (
+        <AuthNavigator />
+      ) : (
+        <View style={styles.container}>
+          <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarIcon: ({ focused, color, size }) => {
@@ -241,7 +289,8 @@ export function AppNavigator() {
           visible={isFullPlayerVisible}
           onClose={() => setIsFullPlayerVisible(false)}
         />
-      </View>
+        </View>
+      )}
     </NavigationContainer>
   );
 }
@@ -250,6 +299,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
   },
   miniPlayerContainer: {
     position: 'absolute',

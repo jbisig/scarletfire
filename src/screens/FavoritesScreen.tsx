@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,11 +36,33 @@ export function FavoritesScreen() {
   const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDate');
   const [showSongSortModal, setShowSongSortModal] = useState(false);
   const [showShowSortModal, setShowShowSortModal] = useState(false);
+  const [showSearchQuery, setShowSearchQuery] = useState('');
+  const [songSearchQuery, setSongSearchQuery] = useState('');
+  const showSearchInputRef = useRef<TextInput>(null);
+  const songSearchInputRef = useRef<TextInput>(null);
 
-  // Sort songs based on selected sort type
-  const sortedSongs = useMemo(() => {
-    const songs = [...favoriteSongs];
+  // Filter and sort songs based on search query and sort type
+  const sortedAndFilteredSongs = useMemo(() => {
+    let songs = [...favoriteSongs];
 
+    // Filter by search query
+    if (songSearchQuery.trim()) {
+      const lowerQuery = songSearchQuery.toLowerCase();
+      songs = songs.filter(song => {
+        // Search in track title
+        if (song.trackTitle.toLowerCase().includes(lowerQuery)) return true;
+
+        // Search in date (various formats)
+        if (song.showDate.includes(lowerQuery)) return true;
+
+        // Search in venue
+        if (song.venue?.toLowerCase().includes(lowerQuery)) return true;
+
+        return false;
+      });
+    }
+
+    // Sort based on selected sort type
     switch (songSortType) {
       case 'alphabetical':
         return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
@@ -60,12 +83,33 @@ export function FavoritesScreen() {
       default:
         return songs;
     }
-  }, [favoriteSongs, songSortType]);
+  }, [favoriteSongs, songSortType, songSearchQuery]);
 
-  // Sort shows based on selected sort type
-  const sortedShows = useMemo(() => {
-    const shows = [...favoriteShows];
+  // Filter and sort shows based on search query and sort type
+  const sortedAndFilteredShows = useMemo(() => {
+    let shows = [...favoriteShows];
 
+    // Filter by search query
+    if (showSearchQuery.trim()) {
+      const lowerQuery = showSearchQuery.toLowerCase();
+      shows = shows.filter(show => {
+        // Search in title
+        if (show.title?.toLowerCase().includes(lowerQuery)) return true;
+
+        // Search in date
+        if (show.date.includes(lowerQuery)) return true;
+
+        // Search in venue
+        if (show.venue?.toLowerCase().includes(lowerQuery)) return true;
+
+        // Search in location
+        if (show.location?.toLowerCase().includes(lowerQuery)) return true;
+
+        return false;
+      });
+    }
+
+    // Sort based on selected sort type
     switch (showSortType) {
       case 'dateSaved':
         return shows.sort((a, b) => {
@@ -83,7 +127,7 @@ export function FavoritesScreen() {
       default:
         return shows;
     }
-  }, [favoriteShows, showSortType]);
+  }, [favoriteShows, showSortType, showSearchQuery]);
 
   const getSongSortLabel = (sortType: SongSortType): string => {
     switch (sortType) {
@@ -156,28 +200,59 @@ export function FavoritesScreen() {
     }
 
     return (
-      <View style={styles.songsTabContainer}>
-        {/* Sort Button */}
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setShowShowSortModal(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="filter" size={18} color="#ff6b6b" />
-          <Text style={styles.sortButtonText}>
-            Sort: {getShowSortLabel(showSortType)}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color="#999" />
-        </TouchableOpacity>
-
-        <FlatList
-          data={sortedShows}
-          keyExtractor={(item) => item.primaryIdentifier}
-          renderItem={({ item }) => (
-            <ShowCard show={item} onPress={handleShowPress} />
+      <View style={styles.tabContentContainer}>
+        {/* Search Bar with Sort Button */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            ref={showSearchInputRef}
+            style={styles.searchInput}
+            placeholder="Date, venue, location"
+            placeholderTextColor="#999"
+            value={showSearchQuery}
+            onChangeText={setShowSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {showSearchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                setShowSearchQuery('');
+                showSearchInputRef.current?.blur();
+              }}
+              style={styles.clearButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
           )}
-          contentContainerStyle={styles.listContent}
-        />
+          <TouchableOpacity
+            style={styles.sortButtonInSearch}
+            onPress={() => setShowShowSortModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter" size={18} color="#ff6b6b" />
+            <Text style={styles.sortButtonInSearchText}>
+              {getShowSortLabel(showSortType)}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {sortedAndFilteredShows.length === 0 && showSearchQuery.trim() ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No shows found matching "{showSearchQuery}"</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={sortedAndFilteredShows}
+            keyExtractor={(item) => item.primaryIdentifier}
+            renderItem={({ item }) => (
+              <ShowCard show={item} onPress={handleShowPress} />
+            )}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
       </View>
     );
   };
@@ -196,56 +271,87 @@ export function FavoritesScreen() {
     }
 
     return (
-      <View style={styles.songsTabContainer}>
-        {/* Sort Button */}
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setShowSongSortModal(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="filter" size={18} color="#ff6b6b" />
-          <Text style={styles.sortButtonText}>
-            Sort: {getSongSortLabel(songSortType)}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color="#999" />
-        </TouchableOpacity>
-
-        <FlatList
-          data={sortedSongs}
-        keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
-        renderItem={({ item }) => {
-          const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
-
-          return (
+      <View style={styles.tabContentContainer}>
+        {/* Search Bar with Sort Button */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            ref={songSearchInputRef}
+            style={styles.searchInput}
+            placeholder="Song, date, venue"
+            placeholderTextColor="#999"
+            value={songSearchQuery}
+            onChangeText={setSongSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {songSearchQuery.length > 0 && (
             <TouchableOpacity
-              style={styles.songItem}
-              onPress={() => handleSongPress(item)}
+              onPress={() => {
+                setSongSearchQuery('');
+                songSearchInputRef.current?.blur();
+              }}
+              style={styles.clearButton}
               activeOpacity={0.7}
-              disabled={isLoading}
             >
-              <View style={styles.songInfo}>
-                <Text style={styles.songTitle} numberOfLines={2}>
-                  {item.trackTitle}
-                </Text>
-                <Text style={styles.songDate}>
-                  {formatDate(item.showDate)}
-                </Text>
-                {item.venue && (
-                  <Text style={styles.songVenue} numberOfLines={1}>
-                    {item.venue}
-                  </Text>
-                )}
-              </View>
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#ff6b6b" />
-              ) : (
-                <Ionicons name="play-circle-outline" size={32} color="#ff6b6b" />
-              )}
+              <Ionicons name="close-circle" size={20} color="#999" />
             </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={styles.listContent}
-      />
+          )}
+          <TouchableOpacity
+            style={styles.sortButtonInSearch}
+            onPress={() => setShowSongSortModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter" size={18} color="#ff6b6b" />
+            <Text style={styles.sortButtonInSearchText}>
+              {getSongSortLabel(songSortType)}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {sortedAndFilteredSongs.length === 0 && songSearchQuery.trim() ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No songs found matching "{songSearchQuery}"</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={sortedAndFilteredSongs}
+            keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
+            renderItem={({ item }) => {
+              const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
+
+              return (
+                <TouchableOpacity
+                  style={styles.songItem}
+                  onPress={() => handleSongPress(item)}
+                  activeOpacity={0.7}
+                  disabled={isLoading}
+                >
+                  <View style={styles.songInfo}>
+                    <Text style={styles.songTitle} numberOfLines={2}>
+                      {item.trackTitle}
+                    </Text>
+                    <Text style={styles.songDate}>
+                      {formatDate(item.showDate)}
+                    </Text>
+                    {item.venue && (
+                      <Text style={styles.songVenue} numberOfLines={1}>
+                        {item.venue}
+                      </Text>
+                    )}
+                  </View>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#ff6b6b" />
+                  ) : (
+                    <Ionicons name="play-circle-outline" size={32} color="#ff6b6b" />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
       </View>
     );
   };
@@ -477,6 +583,46 @@ const styles = StyleSheet.create({
   songVenue: {
     fontSize: 13,
     color: '#999',
+  },
+  tabContentContainer: {
+    flex: 1,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  sortButtonInSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginLeft: 8,
+    backgroundColor: '#333',
+    borderRadius: 6,
+    gap: 6,
+  },
+  sortButtonInSearchText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   songsTabContainer: {
     flex: 1,
