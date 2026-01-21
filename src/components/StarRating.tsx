@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../constants/theme';
 
 export type PerformanceRatingTier = 1 | 2 | 3;
 
@@ -18,13 +19,14 @@ interface StarRatingProps {
  * Tier 3 = 1 star (notable)
  *
  * Follows the same tier-to-star mapping as ShowCard
+ * Memoized to prevent unnecessary re-renders
  */
-export function StarRating({
+export const StarRating = React.memo<StarRatingProps>(function StarRating({
   tier,
   size = 16,
-  color = '#FFD700',
+  color = COLORS.accent,
   style
-}: StarRatingProps) {
+}) {
   const starCount = 4 - tier; // Tier 1 → 3 stars, Tier 2 → 2 stars, Tier 3 → 1 star
 
   return (
@@ -40,7 +42,7 @@ export function StarRating({
       ))}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   starsContainer: {

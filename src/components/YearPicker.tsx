@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface YearPickerProps {
   years: string[];
@@ -9,8 +11,9 @@ interface YearPickerProps {
   compact?: boolean;
 }
 
-export function YearPicker({ years, selectedYear, onYearChange, compact = false }: YearPickerProps) {
+export const YearPicker = React.memo<YearPickerProps>(function YearPicker({ years, selectedYear, onYearChange, compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleSelect = (year: string | null) => {
     onYearChange(year);
@@ -30,93 +33,91 @@ export function YearPicker({ years, selectedYear, onYearChange, compact = false 
         {compact ? (
           <>
             <Text style={styles.compactYearText}>{displayText}</Text>
-            <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
+            <Ionicons name="chevron-down" size={16} color={COLORS.accent} />
           </>
         ) : (
           <View style={styles.selectorContent}>
             <Text style={styles.yearText}>{displayText}</Text>
-            <Ionicons name="chevron-down" size={16} color="#ff6b6b" />
+            <Ionicons name="chevron-down" size={16} color={COLORS.accent} />
           </View>
         )}
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
+      {/* Fullscreen Dropdown Modal */}
       <Modal
         visible={isOpen}
-        transparent={true}
-        animationType="fade"
+        animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsOpen(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsOpen(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Year</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.optionsList}>
-              {/* All Years Option */}
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  selectedYear === null && styles.selectedOption,
-                ]}
-                onPress={() => handleSelect(null)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.optionContent}>
-                  <Text style={[styles.yearOption, selectedYear === null && styles.selectedText]}>
-                    All Years
-                  </Text>
-                  {selectedYear === null && (
-                    <Ionicons name="checkmark-circle" size={24} color="#ff6b6b" />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              {/* Individual Years */}
-              {years.map((year) => {
-                const isSelected = year === selectedYear;
-                return (
-                  <TouchableOpacity
-                    key={year}
-                    style={[
-                      styles.option,
-                      isSelected && styles.selectedOption,
-                    ]}
-                    onPress={() => handleSelect(year)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.optionContent}>
-                      <Text style={[styles.yearOption, isSelected && styles.selectedText]}>
-                        {year}
-                      </Text>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#ff6b6b" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Year</Text>
+            <TouchableOpacity
+              onPress={() => setIsOpen(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+
+          {/* Year List */}
+          <ScrollView
+            style={styles.optionsList}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          >
+            {/* All Years Option */}
+            <TouchableOpacity
+              style={styles.option}
+              onPress={() => handleSelect(null)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.yearOption,
+                selectedYear === null && styles.selectedText
+              ]}>
+                All Years
+              </Text>
+              {selectedYear === null && (
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            {/* Individual Years */}
+            {years.map((year) => {
+              const isSelected = year === selectedYear;
+              return (
+                <TouchableOpacity
+                  key={year}
+                  style={styles.option}
+                  onPress={() => handleSelect(year)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.yearOption,
+                    isSelected && styles.selectedText
+                  ]}>
+                    {year}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 8,
     paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   selector: {
     backgroundColor: '#2a2a2a',
@@ -135,76 +136,71 @@ const styles = StyleSheet.create({
   yearText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
-  modalOverlay: {
+  // Fullscreen modal styles
+  modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    borderWidth: 1,
-    borderColor: '#333',
+    backgroundColor: COLORS.background,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
   },
   optionsList: {
-    maxHeight: 500,
+    flex: 1,
   },
   option: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
-  },
-  selectedOption: {
-    backgroundColor: '#2a2a2a',
-  },
-  optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
   yearOption: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   selectedText: {
-    color: '#ff6b6b',
+    color: COLORS.accent,
   },
+  // Compact styles (for inline use)
   compactContainer: {
     // No padding for compact mode
   },
   compactSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: '#333',
-    borderRadius: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 24,
+    height: 48,
     gap: 6,
   },
   compactYearText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
 });

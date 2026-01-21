@@ -15,6 +15,9 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
+import { useDebounce } from '../hooks/useDebounce';
+import { PageHeader } from '../components/PageHeader';
+import { COLORS, FONTS } from '../constants/theme';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -31,8 +34,13 @@ export function SongListScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
+    // Hide the default header
+    navigation.setOptions({
+      headerShown: false,
+    });
     loadSongs();
   }, []);
 
@@ -63,14 +71,14 @@ export function SongListScreen() {
 
   // Filter songs based on search query
   const filteredSongs = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedSearchQuery.trim()) {
       return songs;
     }
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     return songs.filter(song =>
       song.title.toLowerCase().includes(query)
     );
-  }, [songs, searchQuery]);
+  }, [songs, debouncedSearchQuery]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -143,7 +151,7 @@ export function SongListScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>
           Loading songs... This may take a minute
         </Text>
@@ -165,34 +173,39 @@ export function SongListScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        {/* Fixed Search Bar */}
+        {/* Page Header */}
+        <PageHeader title="Songs" />
+
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
-            ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder="Search songs..."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={handleClearSearch}
-              style={styles.clearButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder="Search Songs"
+              placeholderTextColor={COLORS.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={handleClearSearch}
+                style={styles.clearButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Songs List */}
-        {filteredSongs.length === 0 && searchQuery.trim() ? (
+        {filteredSongs.length === 0 && debouncedSearchQuery.trim() ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No songs found matching "{searchQuery}"</Text>
+            <Text style={styles.emptyText}>No songs found matching "{debouncedSearchQuery}"</Text>
           </View>
         ) : (
           <FlatList
@@ -219,16 +232,19 @@ export function SongListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   searchContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: COLORS.searchBackground,
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    height: 48,
   },
   searchIcon: {
     marginRight: 8,
@@ -236,8 +252,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#ffffff',
-    paddingVertical: 8,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   clearButton: {
     padding: 4,
@@ -246,28 +262,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
     padding: 24,
   },
   loadingText: {
     fontSize: 16,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
     marginTop: 16,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
     marginBottom: 16,
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#ff6b6b',
+    backgroundColor: COLORS.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -275,30 +294,29 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   listContent: {
     paddingBottom: 180,
   },
   sectionHeader: {
-    backgroundColor: '#2a2a2a',
-    paddingVertical: 8,
+    paddingTop: 24,
+    paddingBottom: 8,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.accent,
   },
   sectionHeaderText: {
-    fontSize: 27,
+    fontSize: 20,
     fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ff6b6b',
+    fontFamily: FONTS.primary,
+    color: COLORS.accent,
   },
   songItem: {
     flexDirection: 'row',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
     alignItems: 'center',
   },
   songInfo: {
@@ -307,11 +325,13 @@ const styles = StyleSheet.create({
   songTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
   performanceCount: {
     fontSize: 14,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
 });

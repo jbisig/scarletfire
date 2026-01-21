@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,11 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
+import { StarRating } from '../components/StarRating';
 import { ShowDetail, Track } from '../types/show.types';
-import { formatDate } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { COLORS, FONTS } from '../constants/theme';
+import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -25,7 +27,7 @@ type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDet
 export function ShowDetailScreen() {
   const route = useRoute<ShowDetailRouteProp>();
   const navigation = useNavigation<ShowDetailNavigationProp>();
-  const { getShowDetail } = useShows();
+  const { getShowDetail, showsByYear } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
 
@@ -34,6 +36,25 @@ export function ShowDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
+  const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(null);
+
+  // Pre-compute track ratings for the current show
+  const trackRatings = useMemo(() => {
+    if (!show) return {};
+    const ratings: Record<string, 1 | 2 | 3 | null> = {};
+
+    show.tracks.forEach(track => {
+      const song = GRATEFUL_DEAD_SONGS.find(s =>
+        s.title.toLowerCase() === track.title.toLowerCase()
+      );
+      if (song) {
+        const performance = song.performances.find(p => p.date === show.date);
+        ratings[track.id] = performance?.rating || null;
+      }
+    });
+
+    return ratings;
+  }, [show?.identifier, show?.date]);
 
   useEffect(() => {
     loadShowDetail(route.params.identifier);
@@ -64,12 +85,25 @@ export function ShowDetailScreen() {
       setShow(detail);
       setSelectedVersion(identifier);
 
-      // Update navigation title with show date
-      if (detail.date) {
-        navigation.setOptions({
-          title: formatDateMMDDYYYY(detail.date),
-        });
+      // Look up classic tier from showsByYear
+      if (showsByYear && detail.year) {
+        const yearShows = showsByYear[detail.year.toString()];
+        if (yearShows) {
+          const matchingShow = yearShows.find(s => s.primaryIdentifier === identifier || s.date === detail.date);
+          if (matchingShow?.classicTier) {
+            setClassicTier(matchingShow.classicTier);
+          }
+        }
       }
+
+      // Update navigation title - empty title, just show back button
+      navigation.setOptions({
+        title: '',
+        headerBackTitleVisible: false,
+        headerLeftContainerStyle: {
+          paddingLeft: 10,
+        },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load show');
     } finally {
@@ -110,10 +144,18 @@ export function ShowDetailScreen() {
     }
   };
 
+  const formatDownloads = (downloads: number | undefined) => {
+    if (!downloads) return '';
+    if (downloads >= 1000) {
+      return `${(downloads / 1000).toFixed(1)}k downloads`;
+    }
+    return `${downloads} downloads`;
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
       </View>
     );
   }
@@ -126,39 +168,67 @@ export function ShowDetailScreen() {
     );
   }
 
+  const isSaved = isShowFavorite(show.identifier);
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>{show.venue || show.title}</Text>
-        <Text style={styles.date}>{formatDate(show.date)}</Text>
-        {show.location && <Text style={styles.location}>{show.location}</Text>}
+        {/* Venue - Large white title */}
+        <Text style={styles.venue}>{show.venue || show.title}</Text>
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleToggleFavorite}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={isShowFavorite(show.identifier) ? 'heart' : 'heart-outline'}
-            size={24}
-            color={isShowFavorite(show.identifier) ? '#ff6b6b' : '#fff'}
-          />
-          <Text style={styles.saveButtonText}>
-            {isShowFavorite(show.identifier) ? 'Saved' : 'Save Show'}
-          </Text>
-        </TouchableOpacity>
+        {/* Source and Save button row */}
+        <View style={styles.sourceRow}>
+          <View style={styles.sourceInfo}>
+            {/* Source name - currently using venue as fallback */}
+            <Text style={styles.sourceName}>
+              {show.location || 'Unknown location'}
+            </Text>
 
-        {/* Version Picker */}
-        {show.allVersions && show.allVersions.length > 1 && (
+            {/* Date with stars */}
+            <View style={styles.dateRow}>
+              <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
+              {classicTier && (
+                <StarRating tier={classicTier} size={16} />
+              )}
+            </View>
+          </View>
+
+          {/* Save button */}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              isSaved && styles.saveButtonActive
+            ]}
+            onPress={handleToggleFavorite}
+            activeOpacity={0.7}
+          >
+            {isSaved ? (
+              <Ionicons name="checkmark-sharp" size={18} color="#fff" />
+            ) : (
+              <Ionicons name="add" size={21} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Version Picker / Source Info Pill */}
+        {show.allVersions && show.allVersions.length > 1 ? (
           <VersionPicker
             versions={show.allVersions}
             selectedVersion={selectedVersion}
             onVersionChange={handleVersionChange}
           />
+        ) : (
+          <View style={styles.sourceInfoPill}>
+            <Text style={styles.sourceInfoText}>
+              {show.source || 'Unknown source'}
+            </Text>
+            <Text style={styles.downloadsText}>
+              {formatDownloads(show.downloads)}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -172,6 +242,7 @@ export function ShowDetailScreen() {
               justPressedTrackId === track.id
             }
             onPress={handleTrackPress}
+            rating={trackRatings[track.id]}
           />
         ))}
       </View>
@@ -182,60 +253,92 @@ export function ShowDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   errorText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
+  },
+  scrollContent: {
+    paddingBottom: 120,
   },
   headerContainer: {
     padding: 20,
+    paddingTop: 8,
   },
-  title: {
-    fontSize: 36,
+  venue: {
+    fontSize: 28,
     fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
-    marginBottom: 8,
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sourceInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  sourceName: {
+    fontSize: 16,
+    fontFamily: FONTS.primary,
+    color: COLORS.accent,
+    marginBottom: 4,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   date: {
     fontSize: 16,
-    color: '#ff6b6b',
-    marginBottom: 4,
-  },
-  location: {
-    fontSize: 14,
-    color: '#999999',
-    marginBottom: 12,
+    fontFamily: FONTS.primary,
+    color: COLORS.accent,
   },
   saveButton: {
+    width: 33,
+    height: 33,
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: COLORS.textPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButtonActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  sourceInfoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 16,
-    marginBottom: 2,
-    borderWidth: 1,
-    borderColor: '#444',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 12,
   },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginLeft: 8,
+  sourceInfoText: {
+    fontSize: 15,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
-  scrollContent: {
-    paddingBottom: 90,
+  downloadsText: {
+    fontSize: 15,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   tracksContainer: {
-    paddingVertical: 16,
+    paddingVertical: 8,
   },
 });

@@ -10,15 +10,19 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { YearPicker } from '../components/YearPicker';
+import { PageHeader } from '../components/PageHeader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { formatDate } from '../utils/formatters';
+import { useDebounce } from '../hooks/useDebounce';
+import { COLORS, FONTS } from '../constants/theme';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -39,6 +43,7 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
 
 export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
   const sectionListRef = useRef<SectionList<any>>(null);
   const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
@@ -46,6 +51,7 @@ export function HomeScreen() {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Filter shows based on search query
   const filterShows = (shows: GratefulDeadShow[], query: string): GratefulDeadShow[] => {
@@ -128,7 +134,7 @@ export function HomeScreen() {
 
       const sectionData = yearsToShow.map(year => ({
         title: year,
-        data: filterShows(showsByYear[year], searchQuery),
+        data: filterShows(showsByYear[year], debouncedSearchQuery),
       })).filter(section => section.data.length > 0); // Remove empty sections
 
       setSections(sectionData);
@@ -141,7 +147,7 @@ export function HomeScreen() {
         }
       }, 100);
     }
-  }, [showsByYear, selectedYear, searchQuery]);
+  }, [showsByYear, selectedYear, debouncedSearchQuery]);
 
   // Ensure scroll position is at the very top on initial mount
   useEffect(() => {
@@ -170,8 +176,8 @@ export function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+      <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>Loading shows...</Text>
       </View>
     );
@@ -179,7 +185,7 @@ export function HomeScreen() {
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -187,50 +193,56 @@ export function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search Bar with integrated Year Filter */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput
-          ref={searchInputRef}
-          style={styles.searchInput}
-          placeholder="Date, venue, location"
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={handleClearSearch}
-            style={styles.clearButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close-circle" size={20} color="#999" />
-          </TouchableOpacity>
-        )}
-        <View style={styles.yearPickerContainer}>
-          <YearPicker
-            years={availableYears}
-            selectedYear={selectedYear}
-            onYearChange={handleYearChange}
-            compact={true}
+      {/* Page Header with Profile */}
+      <PageHeader title="Shows" />
+
+      {/* Search and Filter Row */}
+      <View style={styles.searchFilterRow}>
+        {/* Search Bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            ref={searchInputRef}
+            style={styles.searchInput}
+            placeholder="Date, venue, location"
+            placeholderTextColor="#666"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={handleClearSearch}
+              style={styles.clearButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Year Filter Pill */}
+        <YearPicker
+          years={availableYears}
+          selectedYear={selectedYear}
+          onYearChange={handleYearChange}
+          compact={true}
+        />
       </View>
 
       {/* Shows List */}
-      {sections.length === 0 && searchQuery.trim() ? (
+      {sections.length === 0 && debouncedSearchQuery.trim() ? (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No shows found matching "{searchQuery}"</Text>
+            <Text style={styles.emptyText}>No shows found matching "{debouncedSearchQuery}"</Text>
           </View>
         </TouchableWithoutFeedback>
       ) : (
         <SectionList
           ref={sectionListRef}
           sections={sections}
-          keyExtractor={(item) => item.date}
+          keyExtractor={(item) => item.primaryIdentifier}
           renderItem={({ item }) => (
             <ShowCard show={item} onPress={handleShowPress} />
           )}
@@ -242,6 +254,12 @@ export function HomeScreen() {
           onScrollBeginDrag={Keyboard.dismiss}
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={21}
+          initialNumToRender={10}
         />
       )}
     </View>
@@ -251,52 +269,59 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
-  searchContainer: {
+  searchFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    height: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#ffffff',
-    paddingVertical: 8,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   clearButton: {
     padding: 4,
-  },
-  yearPickerContainer: {
-    marginLeft: 8,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   errorText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
     textAlign: 'center',
     paddingHorizontal: 32,
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   listContent: {

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
 import { formatDownloads } from '../utils/formatters';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface VersionPickerProps {
   versions: RecordingVersion[];
@@ -10,8 +12,9 @@ interface VersionPickerProps {
   onVersionChange: (identifier: string) => void;
 }
 
-export function VersionPicker({ versions, selectedVersion, onVersionChange }: VersionPickerProps) {
+export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange }) {
   const [isOpen, setIsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const currentVersion = versions.find(v => v.identifier === selectedVersion);
 
@@ -24,192 +27,152 @@ export function VersionPicker({ versions, selectedVersion, onVersionChange }: Ve
 
   return (
     <View style={styles.container}>
-      {/* Current Selection Button */}
+      {/* Current Selection - Pill Style */}
       <TouchableOpacity
         style={styles.selector}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={styles.selectorContent}>
-          <View style={styles.selectorInfo}>
-            <Text style={styles.sourceName}>{currentVersion.source}</Text>
-            <Text style={styles.downloads}>
-              {formatDownloads(currentVersion.downloads)} downloads
-            </Text>
-          </View>
-          <Ionicons name="chevron-down" size={20} color="#ff6b6b" />
-        </View>
+        <Text style={styles.sourceName}>{currentVersion.source}</Text>
+        <Text style={styles.downloads}>
+          {formatDownloads(currentVersion.downloads)} downloads
+        </Text>
+        <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
+      {/* Fullscreen Modal */}
       <Modal
         visible={isOpen}
-        transparent={true}
-        animationType="fade"
+        animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsOpen(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsOpen(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Recording Version</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.optionsList}>
-              {versions.map((version, index) => {
-                const isSelected = version.identifier === selectedVersion;
-                return (
-                  <TouchableOpacity
-                    key={version.identifier}
-                    style={[
-                      styles.option,
-                      isSelected && styles.selectedOption,
-                    ]}
-                    onPress={() => handleSelect(version.identifier)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.optionContent}>
-                      <View style={styles.rankBadge}>
-                        <Text style={styles.rankText}>#{index + 1}</Text>
-                      </View>
-                      <View style={styles.optionInfo}>
-                        <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
-                          {version.source}
-                        </Text>
-                        <Text style={styles.optionDownloads}>
-                          {formatDownloads(version.downloads)} downloads
-                        </Text>
-                        <Text style={styles.optionIdentifier} numberOfLines={1}>
-                          {version.identifier}
-                        </Text>
-                      </View>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#ff6b6b" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Source</Text>
+            <TouchableOpacity
+              onPress={() => setIsOpen(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+
+          {/* Version List */}
+          <ScrollView
+            style={styles.optionsList}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          >
+            {versions.map((version, index) => {
+              const isSelected = version.identifier === selectedVersion;
+              return (
+                <TouchableOpacity
+                  key={version.identifier}
+                  style={styles.option}
+                  onPress={() => handleSelect(version.identifier)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.optionInfo}>
+                    <Text style={[
+                      styles.optionSource,
+                      isSelected && styles.selectedText
+                    ]}>
+                      {version.source}
+                    </Text>
+                    <Text style={styles.optionDownloads}>
+                      {formatDownloads(version.downloads)} downloads
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
+    marginTop: 0,
   },
   selector: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#444',
-    overflow: 'hidden',
-  },
-  selectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  selectorInfo: {
-    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 12,
   },
   sourceName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   downloads: {
-    fontSize: 14,
-    color: '#999',
-  },
-  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    fontSize: 15,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
-  modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    width: '100%',
-    maxHeight: '80%',
-    borderWidth: 1,
-    borderColor: '#333',
+  // Fullscreen modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
   },
   optionsList: {
-    maxHeight: 400,
+    flex: 1,
   },
   option: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
-  },
-  selectedOption: {
-    backgroundColor: '#2a2a2a',
-  },
-  optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-  },
-  rankBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ff6b6b',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  rankText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
   optionInfo: {
     flex: 1,
   },
   optionSource: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
   selectedText: {
-    color: '#ff6b6b',
+    color: COLORS.accent,
   },
   optionDownloads: {
     fontSize: 14,
-    color: '#999',
-    marginBottom: 4,
-  },
-  optionIdentifier: {
-    fontSize: 12,
-    color: '#666',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
 });

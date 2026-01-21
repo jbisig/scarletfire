@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { formatDate } from '../utils/formatters';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
+import { COLORS, FONTS } from '../constants/theme';
+
+// Video source for background
+const videoSource = require('../../assets/videos/background.mov');
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -15,20 +21,39 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause } = usePlayer();
   const { getPlayCount } = usePlayCounts();
 
+  // Video player for background
+  const videoPlayer = useVideoPlayer(videoSource, player => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
+  // Memoize performance rating lookup using pre-computed data
+  const performanceRating = useMemo(() => {
+    if (!state.currentTrack || !state.currentShow) return null;
+
+    const song = GRATEFUL_DEAD_SONGS.find(s =>
+      s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
+    );
+
+    if (!song) return null;
+
+    const performance = song.performances.find(p => p.date === state.currentShow!.date);
+
+    return performance?.rating || null;
+  }, [state.currentTrack?.id, state.currentShow?.date]);
+
+  // Memoize play count lookup
+  const playCount = useMemo(() => {
+    return state.currentTrack && state.currentShow
+      ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
+      : 0;
+  }, [state.currentTrack?.id, state.currentShow?.identifier, getPlayCount]);
+
   if (!state.currentTrack) return null;
 
   // Calculate progress percentage
   const progress = state.duration > 0 ? (state.position / state.duration) * 100 : 0;
-
-  // Get play count for current track
-  const playCount = state.currentTrack && state.currentShow
-    ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
-    : 0;
-
-  // Get performance rating
-  const performanceRating = state.currentTrack && state.currentShow
-    ? getSongPerformanceRating(state.currentTrack.title, state.currentShow.date)
-    : null;
 
   return (
     <View style={styles.wrapper}>
@@ -37,60 +62,77 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <View style={styles.infoContainer}>
-          <Text style={styles.trackTitle} numberOfLines={1}>
-            {state.currentTrack.title}
-          </Text>
-          <View style={styles.showInfoRow}>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={12} />
-            )}
-            <Text style={styles.showTitle} numberOfLines={1}>
-              {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
-            </Text>
-            {playCount > 0 && (
-              <View style={styles.playCountBadge}>
-                <Ionicons name="play-circle" size={10} color="#ff6b6b" />
-                <Text style={styles.playCountText}>
-                  {playCount}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+        {/* Video Background */}
+        <VideoView
+          player={videoPlayer}
+          style={styles.video}
+          contentFit="cover"
+          nativeControls={false}
+        />
 
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            state.isPlaying ? pause() : play();
-          }}
-          style={styles.playButton}
-        >
-          <Ionicons
-            name={state.isPlaying ? 'pause' : 'play'}
-            size={28}
-            color="#fff"
-          />
-        </TouchableOpacity>
+        {/* Blur overlay */}
+        <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.blurOverlay}>
+          <View style={styles.contentOverlay}>
+            <View style={styles.infoContainer}>
+              <Text style={styles.trackTitle} numberOfLines={1}>
+                {state.currentTrack.title}
+              </Text>
+              <Text style={styles.showTitle} numberOfLines={1}>
+                {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                state.isPlaying ? pause() : play();
+              }}
+              style={styles.playButton}
+            >
+              <Ionicons
+                name={state.isPlaying ? 'pause' : 'play'}
+                size={28}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Progress bar */}
+          <View style={styles.progressBarContainer}>
+            <View style={styles.progressBarBackground}>
+              <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+            </View>
+          </View>
+        </BlurView>
       </TouchableOpacity>
-      <View style={styles.progressBarBackground}>
-        <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#1a1a1a',
-    borderTopWidth: 1,
-    borderTopColor: '#333',
+    overflow: 'hidden',
+    borderRadius: 16,
+    marginHorizontal: 8,
+    marginBottom: 8,
   },
   container: {
+    height: 72,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  video: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+  },
+  contentOverlay: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 12,
     paddingHorizontal: 16,
   },
   infoContainer: {
@@ -98,45 +140,33 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   trackTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 2,
-  },
-  showInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
   showTitle: {
-    fontSize: 12,
-    color: '#999',
-    flex: 1,
-  },
-  playCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 3,
-  },
-  playCountText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#ff6b6b',
+    fontSize: 13,
+    fontFamily: FONTS.secondary,
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   playButton: {
     padding: 8,
   },
+  progressBarContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
   progressBarBackground: {
-    height: 3,
-    backgroundColor: '#333',
-    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.33)',
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#ff6b6b',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
   },
 });

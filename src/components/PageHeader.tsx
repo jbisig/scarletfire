@@ -1,0 +1,173 @@
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Modal,
+  Pressable,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
+import { COLORS, FONTS } from '../constants/theme';
+
+// Placeholder profile image
+const PLACEHOLDER_PROFILE = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop';
+
+interface PageHeaderProps {
+  title: string;
+}
+
+export function PageHeader({ title }: PageHeaderProps) {
+  const insets = useSafeAreaInsets();
+  const { state: authState, logout, showLogin } = useAuth();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [profileButtonPosition, setProfileButtonPosition] = useState({ top: 0, left: 0 });
+  const profileButtonRef = useRef<View>(null);
+
+  const handleProfilePress = () => {
+    profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setProfileButtonPosition({ top: pageY + height + 8, left: pageX });
+      setShowProfileDropdown(true);
+    });
+  };
+
+  const handleLogout = async () => {
+    setShowProfileDropdown(false);
+    await logout();
+  };
+
+  const handleLogin = async () => {
+    setShowProfileDropdown(false);
+    await showLogin();
+  };
+
+  const handleSettings = () => {
+    setShowProfileDropdown(false);
+    // TODO: Navigate to settings screen
+  };
+
+  return (
+    <>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity
+          ref={profileButtonRef}
+          onPress={handleProfilePress}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={{ uri: PLACEHOLDER_PROFILE }}
+            style={styles.profileImage}
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{title}</Text>
+      </View>
+
+      {/* Profile Dropdown */}
+      <Modal
+        visible={showProfileDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowProfileDropdown(false)}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => setShowProfileDropdown(false)}
+        >
+          <View
+            style={[
+              styles.dropdownContainer,
+              { top: profileButtonPosition.top, left: 16 }
+            ]}
+          >
+            {authState.isAuthenticated ? (
+              <>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={handleSettings}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.dropdownItemText}>Settings</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.dropdownItemTextRed}>Log Out</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={handleLogin}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dropdownItemText}>Log In</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 16,
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardBackground,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
+  },
+  dropdownItemTextRed: {
+    fontSize: 16,
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 16,
+  },
+});

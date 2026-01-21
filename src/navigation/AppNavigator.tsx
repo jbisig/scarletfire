@@ -13,6 +13,7 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
+import { CustomTabBar } from '../components/CustomTabBar';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthNavigator } from './AuthNavigator';
@@ -42,7 +43,7 @@ function ShowsStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#121212',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -56,37 +57,18 @@ function ShowsStack() {
         name="Home"
         component={HomeScreen}
         options={{
-          title: 'Shows',
-          headerRight: () => {
-            if (authState.isAuthenticated) {
-              // Show logout button for authenticated users
-              return (
-                <TouchableOpacity
-                  onPress={logout}
-                  style={{ marginRight: 16 }}
-                >
-                  <Ionicons name="log-out-outline" size={24} color="#ff6b6b" />
-                </TouchableOpacity>
-              );
-            } else if (authState.hasSkippedLogin) {
-              // Show login button for users who skipped
-              return (
-                <TouchableOpacity
-                  onPress={showLogin}
-                  style={{ marginRight: 16 }}
-                >
-                  <Ionicons name="log-in-outline" size={24} color="#ff6b6b" />
-                </TouchableOpacity>
-              );
-            }
-            return null;
-          },
+          headerShown: false,
+          headerBackTitle: ' ',
         }}
       />
       <Stack.Screen
         name="ShowDetail"
         component={ShowDetailScreen}
-        options={{ title: 'Show Details' }}
+        options={{
+          title: '',
+          headerBackTitleVisible: false,
+          headerBackTitle: ' ',
+        }}
       />
     </Stack.Navigator>
   );
@@ -98,7 +80,7 @@ function SongsStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#121212',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -111,17 +93,21 @@ function SongsStack() {
       <Stack.Screen
         name="SongList"
         component={SongListScreen}
-        options={{ title: 'Songs' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="SongPerformances"
         component={SongPerformancesScreen}
-        options={{ title: 'Performances' }}
+        options={{ title: 'Performances', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="ShowDetail"
         component={ShowDetailScreen}
-        options={{ title: 'Show Details' }}
+        options={{
+          title: '',
+          headerBackTitleVisible: false,
+          headerBackTitle: ' ',
+        }}
       />
     </Stack.Navigator>
   );
@@ -134,7 +120,7 @@ function FavoritesStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#121212',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -147,12 +133,16 @@ function FavoritesStack() {
       <Stack.Screen
         name="Favorites"
         component={FavoritesScreen}
-        options={{ title: 'Favorites' }}
+        options={{ title: 'Favorites', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="ShowDetail"
         component={ShowDetailScreen}
-        options={{ title: 'Show Details' }}
+        options={{
+          title: '',
+          headerBackTitleVisible: false,
+          headerBackTitle: ' ',
+        }}
       />
     </Stack.Navigator>
   );
@@ -164,7 +154,7 @@ function DiscoverStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: '#121212',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -177,22 +167,26 @@ function DiscoverStack() {
       <Stack.Screen
         name="DiscoverLanding"
         component={DiscoverLandingScreen}
-        options={{ title: 'Discover' }}
+        options={{ title: 'Discover', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="Classics"
         component={ClassicsScreen}
-        options={{ title: 'Classic Shows' }}
+        options={{ title: 'Classic Shows', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="GratefulDead101"
         component={GratefulDead101Screen}
-        options={{ title: 'Grateful Dead 101' }}
+        options={{ title: 'Grateful Dead 101', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="ShowDetail"
         component={ShowDetailScreen}
-        options={{ title: 'Show Details' }}
+        options={{
+          title: '',
+          headerBackTitleVisible: false,
+          headerBackTitle: ' ',
+        }}
       />
     </Stack.Navigator>
   );
@@ -207,7 +201,7 @@ export function AppNavigator() {
     return (
       <NavigationContainer>
         <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color="#ff6b6b" />
+          <ActivityIndicator size="large" color="#E54C4F" />
         </View>
       </NavigationContainer>
     );
@@ -223,44 +217,11 @@ export function AppNavigator() {
       ) : (
         <View style={styles.container}>
           <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName: keyof typeof Ionicons.glyphMap;
-
-              if (route.name === 'ShowsTab') {
-                iconName = focused ? 'albums' : 'albums-outline';
-              } else if (route.name === 'SongsTab') {
-                iconName = focused ? 'musical-notes' : 'musical-notes-outline';
-              } else if (route.name === 'DiscoverTab') {
-                iconName = focused ? 'compass' : 'compass-outline';
-              } else if (route.name === 'FavoritesTab') {
-                iconName = focused ? 'heart' : 'heart-outline';
-              } else {
-                iconName = 'help-outline';
-              }
-
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: '#ff6b6b',
-            tabBarInactiveTintColor: '#999',
-            tabBarStyle: {
-              backgroundColor: '#1a1a1a',
-              borderTopColor: '#333',
-              paddingTop: 8,
-              paddingBottom: 32,
-              height: 89,
-            },
-            tabBarItemStyle: {
-              justifyContent: 'center',
-              alignItems: 'center',
-            },
-            tabBarLabelStyle: {
-              marginTop: 4,
-              marginBottom: 0,
-            },
-          })}
-        >
+            tabBar={(props) => <CustomTabBar {...props} />}
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
           <Tab.Screen
             name="ShowsTab"
             component={ShowsStack}
@@ -298,7 +259,7 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#121212',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -307,9 +268,9 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: 89,
+    bottom: 80,
     left: 0,
     right: 0,
-    zIndex: 999,
+    zIndex: 998,
   },
 });

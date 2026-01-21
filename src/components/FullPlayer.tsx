@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Dimensions,
   PanResponder,
 } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,8 +18,9 @@ import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { formatDate, formatTime } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -26,17 +29,27 @@ interface FullPlayerProps {
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 /**
- * Full-screen player modal with playback controls
+ * Full-screen player modal with video background and playback controls
  */
+// Video source for background
+const videoSource = require('../../assets/videos/background.mov');
+
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const navigation = useNavigation<NavigationProp>();
   const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
   const progressBarRef = useRef<View>(null);
+
+  // Video player for background
+  const videoPlayer = useVideoPlayer(videoSource, player => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const lastRewindTapRef = useRef<number>(0);
@@ -51,6 +64,32 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     currentDurationRef.current = state.duration;
   }, [state.currentTrack, state.duration]);
 
+  // Memoize performance rating lookup using pre-computed data
+  const performanceRating = useMemo(() => {
+    if (!state.currentTrack || !state.currentShow) return null;
+
+    const song = GRATEFUL_DEAD_SONGS.find(s =>
+      s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
+    );
+
+    if (!song) return null;
+
+    const performance = song.performances.find(p => p.date === state.currentShow!.date);
+
+    return performance?.rating || null;
+  }, [state.currentTrack?.id, state.currentShow?.date]);
+
+  // Memoize play count lookup
+  const playCount = useMemo(() => {
+    return state.currentTrack && state.currentShow
+      ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
+      : 0;
+  }, [state.currentTrack?.id, state.currentShow?.identifier, getPlayCount]);
+
+  const isFavorite = state.currentTrack && state.currentShow
+    ? isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
+    : false;
+
   const calculatePositionFromTouch = (pageX: number, trackDurationMs: number): number => {
     if (barMeasurements.current.width === 0) return 0;
     const relativeX = pageX - barMeasurements.current.pageX;
@@ -62,16 +101,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     const now = Date.now();
     const timeSinceLastTap = now - lastRewindTapRef.current;
 
-    console.log('Rewind tapped:', { timeSinceLastTap, isDoubleTap: timeSinceLastTap < 300 });
-
     if (timeSinceLastTap < 300) {
-      // Double tap - go to previous track
-      console.log('Double tap detected - calling previousTrack()');
       previousTrack();
       lastRewindTapRef.current = 0;
     } else {
-      // Single tap - restart current track
-      console.log('Single tap - seeking to 0');
       seekTo(0);
       lastRewindTapRef.current = now;
     }
@@ -100,7 +133,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   const handleNavigateToShow = (): void => {
     if (!state.currentShow) return;
-    onClose(); // Close the full player first
+    onClose();
     navigation.navigate('ShowDetail', { identifier: state.currentShow.identifier });
   };
 
@@ -109,16 +142,13 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt, gestureState) => {
-        // Measure the progress bar position
+      onPanResponderGrant: (evt) => {
         progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
 
-          // Get duration from track metadata
           const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
           const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
 
-          // Use locationX relative to the touch target
           const touchX = barPageX + evt.nativeEvent.locationX;
           const position = calculatePositionFromTouch(touchX, durationMs);
 
@@ -127,33 +157,28 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           setDragPosition(position);
         });
       },
-      onPanResponderMove: (evt, gestureState) => {
+      onPanResponderMove: (evt) => {
         if (barMeasurements.current.width === 0) return;
 
-        // Get duration from track metadata
         const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
         const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
 
-        // Calculate absolute X from locationX and gesture movement
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
       },
-      onPanResponderRelease: (evt, gestureState) => {
+      onPanResponderRelease: (evt) => {
         if (barMeasurements.current.width === 0) return;
 
-        // Get duration from track metadata
         const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
         const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
 
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
 
-        // Keep drag position briefly to prevent flash while seek completes
         setDragPosition(position);
         seekTo(position);
 
-        // Delay setting isDragging to false to prevent visual jump
         setTimeout(() => {
           setIsDragging(false);
           isDraggingRef.current = false;
@@ -168,16 +193,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     })
   ).current;
 
-  // Swipe down to dismiss gesture - more sensitive for easier dismissal
+  // Swipe down to dismiss gesture
   const swipeDownResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Trigger on downward swipes
         return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // Dismiss if dragged down at least 50px
         if (gestureState.dy > 50) {
           onClose();
         }
@@ -187,8 +210,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   if (!state.currentTrack) return null;
 
-  // Use track duration from metadata if playback duration isn't available yet
-  const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0; // Convert to ms
+  const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
   const duration = state.duration > 0 ? state.duration : trackDuration;
 
   const currentPosition = isDragging ? dragPosition : state.position;
@@ -202,149 +224,131 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        {/* Top Half - Draggable Area for Dismissal */}
-        <View style={styles.topHalf} {...swipeDownResponder.panHandlers}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="chevron-down" size={32} color="#fff" />
-            </TouchableOpacity>
+        {/* Video Background */}
+        <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
+          <VideoView
+            player={videoPlayer}
+            style={styles.video}
+            contentFit="cover"
+            nativeControls={false}
+          />
+
+          {/* Gradient overlay for text readability */}
+          <LinearGradient
+            colors={['rgba(18, 18, 18, 0)', '#121212']}
+            locations={[0, 1]}
+            style={styles.gradientOverlay}
+          />
+
+          {/* Close button */}
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="chevron-down" size={32} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Track Info - positioned at bottom of video */}
+          <View style={styles.trackInfoContainer}>
+            <Text style={styles.trackTitle} numberOfLines={2}>
+              {state.currentTrack.title}
+            </Text>
+
+            {state.currentShow && (
+              <View style={styles.showInfoRow}>
+                <TouchableOpacity
+                  onPress={handleNavigateToShow}
+                  activeOpacity={0.7}
+                  style={styles.showLinkContainer}
+                >
+                  <Text style={styles.showInfo} numberOfLines={1}>
+                    {state.currentShow.venue}
+                  </Text>
+                  <View style={styles.dateWithStars}>
+                    <Text style={styles.showDate}>
+                      {formatDate(state.currentShow.date)}
+                    </Text>
+                    {performanceRating && (
+                      <StarRating tier={performanceRating} size={16} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Save Song Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    isFavorite && styles.saveButtonActive
+                  ]}
+                  onPress={handleToggleFavoriteSong}
+                  activeOpacity={0.7}
+                >
+                  {isFavorite ? (
+                    <Ionicons name="checkmark-sharp" size={18} color="#fff" />
+                  ) : (
+                    <Ionicons name="add" size={21} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Controls Section */}
+        <View style={styles.controlsSection}>
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View
+              style={styles.progressBarWrapper}
+              ref={progressBarRef}
+              collapsable={false}
+              {...panResponder.panHandlers}
+            >
+              <View style={styles.progressBarBackground}>
+                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+              </View>
+              <View
+                style={[
+                  styles.progressThumb,
+                  { left: `${progress * 100}%` },
+                  isDragging && styles.progressThumbActive
+                ]}
+                pointerEvents="none"
+              />
+            </View>
+            <View style={styles.timeContainer}>
+              <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
+              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            </View>
           </View>
 
-          {/* Spacer */}
-          <View style={{ flex: 1 }} />
+          {/* Playback Controls */}
+          <View style={styles.controlsContainer}>
+            <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
+              <Ionicons name="play-skip-back" size={36} color="#fff" />
+            </TouchableOpacity>
 
-          {/* Track Info */}
-          <View style={styles.trackInfoContainer}>
-          <Text style={styles.trackTitle} numberOfLines={2}>
-            {state.currentTrack.title}
-          </Text>
-
-          {/* Clickable Show Info */}
-          {state.currentShow && (() => {
-            const performanceRating = state.currentTrack
-              ? getSongPerformanceRating(state.currentTrack.title, state.currentShow.date)
-              : null;
-
-            return (
-              <TouchableOpacity
-                onPress={handleNavigateToShow}
-                activeOpacity={0.7}
-                style={styles.showLinkContainer}
-              >
-                <Text style={styles.showInfo} numberOfLines={1}>
-                  {state.currentShow.venue}
-                </Text>
-                <View style={styles.dateWithStars}>
-                  <Text style={styles.showDate}>
-                    {formatDate(state.currentShow.date)}
-                  </Text>
-                  {performanceRating && (
-                    <StarRating tier={performanceRating} size={18} />
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })()}
-
-          {/* Play Count Badge */}
-          {state.currentTrack && state.currentShow && (() => {
-            const playCount = getPlayCount(state.currentTrack.title, state.currentShow.identifier);
-            return playCount > 0 ? (
-              <View style={styles.playCountBadge}>
-                <Ionicons name="play-circle" size={16} color="#ff6b6b" />
-                <Text style={styles.playCountText}>
-                  {playCount} {playCount === 1 ? 'play' : 'plays'}
-                </Text>
-              </View>
-            ) : null;
-          })()}
-
-          {/* Save Song Button */}
-          {state.currentTrack && state.currentShow && (
             <TouchableOpacity
-              style={styles.saveSongButton}
-              onPress={handleToggleFavoriteSong}
-              activeOpacity={0.7}
+              onPress={() => state.isPlaying ? pause() : play()}
+              style={styles.playButton}
+              activeOpacity={0.8}
             >
               <Ionicons
-                name={
-                  isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
-                    ? 'heart'
-                    : 'heart-outline'
-                }
-                size={24}
-                color={
-                  isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
-                    ? '#ff6b6b'
-                    : '#fff'
-                }
+                name={state.isPlaying ? 'pause' : 'play'}
+                size={32}
+                color={COLORS.background}
               />
-              <Text style={styles.saveSongButtonText}>
-                {isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
-                  ? 'Saved'
-                  : 'Save'}
-              </Text>
             </TouchableOpacity>
-          )}
+
+            <TouchableOpacity
+              onPress={nextTrack}
+              style={styles.controlButton}
+              disabled={!state.playlist || state.playlist.length === 0}
+            >
+              <Ionicons
+                name="play-skip-forward"
+                size={36}
+                color={state.playlist && state.playlist.length > 0 ? "#fff" : "#666"}
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Bottom Half - Progress Bar and Controls */}
-        <View style={styles.progressContainer}>
-          <View
-            style={styles.progressBarWrapper}
-            ref={progressBarRef}
-            collapsable={false}
-            {...panResponder.panHandlers}
-          >
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-            </View>
-            <View
-              style={[
-                styles.progressThumb,
-                { left: `${progress * 100}%` },
-                isDragging && styles.progressThumbActive
-              ]}
-              pointerEvents="none"
-            />
-          </View>
-          <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
-          </View>
-        </View>
-
-        {/* Controls */}
-        <View style={styles.controlsContainer}>
-          <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
-            <Ionicons name="play-skip-back" size={40} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => state.isPlaying ? pause() : play()}
-            style={styles.playButton}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name={state.isPlaying ? 'pause' : 'play'}
-              size={48}
-              color="#fff"
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={nextTrack}
-            style={styles.controlButton}
-            disabled={!state.playlist || state.playlist.length === 0}
-          >
-            <Ionicons
-              name="play-skip-forward"
-              size={40}
-              color={state.playlist && state.playlist.length > 0 ? "#fff" : "#666"}
-            />
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -356,132 +360,115 @@ FullPlayer.displayName = 'FullPlayer';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 80,
+    backgroundColor: COLORS.background,
   },
-  topHalf: {
+  videoContainer: {
     flex: 1,
-    justifyContent: 'flex-start',
+    position: 'relative',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+  video: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   closeButton: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
     padding: 8,
+    zIndex: 10,
   },
   trackInfoContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
   },
   trackTitle: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 12,
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  showInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   showLinkContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
+    flex: 1,
+    marginRight: 16,
   },
   showInfo: {
     fontSize: 18,
-    color: '#ff6b6b',
-    textAlign: 'center',
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
     marginBottom: 4,
   },
   showDate: {
     fontSize: 16,
-    color: '#ff6b6b',
-    textAlign: 'center',
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
   },
   dateWithStars: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  saveButton: {
+    width: 33,
+    height: 33,
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: COLORS.textPrimary,
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  saveSongButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#333',
-    marginTop: 8,
   },
-  saveSongButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+  saveButtonActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
   },
-  playCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    gap: 6,
-    marginTop: 8,
-  },
-  playCountText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ff6b6b',
+  controlsSection: {
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 60,
   },
   progressContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   progressBarWrapper: {
     position: 'relative',
     height: 40,
     justifyContent: 'center',
     paddingVertical: 10,
-    marginHorizontal: -10,
-    paddingHorizontal: 10,
   },
   progressBarBackground: {
-    height: 8,
-    backgroundColor: '#333',
-    borderRadius: 4,
+    height: 4,
+    backgroundColor: COLORS.progressBackground,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#ff6b6b',
+    backgroundColor: COLORS.textPrimary,
   },
   progressThumb: {
     position: 'absolute',
-    width: 20,
-    height: 20,
-    backgroundColor: '#ff6b6b',
-    borderRadius: 10,
-    marginLeft: -10,
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
+    width: 12,
+    height: 12,
+    backgroundColor: COLORS.textPrimary,
+    borderRadius: 6,
+    marginLeft: -6,
   },
   progressThumbActive: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginLeft: -12,
-    borderWidth: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginLeft: -8,
     transform: [{ scale: 1.1 }],
   },
   timeContainer: {
@@ -490,23 +477,24 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timeText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 12,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 40,
+    gap: 48,
   },
   controlButton: {
     padding: 12,
   },
   playButton: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#ff6b6b',
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    backgroundColor: COLORS.textPrimary,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
