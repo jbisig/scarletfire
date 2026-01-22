@@ -1,10 +1,7 @@
 import { createClient, Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabaseStorage } from './supabaseStorage';
-
-// Supabase configuration
-const SUPABASE_URL = 'https://fftvyuykqbixzupxzlmo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmdHZ5dXlrcWJpeHp1cHh6bG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjU5MjAsImV4cCI6MjA4NDI0MTkyMH0.bphD6T5CxMNWVT5D8_sy9Ti9IpDhBwYMvTa4dP8qawY';
+import { CONFIG } from '../constants/config';
 
 // Track if Google Sign-In has been configured
 let isGoogleSignInConfigured = false;
@@ -12,15 +9,15 @@ let isGoogleSignInConfigured = false;
 function ensureGoogleSignInConfigured() {
   if (!isGoogleSignInConfigured) {
     GoogleSignin.configure({
-      webClientId: '836998999272-i744r408o0aoqd7r63rfo9j4c2vl6kpr.apps.googleusercontent.com',
-      iosClientId: '836998999272-7uijb9j3amrvgvg1g7o8p34pdo0olouk.apps.googleusercontent.com',
+      webClientId: CONFIG.GOOGLE_WEB_CLIENT_ID,
+      iosClientId: CONFIG.GOOGLE_IOS_CLIENT_ID,
     });
     isGoogleSignInConfigured = true;
   }
 }
 
 class AuthService {
-  private supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  private supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
     auth: {
       storage: supabaseStorage,
       autoRefreshToken: true,
@@ -33,26 +30,15 @@ class AuthService {
    * Create a new user account with email and password
    */
   async signUpWithEmail(email: string, password: string): Promise<User> {
-    console.log('Attempting signup with email:', email);
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
     });
 
-    console.log('Signup response:', {
-      hasUser: !!data.user,
-      hasSession: !!data.session,
-      error: error?.message,
-    });
-
     if (error) {
-      console.error('Signup error:', error);
       throw error;
     }
     if (!data.user) throw new Error('No user returned from signup');
-
-    console.log('Signup successful, user ID:', data.user.id);
-    console.log('Session after signup:', data.session ? 'exists' : 'missing');
 
     return data.user;
   }
@@ -69,8 +55,6 @@ class AuthService {
     if (error) throw error;
     if (!data.user) throw new Error('No user returned from login');
 
-    console.log('Login successful, session:', data.session ? 'created' : 'missing');
-
     return data.user;
   }
 
@@ -83,12 +67,6 @@ class AuthService {
 
     await GoogleSignin.hasPlayServices();
     const userInfo = await GoogleSignin.signIn();
-
-    console.log('Google Sign-In response:', {
-      hasIdToken: !!userInfo.idToken,
-      hasDataIdToken: !!userInfo.data?.idToken,
-      user: userInfo.user?.email,
-    });
 
     // Try both possible response structures
     const idToken = userInfo.idToken || userInfo.data?.idToken;
@@ -103,12 +81,10 @@ class AuthService {
     });
 
     if (error) {
-      console.error('Supabase Google Sign-In error:', error);
       throw error;
     }
     if (!data.user) throw new Error('No user returned from Google login');
 
-    console.log('Google Sign-In successful, user ID:', data.user.id);
     return data.user;
   }
 
@@ -131,12 +107,7 @@ class AuthService {
    * Get current session
    */
   async getSession(): Promise<Session | null> {
-    console.log('Getting session...');
     const { data } = await this.supabase.auth.getSession();
-    console.log('Session retrieved:', {
-      hasSession: !!data.session,
-      userId: data.session?.user?.id,
-    });
     return data.session;
   }
 

@@ -183,29 +183,20 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteShows(newFavorites);
     await saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated
+    // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      try {
-        await favoritesCloudService.addShow(authState.user.id, show);
-      } catch (error) {
-        console.error('Failed to sync show to cloud:', error);
-      }
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch(() => {});
     }
   };
 
   const removeFavoriteShow = async (identifier: string) => {
-    const show = favoriteShows.find(fav => fav.primaryIdentifier === identifier);
     const newFavorites = favoriteShows.filter(fav => fav.primaryIdentifier !== identifier);
     setFavoriteShows(newFavorites);
     await saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated
-    if (authState.isAuthenticated && authState.user && show) {
-      try {
-        await favoritesCloudService.removeShow(authState.user.id, show);
-      } catch (error) {
-        console.error('Failed to remove show from cloud:', error);
-      }
+    // Sync to cloud if authenticated - pass the already-updated list directly
+    if (authState.isAuthenticated && authState.user) {
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch(() => {});
     }
   };
 
@@ -222,33 +213,22 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteSongs(newFavorites);
     await saveFavoriteSongs(newFavorites);
 
-    // Sync to cloud if authenticated
+    // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      try {
-        await favoritesCloudService.addSong(authState.user.id, song);
-      } catch (error) {
-        console.error('Failed to sync song to cloud:', error);
-      }
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch(() => {});
     }
   };
 
   const removeFavoriteSong = async (trackId: string, showIdentifier: string) => {
-    const song = favoriteSongs.find(
-      fav => fav.trackId === trackId && fav.showIdentifier === showIdentifier
-    );
     const newFavorites = favoriteSongs.filter(
       fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
     );
     setFavoriteSongs(newFavorites);
     await saveFavoriteSongs(newFavorites);
 
-    // Sync to cloud if authenticated
-    if (authState.isAuthenticated && authState.user && song) {
-      try {
-        await favoritesCloudService.removeSong(authState.user.id, song);
-      } catch (error) {
-        console.error('Failed to remove song from cloud:', error);
-      }
+    // Sync to cloud if authenticated - pass the already-updated list directly
+    if (authState.isAuthenticated && authState.user) {
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch(() => {});
     }
   };
 

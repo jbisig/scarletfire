@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate } from '../utils/formatters';
@@ -18,39 +18,25 @@ interface ShowCardProps {
  */
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
-  const { getShowDetail, showDetailsCache } = useShows();
-  const [playCount, setPlayCount] = useState<number>(0);
+  const { showDetailsCache } = useShows();
 
-  // Calculate play count for this show
-  useEffect(() => {
+  // Calculate play count synchronously from cache only - no API fetches
+  // Play count badges only appear for shows the user has already viewed
+  const playCount = useMemo(() => {
     // Quick check: does show have any played tracks?
     if (!hasShowBeenPlayed(show.primaryIdentifier)) {
-      setPlayCount(0);
-      return;
+      return 0;
     }
 
-    // Check cache first
+    // Only calculate if details are cached (no API fetch)
     const cachedDetails = showDetailsCache.get(show.primaryIdentifier);
     if (cachedDetails) {
-      const count = getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
-      setPlayCount(count);
-      return;
+      return getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
     }
 
-    // Fetch show details to get track count
-    const fetchPlayCount = async () => {
-      try {
-        const details = await getShowDetail(show.primaryIdentifier);
-        const count = getShowPlayCount(show.primaryIdentifier, details.tracks.length);
-        setPlayCount(count);
-      } catch (error) {
-        console.error('Failed to fetch show details for play count:', error);
-        setPlayCount(0);
-      }
-    };
-
-    fetchPlayCount();
-  }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowDetail, getShowPlayCount]);
+    // Details not cached - don't show play count yet (will appear after user opens show)
+    return 0;
+  }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowPlayCount]);
 
   return (
     <TouchableOpacity
@@ -100,14 +86,14 @@ ShowCard.displayName = 'ShowCard';
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.background,
   },
   contentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   infoContainer: {
     flex: 1,

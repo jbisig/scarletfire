@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -41,138 +41,122 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
 };
 
+// Pure filter function - moved outside component to avoid recreation on each render
+function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow[] {
+  if (!query.trim()) return shows;
+
+  const lowerQuery = query.toLowerCase();
+  return shows.filter(show => {
+    // Search in title
+    if (show.title?.toLowerCase().includes(lowerQuery)) return true;
+
+    // Search in venue
+    if (show.venue?.toLowerCase().includes(lowerQuery)) return true;
+
+    // Search in location (including state name to abbreviation conversion)
+    if (show.location?.toLowerCase().includes(lowerQuery)) return true;
+
+    // Check if query matches a state name, and if so, search for abbreviation
+    const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
+    if (stateAbbr && show.location?.toUpperCase().includes(stateAbbr)) return true;
+
+    // Also check partial state name matches (e.g., "calif" matches "california" -> "CA")
+    const matchingStates = Object.entries(STATE_ABBREVIATIONS).filter(([stateName]) =>
+      stateName.startsWith(lowerQuery)
+    );
+    if (matchingStates.length > 0) {
+      for (const [, abbr] of matchingStates) {
+        if (show.location?.toUpperCase().includes(abbr)) return true;
+      }
+    }
+
+    // Search in date (multiple formats)
+    // Raw date: "1977-05-08" or "1977-05-08T00:00:00Z"
+    if (show.date.includes(lowerQuery)) return true;
+
+    // Year only
+    if (show.year && String(show.year).includes(lowerQuery)) return true;
+
+    // Extract date portion (handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ" formats)
+    const datePart = show.date.includes('T') ? show.date.split('T')[0] : show.date;
+    const [year, month, day] = datePart.split('-');
+
+    // Numeric date variations (using raw ISO date parts to avoid timezone issues)
+    const dateVariations = [
+      `${month}/${day}/${year}`,  // 05/08/1977
+      `${month}/${day}`,          // 05/08
+      `${parseInt(month)}/${parseInt(day)}/${year}`,  // 5/8/1977
+      `${parseInt(month)}/${parseInt(day)}`,          // 5/8
+    ];
+
+    if (dateVariations.some(variation => variation.includes(lowerQuery))) return true;
+
+    // Formatted date with month name: "May 8, 1977" (only for text searches)
+    // Only use formatted date for searches that contain letters (month names)
+    if (/[a-z]/.test(lowerQuery)) {
+      const formattedDate = formatDate(show.date).toLowerCase();
+      if (formattedDate.includes(lowerQuery)) return true;
+    }
+
+    return false;
+  });
+}
+
 export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const sectionListRef = useRef<SectionList<any>>(null);
   const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
-  const [sections, setSections] = useState<Array<{ title: string; data: GratefulDeadShow[] }>>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  // Filter shows based on search query
-  const filterShows = (shows: GratefulDeadShow[], query: string): GratefulDeadShow[] => {
-    if (!query.trim()) return shows;
+  // Memoize available years - only recalculate when showsByYear changes
+  const availableYears = useMemo(() => {
+    if (!showsByYear) return [];
+    return Object.keys(showsByYear).sort((a, b) => parseInt(a) - parseInt(b));
+  }, [showsByYear]);
 
-    const lowerQuery = query.toLowerCase();
-    return shows.filter(show => {
-      // Search in title
-      if (show.title?.toLowerCase().includes(lowerQuery)) return true;
+  // Memoize sections - only recalculate when dependencies change
+  const sections = useMemo(() => {
+    if (!showsByYear) return [];
 
-      // Search in venue
-      if (show.venue?.toLowerCase().includes(lowerQuery)) return true;
+    const yearsToShow = selectedYear
+      ? [selectedYear]
+      : availableYears;
 
-      // Search in location (including state name to abbreviation conversion)
-      if (show.location?.toLowerCase().includes(lowerQuery)) return true;
-
-      // Check if query matches a state name, and if so, search for abbreviation
-      const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
-      if (stateAbbr && show.location?.toUpperCase().includes(stateAbbr)) return true;
-
-      // Also check partial state name matches (e.g., "calif" matches "california" -> "CA")
-      const matchingStates = Object.entries(STATE_ABBREVIATIONS).filter(([stateName]) =>
-        stateName.startsWith(lowerQuery)
-      );
-      if (matchingStates.length > 0) {
-        for (const [, abbr] of matchingStates) {
-          if (show.location?.toUpperCase().includes(abbr)) return true;
-        }
-      }
-
-      // Search in date (multiple formats)
-      // Raw date: "1977-05-08" or "1977-05-08T00:00:00Z"
-      if (show.date.includes(lowerQuery)) return true;
-
-      // Year only
-      if (show.year && String(show.year).includes(lowerQuery)) return true;
-
-      // Extract date portion (handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ" formats)
-      const datePart = show.date.includes('T') ? show.date.split('T')[0] : show.date;
-      const [year, month, day] = datePart.split('-');
-
-      // Numeric date variations (using raw ISO date parts to avoid timezone issues)
-      const dateVariations = [
-        `${month}/${day}/${year}`,  // 05/08/1977
-        `${month}/${day}`,          // 05/08
-        `${parseInt(month)}/${parseInt(day)}/${year}`,  // 5/8/1977
-        `${parseInt(month)}/${parseInt(day)}`,          // 5/8
-      ];
-
-      if (dateVariations.some(variation => variation.includes(lowerQuery))) return true;
-
-      // Formatted date with month name: "May 8, 1977" (only for text searches)
-      // Only use formatted date for searches that contain letters (month names)
-      if (/[a-z]/.test(lowerQuery)) {
-        const formattedDate = formatDate(show.date).toLowerCase();
-        if (formattedDate.includes(lowerQuery)) return true;
-      }
-
-      return false;
-    });
-  };
-
-  useEffect(() => {
-    if (showsByYear) {
-      // Get all available years
-      const yearArray = Object.keys(showsByYear);
-
-      // For the year picker dropdown, show years in ascending order (1965 -> 1995)
-      const yearsAscending = [...yearArray].sort((a, b) => parseInt(a) - parseInt(b));
-      setAvailableYears(yearsAscending);
-
-      // Filter sections based on selected year and search query
-      let yearsToShow = yearArray;
-      if (selectedYear) {
-        yearsToShow = [selectedYear];
-      } else {
-        // When "All Years" is selected, sort in ascending order (oldest first: 1965 -> 1995)
-        yearsToShow = [...yearArray].sort((a, b) => parseInt(a) - parseInt(b));
-      }
-
-      const sectionData = yearsToShow.map(year => ({
+    return yearsToShow
+      .map(year => ({
         title: year,
         data: filterShows(showsByYear[year], debouncedSearchQuery),
-      })).filter(section => section.data.length > 0); // Remove empty sections
+      }))
+      .filter(section => section.data.length > 0);
+  }, [showsByYear, selectedYear, availableYears, debouncedSearchQuery]);
 
-      setSections(sectionData);
-
-      // Scroll to top when year selection or search query changes
-      setTimeout(() => {
-        const scrollResponder = sectionListRef.current?.getScrollResponder();
-        if (scrollResponder && 'scrollTo' in scrollResponder) {
-          (scrollResponder as any).scrollTo({ x: 0, y: 0, animated: false });
-        }
-      }, 100);
-    }
-  }, [showsByYear, selectedYear, debouncedSearchQuery]);
-
-  // Ensure scroll position is at the very top on initial mount
+  // Scroll to top when year selection or search query changes
   useEffect(() => {
     const timer = setTimeout(() => {
       const scrollResponder = sectionListRef.current?.getScrollResponder();
       if (scrollResponder && 'scrollTo' in scrollResponder) {
         (scrollResponder as any).scrollTo({ x: 0, y: 0, animated: false });
       }
-    }, 300);
-
+    }, 100);
     return () => clearTimeout(timer);
-  }, [sections]);
+  }, [selectedYear, debouncedSearchQuery]);
 
-  const handleShowPress = (show: GratefulDeadShow) => {
+  const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
-  };
+  }, [navigation]);
 
-  const handleYearChange = (year: string | null) => {
+  const handleYearChange = useCallback((year: string | null) => {
     setSelectedYear(year);
-  };
+  }, []);
 
-  const handleClearSearch = () => {
+  const handleClearSearch = useCallback(() => {
     setSearchQuery('');
     searchInputRef.current?.blur();
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -199,7 +183,11 @@ export function HomeScreen() {
       {/* Search and Filter Row */}
       <View style={styles.searchFilterRow}>
         {/* Search Bar */}
-        <View style={styles.searchBar}>
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => searchInputRef.current?.focus()}
+          activeOpacity={1}
+        >
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
@@ -220,7 +208,7 @@ export function HomeScreen() {
               <Ionicons name="close-circle" size={20} color="#666" />
             </TouchableOpacity>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Year Filter Pill */}
         <YearPicker

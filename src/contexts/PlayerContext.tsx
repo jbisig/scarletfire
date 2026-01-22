@@ -81,6 +81,18 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
     case 'SEEK':
       return { ...state, position: action.position };
 
+    case 'SYNC_TRACK_INDEX':
+      // Sync to a specific track index without reloading (used by native player events)
+      if (action.index >= 0 && action.index < state.playlist.length) {
+        return {
+          ...state,
+          currentTrack: state.playlist[action.index],
+          currentTrackIndex: action.index,
+          position: 0,
+        };
+      }
+      return state;
+
     default:
       return state;
   }
@@ -101,7 +113,6 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
-  const isAdvancingTrackRef = useRef(false);
   const currentLoadingTrackIdRef = useRef<string | null>(null);
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
@@ -122,7 +133,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         state.currentShow || undefined,
         state.playlist  // Pass full playlist for gapless playback
       ).then(() => {
-        isAdvancingTrackRef.current = false;
         dispatch({ type: 'SET_LOADING', isLoading: false });
 
         // Only play if we're still on the same track (prevent race condition)
@@ -149,11 +159,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackState, (event) => {
       const playbackState = event.state;
 
-      // Debug logging from Swift
-      if (event.debug) {
-        console.log('[SWIFT DEBUG]', event.debug);
-      }
-
       if (playbackState === 'playing') {
         dispatch({ type: 'PLAY' });
       } else if (playbackState === 'paused') {
@@ -164,13 +169,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
-  // Listen to track changes for gapless playback
+  // Listen to track changes for gapless playback and lock screen controls
   useEffect(() => {
-    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackTrackChanged, () => {
-      console.log('Track changed - gapless playback working!');
-      // Auto-advance to next track in our state when native player advances
-      isAdvancingTrackRef.current = true;
-      dispatch({ type: 'NEXT_TRACK' });
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackTrackChanged, (event) => {
+      // Sync React state to the track index from native player
+      if (event.trackIndex !== undefined) {
+        dispatch({ type: 'SYNC_TRACK_INDEX', index: event.trackIndex });
+      } else {
+        dispatch({ type: 'NEXT_TRACK' });
+      }
     });
 
     return () => subscription.remove();
@@ -179,7 +186,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Listen to queue end event (all tracks finished)
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
-      console.log('Playback queue ended');
       dispatch({ type: 'STOP' });
     });
 
@@ -256,8 +262,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = async () => {
     try {
-      // Call native skip - this will trigger playback-track-changed event
-      // which will update our state
       await audioService.skipToNext();
     } catch (error) {
       console.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
@@ -266,15 +270,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const previousTrack = async () => {
     try {
-      console.log('previousTrack called - dispatching PREVIOUS_TRACK action');
-
-      // Manually dispatch PREVIOUS_TRACK to update React state
-      // (Native code won't send playback-track-changed for backward skip)
-      dispatch({ type: 'PREVIOUS_TRACK' });
-
-      // Call native skip to rebuild queue from previous track
       await audioService.skipToPrevious();
-      console.log('audioService.skipToPrevious() completed');
     } catch (error) {
       console.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
     }

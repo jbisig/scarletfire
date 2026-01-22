@@ -1,54 +1,86 @@
-import { Audio, AVPlaybackStatus } from 'expo-av';
-import { Track } from '../types/show.types';
+import nativeAudioPlayer, { Track as NativeTrack, State } from './nativeAudioPlayer';
+import { Track, ShowDetail } from '../types/show.types';
 
 /**
- * Service for managing audio playback using Expo AV
- * Handles loading, playing, pausing, and seeking audio tracks
+ * Convert our Track format to Native Audio Player's Track format
+ */
+function convertToNativeTrack(track: Track, show?: ShowDetail): NativeTrack {
+  return {
+    id: track.id,
+    url: track.streamUrl,
+    title: track.title,
+    artist: show?.venue || 'Grateful Dead',
+    duration: track.duration,
+  };
+}
+
+/**
+ * Service for managing audio playback using native iOS AVQueuePlayer
+ * Handles loading, playing, pausing, and seeking audio tracks with
+ * full support for lock screen controls and gapless playback
  */
 class AudioService {
-  private sound: Audio.Sound | null = null;
-  private onStatusUpdate?: (status: AVPlaybackStatus) => void;
+  private isSetup = false;
+  private currentTrackId: string | null = null;
 
   /**
-   * Initialize audio mode for background playback
+   * Initialize native audio player for background playback
    */
   async initialize(): Promise<void> {
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
+      if (!this.isSetup) {
+        await nativeAudioPlayer.setupPlayer();
+        this.isSetup = true;
+      }
     } catch (error) {
-      throw new Error(`Failed to initialize audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`Audio initialization error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
   }
 
   /**
-   * Load a track for playback
+   * Load a track for playback with Now Playing metadata
    * @param track Track to load
-   * @param onStatusUpdate Optional callback for playback status updates
+   * @param show Show information for metadata
+   * @param queue Optional full queue for gapless playback
    */
-  async loadTrack(track: Track, onStatusUpdate?: (status: AVPlaybackStatus) => void): Promise<Audio.Sound> {
+  async loadTrack(track: Track, show?: ShowDetail, queue?: Track[]): Promise<void> {
     try {
-      // Unload previous track if exists
-      if (this.sound) {
-        await this.sound.unloadAsync();
-        this.sound = null;
+      // Ensure player is initialized
+      if (!this.isSetup) {
+        await this.initialize();
       }
 
-      this.onStatusUpdate = onStatusUpdate;
+      if (queue && queue.length > 0) {
+        // Find the index of the current track in the queue
+        const startIndex = queue.findIndex(t => t.id === track.id);
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: track.streamUrl },
-        { shouldPlay: false },
-        this.handlePlaybackStatusUpdate
-      );
+        // Pass the full queue and start index to native player
+        const nativeTracks = queue.map(t => convertToNativeTrack(t, show));
+        await nativeAudioPlayer.setQueue(nativeTracks, startIndex >= 0 ? startIndex : 0);
+      } else {
+        // Load single track
+        const nativeTrack = convertToNativeTrack(track, show);
+        await nativeAudioPlayer.setQueue([nativeTrack], 0);
+      }
 
-      this.sound = sound;
-      return sound;
+      this.currentTrackId = track.id;
     } catch (error) {
       throw new Error(`Failed to load track: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Add multiple tracks to the queue for gapless playback
+   * @param tracks Array of tracks to add
+   * @param show Show information for metadata
+   */
+  async addTracksToQueue(tracks: Track[], show?: ShowDetail): Promise<void> {
+    try {
+      const nativeTracks = tracks.map(track => convertToNativeTrack(track, show));
+      await nativeAudioPlayer.setQueue(nativeTracks, 0);
+    } catch (error) {
+      throw new Error(`Failed to add tracks to queue: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -56,12 +88,8 @@ class AudioService {
    * Play the currently loaded track
    */
   async play(): Promise<void> {
-    if (!this.sound) {
-      throw new Error('No track loaded');
-    }
-
     try {
-      await this.sound.playAsync();
+      await nativeAudioPlayer.play();
     } catch (error) {
       throw new Error(`Failed to play track: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -71,29 +99,22 @@ class AudioService {
    * Pause the currently playing track
    */
   async pause(): Promise<void> {
-    if (!this.sound) {
-      throw new Error('No track loaded');
-    }
-
     try {
-      await this.sound.pauseAsync();
+      await nativeAudioPlayer.pause();
     } catch (error) {
       throw new Error(`Failed to pause track: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Stop and unload the current track
+   * Stop and clear the current track
    */
   async stop(): Promise<void> {
-    if (this.sound) {
-      try {
-        await this.sound.stopAsync();
-        await this.sound.unloadAsync();
-        this.sound = null;
-      } catch (error) {
-        throw new Error(`Failed to stop track: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+    try {
+      await nativeAudioPlayer.stop();
+      this.currentTrackId = null;
+    } catch (error) {
+      throw new Error(`Failed to stop track: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -102,48 +123,58 @@ class AudioService {
    * @param positionMillis Position in milliseconds
    */
   async seekTo(positionMillis: number): Promise<void> {
-    if (!this.sound) {
-      throw new Error('No track loaded');
-    }
-
     try {
-      await this.sound.setPositionAsync(positionMillis);
+      // Convert milliseconds to seconds for native player
+      await nativeAudioPlayer.seekTo(positionMillis / 1000);
     } catch (error) {
       throw new Error(`Failed to seek: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Set playback rate
-   * @param rate Playback rate (1.0 is normal speed)
+   * Skip to the next track in the queue
    */
-  async setRate(rate: number): Promise<void> {
-    if (!this.sound) {
-      throw new Error('No track loaded');
-    }
-
+  async skipToNext(): Promise<void> {
     try {
-      await this.sound.setRateAsync(rate, true);
+      await nativeAudioPlayer.skipToNext();
     } catch (error) {
-      throw new Error(`Failed to set rate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to skip to next: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Get the current sound instance
+   * Skip to the previous track in the queue
    */
-  getSound(): Audio.Sound | null {
-    return this.sound;
+  async skipToPrevious(): Promise<void> {
+    try {
+      await nativeAudioPlayer.skipToPrevious();
+    } catch (error) {
+      throw new Error(`Failed to skip to previous: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
-   * Internal handler for playback status updates
+   * Get current playback state
    */
-  private handlePlaybackStatusUpdate = (status: AVPlaybackStatus): void => {
-    if (this.onStatusUpdate) {
-      this.onStatusUpdate(status);
-    }
-  };
+  async getState(): Promise<State> {
+    return await nativeAudioPlayer.getState();
+  }
+
+  /**
+   * Get current position in milliseconds
+   */
+  async getPosition(): Promise<number> {
+    const progress = await nativeAudioPlayer.getProgress();
+    return progress.position * 1000; // Convert seconds to milliseconds
+  }
+
+  /**
+   * Get current track duration in milliseconds
+   */
+  async getDuration(): Promise<number> {
+    const progress = await nativeAudioPlayer.getProgress();
+    return progress.duration * 1000; // Convert seconds to milliseconds
+  }
 }
 
 export const audioService = new AudioService();

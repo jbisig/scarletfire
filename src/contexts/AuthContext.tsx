@@ -14,6 +14,7 @@ interface AuthState {
 type AuthAction =
   | { type: 'AUTH_STATE_CHANGED'; user: User | null }
   | { type: 'LOGIN_SUCCESS'; user: User }
+  | { type: 'USER_UPDATED'; user: User }
   | { type: 'LOGOUT' }
   | { type: 'SKIP_LOGIN' }
   | { type: 'UNSKIP_LOGIN' }
@@ -46,6 +47,12 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         hasSkippedLogin: false,
         isLoading: false,
         error: null,
+      };
+
+    case 'USER_UPDATED':
+      return {
+        ...state,
+        user: action.user,
       };
 
     case 'LOGOUT':
@@ -94,6 +101,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   skipLogin: () => Promise<void>;
   showLogin: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -103,11 +111,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Listen to Supabase auth state changes
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let hasResolved = false;
+
+    // Set a timeout to prevent infinite loading if auth check hangs
+    timeoutId = setTimeout(() => {
+      if (!hasResolved) {
+        hasResolved = true;
+        dispatch({ type: 'AUTH_STATE_CHANGED', user: null });
+      }
+    }, 5000); // 5 second timeout
+
     const unsubscribe = authService.onAuthStateChanged((user) => {
-      dispatch({ type: 'AUTH_STATE_CHANGED', user });
+      if (!hasResolved) {
+        hasResolved = true;
+        clearTimeout(timeoutId);
+        dispatch({ type: 'AUTH_STATE_CHANGED', user });
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   // Check if user previously skipped login
@@ -181,6 +207,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'UNSKIP_LOGIN' });
   };
 
+  const refreshUser = async () => {
+    try {
+      const session = await authService.getSession();
+      if (session?.user) {
+        dispatch({ type: 'USER_UPDATED', user: session.user });
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -191,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         skipLogin,
         showLogin,
+        refreshUser,
       }}
     >
       {children}

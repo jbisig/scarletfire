@@ -41,6 +41,21 @@ class ArchiveApiService {
   }
 
   /**
+   * Fetch with timeout to prevent hanging requests
+   */
+  private async fetchWithTimeout(url: string, timeoutMs: number = ARCHIVE_CONFIG.TIMEOUT): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /**
    * Search for Grateful Dead shows
    * @param page Page number (0-indexed)
    * @param rows Number of results per page
@@ -67,7 +82,7 @@ class ArchiveApiService {
       };
 
       const queryString = this.buildQueryString(params);
-      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -159,7 +174,7 @@ class ArchiveApiService {
       };
 
       const queryString = this.buildQueryString(params);
-      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -239,7 +254,7 @@ class ArchiveApiService {
       };
 
       const queryString = this.buildQueryString(params);
-      const response = await fetch(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
+      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -421,7 +436,7 @@ class ArchiveApiService {
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
     try {
-      const response = await fetch(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
+      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

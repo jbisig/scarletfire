@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,63 @@ import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { StarRating } from '../components/StarRating';
+import { useDebounce } from '../hooks/useDebounce';
+import { PageHeader } from '../components/PageHeader';
+import { COLORS, FONTS } from '../constants/theme';
+
+// Memoized song item component to prevent unnecessary re-renders
+interface SongItemProps {
+  song: FavoriteSong;
+  isLoading: boolean;
+  playCount: number;
+  onPress: (song: FavoriteSong) => void;
+}
+
+const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
+  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+
+  return (
+    <TouchableOpacity
+      style={styles.songItem}
+      onPress={() => onPress(song)}
+      activeOpacity={0.7}
+      disabled={isLoading}
+    >
+      <View style={styles.songContentRow}>
+        <View style={styles.songInfo}>
+          <Text style={styles.songTitle} numberOfLines={1}>
+            {song.trackTitle}
+          </Text>
+
+          <View style={styles.songDateRow}>
+            <Text style={styles.songDate}>
+              {formatDate(song.showDate)}
+            </Text>
+            {performanceRating && (
+              <StarRating tier={performanceRating} size={14} />
+            )}
+          </View>
+
+          {song.venue && (
+            <Text style={styles.songVenue} numberOfLines={1}>
+              {song.venue}
+            </Text>
+          )}
+        </View>
+
+        {playCount > 0 && (
+          <View style={styles.playCountBadge}>
+            <Text style={styles.playCountText}>
+              {playCount} {playCount === 1 ? 'play' : 'plays'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+SongItem.displayName = 'SongItem';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
@@ -44,6 +101,8 @@ export function FavoritesScreen() {
   const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [showSearchQuery, setShowSearchQuery] = useState('');
   const [songSearchQuery, setSongSearchQuery] = useState('');
+  const debouncedShowSearchQuery = useDebounce(showSearchQuery, 400);
+  const debouncedSongSearchQuery = useDebounce(songSearchQuery, 400);
   const showSearchInputRef = useRef<TextInput>(null);
   const songSearchInputRef = useRef<TextInput>(null);
 
@@ -52,8 +111,8 @@ export function FavoritesScreen() {
     let songs = [...favoriteSongs];
 
     // Filter by search query
-    if (songSearchQuery.trim()) {
-      const lowerQuery = songSearchQuery.toLowerCase();
+    if (debouncedSongSearchQuery.trim()) {
+      const lowerQuery = debouncedSongSearchQuery.toLowerCase();
       songs = songs.filter(song => {
         // Search in track title
         if (song.trackTitle.toLowerCase().includes(lowerQuery)) return true;
@@ -89,15 +148,15 @@ export function FavoritesScreen() {
       default:
         return songs;
     }
-  }, [favoriteSongs, songSortType, songSearchQuery]);
+  }, [favoriteSongs, songSortType, debouncedSongSearchQuery]);
 
   // Filter and sort shows based on search query and sort type
   const sortedAndFilteredShows = useMemo(() => {
     let shows = [...favoriteShows];
 
     // Filter by search query
-    if (showSearchQuery.trim()) {
-      const lowerQuery = showSearchQuery.toLowerCase();
+    if (debouncedShowSearchQuery.trim()) {
+      const lowerQuery = debouncedShowSearchQuery.toLowerCase();
       shows = shows.filter(show => {
         // Search in title
         if (show.title?.toLowerCase().includes(lowerQuery)) return true;
@@ -133,7 +192,7 @@ export function FavoritesScreen() {
       default:
         return shows;
     }
-  }, [favoriteShows, showSortType, showSearchQuery]);
+  }, [favoriteShows, showSortType, debouncedShowSearchQuery]);
 
   const getSongSortLabel = (sortType: SongSortType): string => {
     switch (sortType) {
@@ -159,11 +218,11 @@ export function FavoritesScreen() {
     }
   };
 
-  const handleShowPress = (show: GratefulDeadShow) => {
+  const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
-  };
+  }, [navigation]);
 
-  const handleSongPress = async (song: FavoriteSong) => {
+  const handleSongPress = useCallback(async (song: FavoriteSong) => {
     try {
       setLoadingSongId(`${song.trackId}-${song.showIdentifier}`);
 
@@ -181,12 +240,12 @@ export function FavoritesScreen() {
     } finally {
       setLoadingSongId(null);
     }
-  };
+  }, [loadTrack]);
 
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+        <ActivityIndicator size="large" color="#E54C4F" />
         <Text style={styles.loadingText}>Loading favorites...</Text>
       </View>
     );
@@ -208,46 +267,52 @@ export function FavoritesScreen() {
     return (
       <View style={styles.tabContentContainer}>
         {/* Search Bar with Sort Button */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
-            ref={showSearchInputRef}
-            style={styles.searchInput}
-            placeholder="Date, venue, location"
-            placeholderTextColor="#999"
-            value={showSearchQuery}
-            onChangeText={setShowSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {showSearchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setShowSearchQuery('');
-                showSearchInputRef.current?.blur();
-              }}
-              style={styles.clearButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
+        <View style={styles.searchRow}>
           <TouchableOpacity
-            style={styles.sortButtonInSearch}
+            style={styles.searchInputContainer}
+            onPress={() => showSearchInputRef.current?.focus()}
+            activeOpacity={1}
+          >
+            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
+            <TextInput
+              ref={showSearchInputRef}
+              style={styles.searchInput}
+              placeholder="Date, venue, location"
+              placeholderTextColor="rgba(255,255,255,0.66)"
+              value={showSearchQuery}
+              onChangeText={setShowSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {showSearchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setShowSearchQuery('');
+                  showSearchInputRef.current?.blur();
+                }}
+                style={styles.clearButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sortPillButton}
             onPress={() => setShowShowSortModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="filter" size={18} color="#ff6b6b" />
-            <Text style={styles.sortButtonInSearchText}>
-              {getShowSortLabel(showSortType)}
+            <Text style={styles.sortPillButtonText}>
+              {showSortType === 'performanceDate' ? 'Perform. Date' : 'Date Saved'}
             </Text>
+            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
           </TouchableOpacity>
         </View>
 
-        {sortedAndFilteredShows.length === 0 && showSearchQuery.trim() ? (
+        {sortedAndFilteredShows.length === 0 && debouncedShowSearchQuery.trim() ? (
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No shows found matching "{showSearchQuery}"</Text>
+              <Text style={styles.emptyText}>No shows found matching "{debouncedShowSearchQuery}"</Text>
             </View>
           </TouchableWithoutFeedback>
         ) : (
@@ -261,6 +326,12 @@ export function FavoritesScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
+            // Performance optimizations
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            windowSize={11}
+            initialNumToRender={10}
           />
         )}
       </View>
@@ -283,102 +354,76 @@ export function FavoritesScreen() {
     return (
       <View style={styles.tabContentContainer}>
         {/* Search Bar with Sort Button */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
-            ref={songSearchInputRef}
-            style={styles.searchInput}
-            placeholder="Song, date, venue"
-            placeholderTextColor="#999"
-            value={songSearchQuery}
-            onChangeText={setSongSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {songSearchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSongSearchQuery('');
-                songSearchInputRef.current?.blur();
-              }}
-              style={styles.clearButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
+        <View style={styles.searchRow}>
           <TouchableOpacity
-            style={styles.sortButtonInSearch}
+            style={styles.searchInputContainer}
+            onPress={() => songSearchInputRef.current?.focus()}
+            activeOpacity={1}
+          >
+            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
+            <TextInput
+              ref={songSearchInputRef}
+              style={styles.searchInput}
+              placeholder="Song, date, venue"
+              placeholderTextColor="rgba(255,255,255,0.66)"
+              value={songSearchQuery}
+              onChangeText={setSongSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {songSearchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSongSearchQuery('');
+                  songSearchInputRef.current?.blur();
+                }}
+                style={styles.clearButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sortPillButton}
             onPress={() => setShowSongSortModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="filter" size={18} color="#ff6b6b" />
-            <Text style={styles.sortButtonInSearchText}>
+            <Text style={styles.sortPillButtonText}>
               {getSongSortLabel(songSortType)}
             </Text>
+            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
           </TouchableOpacity>
         </View>
 
-        {sortedAndFilteredSongs.length === 0 && songSearchQuery.trim() ? (
+        {sortedAndFilteredSongs.length === 0 && debouncedSongSearchQuery.trim() ? (
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No songs found matching "{songSearchQuery}"</Text>
+              <Text style={styles.emptyText}>No songs found matching "{debouncedSongSearchQuery}"</Text>
             </View>
           </TouchableWithoutFeedback>
         ) : (
           <FlatList
             data={sortedAndFilteredSongs}
             keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
-            renderItem={({ item }) => {
-              const isLoading = loadingSongId === `${item.trackId}-${item.showIdentifier}`;
-              const playCount = getPlayCount(item.trackTitle, item.showIdentifier);
-              const performanceRating = getSongPerformanceRating(item.trackTitle, item.showDate);
-
-              return (
-                <TouchableOpacity
-                  style={styles.songItem}
-                  onPress={() => handleSongPress(item)}
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <View style={styles.songInfo}>
-                    <Text style={styles.songTitle} numberOfLines={2}>
-                      {item.trackTitle}
-                    </Text>
-                    <View style={styles.songMetaRow}>
-                      <Text style={styles.songDate}>
-                        {formatDate(item.showDate)}
-                      </Text>
-                      {performanceRating && (
-                        <StarRating tier={performanceRating} size={14} />
-                      )}
-                      {playCount > 0 && (
-                        <View style={styles.playCountBadge}>
-                          <Ionicons name="play-circle" size={12} color="#ff6b6b" />
-                          <Text style={styles.playCountText}>
-                            {playCount} {playCount === 1 ? 'play' : 'plays'}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    {item.venue && (
-                      <Text style={styles.songVenue} numberOfLines={1}>
-                        {item.venue}
-                      </Text>
-                    )}
-                  </View>
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color="#ff6b6b" />
-                  ) : (
-                    <Ionicons name="play-circle-outline" size={32} color="#ff6b6b" />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
+            renderItem={({ item }) => (
+              <SongItem
+                song={item}
+                isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
+                playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
+                onPress={handleSongPress}
+              />
+            )}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
+            // Performance optimizations
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={15}
+            updateCellsBatchingPeriod={50}
+            windowSize={11}
+            initialNumToRender={15}
           />
         )}
       </View>
@@ -387,6 +432,9 @@ export function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Page Header */}
+      <PageHeader title="Favorites" />
+
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -395,7 +443,7 @@ export function FavoritesScreen() {
           activeOpacity={0.7}
         >
           <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-            Shows ({favoriteShows.length})
+            Shows
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -404,7 +452,7 @@ export function FavoritesScreen() {
           activeOpacity={0.7}
         >
           <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
-            Songs ({favoriteSongs.length})
+            Songs
           </Text>
         </TouchableOpacity>
       </View>
@@ -425,7 +473,9 @@ export function FavoritesScreen() {
           onPress={() => setShowSongSortModal(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sort By</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sort</Text>
+            </View>
 
             <TouchableOpacity
               style={styles.sortOption}
@@ -435,9 +485,12 @@ export function FavoritesScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Alphabetical</Text>
+              <Text style={[
+                styles.sortOptionText,
+                songSortType === 'alphabetical' && styles.sortOptionTextSelected
+              ]}>Alphabetical</Text>
               {songSortType === 'alphabetical' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
@@ -449,23 +502,29 @@ export function FavoritesScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Date Saved</Text>
+              <Text style={[
+                styles.sortOptionText,
+                songSortType === 'dateSaved' && styles.sortOptionTextSelected
+              ]}>Date Saved</Text>
               {songSortType === 'dateSaved' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.sortOption}
+              style={[styles.sortOption, styles.sortOptionLast]}
               onPress={() => {
                 setSongSortType('performanceDate');
                 setShowSongSortModal(false);
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Performance Date</Text>
+              <Text style={[
+                styles.sortOptionText,
+                songSortType === 'performanceDate' && styles.sortOptionTextSelected
+              ]}>Performance Date</Text>
               {songSortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
@@ -485,7 +544,9 @@ export function FavoritesScreen() {
           onPress={() => setShowShowSortModal(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sort By</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sort</Text>
+            </View>
 
             <TouchableOpacity
               style={styles.sortOption}
@@ -495,23 +556,29 @@ export function FavoritesScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Date Saved</Text>
+              <Text style={[
+                styles.sortOptionText,
+                showSortType === 'dateSaved' && styles.sortOptionTextSelected
+              ]}>Date Saved</Text>
               {showSortType === 'dateSaved' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.sortOption}
+              style={[styles.sortOption, styles.sortOptionLast]}
               onPress={() => {
                 setShowSortType('performanceDate');
                 setShowShowSortModal(false);
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Performance Date</Text>
+              <Text style={[
+                styles.sortOptionText,
+                showSortType === 'performanceDate' && styles.sortOptionTextSelected
+              ]}>Performance Date</Text>
               {showSortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
@@ -524,37 +591,40 @@ export function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#2a2a2a',
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: COLORS.textSecondary,
+    marginHorizontal: 24,
   },
   tab: {
     flex: 1,
-    paddingVertical: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
     alignItems: 'center',
-    borderBottomWidth: 2,
+    marginBottom: -1,
+    borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#ff6b6b',
+    borderBottomColor: COLORS.accent,
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#999',
+    fontSize: 22,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textSecondary,
   },
   activeTabText: {
-    color: '#ff6b6b',
+    color: COLORS.accent,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#121212',
     padding: 40,
   },
   loadingText: {
@@ -584,93 +654,101 @@ const styles = StyleSheet.create({
     paddingBottom: 180,
   },
   songItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: COLORS.background,
+  },
+  songContentRow: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   songInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   songTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
-  songMetaRow: {
+  songDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 2,
   },
   songDate: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#ff6b6b',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   playCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    gap: 3,
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   playCountText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#ff6b6b',
+    fontSize: 12,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   songVenue: {
-    fontSize: 13,
-    color: '#999',
+    fontSize: 14,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   tabContentContainer: {
     flex: 1,
   },
-  searchContainer: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.border,
+    borderRadius: 50,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#ffffff',
-    paddingVertical: 8,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   clearButton: {
     padding: 4,
     marginLeft: 8,
   },
-  sortButtonInSearch: {
+  sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginLeft: 8,
-    backgroundColor: '#333',
-    borderRadius: 6,
+    backgroundColor: COLORS.border,
+    borderRadius: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 6,
   },
-  sortButtonInSearchText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
+  sortPillButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   songsTabContainer: {
     flex: 1,
@@ -698,30 +776,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    width: '85%',
     maxWidth: 400,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
-    marginBottom: 20,
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: COLORS.border,
+  },
+  sortOptionLast: {
+    borderBottomWidth: 0,
   },
   sortOptionText: {
-    fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '500',
+    fontSize: 20,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    fontFamily: FONTS.secondary,
+  },
+  sortOptionTextSelected: {
+    color: COLORS.accent,
   },
 });

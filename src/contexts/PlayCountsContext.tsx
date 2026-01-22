@@ -19,12 +19,15 @@ interface PlayCountsContextType {
   getPlayCount: (trackTitle: string, showIdentifier: string) => number;
   recordTrackPlay: (trackTitle: string, showIdentifier: string, showDate: string) => Promise<void>;
   isLoading: boolean;
+  hasShowBeenPlayed: (showIdentifier: string) => boolean;
+  getShowPlayCount: (showIdentifier: string, totalTracks: number) => number;
 }
 
 const PlayCountsContext = createContext<PlayCountsContextType | undefined>(undefined);
 
 export function PlayCountsProvider({ children }: { children: React.ReactNode }) {
-  const [playCounts, setPlayCounts] = useState<PlayCount[]>([]);
+  // Use Map for O(1) lookups and stable callback references
+  const [playCountsMap, setPlayCountsMap] = useState<Map<string, PlayCount>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
 
@@ -44,8 +47,10 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     try {
       const stored = await AsyncStorage.getItem(PLAY_COUNTS_STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setPlayCounts(parsed);
+        const parsed: PlayCount[] = JSON.parse(stored);
+        // Convert array to Map with keys "trackTitle:showIdentifier"
+        const map = new Map(parsed.map(pc => [`${pc.trackTitle}:${pc.showIdentifier}`, pc]));
+        setPlayCountsMap(map);
       }
     } catch (error) {
       console.error('Error loading play counts:', error);
@@ -54,9 +59,11 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
-  const savePlayCounts = async (counts: PlayCount[]) => {
+  const savePlayCounts = async (map: Map<string, PlayCount>) => {
     try {
-      await AsyncStorage.setItem(PLAY_COUNTS_STORAGE_KEY, JSON.stringify(counts));
+      // Convert Map to array before saving
+      const array = Array.from(map.values());
+      await AsyncStorage.setItem(PLAY_COUNTS_STORAGE_KEY, JSON.stringify(array));
     } catch (error) {
       console.error('Error saving play counts:', error);
     }
@@ -67,13 +74,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       const cloudCounts = await playCountsCloudService.loadPlayCounts(userId);
 
       // Merge local + cloud, taking the higher count for each track
-      const mergedMap = new Map<string, PlayCount>();
-
-      // Add local counts
-      playCounts.forEach(pc => {
-        const key = `${pc.trackTitle}:${pc.showIdentifier}`;
-        mergedMap.set(key, pc);
-      });
+      const mergedMap = new Map<string, PlayCount>(playCountsMap);
 
       // Merge cloud counts (take higher count)
       cloudCounts.forEach(cloudPc => {
@@ -85,80 +86,105 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
         }
       });
 
-      const merged = Array.from(mergedMap.values());
-      setPlayCounts(merged);
+      setPlayCountsMap(mergedMap);
 
       // Save merged back to both local and cloud
-      await savePlayCounts(merged);
-      await playCountsCloudService.syncPlayCounts(userId, merged);
+      await savePlayCounts(mergedMap);
+      const mergedArray = Array.from(mergedMap.values());
+      await playCountsCloudService.syncPlayCounts(userId, mergedArray);
     } catch (error) {
       console.error('Failed to sync play counts from cloud:', error);
     }
   };
 
   const getPlayCount = useCallback((trackTitle: string, showIdentifier: string): number => {
-    const found = playCounts.find(
-      pc => pc.trackTitle === trackTitle && pc.showIdentifier === showIdentifier
-    );
-    return found ? found.count : 0;
-  }, [playCounts]);
+    const key = `${trackTitle}:${showIdentifier}`;
+    return playCountsMap.get(key)?.count || 0;
+  }, [playCountsMap]);
+
+  const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
+    for (const pc of playCountsMap.values()) {
+      if (pc.showIdentifier === showIdentifier) return true;
+    }
+    return false;
+  }, [playCountsMap]);
+
+  const getShowPlayCount = useCallback((showIdentifier: string, totalTracks: number): number => {
+    if (totalTracks === 0) return 0;
+
+    // Get all play counts for this show
+    const showPlayCounts: PlayCount[] = [];
+    for (const pc of playCountsMap.values()) {
+      if (pc.showIdentifier === showIdentifier) {
+        showPlayCounts.push(pc);
+      }
+    }
+
+    if (showPlayCounts.length === 0) return 0;
+
+    // Calculate threshold (50% of tracks)
+    const threshold = Math.ceil(totalTracks * 0.5);
+
+    // Find maximum N where at least 50% of tracks have count >= N
+    let maxPlayCount = 0;
+    const maxCount = Math.max(...showPlayCounts.map(pc => pc.count));
+
+    for (let n = maxCount; n >= 1; n--) {
+      const tracksWithCountN = showPlayCounts.filter(pc => pc.count >= n).length;
+      if (tracksWithCountN >= threshold) {
+        maxPlayCount = n;
+        break;
+      }
+    }
+
+    return maxPlayCount;
+  }, [playCountsMap]);
 
   const recordTrackPlay = async (trackTitle: string, showIdentifier: string, showDate: string) => {
     const now = Date.now();
-    const existingIndex = playCounts.findIndex(
-      pc => pc.trackTitle === trackTitle && pc.showIdentifier === showIdentifier
-    );
+    const key = `${trackTitle}:${showIdentifier}`;
+    const existing = playCountsMap.get(key);
 
-    let newPlayCounts: PlayCount[];
+    const newMap = new Map(playCountsMap);
 
-    if (existingIndex >= 0) {
+    if (existing) {
       // Increment existing count
-      newPlayCounts = [...playCounts];
-      newPlayCounts[existingIndex] = {
-        ...newPlayCounts[existingIndex],
-        count: newPlayCounts[existingIndex].count + 1,
+      newMap.set(key, {
+        ...existing,
+        count: existing.count + 1,
         lastPlayedAt: now,
-      };
+      });
     } else {
       // Create new entry
-      newPlayCounts = [
-        ...playCounts,
-        {
-          trackTitle,
-          showIdentifier,
-          showDate,
-          count: 1,
-          firstPlayedAt: now,
-          lastPlayedAt: now,
-        },
-      ];
+      newMap.set(key, {
+        trackTitle,
+        showIdentifier,
+        showDate,
+        count: 1,
+        firstPlayedAt: now,
+        lastPlayedAt: now,
+      });
     }
 
-    setPlayCounts(newPlayCounts);
-    await savePlayCounts(newPlayCounts);
+    setPlayCountsMap(newMap);
+    await savePlayCounts(newMap);
 
-    // Sync to cloud if authenticated
+    // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      try {
-        await playCountsCloudService.incrementPlayCount(
-          authState.user.id,
-          trackTitle,
-          showIdentifier,
-          showDate
-        );
-      } catch (error) {
-        console.error('Failed to sync play count to cloud:', error);
-      }
+      const playCounts = Array.from(newMap.values());
+      playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch(() => {});
     }
   };
 
   return (
     <PlayCountsContext.Provider
       value={{
-        playCounts,
+        playCounts: Array.from(playCountsMap.values()), // Convert Map to array for compatibility
         getPlayCount,
         recordTrackPlay,
         isLoading,
+        hasShowBeenPlayed,
+        getShowPlayCount,
       }}
     >
       {children}
