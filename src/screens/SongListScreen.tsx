@@ -178,7 +178,11 @@ export function SongListScreen() {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => searchInputRef.current?.focus()}
+            activeOpacity={1}
+          >
             <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
             <TextInput
               ref={searchInputRef}
@@ -199,7 +203,7 @@ export function SongListScreen() {
                 <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Songs List */}
@@ -323,8 +327,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   songTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
     marginBottom: 4,
