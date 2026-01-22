@@ -1,17 +1,15 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { formatDate } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
-
-// Video source for background
-const videoSource = require('../../assets/videos/background.mov');
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -20,13 +18,7 @@ interface MiniPlayerProps {
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause } = usePlayer();
   const { getPlayCount } = usePlayCounts();
-
-  // Video player for background
-  const videoPlayer = useVideoPlayer(videoSource, player => {
-    player.loop = true;
-    player.muted = true;
-    player.play();
-  });
+  const { videoSource } = useVideoBackground();
 
   // Memoize performance rating lookup using pre-computed data
   const performanceRating = useMemo(() => {
@@ -63,11 +55,13 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
         activeOpacity={0.9}
       >
         {/* Video Background */}
-        <VideoView
-          player={videoPlayer}
+        <Video
+          source={videoSource}
           style={styles.video}
-          contentFit="cover"
-          nativeControls={false}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay
+          isLooping
+          isMuted
         />
 
         {/* Blur overlay */}
@@ -112,15 +106,14 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
 const styles = StyleSheet.create({
   wrapper: {
     overflow: 'hidden',
-    borderRadius: 16,
-    marginHorizontal: 8,
-    marginBottom: 8,
+    borderRadius: 12,
+    marginHorizontal: 12,
   },
   container: {
     height: 72,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 12,
   },
   video: {
     ...StyleSheet.absoluteFillObject,
@@ -133,7 +126,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   infoContainer: {
     flex: 1,

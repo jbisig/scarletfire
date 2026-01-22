@@ -1,14 +1,15 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   Dimensions,
   PanResponder,
+  Animated,
+  Easing,
 } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { formatDate, formatTime } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
@@ -29,27 +31,58 @@ interface FullPlayerProps {
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { height: screenHeight } = Dimensions.get('window');
+const DISMISS_THRESHOLD = 100; // Distance to drag before it dismisses on release
+const VELOCITY_THRESHOLD = 0.5; // Velocity that triggers dismiss
 
 /**
- * Full-screen player modal with video background and playback controls
+ * Full-screen player tray that slides up from bottom
  */
-// Video source for background
-const videoSource = require('../../assets/videos/background.mov');
-
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const navigation = useNavigation<NavigationProp>();
   const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
+  const { videoSource } = useVideoBackground();
   const progressBarRef = useRef<View>(null);
 
-  // Video player for background
-  const videoPlayer = useVideoPlayer(videoSource, player => {
-    player.loop = true;
-    player.muted = true;
-    player.play();
-  });
+  // Animation for slide up/down
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+  const dragOffset = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = useState(false);
+  const isDismissingRef = useRef(false);
+
+  // Combined position = slide position + drag offset
+  const translateY = Animated.add(slideAnim, dragOffset);
+
+  // Handle visibility changes
+  useEffect(() => {
+    if (visible) {
+      isDismissingRef.current = false;
+      setShouldRender(true);
+      dragOffset.setValue(0);
+      slideAnim.setValue(screenHeight);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else if (shouldRender && !isDismissingRef.current) {
+      // Only animate if not already dismissed via gesture
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 350,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => {
+        setShouldRender(false);
+      });
+    } else if (!visible) {
+      setShouldRender(false);
+    }
+  }, [visible]);
+
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
   const lastRewindTapRef = useRef<number>(0);
@@ -59,32 +92,21 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const currentDurationRef = useRef(state.duration);
 
   // Update refs when state changes
-  React.useEffect(() => {
+  useEffect(() => {
     currentTrackRef.current = state.currentTrack;
     currentDurationRef.current = state.duration;
   }, [state.currentTrack, state.duration]);
 
-  // Memoize performance rating lookup using pre-computed data
+  // Memoize performance rating lookup
   const performanceRating = useMemo(() => {
     if (!state.currentTrack || !state.currentShow) return null;
-
     const song = GRATEFUL_DEAD_SONGS.find(s =>
       s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
     );
-
     if (!song) return null;
-
     const performance = song.performances.find(p => p.date === state.currentShow!.date);
-
     return performance?.rating || null;
   }, [state.currentTrack?.id, state.currentShow?.date]);
-
-  // Memoize play count lookup
-  const playCount = useMemo(() => {
-    return state.currentTrack && state.currentShow
-      ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
-      : 0;
-  }, [state.currentTrack?.id, state.currentShow?.identifier, getPlayCount]);
 
   const isFavorite = state.currentTrack && state.currentShow
     ? isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
@@ -100,7 +122,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const handleRewind = (): void => {
     const now = Date.now();
     const timeSinceLastTap = now - lastRewindTapRef.current;
-
     if (timeSinceLastTap < 300) {
       previousTrack();
       lastRewindTapRef.current = 0;
@@ -112,10 +133,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   const handleToggleFavoriteSong = (): void => {
     if (!state.currentTrack || !state.currentShow) return;
-
     const trackId = state.currentTrack.id;
     const showIdentifier = state.currentShow.identifier;
-
     if (isSongFavorite(trackId, showIdentifier)) {
       removeFavoriteSong(trackId, showIdentifier);
     } else {
@@ -134,10 +153,19 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const handleNavigateToShow = (): void => {
     if (!state.currentShow) return;
     onClose();
-    navigation.navigate('ShowDetail', { identifier: state.currentShow.identifier });
+    // Navigate to ShowDetail within ShowsTab stack so MiniPlayer remains visible
+    // (MiniPlayer is rendered inside MainTabs, so navigating within a tab stack keeps it visible)
+    // Navigate through the full hierarchy: MainTabs > ShowsTab > ShowDetail
+    navigation.navigate('MainTabs', {
+      screen: 'ShowsTab',
+      params: {
+        screen: 'ShowDetail',
+        params: { identifier: state.currentShow.identifier },
+      },
+    });
   };
 
-  // Progress bar pan responder for dragging
+  // Progress bar pan responder
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -145,13 +173,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       onPanResponderGrant: (evt) => {
         progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
-
           const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
           const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
-
           const touchX = barPageX + evt.nativeEvent.locationX;
           const position = calculatePositionFromTouch(touchX, durationMs);
-
           isDraggingRef.current = true;
           setIsDragging(true);
           setDragPosition(position);
@@ -159,26 +184,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       },
       onPanResponderMove: (evt) => {
         if (barMeasurements.current.width === 0) return;
-
         const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
         const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
-
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
       },
       onPanResponderRelease: (evt) => {
         if (barMeasurements.current.width === 0) return;
-
         const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
         const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
-
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
-
         setDragPosition(position);
         seekTo(position);
-
         setTimeout(() => {
           setIsDragging(false);
           isDraggingRef.current = false;
@@ -193,165 +212,215 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     })
   ).current;
 
-  // Swipe down to dismiss gesture
+  // Swipe down to dismiss - tracks drag position
   const swipeDownResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        // Only capture if dragging down
+        return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderGrant: () => {
+        // Reset drag offset
+        dragOffset.setValue(0);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Only allow dragging down (positive dy)
+        if (gestureState.dy > 0) {
+          dragOffset.setValue(gestureState.dy);
+        }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dy > 50) {
-          onClose();
+        const shouldDismiss =
+          gestureState.dy > DISMISS_THRESHOLD ||
+          gestureState.vy > VELOCITY_THRESHOLD;
+
+        if (shouldDismiss) {
+          // Mark as dismissing to prevent duplicate animation
+          isDismissingRef.current = true;
+          // Calculate remaining distance and use velocity for natural feel
+          const remainingDistance = screenHeight - gestureState.dy;
+          const velocity = Math.max(gestureState.vy, 0.4); // Minimum velocity
+          const duration = Math.min(400, Math.max(200, remainingDistance / velocity / 1.5));
+
+          // Slide off screen with easing
+          Animated.timing(dragOffset, {
+            toValue: screenHeight,
+            duration,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start(() => {
+            setShouldRender(false);
+            onClose();
+            // Reset after unmount
+            setTimeout(() => {
+              dragOffset.setValue(0);
+              slideAnim.setValue(screenHeight);
+            }, 0);
+          });
+        } else {
+          // Snap back with a snappy spring
+          Animated.spring(dragOffset, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 10,
+          }).start();
         }
+      },
+      onPanResponderTerminate: () => {
+        // Snap back if gesture is interrupted
+        Animated.spring(dragOffset, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
       },
     })
   ).current;
 
-  if (!state.currentTrack) return null;
+  if (!shouldRender || !state.currentTrack) return null;
 
   const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
   const duration = state.duration > 0 ? state.duration : trackDuration;
-
   const currentPosition = isDragging ? dragPosition : state.position;
   const progress = duration > 0 ? (currentPosition / duration) : 0;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
+    <Animated.View
+      style={[
+        styles.container,
+        { transform: [{ translateY }] }
+      ]}
     >
-      <View style={styles.container}>
-        {/* Video Background */}
-        <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
-          <VideoView
-            player={videoPlayer}
-            style={styles.video}
-            contentFit="cover"
-            nativeControls={false}
-          />
+      {/* Video Background */}
+      <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
+        <Video
+          source={videoSource}
+          style={styles.video}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay
+          isLooping
+          isMuted
+        />
 
-          {/* Gradient overlay for text readability */}
-          <LinearGradient
-            colors={['rgba(18, 18, 18, 0)', '#121212']}
-            locations={[0, 1]}
-            style={styles.gradientOverlay}
-          />
+        {/* Gradient overlay for text readability */}
+        <LinearGradient
+          colors={['rgba(18, 18, 18, 0)', '#121212']}
+          locations={[0, 1]}
+          style={styles.gradientOverlay}
+        />
 
-          {/* Close button */}
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="chevron-down" size={32} color="#fff" />
-          </TouchableOpacity>
+        {/* Close button */}
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="chevron-down" size={32} color="#fff" />
+        </TouchableOpacity>
 
-          {/* Track Info - positioned at bottom of video */}
-          <View style={styles.trackInfoContainer}>
-            <Text style={styles.trackTitle} numberOfLines={2}>
-              {state.currentTrack.title}
-            </Text>
+        {/* Track Info */}
+        <View style={styles.trackInfoContainer}>
+          <Text style={styles.trackTitle} numberOfLines={2}>
+            {state.currentTrack.title}
+          </Text>
 
-            {state.currentShow && (
-              <View style={styles.showInfoRow}>
-                <TouchableOpacity
-                  onPress={handleNavigateToShow}
-                  activeOpacity={0.7}
-                  style={styles.showLinkContainer}
-                >
-                  <Text style={styles.showInfo} numberOfLines={1}>
-                    {state.currentShow.venue}
+          {state.currentShow && (
+            <View style={styles.showInfoRow}>
+              <TouchableOpacity
+                onPress={handleNavigateToShow}
+                activeOpacity={0.7}
+                style={styles.showLinkContainer}
+              >
+                <Text style={styles.showInfo} numberOfLines={1}>
+                  {state.currentShow.venue}
+                </Text>
+                <View style={styles.dateWithStars}>
+                  <Text style={styles.showDate}>
+                    {formatDate(state.currentShow.date)}
                   </Text>
-                  <View style={styles.dateWithStars}>
-                    <Text style={styles.showDate}>
-                      {formatDate(state.currentShow.date)}
-                    </Text>
-                    {performanceRating && (
-                      <StarRating tier={performanceRating} size={16} />
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {/* Save Song Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    isFavorite && styles.saveButtonActive
-                  ]}
-                  onPress={handleToggleFavoriteSong}
-                  activeOpacity={0.7}
-                >
-                  {isFavorite ? (
-                    <Ionicons name="checkmark-sharp" size={18} color="#fff" />
-                  ) : (
-                    <Ionicons name="add" size={21} color="#fff" />
+                  {performanceRating && (
+                    <StarRating tier={performanceRating} size={16} />
                   )}
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
+                </View>
+              </TouchableOpacity>
 
-        {/* Controls Section */}
-        <View style={styles.controlsSection}>
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View
-              style={styles.progressBarWrapper}
-              ref={progressBarRef}
-              collapsable={false}
-              {...panResponder.panHandlers}
-            >
-              <View style={styles.progressBarBackground}>
-                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-              </View>
-              <View
+              {/* Save Song Button */}
+              <TouchableOpacity
                 style={[
-                  styles.progressThumb,
-                  { left: `${progress * 100}%` },
-                  isDragging && styles.progressThumbActive
+                  styles.saveButton,
+                  isFavorite && styles.saveButtonActive
                 ]}
-                pointerEvents="none"
-              />
+                onPress={handleToggleFavoriteSong}
+                activeOpacity={0.7}
+              >
+                {isFavorite ? (
+                  <Ionicons name="checkmark-sharp" size={18} color="#fff" />
+                ) : (
+                  <Ionicons name="add" size={21} color="#fff" />
+                )}
+              </TouchableOpacity>
             </View>
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
-            </View>
-          </View>
-
-          {/* Playback Controls */}
-          <View style={styles.controlsContainer}>
-            <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
-              <Ionicons name="play-skip-back" size={36} color="#fff" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => state.isPlaying ? pause() : play()}
-              style={styles.playButton}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={state.isPlaying ? 'pause' : 'play'}
-                size={32}
-                color={COLORS.background}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={nextTrack}
-              style={styles.controlButton}
-              disabled={!state.playlist || state.playlist.length === 0}
-            >
-              <Ionicons
-                name="play-skip-forward"
-                size={36}
-                color={state.playlist && state.playlist.length > 0 ? "#fff" : "#666"}
-              />
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
       </View>
-    </Modal>
+
+      {/* Controls Section */}
+      <View style={styles.controlsSection}>
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View
+            style={styles.progressBarWrapper}
+            ref={progressBarRef}
+            collapsable={false}
+            {...panResponder.panHandlers}
+          >
+            <View style={styles.progressBarBackground}>
+              <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+            </View>
+            <View
+              style={[
+                styles.progressThumb,
+                { left: `${progress * 100}%` },
+                isDragging && styles.progressThumbActive
+              ]}
+              pointerEvents="none"
+            />
+          </View>
+          <View style={styles.timeContainer}>
+            <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
+            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          </View>
+        </View>
+
+        {/* Playback Controls */}
+        <View style={styles.controlsContainer}>
+          <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
+            <Ionicons name="play-skip-back" size={36} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => state.isPlaying ? pause() : play()}
+            style={styles.playButton}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={state.isPlaying ? 'pause' : 'play'}
+              size={32}
+              color={COLORS.background}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={nextTrack}
+            style={styles.controlButton}
+            disabled={!state.playlist || state.playlist.length === 0}
+          >
+            <Ionicons
+              name="play-skip-forward"
+              size={36}
+              color={state.playlist && state.playlist.length > 0 ? "#fff" : "#666"}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Animated.View>
   );
 });
 
@@ -359,8 +428,16 @@ FullPlayer.displayName = 'FullPlayer';
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+    zIndex: 1000,
   },
   videoContainer: {
     flex: 1,
@@ -396,7 +473,7 @@ const styles = StyleSheet.create({
   showInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   showLinkContainer: {
     flex: 1,
