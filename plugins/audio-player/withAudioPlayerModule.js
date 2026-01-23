@@ -11,12 +11,13 @@ function withAudioPlayerModule(config) {
     const xcodeProject = config.modResults;
     const projectRoot = config.modRequest.projectRoot;
     const platformProjectRoot = config.modRequest.platformProjectRoot;
+    const projectName = config.modRequest.projectName;
 
     // Source files location (preserved across prebuilds)
     const sourceDir = path.join(projectRoot, 'native-modules', 'ios');
 
-    // Target location in iOS project
-    const targetDir = path.join(platformProjectRoot, config.modRequest.projectName);
+    // Target location in iOS project (inside the app folder)
+    const targetDir = path.join(platformProjectRoot, projectName);
 
     const filesToAdd = ['AudioPlayerModule.m', 'AudioPlayerModule.swift'];
 
@@ -27,43 +28,41 @@ function withAudioPlayerModule(config) {
       // Copy file if source exists
       if (fs.existsSync(sourcePath)) {
         fs.copyFileSync(sourcePath, targetPath);
-        console.log(`Copied ${fileName} to iOS project`);
+        console.log(`[AudioPlayerModule] Copied ${fileName} to ${targetDir}`);
 
-        // Add file to Xcode project if not already present
-        const groupName = config.modRequest.projectName;
+        // The path relative to the ios/ directory (for Xcode reference)
+        const relativePath = `${projectName}/${fileName}`;
 
-        // Find the main group
-        const mainGroup = xcodeProject.getFirstProject().firstProject.mainGroup;
-        const projectGroup = xcodeProject.getPBXGroupByKey(mainGroup);
+        // Check if file is already in project
+        const existingFile = xcodeProject.hasFile(relativePath) || xcodeProject.hasFile(fileName);
 
-        // Find or get the app group
-        let appGroupKey = null;
-        for (const key in xcodeProject.hash.project.objects.PBXGroup) {
-          const group = xcodeProject.hash.project.objects.PBXGroup[key];
-          if (group && group.name === groupName) {
-            appGroupKey = key;
-            break;
-          }
-        }
-
-        if (appGroupKey) {
-          // Check if file is already in project
-          const existingFile = xcodeProject.hasFile(fileName);
-
-          if (!existingFile) {
-            // Add file to project
-            if (fileName.endsWith('.swift')) {
-              xcodeProject.addSourceFile(fileName, { target: xcodeProject.getFirstTarget().uuid }, appGroupKey);
-            } else if (fileName.endsWith('.m')) {
-              xcodeProject.addSourceFile(fileName, { target: xcodeProject.getFirstTarget().uuid }, appGroupKey);
+        if (!existingFile) {
+          // Find the main app group
+          let appGroupKey = null;
+          for (const key in xcodeProject.hash.project.objects.PBXGroup) {
+            const group = xcodeProject.hash.project.objects.PBXGroup[key];
+            if (group && group.name === projectName) {
+              appGroupKey = key;
+              break;
             }
-            console.log(`Added ${fileName} to Xcode project`);
-          } else {
-            console.log(`${fileName} already in Xcode project`);
           }
+
+          if (appGroupKey) {
+            // Add source file with correct path relative to ios/ folder
+            xcodeProject.addSourceFile(
+              relativePath,
+              { target: xcodeProject.getFirstTarget().uuid },
+              appGroupKey
+            );
+            console.log(`[AudioPlayerModule] Added ${relativePath} to Xcode project`);
+          } else {
+            console.warn(`[AudioPlayerModule] Could not find group ${projectName}`);
+          }
+        } else {
+          console.log(`[AudioPlayerModule] ${fileName} already in Xcode project`);
         }
       } else {
-        console.warn(`Warning: ${sourcePath} not found`);
+        console.error(`[AudioPlayerModule] ERROR: Source file not found: ${sourcePath}`);
       }
     }
 
