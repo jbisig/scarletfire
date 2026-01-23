@@ -70,11 +70,11 @@ export default {
       eas: {
         projectId: "0848e85c-eef7-43c6-82da-02d89777edca"
       },
-      // These will be populated from EAS secrets or environment variables
-      supabaseUrl: process.env.SUPABASE_URL || "https://fftvyuykqbixzupxzlmo.supabase.co",
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmdHZ5dXlrcWJpeHp1cHh6bG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjU5MjAsImV4cCI6MjA4NDI0MTkyMH0.bphD6T5CxMNWVT5D8_sy9Ti9IpDhBwYMvTa4dP8qawY",
-      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID || "836998999272-i744r408o0aoqd7r63rfo9j4c2vl6kpr.apps.googleusercontent.com",
-      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || "836998999272-7uijb9j3amrvgvg1g7o8p34pdo0olouk.apps.googleusercontent.com",
+      // Populated from EAS secrets (production) or .env file (local development)
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID,
     }
   }
 };
