@@ -174,7 +174,7 @@ export function DiscoverLandingScreen() {
                 >
                   <Text style={styles.cardTitle}>Grateful Dead 101</Text>
                   <Text style={styles.cardDescription}>
-                    Get on the bus with 10 essential shows perfect for those starting their Grateful Dead journey.
+                    Get on the bus with 10 essential shows.
                   </Text>
                 </LinearGradient>
               </ImageBackground>
