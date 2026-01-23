@@ -139,14 +139,14 @@ export function DiscoverLandingScreen() {
             >
               <ImageBackground
                 source={CLASSIC_SHOWS_IMAGE}
-                style={styles.imageCard}
+                style={styles.smallImageCard}
                 imageStyle={styles.imageCardBackground}
               >
                 <LinearGradient
                   colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
-                  style={styles.cardGradient}
+                  style={styles.smallCardGradient}
                 >
                   <Text style={styles.cardTitle}>Classic Shows</Text>
                   <Text style={styles.cardDescription}>
@@ -163,14 +163,14 @@ export function DiscoverLandingScreen() {
             >
               <ImageBackground
                 source={GD_101_IMAGE}
-                style={styles.imageCard}
+                style={styles.smallImageCard}
                 imageStyle={styles.imageCardBackground}
               >
                 <LinearGradient
                   colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
-                  style={styles.cardGradient}
+                  style={styles.smallCardGradient}
                 >
                   <Text style={styles.cardTitle}>Grateful Dead 101</Text>
                   <Text style={styles.cardDescription}>
@@ -209,6 +209,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 180,
   },
+  smallImageCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 120,
+  },
   imageCardBackground: {
     borderRadius: 12,
   },
@@ -217,6 +222,12 @@ const styles = StyleSheet.create({
     padding: 32,
     justifyContent: 'center',
     minHeight: 180,
+  },
+  smallCardGradient: {
+    flex: 1,
+    padding: 32,
+    justifyContent: 'center',
+    minHeight: 120,
   },
   cardTitle: {
     fontSize: 26,
