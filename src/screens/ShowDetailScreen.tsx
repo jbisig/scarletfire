@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     marginBottom: 4,
   },
 });

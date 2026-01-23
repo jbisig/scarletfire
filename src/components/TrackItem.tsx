@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     alignItems: 'baseline',
   },
   playing: {

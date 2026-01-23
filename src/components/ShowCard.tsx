@@ -87,7 +87,7 @@ ShowCard.displayName = 'ShowCard';
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.background,
   },
   contentRow: {
