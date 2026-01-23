@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   showVenue: {
-    fontSize: 22,
-    fontWeight: '500',
+    fontSize: 20,
+    fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
     marginBottom: 4,

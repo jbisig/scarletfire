@@ -7,12 +7,27 @@ import Constants from 'expo-constants';
  */
 
 // Try multiple sources for extra config (EAS builds can structure this differently)
-const extra = Constants.expoConfig?.extra ?? Constants.manifest?.extra ?? Constants.manifest2?.extra ?? {};
+const expoConfig = Constants.expoConfig;
+const manifest = Constants.manifest;
+const manifest2 = Constants.manifest2;
+
+// Log available config sources for debugging
+if (__DEV__) {
+  console.log('Config sources available:', {
+    hasExpoConfig: !!expoConfig,
+    hasManifest: !!manifest,
+    hasManifest2: !!manifest2,
+    expoConfigExtra: expoConfig?.extra,
+  });
+}
+
+const extra = expoConfig?.extra ?? manifest?.extra ?? manifest2?.extra ?? {};
 
 // Helper to get a required config value
 function getRequiredConfig(key: string, value: string | undefined): string {
   if (!value || value.trim().length === 0) {
     console.error(`Missing required config: ${key}. Set it in EAS secrets or .env file.`);
+    console.error(`Available extra keys: ${Object.keys(extra).join(', ')}`);
     return '';
   }
   return value;

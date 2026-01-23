@@ -11,18 +11,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { EraPicker } from '../components/EraPicker';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ERAS, Era } from '../constants/classicShows';
+import { COLORS, FONTS } from '../constants/theme';
 
 type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Classics'>;
 type SortType = 'performanceDate' | 'stars';
 
 export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
   const { showsByYear, isLoading } = useShows();
   const scrollViewRef = useRef<ScrollView>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
@@ -45,17 +48,17 @@ export function ClassicsScreen() {
     }
   }, [showsByYear]);
 
-  // Scroll to top when era changes
+  // Scroll to top when era or sort type changes
   useEffect(() => {
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  }, [selectedEra]);
+  }, [selectedEra, sortType]);
 
   const getSortLabel = (sort: SortType): string => {
     switch (sort) {
       case 'performanceDate':
-        return 'Performance Date';
+        return 'Date';
       case 'stars':
-        return 'Stars';
+        return 'Rating';
       default:
         return 'Sort';
     }
@@ -106,7 +109,7 @@ export function ClassicsScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>Loading classic shows...</Text>
       </View>
     );
@@ -114,31 +117,49 @@ export function ClassicsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Era Picker and Sort Button */}
-      <View style={styles.filtersContainer}>
-        <EraPicker
-          eras={ERAS}
-          selectedEra={selectedEra}
-          onEraChange={handleEraChange}
-        />
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        {/* Back Button */}
         <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setShowSortModal(true)}
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Ionicons name="filter" size={18} color="#ff6b6b" />
-          <Text style={styles.sortButtonText}>{getSortLabel(sortType)}</Text>
+          <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
+
+        {/* Title */}
+        <Text style={styles.title}>Classic Shows</Text>
+
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>
+          The most legendary performances from the band's 30-year history.
+        </Text>
+
+        {/* Era Picker and Sort Button Row */}
+        <View style={styles.filtersRow}>
+          <EraPicker
+            eras={ERAS}
+            selectedEra={selectedEra}
+            onEraChange={handleEraChange}
+          />
+          <TouchableOpacity
+            style={styles.sortPillButton}
+            onPress={() => setShowSortModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
+            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Classic Shows List */}
       <ScrollView ref={scrollViewRef} style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
-          <View style={styles.showsList}>
-            {sortedAndFilteredShows.map((show) => (
-              <ShowCard key={show.date} show={show} onPress={handleShowPress} />
-            ))}
-          </View>
+        <View style={styles.showsList}>
+          {sortedAndFilteredShows.map((show) => (
+            <ShowCard key={show.date} show={show} onPress={handleShowPress} />
+          ))}
         </View>
       </ScrollView>
 
@@ -155,7 +176,9 @@ export function ClassicsScreen() {
           onPress={() => setShowSortModal(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sort By</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sort</Text>
+            </View>
 
             <TouchableOpacity
               style={styles.sortOption}
@@ -165,23 +188,29 @@ export function ClassicsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Performance Date</Text>
+              <Text style={[
+                styles.sortOptionText,
+                sortType === 'performanceDate' && styles.sortOptionTextSelected
+              ]}>Date</Text>
               {sortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.sortOption}
+              style={[styles.sortOption, styles.sortOptionLast]}
               onPress={() => {
                 setSortType('stars');
                 setShowSortModal(false);
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.sortOptionText}>Stars</Text>
+              <Text style={[
+                styles.sortOptionText,
+                sortType === 'stars' && styles.sortOptionTextSelected
+              ]}>Rating</Text>
               {sortType === 'stars' && (
-                <Ionicons name="checkmark" size={24} color="#ff6b6b" />
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
@@ -194,51 +223,68 @@ export function ClassicsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.background,
   },
-  filtersContainer: {
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+  },
+  filtersRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    marginTop: 4,
   },
-  sortButton: {
+  sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#333',
-    borderRadius: 6,
+    backgroundColor: COLORS.border,
+    borderRadius: 50,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 6,
   },
-  sortButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+  sortPillButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 180,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#999',
-  },
-  content: {
-    paddingVertical: 8,
   },
   showsList: {
     gap: 0,
@@ -250,31 +296,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    width: '85%',
     maxWidth: 400,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: COLORS.border,
+  },
+  sortOptionLast: {
+    borderBottomWidth: 0,
   },
   sortOptionText: {
-    fontSize: 16,
-    color: '#ffffff',
-    fontWeight: '500',
+    fontSize: 20,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    fontFamily: FONTS.secondary,
+  },
+  sortOptionTextSelected: {
+    color: COLORS.accent,
   },
 });

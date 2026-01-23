@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: FONTS.primary,
     fontWeight: '500',
     color: COLORS.textPrimary,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   duration: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
     marginLeft: 12,

@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import MediaPlayer
+import UIKit
 import React
 
 @objc(AudioPlayerModule)
@@ -12,6 +13,37 @@ class AudioPlayerModule: RCTEventEmitter {
   private var statusObservers: [NSKeyValueObservation] = []
   private var originalTracks: [[String: Any]] = []
   private var currentTrackIndex: Int = 0
+  private lazy var artworkImage: MPMediaItemArtwork? = {
+    // Try to load the app icon from the bundle
+    // Check multiple possible locations where Expo/RN might bundle the icon
+    var image: UIImage?
+
+    // Try loading from asset catalog
+    if image == nil {
+      image = UIImage(named: "AppIcon")
+    }
+
+    // Try loading the expo icon asset
+    if image == nil {
+      image = UIImage(named: "icon")
+    }
+
+    // Try loading from main bundle directly
+    if image == nil, let iconPath = Bundle.main.path(forResource: "icon", ofType: "png") {
+      image = UIImage(contentsOfFile: iconPath)
+    }
+
+    // Try loading the splash image as fallback
+    if image == nil, let splashPath = Bundle.main.path(forResource: "splash", ofType: "png") {
+      image = UIImage(contentsOfFile: splashPath)
+    }
+
+    guard let finalImage = image else {
+      return nil
+    }
+
+    return MPMediaItemArtwork(boundsSize: finalImage.size) { _ in finalImage }
+  }()
 
   override init() {
     super.init()
@@ -141,6 +173,11 @@ class AudioPlayerModule: RCTEventEmitter {
 
     nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = CMTimeGetSeconds(player?.currentTime() ?? .zero)
     nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0
+
+    // Set app icon as artwork
+    if let artwork = artworkImage {
+      nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+    }
 
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
   }

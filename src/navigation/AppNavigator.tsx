@@ -176,7 +176,7 @@ function DiscoverStack() {
       <Stack.Screen
         name="Classics"
         component={ClassicsScreen}
-        options={{ title: 'Classic Shows', headerBackTitle: ' ' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="GratefulDead101"
