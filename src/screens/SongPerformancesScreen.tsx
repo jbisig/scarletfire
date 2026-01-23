@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   performanceCount: {
     fontSize: 28,
-    fontWeight: '400',
+    fontWeight: 'normal',
     fontFamily: FONTS.primary,
     color: '#aeaeae',
   },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   performanceItem: {
     flexDirection: 'row',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'flex-start',
     justifyContent: 'space-between',
