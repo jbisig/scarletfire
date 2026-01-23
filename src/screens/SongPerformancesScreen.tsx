@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -83,9 +84,18 @@ export function SongPerformancesScreen() {
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('date');
   const [showSortModal, setShowSortModal] = useState(false);
+  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, right: 0 });
+  const sortButtonRef = useRef<View>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const searchInputRef = useRef<TextInput>(null);
+
+  const handleSortPress = () => {
+    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setSortButtonPosition({ top: pageY + height + 8, right: 20 });
+      setShowSortModal(true);
+    });
+  };
 
   const { songTitle, performances } = route.params;
 
@@ -279,14 +289,16 @@ export function SongPerformancesScreen() {
               </TouchableOpacity>
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sortPillButton}
-            onPress={() => setShowSortModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
-            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
-          </TouchableOpacity>
+          <View ref={sortButtonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortPillButton}
+              onPress={handleSortPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
+              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -314,25 +326,25 @@ export function SongPerformancesScreen() {
         initialNumToRender={15}
       />
 
-      {/* Sort Modal */}
+      {/* Sort Dropdown */}
       <Modal
         visible={showSortModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowSortModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
+        <Pressable
+          style={styles.dropdownOverlay}
           onPress={() => setShowSortModal(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sort</Text>
-            </View>
-
+          <View
+            style={[
+              styles.dropdownContainer,
+              { top: sortButtonPosition.top, right: sortButtonPosition.right }
+            ]}
+          >
             <TouchableOpacity
-              style={styles.sortOption}
+              style={styles.dropdownItem}
               onPress={() => {
                 setSortType('date');
                 setShowSortModal(false);
@@ -340,16 +352,18 @@ export function SongPerformancesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                sortType === 'date' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                sortType === 'date' && styles.dropdownItemTextSelected
               ]}>Date</Text>
               {sortType === 'date' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
+            <View style={styles.dropdownDivider} />
+
             <TouchableOpacity
-              style={[styles.sortOption, styles.sortOptionLast]}
+              style={styles.dropdownItem}
               onPress={() => {
                 setSortType('rating');
                 setShowSortModal(false);
@@ -357,15 +371,15 @@ export function SongPerformancesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                sortType === 'rating' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                sortType === 'rating' && styles.dropdownItemTextSelected
               ]}>Rating</Text>
               {sortType === 'rating' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -497,52 +511,41 @@ const styles = StyleSheet.create({
   loader: {
     marginLeft: 8,
   },
-  modalOverlay: {
+  dropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  modalContent: {
+  dropdownContainer: {
+    position: 'absolute',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    width: '85%',
-    maxWidth: 400,
-    overflow: 'hidden',
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  modalHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  sortOption: {
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  sortOptionLast: {
-    borderBottomWidth: 0,
-  },
-  sortOptionText: {
-    fontSize: 20,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+  dropdownItemText: {
+    fontSize: 16,
     fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
-  sortOptionTextSelected: {
+  dropdownItemTextSelected: {
     color: COLORS.accent,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 16,
   },
   emptyState: {
     alignItems: 'center',
