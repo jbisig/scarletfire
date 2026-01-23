@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   performanceCount: {
     fontSize: 28,
-    fontWeight: 'normal',
+    fontWeight: '300',
     fontFamily: FONTS.primary,
     color: '#aeaeae',
   },
