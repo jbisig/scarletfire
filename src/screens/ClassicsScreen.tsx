@@ -32,7 +32,7 @@ export function ClassicsScreen() {
   const sortButtonRef = useRef<View>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
-  const [sortType, setSortType] = useState<SortType>('performanceDate');
+  const [sortType, setSortType] = useState<SortType>('stars');
   const [showSortModal, setShowSortModal] = useState(false);
   const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, right: 0 });
 

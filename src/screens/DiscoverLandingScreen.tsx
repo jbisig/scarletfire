@@ -17,6 +17,7 @@ import { formatDate } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
+import { usePlayer } from '../contexts/PlayerContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { COLORS, FONTS } from '../constants/theme';
@@ -27,13 +28,19 @@ type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'Di
 const SHOW_OF_THE_DAY_IMAGE = require('../../assets/images/from-stage.jpg');
 const CLASSIC_SHOWS_IMAGE = require('../../assets/images/red-rocks.jpg');
 const GD_101_IMAGE = require('../../assets/images/wall-of-sound.jpg');
+const RADIO_IMAGE = require('../../assets/images/radio.webp');
 
 export function DiscoverLandingScreen() {
   const navigation = useNavigation<DiscoverLandingNavigationProp>();
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { getShowDetail, showDetailsCache } = useShows();
   const { show, isLoading, refreshShow } = useShowOfTheDay();
+  const { startRadio, isRadioMode, state: playerState } = usePlayer();
   const [showPlayCount, setShowPlayCount] = useState<number>(0);
+
+  const handleRadioPress = async () => {
+    await startRadio();
+  };
 
   // Calculate play count when show changes
   useEffect(() => {
@@ -132,6 +139,39 @@ export function DiscoverLandingScreen() {
               </ImageBackground>
             </TouchableOpacity>
 
+            {/* Radio Card */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleRadioPress}
+              disabled={playerState.isRadioLoading}
+            >
+              <ImageBackground
+                source={RADIO_IMAGE}
+                style={styles.smallImageCard}
+                imageStyle={styles.imageCardBackground}
+              >
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={styles.smallCardGradient}
+                >
+                  <View style={styles.radioTitleRow}>
+                    <Ionicons name="radio" size={24} color={COLORS.textPrimary} style={styles.radioIcon} />
+                    <Text style={styles.cardTitle}>Radio</Text>
+                    {isRadioMode && (
+                      <View style={styles.nowPlayingBadge}>
+                        <Text style={styles.nowPlayingText}>Now Playing</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.cardDescription}>
+                    {playerState.isRadioLoading ? 'Loading...' : 'Non-stop legendary performances.'}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </TouchableOpacity>
+
             {/* Classic Shows Card */}
             <TouchableOpacity
               activeOpacity={0.9}
@@ -195,7 +235,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 184,
   },
   content: {
     padding: 20,
@@ -281,5 +321,26 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.secondary,
     color: COLORS.textPrimary,
     opacity: 0.7,
+  },
+  radioTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  radioIcon: {
+    marginRight: 8,
+  },
+  nowPlayingBadge: {
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 12,
+  },
+  nowPlayingText: {
+    fontSize: 12,
+    fontFamily: FONTS.secondary,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
 });

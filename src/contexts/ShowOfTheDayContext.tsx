@@ -30,11 +30,16 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
     // Get all classic show dates
     const classicDates = new Set(ALL_CLASSIC_SHOWS.map(s => s.date));
 
+    // Helper to normalize date to YYYY-MM-DD format
+    const normalizeDate = (date: string): string => {
+      return date.split('T')[0];
+    };
+
     // Find matching shows from showsByYear
     const matchedShows: GratefulDeadShow[] = [];
     Object.values(showsByYear).forEach(yearShows => {
       yearShows.forEach(show => {
-        if (classicDates.has(show.date)) {
+        if (classicDates.has(normalizeDate(show.date))) {
           matchedShows.push(show);
         }
       });

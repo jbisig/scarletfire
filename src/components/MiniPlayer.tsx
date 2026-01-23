@@ -16,12 +16,17 @@ interface MiniPlayerProps {
 }
 
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
-  const { state, play, pause } = usePlayer();
+  const { state, play, pause, isRadioMode, currentRadioTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const { videoSource } = useVideoBackground();
 
   // Memoize performance rating lookup using pre-computed data
   const performanceRating = useMemo(() => {
+    // For radio mode, use the rating from the current radio track
+    if (isRadioMode && currentRadioTrack) {
+      return currentRadioTrack.performance.tier;
+    }
+
     if (!state.currentTrack || !state.currentShow) return null;
 
     const song = GRATEFUL_DEAD_SONGS.find(s =>
@@ -33,7 +38,7 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
     const performance = song.performances.find(p => p.date === state.currentShow!.date);
 
     return performance?.rating || null;
-  }, [state.currentTrack?.id, state.currentShow?.date]);
+  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack]);
 
   // Memoize play count lookup
   const playCount = useMemo(() => {
@@ -68,9 +73,16 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
         <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.blurOverlay}>
           <View style={styles.contentOverlay}>
             <View style={styles.infoContainer}>
-              <Text style={styles.trackTitle} numberOfLines={1}>
-                {state.currentTrack.title}
-              </Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.trackTitle} numberOfLines={1}>
+                  {state.currentTrack.title}
+                </Text>
+                {isRadioMode && (
+                  <View style={styles.radioBadge}>
+                    <Ionicons name="radio" size={12} color={COLORS.textPrimary} />
+                  </View>
+                )}
+              </View>
               <Text style={styles.showTitle} numberOfLines={1}>
                 {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
               </Text>
@@ -132,12 +144,25 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   trackTitle: {
     fontSize: 16,
     fontWeight: '600',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    flexShrink: 1,
+  },
+  radioBadge: {
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginLeft: 8,
+    flexShrink: 0,
   },
   showTitle: {
     fontSize: 13,

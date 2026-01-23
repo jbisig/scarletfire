@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -17,6 +17,7 @@ import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
 
 export type RootStackParamList = {
@@ -198,7 +199,7 @@ function DiscoverStack() {
 
 // Main content with tabs and player
 function MainTabsWithPlayer() {
-  const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
+  const { isFullPlayerVisible, setFullPlayerVisible } = usePlayer();
 
   return (
     <View style={styles.container}>
@@ -230,11 +231,11 @@ function MainTabsWithPlayer() {
         />
       </Tab.Navigator>
       <View style={styles.miniPlayerContainer}>
-        <MiniPlayer onPress={() => setIsFullPlayerVisible(true)} />
+        <MiniPlayer onPress={() => setFullPlayerVisible(true)} />
       </View>
       <FullPlayer
         visible={isFullPlayerVisible}
-        onClose={() => setIsFullPlayerVisible(false)}
+        onClose={() => setFullPlayerVisible(false)}
       />
     </View>
   );

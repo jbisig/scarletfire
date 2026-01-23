@@ -110,6 +110,8 @@ export function FavoritesScreen() {
   const songSearchInputRef = useRef<TextInput>(null);
   const showSortButtonRef = useRef<View>(null);
   const songSortButtonRef = useRef<View>(null);
+  const showsListRef = useRef<FlatList>(null);
+  const songsListRef = useRef<FlatList>(null);
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -124,6 +126,15 @@ export function FavoritesScreen() {
       setShowSongSortModal(true);
     });
   };
+
+  // Scroll to top when sort type changes
+  React.useEffect(() => {
+    showsListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [showSortType]);
+
+  React.useEffect(() => {
+    songsListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [songSortType]);
 
   // Filter and sort songs based on search query and sort type
   const sortedAndFilteredSongs = useMemo(() => {
@@ -337,6 +348,7 @@ export function FavoritesScreen() {
           </TouchableWithoutFeedback>
         ) : (
           <FlatList
+            ref={showsListRef}
             data={sortedAndFilteredShows}
             keyExtractor={(item) => item.primaryIdentifier}
             renderItem={({ item }) => (
@@ -425,6 +437,7 @@ export function FavoritesScreen() {
           </TouchableWithoutFeedback>
         ) : (
           <FlatList
+            ref={songsListRef}
             data={sortedAndFilteredSongs}
             keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
             renderItem={({ item }) => (

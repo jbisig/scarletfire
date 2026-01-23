@@ -1,9 +1,10 @@
 import React, { createContext, useReducer, useContext, useEffect, useRef, useState } from 'react';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
-import { PlayerState, PlayerAction } from '../types/player.types';
+import { PlayerState, PlayerAction, RadioTrack } from '../types/player.types';
 import { Track, ShowDetail } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
+import { radioService } from '../services/radioService';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -14,7 +15,12 @@ const initialState: PlayerState = {
   duration: 0,
   playlist: [],
   currentTrackIndex: -1,
-  shouldAutoPlay: false
+  shouldAutoPlay: false,
+  // Radio mode state
+  playbackMode: 'show',
+  radioQueue: [],
+  radioQueueIndex: -1,
+  isRadioLoading: false,
 };
 
 function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
@@ -93,6 +99,93 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       }
       return state;
 
+    // Radio mode actions
+    case 'START_RADIO':
+      return {
+        ...state,
+        playbackMode: 'radio',
+        radioQueue: [],
+        radioQueueIndex: -1,
+        isRadioLoading: true,
+      };
+
+    case 'STOP_RADIO':
+      return {
+        ...state,
+        playbackMode: 'show',
+        radioQueue: [],
+        radioQueueIndex: -1,
+        isRadioLoading: false,
+        currentTrack: null,
+        currentShow: null,
+        isPlaying: false,
+        position: 0,
+        duration: 0,
+      };
+
+    case 'SET_RADIO_LOADING':
+      return {
+        ...state,
+        isRadioLoading: action.isLoading,
+      };
+
+    case 'ADD_RADIO_TRACKS':
+      const newRadioQueue = [...state.radioQueue, ...action.tracks];
+      const newRadioIndex = state.radioQueueIndex < 0 ? 0 : state.radioQueueIndex;
+      const firstNewTrack = action.tracks[0];
+      return {
+        ...state,
+        radioQueue: newRadioQueue,
+        radioQueueIndex: newRadioIndex,
+        currentTrack: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.track : state.currentTrack,
+        currentShow: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.show : state.currentShow,
+        isRadioLoading: false,
+        shouldAutoPlay: true,
+      };
+
+    case 'RADIO_NEXT_TRACK':
+      const nextRadioIndex = state.radioQueueIndex + 1;
+      if (nextRadioIndex < state.radioQueue.length) {
+        const nextRadioTrack = state.radioQueue[nextRadioIndex];
+        return {
+          ...state,
+          radioQueueIndex: nextRadioIndex,
+          currentTrack: nextRadioTrack.track,
+          currentShow: nextRadioTrack.show,
+          position: 0,
+          duration: 0,
+        };
+      }
+      return state;
+
+    case 'RADIO_PREVIOUS_TRACK':
+      const prevRadioIndex = state.radioQueueIndex - 1;
+      if (prevRadioIndex >= 0) {
+        const prevRadioTrack = state.radioQueue[prevRadioIndex];
+        return {
+          ...state,
+          radioQueueIndex: prevRadioIndex,
+          currentTrack: prevRadioTrack.track,
+          currentShow: prevRadioTrack.show,
+          position: 0,
+          duration: 0,
+        };
+      }
+      return state;
+
+    case 'SYNC_RADIO_TRACK_INDEX':
+      if (action.index >= 0 && action.index < state.radioQueue.length) {
+        const radioTrack = state.radioQueue[action.index];
+        return {
+          ...state,
+          radioQueueIndex: action.index,
+          currentTrack: radioTrack.track,
+          currentShow: radioTrack.show,
+          position: 0,
+        };
+      }
+      return state;
+
     default:
       return state;
   }
@@ -107,12 +200,21 @@ interface PlayerContextType {
   nextTrack: () => void;
   previousTrack: () => void;
   seekTo: (position: number) => Promise<void>;
+  // Radio mode functions
+  startRadio: () => Promise<void>;
+  stopRadio: () => Promise<void>;
+  isRadioMode: boolean;
+  currentRadioTrack: RadioTrack | null;
+  // Full player visibility
+  isFullPlayerVisible: boolean;
+  setFullPlayerVisible: (visible: boolean) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
+  const [isFullPlayerVisible, setFullPlayerVisible] = useState(false);
   const currentLoadingTrackIdRef = useRef<string | null>(null);
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
@@ -172,25 +274,86 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Listen to track changes for gapless playback and lock screen controls
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackTrackChanged, (event) => {
-      // Sync React state to the track index from native player
-      if (event.trackIndex !== undefined) {
-        dispatch({ type: 'SYNC_TRACK_INDEX', index: event.trackIndex });
+      // Handle radio mode vs show mode track changes
+      if (state.playbackMode === 'radio') {
+        if (event.trackIndex !== undefined) {
+          dispatch({ type: 'SYNC_RADIO_TRACK_INDEX', index: event.trackIndex });
+        } else {
+          dispatch({ type: 'RADIO_NEXT_TRACK' });
+        }
       } else {
-        dispatch({ type: 'NEXT_TRACK' });
+        // Sync React state to the track index from native player
+        if (event.trackIndex !== undefined) {
+          dispatch({ type: 'SYNC_TRACK_INDEX', index: event.trackIndex });
+        } else {
+          dispatch({ type: 'NEXT_TRACK' });
+        }
       }
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [state.playbackMode]);
 
   // Listen to queue end event (all tracks finished)
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
-      dispatch({ type: 'STOP' });
+      if (state.playbackMode === 'radio') {
+        // Radio queue ended - this shouldn't happen with auto-replenish
+        // but if it does, try to fetch more
+        fetchMoreRadioTracks();
+      } else {
+        dispatch({ type: 'STOP' });
+      }
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [state.playbackMode]);
+
+  // Radio auto-replenish: fetch more tracks when remaining <= 3
+  const isReplenishingRef = useRef(false);
+  useEffect(() => {
+    if (
+      state.playbackMode === 'radio' &&
+      !state.isRadioLoading &&
+      !isReplenishingRef.current &&
+      state.radioQueue.length > 0
+    ) {
+      const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
+      if (remainingTracks <= 3) {
+        fetchMoreRadioTracks();
+      }
+    }
+  }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, state.isRadioLoading]);
+
+  // Fetch more tracks for radio and add to queue
+  const fetchMoreRadioTracks = async () => {
+    if (isReplenishingRef.current) return;
+    isReplenishingRef.current = true;
+
+    try {
+      dispatch({ type: 'SET_RADIO_LOADING', isLoading: true });
+      const newTracks = await radioService.getRandomTracks(10);
+
+      if (newTracks.length > 0) {
+        // Add tracks to native player queue
+        for (const radioTrack of newTracks) {
+          await nativeAudioPlayer.addTrack({
+            id: radioTrack.track.id,
+            url: radioTrack.track.streamUrl,
+            title: radioTrack.track.title,
+            artist: radioTrack.show.venue || 'Grateful Dead',
+            duration: radioTrack.track.duration,
+          });
+        }
+        dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
+      }
+    } catch (error) {
+      console.error('Failed to fetch more radio tracks:', error);
+    } finally {
+      dispatch({ type: 'SET_RADIO_LOADING', isLoading: false });
+      isReplenishingRef.current = false;
+    }
+  };
 
   // Update position and duration from native audio player progress events
   useEffect(() => {
@@ -229,6 +392,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [state.position, state.duration, state.isPlaying, state.currentTrack, state.currentShow, recordTrackPlay]);
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
+    // If in radio mode, stop radio first
+    if (state.playbackMode === 'radio') {
+      dispatch({ type: 'STOP_RADIO' });
+      radioService.resetSession();
+    }
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
   };
 
@@ -285,6 +453,67 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Start radio mode
+  const startRadio = async () => {
+    try {
+      // If already in radio mode, do nothing
+      if (state.playbackMode === 'radio') {
+        return;
+      }
+
+      dispatch({ type: 'START_RADIO' });
+      radioService.resetSession();
+
+      // Fetch initial batch of tracks
+      const initialTracks = await radioService.getRandomTracks(10);
+
+      if (initialTracks.length === 0) {
+        console.error('No radio tracks available');
+        dispatch({ type: 'STOP_RADIO' });
+        return;
+      }
+
+      // Set up native player queue with initial tracks
+      const nativeTracks = initialTracks.map(rt => ({
+        id: rt.track.id,
+        url: rt.track.streamUrl,
+        title: rt.track.title,
+        artist: rt.show.venue || 'Grateful Dead',
+        duration: rt.track.duration,
+      }));
+
+      await nativeAudioPlayer.setQueue(nativeTracks, 0);
+      dispatch({ type: 'ADD_RADIO_TRACKS', tracks: initialTracks });
+
+      // Start playback
+      await nativeAudioPlayer.play();
+      dispatch({ type: 'PLAY' });
+
+      // Open the full player
+      setFullPlayerVisible(true);
+    } catch (error) {
+      console.error('Failed to start radio:', error);
+      dispatch({ type: 'STOP_RADIO' });
+    }
+  };
+
+  // Stop radio mode
+  const stopRadio = async () => {
+    try {
+      dispatch({ type: 'STOP_RADIO' });
+      radioService.resetSession();
+      await audioService.stop();
+    } catch (error) {
+      console.error('Failed to stop radio:', error);
+    }
+  };
+
+  // Derived values
+  const isRadioMode = state.playbackMode === 'radio';
+  const currentRadioTrack = isRadioMode && state.radioQueueIndex >= 0 && state.radioQueueIndex < state.radioQueue.length
+    ? state.radioQueue[state.radioQueueIndex]
+    : null;
+
   return (
     <PlayerContext.Provider
       value={{
@@ -295,7 +524,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         stop,
         nextTrack,
         previousTrack,
-        seekTo
+        seekTo,
+        startRadio,
+        stopRadio,
+        isRadioMode,
+        currentRadioTrack,
+        isFullPlayerVisible,
+        setFullPlayerVisible,
       }}
     >
       {children}

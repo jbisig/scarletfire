@@ -40,7 +40,7 @@ const VELOCITY_THRESHOLD = 0.5; // Velocity that triggers dismiss
  */
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const navigation = useNavigation<NavigationProp>();
-  const { state, play, pause, nextTrack, previousTrack, seekTo } = usePlayer();
+  const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, currentRadioTrack } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
   const { videoSource } = useVideoBackground();
@@ -99,6 +99,11 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   // Memoize performance rating lookup
   const performanceRating = useMemo(() => {
+    // For radio mode, use the rating from the current radio track
+    if (isRadioMode && currentRadioTrack) {
+      return currentRadioTrack.performance.tier;
+    }
+
     if (!state.currentTrack || !state.currentShow) return null;
     const song = GRATEFUL_DEAD_SONGS.find(s =>
       s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
@@ -106,7 +111,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     if (!song) return null;
     const performance = song.performances.find(p => p.date === state.currentShow!.date);
     return performance?.rating || null;
-  }, [state.currentTrack?.id, state.currentShow?.date]);
+  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack]);
 
   const isFavorite = state.currentTrack && state.currentShow
     ? isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
@@ -123,9 +128,11 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     const now = Date.now();
     const timeSinceLastTap = now - lastRewindTapRef.current;
     if (timeSinceLastTap < 300) {
+      // Double-tap: go to previous track (works in both show and radio mode)
       previousTrack();
       lastRewindTapRef.current = 0;
     } else {
+      // Single tap: restart current track
       seekTo(0);
       lastRewindTapRef.current = now;
     }
@@ -317,6 +324,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
         {/* Track Info */}
         <View style={styles.trackInfoContainer}>
+          {/* Radio Mode Indicator */}
+          {isRadioMode && (
+            <View style={styles.radioIndicator}>
+              <Ionicons name="radio" size={16} color={COLORS.textPrimary} />
+              <Text style={styles.radioIndicatorText}>Radio</Text>
+            </View>
+          )}
+
           <Text style={styles.trackTitle} numberOfLines={2}>
             {state.currentTrack.title}
           </Text>
@@ -410,12 +425,12 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           <TouchableOpacity
             onPress={nextTrack}
             style={styles.controlButton}
-            disabled={!state.playlist || state.playlist.length === 0}
+            disabled={!isRadioMode && (!state.playlist || state.playlist.length === 0)}
           >
             <Ionicons
               name="play-skip-forward"
               size={36}
-              color={state.playlist && state.playlist.length > 0 ? "#fff" : "#666"}
+              color={(isRadioMode || (state.playlist && state.playlist.length > 0)) ? "#fff" : "#666"}
             />
           </TouchableOpacity>
         </View>
@@ -462,6 +477,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 24,
+  },
+  radioIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 12,
+    gap: 6,
+  },
+  radioIndicatorText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   trackTitle: {
     fontSize: 32,
