@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   nextTourStopsHeader: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
