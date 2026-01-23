@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Era } from '../constants/classicShows';
+import { COLORS, FONTS } from '../constants/theme';
 
 interface EraPickerProps {
   eras: Era[];
@@ -28,7 +29,7 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
         activeOpacity={0.7}
       >
         <Text style={styles.eraText}>{displayText}</Text>
-        <Ionicons name="chevron-down" size={18} color="#ff6b6b" />
+        <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
       </TouchableOpacity>
 
       {/* Dropdown Modal */}
@@ -46,58 +47,43 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Era</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
-              </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.optionsList}>
               {/* All Eras Option */}
               <TouchableOpacity
-                style={[
-                  styles.option,
-                  selectedEra === null && styles.selectedOption,
-                ]}
+                style={styles.option}
                 onPress={() => handleSelect(null)}
                 activeOpacity={0.7}
               >
-                <View style={styles.optionContent}>
-                  <View>
-                    <Text style={[styles.eraOption, selectedEra === null && styles.selectedText]}>
-                      All Eras
-                    </Text>
-                    <Text style={styles.eraDescription}>1965-1995</Text>
-                  </View>
-                  {selectedEra === null && (
-                    <Ionicons name="checkmark-circle" size={24} color="#ff6b6b" />
-                  )}
-                </View>
+                <Text style={[
+                  styles.eraOption,
+                  selectedEra === null && styles.selectedText
+                ]}>
+                  All Eras
+                </Text>
+                {selectedEra === null && (
+                  <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                )}
               </TouchableOpacity>
 
               {/* Individual Eras */}
-              {eras.map((era) => {
+              {eras.map((era, index) => {
                 const isSelected = era.name === selectedEra?.name;
+                const isLast = index === eras.length - 1;
                 return (
                   <TouchableOpacity
                     key={era.name}
-                    style={[
-                      styles.option,
-                      isSelected && styles.selectedOption,
-                    ]}
+                    style={[styles.option, isLast && styles.optionLast]}
                     onPress={() => handleSelect(era)}
                     activeOpacity={0.7}
                   >
-                    <View style={styles.optionContent}>
-                      <View>
-                        <Text style={[styles.eraOption, isSelected && styles.selectedText]}>
-                          {era.name}
-                        </Text>
-                        <Text style={styles.eraDescription}>{era.description}</Text>
-                      </View>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#ff6b6b" />
-                      )}
-                    </View>
+                    <Text style={[styles.eraOption, isSelected && styles.selectedText]}>
+                      {era.name}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -111,78 +97,72 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    // No padding needed
+    flex: 1,
   },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#333',
-    borderRadius: 6,
-    gap: 6,
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.border,
+    borderRadius: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
   eraText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    width: '100%',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    width: '85%',
     maxWidth: 400,
     maxHeight: '80%',
-    borderWidth: 1,
-    borderColor: '#333',
+    overflow: 'hidden',
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   optionsList: {
     maxHeight: 500,
   },
   option: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
-  },
-  selectedOption: {
-    backgroundColor: '#2a2a2a',
-  },
-  optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  optionLast: {
+    borderBottomWidth: 0,
   },
   eraOption: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  eraDescription: {
-    fontSize: 14,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
   selectedText: {
-    color: '#ff6b6b',
+    color: COLORS.accent,
   },
 });

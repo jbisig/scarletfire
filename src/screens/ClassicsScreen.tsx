@@ -136,22 +136,22 @@ export function ClassicsScreen() {
           The most legendary performances from the band's 30-year history.
         </Text>
 
-        {/* Era Picker and Sort Button Row */}
-        <View style={styles.filtersRow}>
-          <EraPicker
-            eras={ERAS}
-            selectedEra={selectedEra}
-            onEraChange={handleEraChange}
-          />
-          <TouchableOpacity
-            style={styles.sortPillButton}
-            onPress={() => setShowSortModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
-            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
-          </TouchableOpacity>
-        </View>
+        {/* Era Picker - Full Width */}
+        <EraPicker
+          eras={ERAS}
+          selectedEra={selectedEra}
+          onEraChange={handleEraChange}
+        />
+
+        {/* Sort Button */}
+        <TouchableOpacity
+          style={styles.sortPillButton}
+          onPress={() => setShowSortModal(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
+          <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+        </TouchableOpacity>
       </View>
 
       {/* Classic Shows List */}
@@ -259,15 +259,10 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 22,
   },
-  filtersRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
   sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     backgroundColor: COLORS.border,
     borderRadius: 50,
     paddingHorizontal: 16,
