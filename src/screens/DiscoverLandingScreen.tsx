@@ -150,7 +150,7 @@ export function DiscoverLandingScreen() {
                 >
                   <Text style={styles.cardTitle}>Classic Shows</Text>
                   <Text style={styles.cardDescription}>
-                    Browse legendary performances from different eras.
+                    Legendary shows from different eras.
                   </Text>
                 </LinearGradient>
               </ImageBackground>
