@@ -16,7 +16,8 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
-import { ShowDetail, Track } from '../types/show.types';
+import { ShowCard } from '../components/ShowCard';
+import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { COLORS, FONTS } from '../constants/theme';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
@@ -55,6 +56,27 @@ export function ShowDetailScreen() {
 
     return ratings;
   }, [show?.identifier, show?.date]);
+
+  // Find the next 3 shows after the current show's date
+  const nextTourStops = useMemo(() => {
+    if (!show || !showsByYear) return [];
+
+    const currentDate = show.date;
+    const allShows: GratefulDeadShow[] = [];
+
+    // Collect all shows from all years
+    Object.values(showsByYear).forEach(yearShows => {
+      allShows.push(...yearShows);
+    });
+
+    // Filter shows that are after the current date (excluding current show) and sort by date
+    const futureShows = allShows
+      .filter(s => s.date > currentDate && s.primaryIdentifier !== show.identifier)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Return the first 3
+    return futureShows.slice(0, 3);
+  }, [show?.date, showsByYear]);
 
   useEffect(() => {
     loadShowDetail(route.params.identifier);
@@ -124,6 +146,10 @@ export function ShowDetailScreen() {
     }
   }, [show, loadTrack]);
 
+  const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
+    navigation.push('ShowDetail', { identifier: nextShow.primaryIdentifier });
+  }, [navigation]);
+
   const handleToggleFavorite = () => {
     if (show) {
       const showToSave = {
@@ -182,11 +208,6 @@ export function ShowDetailScreen() {
         {/* Source and Save button row */}
         <View style={styles.sourceRow}>
           <View style={styles.sourceInfo}>
-            {/* Source name - currently using venue as fallback */}
-            <Text style={styles.sourceName}>
-              {show.location || 'Unknown location'}
-            </Text>
-
             {/* Date with stars */}
             <View style={styles.dateRow}>
               <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
@@ -194,6 +215,11 @@ export function ShowDetailScreen() {
                 <StarRating tier={classicTier} size={16} />
               )}
             </View>
+
+            {/* Location */}
+            <Text style={styles.sourceName}>
+              {show.location || 'Unknown location'}
+            </Text>
           </View>
 
           {/* Save button */}
@@ -246,6 +272,21 @@ export function ShowDetailScreen() {
           />
         ))}
       </View>
+
+      {/* Next Tour Stops Section */}
+      {nextTourStops.length > 0 && (
+        <View style={styles.nextTourStopsSection}>
+          <View style={styles.divider} />
+          <Text style={styles.nextTourStopsHeader}>Next Tour Stops</Text>
+          {nextTourStops.map((nextShow) => (
+            <ShowCard
+              key={nextShow.primaryIdentifier}
+              show={nextShow}
+              onPress={handleNextShowPress}
+            />
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -290,18 +331,18 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  sourceName: {
-    fontSize: 16,
-    fontFamily: FONTS.primary,
-    color: COLORS.accent,
-    marginBottom: 4,
-  },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginBottom: 4,
   },
   date: {
+    fontSize: 16,
+    fontFamily: FONTS.primary,
+    color: COLORS.accent,
+  },
+  sourceName: {
     fontSize: 16,
     fontFamily: FONTS.primary,
     color: COLORS.accent,
@@ -340,5 +381,22 @@ const styles = StyleSheet.create({
   },
   tracksContainer: {
     paddingVertical: 8,
+  },
+  nextTourStopsSection: {
+    marginTop: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  nextTourStopsHeader: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+    paddingHorizontal: 24,
+    marginBottom: 4,
   },
 });

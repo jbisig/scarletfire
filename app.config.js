@@ -29,6 +29,13 @@ export default {
         NSCameraUsageDescription: "This app needs access to your camera to take a profile picture.",
         UIBackgroundModes: [
           "audio"
+        ],
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: [
+              "com.googleusercontent.apps.836998999272-7uijb9j3amrvgvg1g7o8p34pdo0olouk"
+            ]
+          }
         ]
       },
       config: {

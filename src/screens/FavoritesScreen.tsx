@@ -254,11 +254,10 @@ export function FavoritesScreen() {
   const renderShowsTab = () => {
     if (favoriteShows.length === 0) {
       return (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyIcon}>⭐</Text>
-          <Text style={styles.emptyTitle}>No Favorite Shows Yet</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No favorites yet</Text>
           <Text style={styles.emptyText}>
-            Tap the save button on any show to add it to your favorites
+            Tap the save button on any show{'\n'}to add it to your favorites.
           </Text>
         </View>
       );
@@ -341,11 +340,10 @@ export function FavoritesScreen() {
   const renderSongsTab = () => {
     if (favoriteSongs.length === 0) {
       return (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyIcon}>🎵</Text>
-          <Text style={styles.emptyTitle}>No Favorite Songs Yet</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No favorites yet</Text>
           <Text style={styles.emptyText}>
-            Tap the save button in the player to save individual song performances
+            Tap the save button on any song to{'\n'}add it to your favorites.
           </Text>
         </View>
       );
@@ -632,20 +630,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
     marginBottom: 12,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },

@@ -11,6 +11,7 @@ import { ClassicsScreen } from '../screens/ClassicsScreen';
 import { GratefulDead101Screen } from '../screens/GratefulDead101Screen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
@@ -30,9 +31,12 @@ export type RootStackParamList = {
     songTitle: string;
     performances: Array<{ date: string; identifier: string; venue?: string }>;
   };
+  Settings: undefined;
+  MainTabs: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
+const RootStack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
 // Stack navigator for Shows tab
@@ -98,7 +102,7 @@ function SongsStack() {
       <Stack.Screen
         name="SongPerformances"
         component={SongPerformancesScreen}
-        options={{ title: 'Performances', headerBackTitle: ' ' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -133,7 +137,7 @@ function FavoritesStack() {
       <Stack.Screen
         name="Favorites"
         component={FavoritesScreen}
-        options={{ title: 'Favorites', headerBackTitle: ' ' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -167,7 +171,7 @@ function DiscoverStack() {
       <Stack.Screen
         name="DiscoverLanding"
         component={DiscoverLandingScreen}
-        options={{ title: 'Discover', headerBackTitle: ' ' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Classics"
@@ -177,7 +181,7 @@ function DiscoverStack() {
       <Stack.Screen
         name="GratefulDead101"
         component={GratefulDead101Screen}
-        options={{ title: 'Grateful Dead 101', headerBackTitle: ' ' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ShowDetail"
@@ -192,8 +196,51 @@ function DiscoverStack() {
   );
 }
 
-export function AppNavigator() {
+// Main content with tabs and player
+function MainTabsWithPlayer() {
   const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
+
+  return (
+    <View style={styles.container}>
+      <Tab.Navigator
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Tab.Screen
+          name="ShowsTab"
+          component={ShowsStack}
+          options={{ tabBarLabel: 'Shows' }}
+        />
+        <Tab.Screen
+          name="SongsTab"
+          component={SongsStack}
+          options={{ tabBarLabel: 'Songs' }}
+        />
+        <Tab.Screen
+          name="DiscoverTab"
+          component={DiscoverStack}
+          options={{ tabBarLabel: 'Discover' }}
+        />
+        <Tab.Screen
+          name="FavoritesTab"
+          component={FavoritesStack}
+          options={{ tabBarLabel: 'Favorites' }}
+        />
+      </Tab.Navigator>
+      <View style={styles.miniPlayerContainer}>
+        <MiniPlayer onPress={() => setIsFullPlayerVisible(true)} />
+      </View>
+      <FullPlayer
+        visible={isFullPlayerVisible}
+        onClose={() => setIsFullPlayerVisible(false)}
+      />
+    </View>
+  );
+}
+
+export function AppNavigator() {
   const { state: authState } = useAuth();
 
   // Show loading while checking auth
@@ -215,42 +262,28 @@ export function AppNavigator() {
       {showAuthFlow ? (
         <AuthNavigator />
       ) : (
-        <View style={styles.container}>
-          <Tab.Navigator
-            tabBar={(props) => <CustomTabBar {...props} />}
-            screenOptions={{
-              headerShown: false,
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+          <RootStack.Screen name="MainTabs" component={MainTabsWithPlayer} />
+          <RootStack.Screen
+            name="ShowDetail"
+            component={ShowDetailScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#121212' },
+              headerTintColor: '#fff',
+              headerTitle: '',
+              headerBackTitleVisible: false,
             }}
-          >
-          <Tab.Screen
-            name="ShowsTab"
-            component={ShowsStack}
-            options={{ tabBarLabel: 'Shows' }}
           />
-          <Tab.Screen
-            name="SongsTab"
-            component={SongsStack}
-            options={{ tabBarLabel: 'Songs' }}
+          <RootStack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{
+              presentation: 'modal',
+              gestureEnabled: true,
+            }}
           />
-          <Tab.Screen
-            name="DiscoverTab"
-            component={DiscoverStack}
-            options={{ tabBarLabel: 'Discover' }}
-          />
-          <Tab.Screen
-            name="FavoritesTab"
-            component={FavoritesStack}
-            options={{ tabBarLabel: 'Favorites' }}
-          />
-        </Tab.Navigator>
-        <View style={styles.miniPlayerContainer}>
-          <MiniPlayer onPress={() => setIsFullPlayerVisible(true)} />
-        </View>
-        <FullPlayer
-          visible={isFullPlayerVisible}
-          onClose={() => setIsFullPlayerVisible(false)}
-        />
-        </View>
+        </RootStack.Navigator>
       )}
     </NavigationContainer>
   );
@@ -268,7 +301,7 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 87,
     left: 0,
     right: 0,
     zIndex: 998,
