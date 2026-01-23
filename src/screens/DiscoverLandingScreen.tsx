@@ -104,7 +104,7 @@ export function DiscoverLandingScreen() {
                       activeOpacity={0.7}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Ionicons name="refresh" size={28} color={COLORS.textPrimary} />
+                      <Ionicons name="refresh" size={28} color={COLORS.accent} />
                     </TouchableOpacity>
                   </View>
 
