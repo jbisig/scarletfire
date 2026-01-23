@@ -17,6 +17,39 @@ class AudioPlayerModule: RCTEventEmitter {
     super.init()
     setupAudioSession()
     setupPlayer()
+    setupTrackEndObserver()
+  }
+
+  // MARK: - Track End Observer (for automatic advancement)
+
+  private func setupTrackEndObserver() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(playerItemDidFinishPlaying(_:)),
+      name: .AVPlayerItemDidPlayToEndTime,
+      object: nil
+    )
+  }
+
+  @objc private func playerItemDidFinishPlaying(_ notification: Notification) {
+    // Check if this is from our player's current item
+    guard let finishedItem = notification.object as? AVPlayerItem,
+          let currentItem = player?.currentItem,
+          finishedItem == currentItem else {
+      return
+    }
+
+    // AVQueuePlayer will automatically advance - we just need to update our state
+    let nextIndex = currentTrackIndex + 1
+
+    if nextIndex < originalTracks.count {
+      currentTrackIndex = nextIndex
+      updateNowPlayingInfo()
+      sendEvent(withName: "playback-track-changed", body: ["trackIndex": currentTrackIndex])
+    } else {
+      // Queue ended
+      sendEvent(withName: "playback-queue-ended", body: nil)
+    }
   }
 
   // MARK: - Setup
@@ -367,5 +400,6 @@ class AudioPlayerModule: RCTEventEmitter {
       player?.removeTimeObserver(observer)
     }
     statusObservers.removeAll()
+    NotificationCenter.default.removeObserver(self)
   }
 }
