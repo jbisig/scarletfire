@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
+  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -101,10 +102,28 @@ export function FavoritesScreen() {
   const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [showSearchQuery, setShowSearchQuery] = useState('');
   const [songSearchQuery, setSongSearchQuery] = useState('');
+  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, right: 0 });
+  const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, right: 0 });
   const debouncedShowSearchQuery = useDebounce(showSearchQuery, 400);
   const debouncedSongSearchQuery = useDebounce(songSearchQuery, 400);
   const showSearchInputRef = useRef<TextInput>(null);
   const songSearchInputRef = useRef<TextInput>(null);
+  const showSortButtonRef = useRef<View>(null);
+  const songSortButtonRef = useRef<View>(null);
+
+  const handleShowSortPress = () => {
+    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setShowSortButtonPosition({ top: pageY + height + 8, right: 20 });
+      setShowShowSortModal(true);
+    });
+  };
+
+  const handleSongSortPress = () => {
+    songSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setSongSortButtonPosition({ top: pageY + height + 8, right: 20 });
+      setShowSongSortModal(true);
+    });
+  };
 
   // Filter and sort songs based on search query and sort type
   const sortedAndFilteredSongs = useMemo(() => {
@@ -296,16 +315,18 @@ export function FavoritesScreen() {
               </TouchableOpacity>
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sortPillButton}
-            onPress={() => setShowShowSortModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sortPillButtonText}>
-              {showSortType === 'performanceDate' ? 'Perform. Date' : 'Date Saved'}
-            </Text>
-            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
-          </TouchableOpacity>
+          <View ref={showSortButtonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortPillButton}
+              onPress={handleShowSortPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortPillButtonText}>
+                {showSortType === 'performanceDate' ? 'Perform. Date' : 'Date Saved'}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {sortedAndFilteredShows.length === 0 && debouncedShowSearchQuery.trim() ? (
@@ -382,16 +403,18 @@ export function FavoritesScreen() {
               </TouchableOpacity>
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sortPillButton}
-            onPress={() => setShowSongSortModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.sortPillButtonText}>
-              {getSongSortLabel(songSortType)}
-            </Text>
-            <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
-          </TouchableOpacity>
+          <View ref={songSortButtonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortPillButton}
+              onPress={handleSongSortPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sortPillButtonText}>
+                {getSongSortLabel(songSortType)}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {sortedAndFilteredSongs.length === 0 && debouncedSongSearchQuery.trim() ? (
@@ -458,25 +481,25 @@ export function FavoritesScreen() {
       {/* Tab Content */}
       {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
 
-      {/* Song Sort Modal */}
+      {/* Song Sort Dropdown */}
       <Modal
         visible={showSongSortModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowSongSortModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
+        <Pressable
+          style={styles.dropdownOverlay}
           onPress={() => setShowSongSortModal(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sort</Text>
-            </View>
-
+          <View
+            style={[
+              styles.dropdownContainer,
+              { top: songSortButtonPosition.top, right: songSortButtonPosition.right }
+            ]}
+          >
             <TouchableOpacity
-              style={styles.sortOption}
+              style={styles.dropdownItem}
               onPress={() => {
                 setSongSortType('alphabetical');
                 setShowSongSortModal(false);
@@ -484,16 +507,18 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                songSortType === 'alphabetical' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                songSortType === 'alphabetical' && styles.dropdownItemTextSelected
               ]}>Alphabetical</Text>
               {songSortType === 'alphabetical' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
+            <View style={styles.dropdownDivider} />
+
             <TouchableOpacity
-              style={styles.sortOption}
+              style={styles.dropdownItem}
               onPress={() => {
                 setSongSortType('dateSaved');
                 setShowSongSortModal(false);
@@ -501,16 +526,18 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                songSortType === 'dateSaved' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                songSortType === 'dateSaved' && styles.dropdownItemTextSelected
               ]}>Date Saved</Text>
               {songSortType === 'dateSaved' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
+            <View style={styles.dropdownDivider} />
+
             <TouchableOpacity
-              style={[styles.sortOption, styles.sortOptionLast]}
+              style={styles.dropdownItem}
               onPress={() => {
                 setSongSortType('performanceDate');
                 setShowSongSortModal(false);
@@ -518,36 +545,36 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                songSortType === 'performanceDate' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                songSortType === 'performanceDate' && styles.dropdownItemTextSelected
               ]}>Performance Date</Text>
               {songSortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
 
-      {/* Show Sort Modal */}
+      {/* Show Sort Dropdown */}
       <Modal
         visible={showShowSortModal}
         transparent
         animationType="fade"
         onRequestClose={() => setShowShowSortModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
+        <Pressable
+          style={styles.dropdownOverlay}
           onPress={() => setShowShowSortModal(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sort</Text>
-            </View>
-
+          <View
+            style={[
+              styles.dropdownContainer,
+              { top: showSortButtonPosition.top, right: showSortButtonPosition.right }
+            ]}
+          >
             <TouchableOpacity
-              style={styles.sortOption}
+              style={styles.dropdownItem}
               onPress={() => {
                 setShowSortType('dateSaved');
                 setShowShowSortModal(false);
@@ -555,16 +582,18 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                showSortType === 'dateSaved' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                showSortType === 'dateSaved' && styles.dropdownItemTextSelected
               ]}>Date Saved</Text>
               {showSortType === 'dateSaved' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
 
+            <View style={styles.dropdownDivider} />
+
             <TouchableOpacity
-              style={[styles.sortOption, styles.sortOptionLast]}
+              style={styles.dropdownItem}
               onPress={() => {
                 setShowSortType('performanceDate');
                 setShowShowSortModal(false);
@@ -572,15 +601,15 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={[
-                styles.sortOptionText,
-                showSortType === 'performanceDate' && styles.sortOptionTextSelected
+                styles.dropdownItemText,
+                showSortType === 'performanceDate' && styles.dropdownItemTextSelected
               ]}>Performance Date</Text>
               {showSortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -771,51 +800,40 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     flex: 1,
   },
-  modalOverlay: {
+  dropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  modalContent: {
+  dropdownContainer: {
+    position: 'absolute',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    width: '85%',
-    maxWidth: 400,
-    overflow: 'hidden',
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  modalHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  sortOption: {
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  sortOptionLast: {
-    borderBottomWidth: 0,
-  },
-  sortOptionText: {
-    fontSize: 20,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+  dropdownItemText: {
+    fontSize: 16,
     fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
   },
-  sortOptionTextSelected: {
+  dropdownItemTextSelected: {
     color: COLORS.accent,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 16,
   },
 });
