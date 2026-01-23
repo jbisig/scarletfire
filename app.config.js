@@ -4,6 +4,7 @@ export default ({ config }) => {
     expo: {
       name: "Scarlet>fire",
       slug: "scarletfire",
+      owner: "scarlet-fire",
       version: "1.0.0",
       orientation: "portrait",
       icon: "./assets/icon.png",
