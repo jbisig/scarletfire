@@ -188,12 +188,12 @@ export function HomeScreen() {
           onPress={() => searchInputRef.current?.focus()}
           activeOpacity={1}
         >
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
             style={styles.searchInput}
             placeholder="Date, venue, location"
-            placeholderTextColor="#666"
+            placeholderTextColor="rgba(255,255,255,0.66)"
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -206,7 +206,7 @@ export function HomeScreen() {
               style={styles.clearButton}
               activeOpacity={0.7}
             >
-              <Ionicons name="close-circle" size={20} color="#666" />
+              <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
             </TouchableOpacity>
           )}
         </TouchableOpacity>

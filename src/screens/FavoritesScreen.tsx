@@ -156,6 +156,15 @@ export function FavoritesScreen() {
     songsListRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, [songSortType]);
 
+  // Scroll to top when switching tabs
+  React.useEffect(() => {
+    if (activeTab === 'shows') {
+      showsListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    } else {
+      songsListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [activeTab]);
+
   // Filter and sort songs based on search query and sort type
   const sortedAndFilteredSongs = useMemo(() => {
     let songs = [...favoriteSongs];
@@ -677,7 +686,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 0,
     marginBottom: 0,
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 100,
     padding: 4,
   },
@@ -806,7 +815,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 16,
     height: 48,
@@ -827,17 +836,17 @@ const styles = StyleSheet.create({
   sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 6,
   },
   sortPillButtonText: {
     fontSize: 16,
     fontWeight: '500',
     fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    color: 'rgba(255,255,255,0.66)',
   },
   songsTabContainer: {
     flex: 1,

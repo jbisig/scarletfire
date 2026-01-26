@@ -160,7 +160,7 @@ export function ClassicsScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
-              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    color: 'rgba(255,255,255,0.66)',
   },
   scrollContainer: {
     flex: 1,

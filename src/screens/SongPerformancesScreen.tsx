@@ -429,10 +429,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   searchIcon: {
     marginRight: 10,
@@ -450,17 +450,17 @@ const styles = StyleSheet.create({
   sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 6,
   },
   sortPillButtonText: {
     fontSize: 16,
     fontWeight: '500',
     fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    color: 'rgba(255,255,255,0.66)',
   },
   listContent: {
     paddingBottom: 180,

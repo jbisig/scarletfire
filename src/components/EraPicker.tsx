@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Era } from '../constants/classicShows';
 import { COLORS, FONTS } from '../constants/theme';
@@ -12,6 +13,7 @@ interface EraPickerProps {
 
 export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleSelect = (era: Era | null) => {
     onEraChange(era);
@@ -32,64 +34,71 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
         <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
+      {/* Fullscreen Dropdown Modal */}
       <Modal
         visible={isOpen}
-        transparent={true}
-        animationType="fade"
+        animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setIsOpen(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsOpen(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Era</Text>
-            </View>
-
-            <ScrollView style={styles.optionsList}>
-              {/* All Eras Option */}
-              <TouchableOpacity
-                style={styles.option}
-                onPress={() => handleSelect(null)}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.eraOption,
-                  selectedEra === null && styles.selectedText
-                ]}>
-                  All Eras
-                </Text>
-                {selectedEra === null && (
-                  <Ionicons name="checkmark" size={24} color={COLORS.accent} />
-                )}
-              </TouchableOpacity>
-
-              {/* Individual Eras */}
-              {eras.map((era, index) => {
-                const isSelected = era.name === selectedEra?.name;
-                const isLast = index === eras.length - 1;
-                return (
-                  <TouchableOpacity
-                    key={era.name}
-                    style={[styles.option, isLast && styles.optionLast]}
-                    onPress={() => handleSelect(era)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.eraOption, isSelected && styles.selectedText]}>
-                      {era.name}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons name="checkmark" size={24} color={COLORS.accent} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Era</Text>
+            <TouchableOpacity
+              onPress={() => setIsOpen(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+
+          {/* Era List */}
+          <ScrollView
+            style={styles.optionsList}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          >
+            {/* All Eras Option */}
+            <TouchableOpacity
+              style={styles.option}
+              onPress={() => handleSelect(null)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.eraOption,
+                selectedEra === null && styles.selectedText
+              ]}>
+                All Eras
+              </Text>
+              {selectedEra === null && (
+                <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            {/* Individual Eras */}
+            {eras.map((era) => {
+              const isSelected = era.name === selectedEra?.name;
+              return (
+                <TouchableOpacity
+                  key={era.name}
+                  style={styles.option}
+                  onPress={() => handleSelect(era)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.eraOption,
+                    isSelected && styles.selectedText
+                  ]}>
+                    {era.name}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </Modal>
     </View>
   );
@@ -103,7 +112,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.border,
+    backgroundColor: '#2a2a2a',
     borderRadius: 50,
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -112,53 +121,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    color: 'rgba(255,255,255,0.66)',
   },
-  modalOverlay: {
+  // Fullscreen modal styles
+  modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    width: '85%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    overflow: 'hidden',
+    backgroundColor: COLORS.background,
   },
   modalHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: '#333',
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    padding: 4,
   },
   optionsList: {
-    maxHeight: 500,
+    flex: 1,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  optionLast: {
-    borderBottomWidth: 0,
+    borderBottomColor: '#333',
   },
   eraOption: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '500',
     fontFamily: FONTS.secondary,
     color: COLORS.textPrimary,
   },

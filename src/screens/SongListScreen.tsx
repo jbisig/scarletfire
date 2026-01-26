@@ -183,12 +183,12 @@ export function SongListScreen() {
             onPress={() => searchInputRef.current?.focus()}
             activeOpacity={1}
           >
-            <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
             <TextInput
               ref={searchInputRef}
               style={styles.searchInput}
               placeholder="Search Songs"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor="rgba(255,255,255,0.66)"
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -201,7 +201,7 @@ export function SongListScreen() {
                 style={styles.clearButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
               </TouchableOpacity>
             )}
           </TouchableOpacity>
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.searchBackground,
-    borderRadius: 24,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 50,
     paddingHorizontal: 16,
     height: 48,
   },

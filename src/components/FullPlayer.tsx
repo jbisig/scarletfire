@@ -114,6 +114,11 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     }
   }, [state.currentShow?.identifier, getShowDetail]);
 
+  // Reset progress immediately when track changes
+  useEffect(() => {
+    progressAnim.setValue(0);
+  }, [state.currentTrack?.id, progressAnim]);
+
   // Update animated progress value without causing re-renders
   // This runs on position change but only updates the Animated.Value
   useEffect(() => {
@@ -235,6 +240,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
         seekTo(position);
+        // Update progress animation to the seek position
+        const seekProgress = durationMs > 0 ? position / durationMs : 0;
+        progressAnim.setValue(seekProgress);
         setTimeout(() => {
           setIsDragging(false);
           isDraggingRef.current = false;

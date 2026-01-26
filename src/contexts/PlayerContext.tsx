@@ -100,6 +100,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           currentTrack: state.playlist[action.index],
           currentTrackIndex: action.index,
           position: 0,
+          duration: 0,
         };
       }
       return state;
@@ -187,6 +188,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           currentTrack: radioTrack.track,
           currentShow: radioTrack.show,
           position: 0,
+          duration: 0,
         };
       }
       return state;
@@ -370,7 +372,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, (data) => {
       const position = data.position * 1000; // Convert seconds to milliseconds
       const duration = data.duration * 1000;
-      dispatch({ type: 'UPDATE_POSITION', position, duration });
+      // Only update if we have valid duration (audio is actually loaded/playing)
+      // This prevents the progress bar from moving when buffering or offline
+      if (duration > 0 && !isNaN(duration)) {
+        dispatch({ type: 'UPDATE_POSITION', position, duration });
+      }
     });
 
     return () => subscription.remove();
