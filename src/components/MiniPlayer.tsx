@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
+import { useShows } from '../contexts/ShowsContext';
 import { formatDate } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
@@ -18,7 +19,18 @@ interface MiniPlayerProps {
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause, isRadioMode, currentRadioTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource } = useVideoBackground();
+  const { videoSource, videoIndex } = useVideoBackground();
+  const { getShowDetail } = useShows();
+
+  // Prefetch show details in background so navigation is instant when user taps show
+  useEffect(() => {
+    if (state.currentShow?.identifier) {
+      // Fire and forget - preloads into cache
+      getShowDetail(state.currentShow.identifier).catch(() => {
+        // Ignore errors - this is just prefetching
+      });
+    }
+  }, [state.currentShow?.identifier, getShowDetail]);
 
   // Memoize performance rating lookup using pre-computed data
   const performanceRating = useMemo(() => {
@@ -61,6 +73,7 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
       >
         {/* Video Background */}
         <Video
+          key={`video-${videoIndex}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}

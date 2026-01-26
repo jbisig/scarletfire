@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   PanResponder,
   Animated,
   Easing,
+  InteractionManager,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +19,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
+import { useShows } from '../contexts/ShowsContext';
 import { formatDate, formatTime } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
@@ -43,7 +45,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, currentRadioTrack } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource } = useVideoBackground();
+  const { videoSource, videoIndex } = useVideoBackground();
+  const { getShowDetail } = useShows();
   const progressBarRef = useRef<View>(null);
 
   // Animation for slide up/down
@@ -51,6 +54,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const dragOffset = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(false);
   const isDismissingRef = useRef(false);
+  const isInteractingRef = useRef(false);
+
+  // Animated progress value to avoid re-renders during playback
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Combined position = slide position + drag offset
   const translateY = Animated.add(slideAnim, dragOffset);
@@ -96,6 +103,29 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     currentTrackRef.current = state.currentTrack;
     currentDurationRef.current = state.duration;
   }, [state.currentTrack, state.duration]);
+
+  // Prefetch show details in background so navigation is instant
+  useEffect(() => {
+    if (state.currentShow?.identifier) {
+      // Fire and forget - preloads into cache
+      getShowDetail(state.currentShow.identifier).catch(() => {
+        // Ignore errors - this is just prefetching
+      });
+    }
+  }, [state.currentShow?.identifier, getShowDetail]);
+
+  // Update animated progress value without causing re-renders
+  // This runs on position change but only updates the Animated.Value
+  useEffect(() => {
+    if (isDragging || isInteractingRef.current) return; // Don't update during user interaction
+
+    const trackDuration = state.currentTrack?.duration ? state.currentTrack.duration * 1000 : 0;
+    const duration = state.duration > 0 ? state.duration : trackDuration;
+    const progress = duration > 0 ? (state.position / duration) : 0;
+
+    // Use setValue for immediate update without animation
+    progressAnim.setValue(progress);
+  }, [state.position, state.duration, state.currentTrack?.duration, isDragging, progressAnim]);
 
   // Memoize performance rating lookup
   const performanceRating = useMemo(() => {
@@ -228,6 +258,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         return gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
       },
       onPanResponderGrant: () => {
+        // Mark as interacting to pause progress updates
+        isInteractingRef.current = true;
         // Reset drag offset
         dragOffset.setValue(0);
       },
@@ -272,7 +304,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             useNativeDriver: true,
             tension: 100,
             friction: 10,
-          }).start();
+          }).start(() => {
+            isInteractingRef.current = false;
+          });
         }
       },
       onPanResponderTerminate: () => {
@@ -280,7 +314,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         Animated.spring(dragOffset, {
           toValue: 0,
           useNativeDriver: true,
-        }).start();
+        }).start(() => {
+          isInteractingRef.current = false;
+        });
       },
     })
   ).current;
@@ -290,7 +326,18 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
   const duration = state.duration > 0 ? state.duration : trackDuration;
   const currentPosition = isDragging ? dragPosition : state.position;
-  const progress = duration > 0 ? (currentPosition / duration) : 0;
+  // Only used for time display, not for progress bar animation
+  const displayProgress = duration > 0 ? (currentPosition / duration) : 0;
+
+  // Animated width for progress bar (avoids re-renders)
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  // For thumb position during drag, we still use the drag position
+  const thumbProgress = isDragging ? (duration > 0 ? (dragPosition / duration) : 0) : displayProgress;
 
   return (
     <Animated.View
@@ -302,6 +349,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         <Video
+          key={`video-${videoIndex}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
@@ -387,12 +435,12 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             {...panResponder.panHandlers}
           >
             <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+              <Animated.View style={[styles.progressBarFill, { width: isDragging ? `${thumbProgress * 100}%` : progressWidth }]} />
             </View>
             <View
               style={[
                 styles.progressThumb,
-                { left: `${progress * 100}%` },
+                { left: `${thumbProgress * 100}%` },
                 isDragging && styles.progressThumbActive
               ]}
               pointerEvents="none"

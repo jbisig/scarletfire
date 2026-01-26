@@ -82,6 +82,10 @@ class RadioService {
   private shuffledQueue: RatedSongPerformance[] = [];
   private queueIndex: number = 0;
 
+  // Prefetched tracks ready for immediate playback
+  private prefetchedTracks: RadioTrack[] = [];
+  private isPrefetching: boolean = false;
+
   /**
    * Get a unique key for a performance to track what's been played
    */
@@ -176,10 +180,50 @@ class RadioService {
   }
 
   /**
-   * Get random tracks for radio playback
-   * Fetches and resolves performances until we have the requested count
+   * Prefetch tracks in the background for instant radio start
+   * Call this when the app starts or Discover screen mounts
    */
-  async getRandomTracks(count: number): Promise<RadioTrack[]> {
+  async prefetch(count: number = 10): Promise<void> {
+    // Don't prefetch if already prefetching or have enough tracks
+    if (this.isPrefetching || this.prefetchedTracks.length >= count) {
+      console.log(`[Radio] Prefetch skipped - already have ${this.prefetchedTracks.length} tracks`);
+      return;
+    }
+
+    this.isPrefetching = true;
+    console.log('[Radio] Starting prefetch...');
+    const startTime = Date.now();
+
+    try {
+      const needed = count - this.prefetchedTracks.length;
+      const newTracks = await this.fetchTracks(needed);
+      this.prefetchedTracks.push(...newTracks);
+      console.log(`[Radio] Prefetch complete - ${this.prefetchedTracks.length} tracks ready (${Date.now() - startTime}ms)`);
+    } catch (error) {
+      console.error('Failed to prefetch radio tracks:', error);
+    } finally {
+      this.isPrefetching = false;
+    }
+  }
+
+  /**
+   * Check if prefetched tracks are available
+   */
+  hasPrefetchedTracks(): boolean {
+    return this.prefetchedTracks.length > 0;
+  }
+
+  /**
+   * Get the count of prefetched tracks
+   */
+  getPrefetchedCount(): number {
+    return this.prefetchedTracks.length;
+  }
+
+  /**
+   * Internal method to fetch and resolve tracks
+   */
+  private async fetchTracks(count: number): Promise<RadioTrack[]> {
     const tracks: RadioTrack[] = [];
     let attempts = 0;
     const maxAttempts = count * 3; // Allow for some failures
@@ -202,12 +246,46 @@ class RadioService {
   }
 
   /**
+   * Get random tracks for radio playback
+   * Uses prefetched tracks first, then fetches more if needed
+   */
+  async getRandomTracks(count: number): Promise<RadioTrack[]> {
+    const startTime = Date.now();
+    const tracks: RadioTrack[] = [];
+
+    // Use prefetched tracks first
+    const prefetchedUsed = Math.min(count, this.prefetchedTracks.length);
+    while (tracks.length < count && this.prefetchedTracks.length > 0) {
+      tracks.push(this.prefetchedTracks.shift()!);
+    }
+    console.log(`[Radio] Used ${prefetchedUsed} prefetched tracks`);
+
+    // Fetch more if needed
+    if (tracks.length < count) {
+      const needed = count - tracks.length;
+      console.log(`[Radio] Need to fetch ${needed} more tracks...`);
+      const fetchStart = Date.now();
+      const newTracks = await this.fetchTracks(needed);
+      console.log(`[Radio] Fetched ${newTracks.length} tracks in ${Date.now() - fetchStart}ms`);
+      tracks.push(...newTracks);
+    }
+
+    console.log(`[Radio] getRandomTracks complete: ${tracks.length} tracks in ${Date.now() - startTime}ms`);
+
+    // Start background prefetch for next time
+    this.prefetch(10);
+
+    return tracks;
+  }
+
+  /**
    * Reset the session - clears played history and reshuffles
    */
   resetSession(): void {
     this.playedPerformances.clear();
     this.shuffledQueue = [];
     this.queueIndex = 0;
+    this.prefetchedTracks = [];
   }
 
   /**

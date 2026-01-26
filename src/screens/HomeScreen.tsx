@@ -198,6 +198,7 @@ export function HomeScreen() {
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
+            selectionColor="#FFFFFF"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity

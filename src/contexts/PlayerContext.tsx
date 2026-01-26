@@ -1,10 +1,15 @@
-import React, { createContext, useReducer, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { Image } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack } from '../types/player.types';
 import { Track, ShowDetail } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
+
+// Resolve app icon for Now Playing artwork
+const appIcon = require('../../assets/icon.png');
+const appIconUri = Image.resolveAssetSource(appIcon).uri;
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -221,6 +226,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     audioService.initialize();
+    // Start prefetching radio tracks immediately on app start
+    radioService.prefetch(10);
   }, []);
 
   // Auto-load track when currentTrack changes
@@ -294,39 +301,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [state.playbackMode]);
 
-  // Listen to queue end event (all tracks finished)
-  useEffect(() => {
-    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
-      if (state.playbackMode === 'radio') {
-        // Radio queue ended - this shouldn't happen with auto-replenish
-        // but if it does, try to fetch more
-        fetchMoreRadioTracks();
-      } else {
-        dispatch({ type: 'STOP' });
-      }
-    });
-
-    return () => subscription.remove();
-  }, [state.playbackMode]);
-
-  // Radio auto-replenish: fetch more tracks when remaining <= 3
+  // Ref to prevent concurrent replenish calls
   const isReplenishingRef = useRef(false);
-  useEffect(() => {
-    if (
-      state.playbackMode === 'radio' &&
-      !state.isRadioLoading &&
-      !isReplenishingRef.current &&
-      state.radioQueue.length > 0
-    ) {
-      const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
-      if (remainingTracks <= 3) {
-        fetchMoreRadioTracks();
-      }
-    }
-  }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, state.isRadioLoading]);
 
-  // Fetch more tracks for radio and add to queue
-  const fetchMoreRadioTracks = async () => {
+  // Fetch more tracks for radio and add to queue - defined before useEffects that call it
+  const fetchMoreRadioTracks = useCallback(async () => {
     if (isReplenishingRef.current) return;
     isReplenishingRef.current = true;
 
@@ -343,6 +322,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             title: radioTrack.track.title,
             artist: radioTrack.show.venue || 'Grateful Dead',
             duration: radioTrack.track.duration,
+            artwork: appIconUri,
           });
         }
         dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
@@ -353,7 +333,37 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_RADIO_LOADING', isLoading: false });
       isReplenishingRef.current = false;
     }
-  };
+  }, []);
+
+  // Listen to queue end event (all tracks finished)
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
+      if (state.playbackMode === 'radio') {
+        // Radio queue ended - this shouldn't happen with auto-replenish
+        // but if it does, try to fetch more
+        fetchMoreRadioTracks();
+      } else {
+        dispatch({ type: 'STOP' });
+      }
+    });
+
+    return () => subscription.remove();
+  }, [state.playbackMode, fetchMoreRadioTracks]);
+
+  // Radio auto-replenish: fetch more tracks when remaining <= 3
+  useEffect(() => {
+    if (
+      state.playbackMode === 'radio' &&
+      !state.isRadioLoading &&
+      !isReplenishingRef.current &&
+      state.radioQueue.length > 0
+    ) {
+      const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
+      if (remainingTracks <= 3) {
+        fetchMoreRadioTracks();
+      }
+    }
+  }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, state.isRadioLoading, fetchMoreRadioTracks]);
 
   // Update position and duration from native audio player progress events
   useEffect(() => {
@@ -462,9 +472,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
 
       dispatch({ type: 'START_RADIO' });
-      radioService.resetSession();
 
-      // Fetch initial batch of tracks
+      // Open the full player immediately for responsiveness
+      setFullPlayerVisible(true);
+
+      // Get first batch of tracks (uses prefetched tracks if available)
       const initialTracks = await radioService.getRandomTracks(10);
 
       if (initialTracks.length === 0) {
@@ -480,6 +492,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         title: rt.track.title,
         artist: rt.show.venue || 'Grateful Dead',
         duration: rt.track.duration,
+        artwork: appIconUri,
       }));
 
       await nativeAudioPlayer.setQueue(nativeTracks, 0);
@@ -488,9 +501,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Start playback
       await nativeAudioPlayer.play();
       dispatch({ type: 'PLAY' });
-
-      // Open the full player
-      setFullPlayerVisible(true);
     } catch (error) {
       console.error('Failed to start radio:', error);
       dispatch({ type: 'STOP_RADIO' });

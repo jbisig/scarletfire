@@ -63,6 +63,7 @@ export function SignupScreen() {
                     style={styles.input}
                     placeholder="Email"
                     placeholderTextColor="rgba(255, 255, 255, 0.75)"
+                    selectionColor="#FFFFFF"
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -79,6 +80,7 @@ export function SignupScreen() {
                     style={styles.input}
                     placeholder="Password"
                     placeholderTextColor="rgba(255, 255, 255, 0.75)"
+                    selectionColor="#FFFFFF"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}

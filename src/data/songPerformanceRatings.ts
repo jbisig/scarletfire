@@ -7,7 +7,12 @@
  * Tier 1 (3 stars): Top 1-3 performances per song
  * Tier 2 (2 stars): Ranks 4-10 performances
  * Tier 3 (1 star): Notable performances (50+ votes)
+ *
+ * Also includes community-sourced ratings from Reddit, Dead.net forums,
+ * and music publications (see communityRatings.ts)
  */
+
+import { COMMUNITY_RATINGS } from './communityRatings';
 
 export type PerformanceRatingTier = 1 | 2 | 3;
 
@@ -22032,11 +22037,12 @@ export const TIER_3_SONG_PERFORMANCES: RatedSongPerformance[] = [
   }
 ];
 
-// Combined list for easy lookup
+// Combined list for easy lookup (includes HeadyVersion + Community ratings)
 export const ALL_RATED_SONG_PERFORMANCES: RatedSongPerformance[] = [
   ...TIER_1_SONG_PERFORMANCES,
   ...TIER_2_SONG_PERFORMANCES,
-  ...TIER_3_SONG_PERFORMANCES
+  ...TIER_3_SONG_PERFORMANCES,
+  ...COMMUNITY_RATINGS,
 ];
 
 /**

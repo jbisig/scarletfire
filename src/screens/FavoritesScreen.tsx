@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Pressable,
+  Animated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -112,6 +114,24 @@ export function FavoritesScreen() {
   const songSortButtonRef = useRef<View>(null);
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
+
+  // Tab sliding animation
+  const [tabWidth, setTabWidth] = useState(0);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: activeTab === 'shows' ? 0 : 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, slideAnim]);
+
+  const handleTabContainerLayout = (event: LayoutChangeEvent) => {
+    const { width } = event.nativeEvent.layout;
+    // Account for padding (4px on each side)
+    setTabWidth((width - 8) / 2);
+  };
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -312,6 +332,7 @@ export function FavoritesScreen() {
               onChangeText={setShowSearchQuery}
               autoCapitalize="none"
               autoCorrect={false}
+              selectionColor="#FFFFFF"
             />
             {showSearchQuery.length > 0 && (
               <TouchableOpacity
@@ -335,7 +356,7 @@ export function FavoritesScreen() {
               <Text style={styles.sortPillButtonText}>
                 {showSortType === 'performanceDate' ? 'Perform. Date' : 'Date Saved'}
               </Text>
-              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -401,6 +422,7 @@ export function FavoritesScreen() {
               onChangeText={setSongSearchQuery}
               autoCapitalize="none"
               autoCorrect={false}
+              selectionColor="#FFFFFF"
             />
             {songSearchQuery.length > 0 && (
               <TouchableOpacity
@@ -424,7 +446,7 @@ export function FavoritesScreen() {
               <Text style={styles.sortPillButtonText}>
                 {getSongSortLabel(songSortType)}
               </Text>
-              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -470,9 +492,26 @@ export function FavoritesScreen() {
       <PageHeader title="Favorites" />
 
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={styles.tabContainer} onLayout={handleTabContainerLayout}>
+        {/* Sliding active indicator */}
+        <Animated.View
+          style={[
+            styles.tabSlider,
+            {
+              width: tabWidth,
+              transform: [
+                {
+                  translateX: slideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, tabWidth],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'shows' && styles.activeTab]}
+          style={styles.tab}
           onPress={() => setActiveTab('shows')}
           activeOpacity={0.7}
         >
@@ -481,7 +520,7 @@ export function FavoritesScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'songs' && styles.activeTab]}
+          style={styles.tab}
           onPress={() => setActiveTab('songs')}
           activeOpacity={0.7}
         >
@@ -635,30 +674,36 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.textSecondary,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
+    marginTop: 0,
+    marginBottom: 0,
+    backgroundColor: COLORS.border,
+    borderRadius: 100,
+    padding: 4,
+  },
+  tabSlider: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    bottom: 4,
+    backgroundColor: '#484848',
+    borderRadius: 100,
   },
   tab: {
     flex: 1,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: -1,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: COLORS.accent,
+    borderRadius: 100,
+    zIndex: 1,
   },
   tabText: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     fontFamily: FONTS.primary,
     color: COLORS.textSecondary,
   },
   activeTabText: {
-    color: COLORS.accent,
+    color: COLORS.textPrimary,
   },
   centerContainer: {
     flex: 1,
@@ -764,7 +809,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     borderRadius: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    height: 48,
   },
   searchIcon: {
     marginRight: 10,
