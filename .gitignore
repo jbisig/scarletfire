@@ -38,5 +38,11 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
 /android
+
+# iOS - ignore generated files but keep custom native modules
+/ios/*
+!/ios/Scarletfire/
+/ios/Scarletfire/*
+!/ios/Scarletfire/AudioPlayerModule.swift
+!/ios/Scarletfire/AudioPlayerModule.m
