@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 180,
   },
   headerContainer: {
     padding: 20,
