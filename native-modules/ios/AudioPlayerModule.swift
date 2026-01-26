@@ -393,6 +393,9 @@ class AudioPlayerModule: RCTEventEmitter {
     let asset = AVURLAsset(url: url)
     let item = AVPlayerItem(asset: asset)
 
+    // Add to originalTracks so track end observer knows about it
+    originalTracks.append(trackData)
+
     player?.insert(item, after: nil)
     currentItems.append(item)
 
