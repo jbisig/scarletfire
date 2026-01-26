@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -27,13 +26,10 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   return (
     <View style={styles.container}>
       {/* Blur background */}
-      <BlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
 
-      {/* Gradient overlay */}
-      <LinearGradient
-        colors={['rgba(18, 18, 18, 0)', 'rgba(18, 18, 18, 0.76)']}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Semi-transparent overlay */}
+      <View style={styles.overlay} />
 
       {/* Tab buttons */}
       <View style={[styles.tabContainer, { paddingBottom: insets.bottom || 16 }]}>
@@ -94,6 +90,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     overflow: 'hidden',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 18, 18, 0.76)',
   },
   tabContainer: {
     flexDirection: 'row',

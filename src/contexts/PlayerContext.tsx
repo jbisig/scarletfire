@@ -25,10 +25,14 @@ function findNextShow(currentDate: string): GratefulDeadShow | null {
     allShows.push(...yearShows);
   });
 
-  // Filter shows that are after the current date and sort by date
+  // Normalize date to YYYY-MM-DD format for comparison
+  const normalizeDate = (date: string) => date.substring(0, 10);
+  const currentDateNormalized = normalizeDate(currentDate);
+
+  // Filter shows that are STRICTLY after the current date and sort by date
   const futureShows = allShows
-    .filter(s => s.date > currentDate)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .filter(s => normalizeDate(s.date) > currentDateNormalized)
+    .sort((a, b) => normalizeDate(a.date).localeCompare(normalizeDate(b.date)));
 
   // Return the first one (next chronological show)
   return futureShows.length > 0 ? futureShows[0] : null;

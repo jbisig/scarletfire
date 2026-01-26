@@ -1,5 +1,10 @@
+import { Image } from 'react-native';
 import nativeAudioPlayer, { Track as NativeTrack, State } from './nativeAudioPlayer';
 import { Track, ShowDetail } from '../types/show.types';
+
+// Resolve app icon for Now Playing artwork
+const appIcon = require('../../assets/icon.png');
+const appIconUri = Image.resolveAssetSource(appIcon).uri;
 
 /**
  * Convert our Track format to Native Audio Player's Track format
@@ -11,6 +16,7 @@ function convertToNativeTrack(track: Track, show?: ShowDetail): NativeTrack {
     title: track.title,
     artist: show?.venue || 'Grateful Dead',
     duration: track.duration,
+    artwork: appIconUri,
   };
 }
 

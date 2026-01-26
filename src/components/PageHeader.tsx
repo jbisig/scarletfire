@@ -9,22 +9,31 @@ import {
   Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
 import { COLORS, FONTS } from '../constants/theme';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
-// Placeholder profile image
-const PLACEHOLDER_PROFILE = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop';
+// Default profile image for logged out users
+const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
 interface PageHeaderProps {
   title: string;
 }
 
+type NavigationProp = StackNavigationProp<RootStackParamList>;
+
 export function PageHeader({ title }: PageHeaderProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
   const { state: authState, logout, showLogin } = useAuth();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [profileButtonPosition, setProfileButtonPosition] = useState({ top: 0, left: 0 });
   const profileButtonRef = useRef<View>(null);
+
+  const avatarUrl = profileService.getAvatarUrl(authState.user);
 
   const handleProfilePress = () => {
     profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -45,7 +54,7 @@ export function PageHeader({ title }: PageHeaderProps) {
 
   const handleSettings = () => {
     setShowProfileDropdown(false);
-    // TODO: Navigate to settings screen
+    navigation.navigate('Settings');
   };
 
   return (
@@ -57,7 +66,10 @@ export function PageHeader({ title }: PageHeaderProps) {
           activeOpacity={0.8}
         >
           <Image
-            source={{ uri: PLACEHOLDER_PROFILE }}
+            source={authState.isAuthenticated && avatarUrl
+              ? { uri: avatarUrl }
+              : LOGGED_OUT_PROFILE
+            }
             style={styles.profileImage}
           />
         </TouchableOpacity>

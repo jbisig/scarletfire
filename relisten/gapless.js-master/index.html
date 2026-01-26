@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gapless.js Demo - Seamless Audio Playback</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      background: #333;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+    .playing-indicator { animation: pulse-ring 2s ease-in-out infinite; }
+
+    @keyframes soundwave {
+      0%, 100% { height: 5px; }
+      50% { height: 20px; }
+    }
+    .soundwave-bar {
+      width: 3px;
+      background-color: #3b82f6;
+      margin: 0 1px;
+      transition: height 0.1s ease;
+    }
+    .soundwave-bar:nth-child(1) { animation: soundwave 0.5s ease-in-out infinite; }
+    .soundwave-bar:nth-child(2) { animation: soundwave 0.5s ease-in-out 0.1s infinite; }
+    .soundwave-bar:nth-child(3) { animation: soundwave 0.5s ease-in-out 0.2s infinite; }
+    .soundwave-bar:nth-child(4) { animation: soundwave 0.5s ease-in-out 0.3s infinite; }
+    .soundwave-bar:nth-child(5) { animation: soundwave 0.5s ease-in-out 0.4s infinite; }
+
+    .track-item { transition: all 0.3s ease; }
+    .track-item:hover { transform: translateX(5px); }
+
+    .progress-bar { transition: width 0.1s linear; }
+
+    .loading-track {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+      animation: loading-shimmer 2s ease-in-out infinite;
+    }
+
+    @keyframes loading-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div id="app">
+    <div class="max-w-4xl mx-auto p-4">
+      <!-- Header -->
+      <header class="text-center mb-6">
+        <h1 class="text-3xl font-bold mb-1 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          Gapless.js Demo (XState)
+        </h1>
+        <p class="text-gray-400 text-sm">Experience seamless audio playback with state machine architecture</p>
+      </header>
+
+      <!-- Player -->
+      <div class="bg-gray-800 rounded-xl shadow-2xl p-6 mb-4">
+        <!-- Track Info -->
+        <div class="text-center mb-4">
+          <h2 class="text-xl font-semibold mb-1">{{ trackTitle }}</h2>
+          <div class="text-sm text-gray-400">
+            {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+          </div>
+          <div v-if="!playerInitialized" class="text-sm text-yellow-400 mt-1">
+            <i class="fas fa-spinner fa-spin mr-1"></i> Initializing player...
+          </div>
+          <div v-else-if="tracks.length === 0" class="text-sm text-yellow-400 mt-1">
+            <i class="fas fa-spinner fa-spin mr-1"></i> Loading tracks...
+          </div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="flex justify-center items-center h-8 mb-4">
+          <div v-show="isPlaying" class="flex items-end h-full">
+            <div v-for="n in 5" :key="n" class="soundwave-bar"></div>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="mb-4">
+          <div @click="handleSeek" class="bg-gray-700 rounded-full h-2 overflow-hidden cursor-pointer">
+            <div class="progress-bar bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full"
+                 :style="{ width: progress + '%' }"></div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center items-center space-x-4 mb-4">
+          <button @click="controls.previous" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+            <i class="fas fa-backward text-lg"></i>
+          </button>
+          <button @click="controls.playPause"
+                  :class="'p-3 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors' + (isPlaying ? ' playing-indicator' : '')">
+            <i :class="isPlaying ? 'fas fa-pause text-xl w-6 text-center' : 'fas fa-play text-xl w-6 text-center'"></i>
+          </button>
+          <button @click="controls.next" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+            <i class="fas fa-forward text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Volume & Skip -->
+        <div class="flex items-center justify-center space-x-6">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-volume-down text-gray-400 text-sm"></i>
+            <input type="range" min="0" max="100" v-model="volume" @input="controls.volume"
+                   class="w-24 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+            <i class="fas fa-volume-up text-gray-400 text-sm"></i>
+          </div>
+          <button @click="controls.skipToEnd" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-sm rounded-full transition-colors">
+            Skip to End (-5s)
+          </button>
+        </div>
+      </div>
+
+      <!-- Playlist -->
+      <div class="bg-gray-800 rounded-xl shadow-2xl p-4">
+        <h3 class="text-lg font-semibold mb-3 flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="fas fa-list-music mr-2"></i> Playlist
+          </div>
+          <div class="text-sm text-gray-400 flex items-center space-x-2">
+            <span v-if="trackStates.filter(s => s?.loading).length > 0" class="text-yellow-400">
+              <i class="fas fa-spinner fa-spin"></i> {{ trackStates.filter(s => s?.loading).length }} loading
+            </span>
+            <span class="text-green-400">
+              <i class="fas fa-check-circle"></i> {{ trackStates.filter(s => s?.loaded).length }}/{{ tracks.length }} ready
+            </span>
+          </div>
+        </h3>
+        <div class="space-y-1">
+          <div v-if="tracks.length === 0" class="p-4 text-center text-gray-400">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Loading playlist...
+          </div>
+          <div v-for="(track, idx) in tracks" :key="idx"
+               @click="controls.selectTrack(idx)"
+               :class="[
+                 'track-item p-2 rounded-lg cursor-pointer flex items-center space-x-3',
+                 trackIdx === idx ? 'bg-blue-600 bg-opacity-20 border border-blue-500' :
+                   trackStates[idx]?.loading ? 'loading-track' : 'bg-gray-700 hover:bg-gray-600'
+               ]">
+            <div class="text-2xl w-8 text-center">
+              <i v-if="trackIdx === idx && isPlaying" class="fas fa-volume-up text-blue-400"></i>
+              <span v-else class="text-gray-500">{{ idx + 1 }}</span>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold">{{ track.metadata?.title || `Track ${idx + 1}` }}</div>
+              <div class="text-sm text-gray-400 flex items-center">
+                <span>{{ track.metadata?.artist || 'Unknown Artist' }}</span>
+                <span v-if="trackStates[idx]?.loading" class="ml-2 text-yellow-400">
+                  <i class="fas fa-spinner fa-spin"></i> Loading WebAudio...
+                </span>
+                <span v-else-if="trackStates[idx]?.loaded" class="ml-2 text-green-400">
+                  <i class="fas fa-check-circle"></i> WebAudio Ready
+                </span>
+                <span v-else class="ml-2 text-gray-500">
+                  <i class="fas fa-music"></i> HTML5
+                </span>
+              </div>
+            </div>
+            <div class="text-sm text-gray-400 flex flex-col items-end">
+              <div>3:45</div>
+              <div class="text-xs" :class="{
+                'text-yellow-400': trackStates[idx]?.loading,
+                'text-green-400': trackStates[idx]?.loaded && trackStates[idx]?.playbackType === 'WEBAUDIO',
+                'text-blue-400': trackStates[idx]?.playbackType === 'HTML5'
+              }">
+                {{ trackStates[idx]?.playbackType || 'HTML5' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State Machine Status -->
+      <div class="mt-4 bg-gray-800 rounded-xl shadow-2xl p-4">
+        <h3 class="text-lg font-semibold mb-3 flex items-center">
+          <i class="fas fa-cogs mr-2"></i> State Machine Status
+        </h3>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span class="text-gray-400">Queue State:</span>
+            <span class="ml-2 font-mono text-blue-400">{{ queueState }}</span>
+          </div>
+          <div>
+            <span class="text-gray-400">Current Track:</span>
+            <span class="ml-2 font-mono text-green-400">{{ currentTrackIndex + 1 }} / {{ tracks.length }}</span>
+          </div>
+          <div>
+            <span class="text-gray-400">WebAudio Context:</span>
+            <span class="ml-2 font-mono text-green-400">{{ webAudioEnabled ? 'Available' : 'Disabled' }}</span>
+          </div>
+          <div>
+            <span class="text-gray-400">Volume:</span>
+            <span class="ml-2 font-mono text-purple-400">{{ Math.round(playerVolume * 100) }}%</span>
+          </div>
+          <div>
+            <span class="text-gray-400">Loading Tracks:</span>
+            <span class="ml-2 font-mono text-yellow-400">{{ trackStates.filter(s => s?.loading).length }}</span>
+          </div>
+          <div>
+            <span class="text-gray-400">WebAudio Ready:</span>
+            <span class="ml-2 font-mono text-green-400">{{ trackStates.filter(s => s?.loaded).length }} / {{ tracks.length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug View -->
+      <div class="mt-4 bg-gray-800 rounded-xl shadow-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold flex items-center">
+            <i class="fas fa-bug mr-2"></i> Debug State
+          </h3>
+        </div>
+        <div>
+          <pre class="bg-gray-900 p-3 rounded text-xs text-green-400 overflow-auto max-h-96 font-mono">{{ debugState }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Gapless } from './dist/index.mjs';
+
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+    createApp({
+      setup() {
+        // Constants
+        const TRACKS = [
+          "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t02.mp3",
+          "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t03.mp3",
+          "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t04.mp3"
+        ];
+
+        const METADATA = [
+          { title: "Scarlet Begonias", artist: "Grateful Dead", album: "Cornell 5/8/77" },
+          { title: "Fire on the Mountain", artist: "Grateful Dead", album: "Cornell 5/8/77" },
+          { title: "Estimated Prophet", artist: "Grateful Dead", album: "Cornell 5/8/77" }
+        ];
+
+        // Reactive state
+        const playerInitialized = ref(false);
+        const gaplessPlayer = ref(null);
+        const volume = ref(70);
+        const currentTime = ref(0);
+        const duration = ref(0);
+        const currentTrackIndex = ref(0);
+        const isPlaying = ref(false);
+        const isPaused = ref(false);
+        const queueState = ref('idle');
+        const playerVolume = ref(1);
+        const webAudioEnabled = ref(false);
+
+        // Progress tracking interval
+        let progressInterval = null;
+        let stateSubscription = null;
+        let trackSubscriptions = [];
+
+        // Track previous states for transition logging
+        let previousQueueState = null;
+        let previousTrackStates = [];
+
+        // Initialize gapless player
+        const initializePlayer = () => {
+          gaplessPlayer.value = new Gapless({
+            tracks: TRACKS,
+            trackMetadata: METADATA,
+            onProgress: (trackInfo) => {
+              currentTime.value = trackInfo.currentTime;
+              duration.value = trackInfo.duration;
+              currentTrackIndex.value = trackInfo.idx;
+              isPlaying.value = trackInfo.isPlaying;
+              isPaused.value = trackInfo.isPaused;
+              playerVolume.value = trackInfo.volume;
+            },
+            onEnded: () => {
+              console.log('Playlist ended');
+            },
+            onPlayNextTrack: (trackActor) => {
+              console.log('Playing next track:', trackActor, new Error().stack);
+              currentTrackIndex.value = gaplessPlayer.value.currentTrackIndex;
+            },
+            onPlayPreviousTrack: (trackActor) => {
+              console.log('Playing previous track:', trackActor);
+              currentTrackIndex.value = gaplessPlayer.value.currentTrackIndex;
+            },
+            onStartNewTrack: (trackActor) => {
+              console.log('Starting new track:', trackActor);
+              currentTrackIndex.value = gaplessPlayer.value.currentTrackIndex;
+            }
+          });
+
+          playerInitialized.value = true;
+          webAudioEnabled.value = !!(window.AudioContext || window.webkitAudioContext);
+
+          // Subscribe to queue state changes with transition logging
+          stateSubscription = gaplessPlayer.value.queueActor.subscribe((snapshot) => {
+            const currentState = snapshot.status === 'active' ? snapshot.value : snapshot.status;
+
+            // Only log if state actually transitioned
+            if (previousQueueState !== null && previousQueueState !== currentState) {
+              console.log('🎵 QUEUE STATE TRANSITION:', {
+                from: previousQueueState,
+                to: currentState,
+                context: snapshot.status === 'active' ? {
+                  currentTrackIdx: snapshot.context?.currentTrackIdx,
+                  volume: snapshot.context?.volume,
+                  tracksCount: snapshot.context?.trackActors?.length
+                } : null
+              });
+            }
+
+            previousQueueState = currentState;
+
+            if (snapshot.status === 'active') {
+              queueState.value = snapshot.value;
+              isPlaying.value = snapshot.value === 'playing';
+              isPaused.value = snapshot.value === 'paused';
+
+              // Update current track index from context
+              const context = snapshot.context;
+              if (context) {
+                currentTrackIndex.value = context.currentTrackIdx;
+                playerVolume.value = context.volume;
+              }
+
+              // Update track states when queue state changes
+              updateTrackStates();
+            }
+          });
+
+          // Initialize track states
+          updateTrackStates();
+
+          // Subscribe to individual track actors for immediate updates
+          const setupTrackSubscriptions = () => {
+            // Clear existing subscriptions
+            trackSubscriptions.forEach(sub => sub.unsubscribe());
+            trackSubscriptions = [];
+
+            // Subscribe to each track actor
+            if (gaplessPlayer.value) {
+              const trackActors = gaplessPlayer.value.tracks;
+
+              // Initialize previous states array
+              previousTrackStates = trackActors.map(() => null);
+
+              trackActors.forEach((trackActor, idx) => {
+                if (trackActor) {
+                  const subscription = trackActor.subscribe((snapshot) => {
+                    const currentTrackState = {
+                      status: snapshot.status,
+                      audioSource: snapshot.status === 'active' && snapshot.matches ?
+                        (snapshot.matches({ audioSource: 'webaudio' }) ? 'WEBAUDIO' :
+                         snapshot.matches({ audioSource: 'loadingWebAudio' }) ? 'LOADING' : 'HTML5') : 'unknown',
+                      playback: snapshot.status === 'active' && snapshot.matches ?
+                        (snapshot.matches({ playback: 'playing' }) ? 'PLAYING' :
+                         snapshot.matches({ playback: 'paused' }) ? 'PAUSED' : 'IDLE') : 'unknown'
+                    };
+
+                    // Only log if state actually transitioned
+                    const prevState = previousTrackStates[idx];
+                    if (prevState !== null && (
+                      prevState.status !== currentTrackState.status ||
+                      prevState.audioSource !== currentTrackState.audioSource ||
+                      prevState.playback !== currentTrackState.playback
+                    )) {
+                      console.log(`🎧 TRACK ${idx} STATE TRANSITION:`, {
+                        from: prevState,
+                        to: currentTrackState,
+                        context: snapshot.status === 'active' ? {
+                          currentTime: snapshot.context?.currentTime,
+                          duration: snapshot.context?.duration,
+                          hasBuffer: !!snapshot.context?.audioBuffer,
+                          hasAudio: !!snapshot.context?.audio
+                        } : null
+                      });
+                    }
+
+                    previousTrackStates[idx] = currentTrackState;
+
+                    // Update track states when any track state changes
+                    updateTrackStates();
+                  });
+                  trackSubscriptions.push(subscription);
+                }
+              });
+            }
+          };
+
+          // Setup initial track subscriptions
+          setTimeout(setupTrackSubscriptions, 100);
+
+          // Start progress tracking
+          progressInterval = setInterval(() => {
+            if (gaplessPlayer.value && gaplessPlayer.value.isPlaying) {
+              // Get current track info from the current track actor
+              const currentTrack = gaplessPlayer.value.currentTrack;
+              if (currentTrack) {
+                const snapshot = currentTrack.getSnapshot();
+                if (snapshot.status === 'active' && snapshot.context) {
+                  currentTime.value = snapshot.context.currentTime || 0;
+                  duration.value = snapshot.context.duration || 0;
+                }
+              }
+            }
+
+            // Update track states periodically
+            updateTrackStates();
+          }, 100);
+        };
+
+        // Computed values
+        const trackTitle = computed(() => {
+          const track = tracks.value[currentTrackIndex.value];
+          return track?.metadata?.title || `Track ${currentTrackIndex.value + 1}`;
+        });
+
+        const tracks = computed(() => {
+          return TRACKS.map((url, idx) => ({
+            url,
+            metadata: METADATA[idx] || {}
+          }));
+        });
+
+        const trackIdx = computed(() => currentTrackIndex.value);
+
+        const progress = computed(() => {
+          const dur = duration.value;
+          const curr = currentTime.value;
+          return dur ? (curr / dur) * 100 : 0;
+        });
+
+        // Reactive track states
+        const trackStates = ref([]);
+
+        // Function to update track states
+        const updateTrackStates = () => {
+          if (!gaplessPlayer.value) {
+            trackStates.value = tracks.value.map(() => ({ loading: false, loaded: false, playbackType: 'HTML5' }));
+            return;
+          }
+
+          const trackActors = gaplessPlayer.value.tracks;
+          trackStates.value = tracks.value.map((_, idx) => {
+            const trackActor = trackActors[idx];
+
+            if (!trackActor) return { loading: false, loaded: false, playbackType: 'HTML5' };
+
+            const snapshot = trackActor.getSnapshot();
+            if (snapshot.status !== 'active') return { loading: false, loaded: false, playbackType: 'HTML5' };
+
+            const isLoadingWebAudio = snapshot.matches({ audioSource: 'loadingWebAudio' });
+            const isWebAudio = snapshot.matches({ audioSource: 'webaudio' });
+            const hasBuffer = snapshot.context?.audioBuffer;
+
+            return {
+              loading: isLoadingWebAudio,
+              loaded: hasBuffer,
+              playbackType: isWebAudio ? 'WEBAUDIO' : 'HTML5',
+              state: snapshot.value
+            };
+          });
+        };
+
+        const debugState = computed(() => {
+          const debugData = {
+            player: {
+              initialized: playerInitialized.value,
+              isPlaying: isPlaying.value,
+              isPaused: isPaused.value,
+              currentTrackIndex: currentTrackIndex.value,
+              currentTime: currentTime.value,
+              duration: duration.value,
+              volume: playerVolume.value,
+              tracksCount: tracks.value.length
+            },
+            queue: {
+              state: queueState.value,
+              trackActors: gaplessPlayer.value ? gaplessPlayer.value.tracks.length : 0,
+              loadingTracks: trackStates.value.filter(s => s?.loading).length,
+              loadedTracks: trackStates.value.filter(s => s?.loaded).length
+            },
+            currentTrack: (() => {
+              if (!gaplessPlayer.value) return null;
+              const currentTrack = gaplessPlayer.value.currentTrack;
+              if (!currentTrack) return null;
+              const snapshot = currentTrack.getSnapshot();
+              return {
+                state: snapshot.value,
+                context: snapshot.status === 'active' ? {
+                  currentTime: snapshot.context?.currentTime,
+                  duration: snapshot.context?.duration,
+                  volume: snapshot.context?.volume,
+                  playbackType: snapshot.matches({ audioSource: 'webaudio' }) ? 'WEBAUDIO' : 'HTML5'
+                } : null
+              };
+            })(),
+            trackStates: trackStates.value.map((state, idx) => ({
+              index: idx,
+              ...state
+            })),
+            browser: {
+              audioContext: webAudioEnabled.value,
+              userAgent: navigator.userAgent.substring(0, 100) + '...'
+            }
+          };
+          return JSON.stringify(debugData, null, 2);
+        });
+
+        // Utilities
+        const formatTime = (seconds) => {
+          if (!seconds || isNaN(seconds)) return '0:00';
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.floor(seconds % 60);
+          return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // Event handlers with logging
+        const controls = {
+          playPause: () => {
+            if (!gaplessPlayer.value) return;
+
+            const action = isPlaying.value ? 'PAUSE' : 'PLAY';
+            console.log(`🎮 USER ACTION: ${action}`);
+
+            if (isPlaying.value) {
+              gaplessPlayer.value.pause();
+            } else {
+              gaplessPlayer.value.play();
+            }
+          },
+
+          previous: () => {
+            if (gaplessPlayer.value) {
+              console.log('🎮 USER ACTION: PREVIOUS');
+              gaplessPlayer.value.previous();
+            }
+          },
+
+          next: () => {
+            if (gaplessPlayer.value) {
+              console.log('🎮 USER ACTION: NEXT');
+              gaplessPlayer.value.next();
+            }
+          },
+
+          skipToEnd: () => {
+            if (gaplessPlayer.value && duration.value > 5) {
+              const seekTime = duration.value - 5;
+              console.log(`🎮 USER ACTION: SKIP_TO_END (${seekTime}s)`);
+              gaplessPlayer.value.seek(seekTime);
+            }
+          },
+
+          volume: () => {
+            if (gaplessPlayer.value) {
+              const vol = volume.value / 100;
+              console.log(`🎮 USER ACTION: SET_VOLUME (${vol})`);
+              gaplessPlayer.value.setVolume(vol);
+            }
+          },
+
+          selectTrack: (idx) => {
+            if (gaplessPlayer.value) {
+              console.log(`🎮 USER ACTION: SELECT_TRACK (${idx})`);
+              gaplessPlayer.value.gotoTrack(idx, true);
+            }
+          }
+        };
+
+        const handleSeek = (event) => {
+          if (!gaplessPlayer.value || !duration.value) return;
+
+          try {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, x / rect.width));
+            const newTime = percentage * duration.value;
+
+            console.log(`🎮 USER ACTION: SEEK (${newTime.toFixed(2)}s)`);
+            gaplessPlayer.value.seek(newTime);
+          } catch (error) {
+            console.warn('Error in handleSeek:', error);
+          }
+        };
+
+        // Initialize
+        onMounted(() => {
+          initializePlayer();
+
+          // Start playing after a short delay
+          setTimeout(() => {
+            if (gaplessPlayer.value) {
+              gaplessPlayer.value.play();
+            }
+          }, 1000);
+
+          console.log('Gapless XState player initialized with tracks:', TRACKS.length);
+        });
+
+        onUnmounted(() => {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
+          if (stateSubscription) {
+            stateSubscription.unsubscribe();
+          }
+          // Clean up track subscriptions
+          trackSubscriptions.forEach(sub => sub.unsubscribe());
+          trackSubscriptions = [];
+
+          if (gaplessPlayer.value) {
+            gaplessPlayer.value.destroy();
+          }
+        });
+
+        return {
+          // State
+          playerInitialized,
+          currentTime,
+          duration,
+          progress,
+          trackIdx: currentTrackIndex,
+          currentTrackIndex,
+          isPlaying,
+          isPaused,
+          tracks,
+          volume,
+
+          // Computed
+          trackTitle,
+          queueState,
+          webAudioEnabled,
+          playerVolume,
+          debugState,
+          trackStates,
+
+          // Methods
+          formatTime,
+          controls,
+          handleSeek
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

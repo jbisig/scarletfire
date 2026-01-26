@@ -20,6 +20,7 @@ import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
+import { radioService } from '../services/radioService';
 import { COLORS, FONTS } from '../constants/theme';
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
@@ -41,6 +42,11 @@ export function DiscoverLandingScreen() {
   const handleRadioPress = async () => {
     await startRadio();
   };
+
+  // Prefetch radio tracks in the background for instant start
+  useEffect(() => {
+    radioService.prefetch(10);
+  }, []);
 
   // Calculate play count when show changes
   useEffect(() => {

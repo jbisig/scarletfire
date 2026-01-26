@@ -13,6 +13,7 @@ class AudioPlayerModule: RCTEventEmitter {
   private var statusObservers: [NSKeyValueObservation] = []
   private var originalTracks: [[String: Any]] = []
   private var currentTrackIndex: Int = 0
+  private var queueStartIndex: Int = 0  // Tracks offset between currentItems and originalTracks
   private lazy var artworkImage: MPMediaItemArtwork? = {
     // Try to load the app icon from the bundle
     // Check multiple possible locations where Expo/RN might bundle the icon
@@ -74,8 +75,12 @@ class AudioPlayerModule: RCTEventEmitter {
       return // Not our item
     }
 
+    // Convert finishedIndex (index in currentItems) to global index (index in originalTracks)
+    // currentItems only contains tracks from queueStartIndex onwards
+    let globalFinishedIndex = finishedIndex + queueStartIndex
+
     // Only handle if this is the currently playing track
-    guard finishedIndex == currentTrackIndex else {
+    guard globalFinishedIndex == currentTrackIndex else {
       return
     }
 
@@ -247,6 +252,7 @@ class AudioPlayerModule: RCTEventEmitter {
     currentItems.removeAll()
     originalTracks.removeAll()
     currentTrackIndex = 0
+    queueStartIndex = 0
     sendEvent(withName: "playback-state", body: ["state": "stopped"])
     resolve(nil)
   }
@@ -306,6 +312,9 @@ class AudioPlayerModule: RCTEventEmitter {
     currentItems.removeAll()
     statusObservers.removeAll()
 
+    // Update queueStartIndex since we're rebuilding from currentTrackIndex
+    queueStartIndex = currentTrackIndex
+
     // Rebuild from current index
     let tracksToAdd = Array(originalTracks.dropFirst(currentTrackIndex))
 
@@ -347,6 +356,7 @@ class AudioPlayerModule: RCTEventEmitter {
     // Store original tracks for skip previous functionality
     originalTracks = tracks
     currentTrackIndex = startIndex
+    queueStartIndex = startIndex  // Remember offset for index calculations
 
     // Clear existing queue
     player?.removeAllItems()
@@ -438,6 +448,7 @@ class AudioPlayerModule: RCTEventEmitter {
     statusObservers.removeAll()
     originalTracks.removeAll()
     currentTrackIndex = 0
+    queueStartIndex = 0
     resolve(nil)
   }
 

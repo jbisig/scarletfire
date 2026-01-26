@@ -1,0 +1,325 @@
+{
+  "source": "Reddit, Dead.net forums, HeadyVersion, Archive.org forums, Quora, Rolling Stone, Guitar World",
+  "generatedDate": "2026-01-25",
+  "notes": "Community-sourced notable performances scraped from various forums and music publications",
+  "performances": [
+    {
+      "songTitle": "Dark Star",
+      "performances": [
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "Most cited in fan surveys, Jerry letting it rip in 90+ degree heat" },
+        { "date": "1970-02-13", "venue": "Fillmore East, New York", "tier": 1, "notes": "Deadbase readers poll #1, famous 'Feelin' Groovy Jam'" },
+        { "date": "1969-02-27", "venue": "Fillmore West, San Francisco", "tier": 1, "notes": "Live/Dead album version, established Dead mystique" },
+        { "date": "1973-11-11", "venue": "Winterland Arena, San Francisco", "tier": 1, "notes": "The 'Thinking Man's Dark Star', Mind Left Body Jam > Eyes" },
+        { "date": "1972-04-08", "venue": "Wembley Empire Pool, London", "tier": 2, "notes": "30-minute masterpiece, Steppin' Out release" },
+        { "date": "1970-09-19", "venue": "Fillmore East, New York", "tier": 2, "notes": "Epic version, day after Hendrix died" },
+        { "date": "1974-02-24", "venue": "Winterland Arena, San Francisco", "tier": 2, "notes": "Saddest, deepest, most introvert Dark Star" },
+        { "date": "1989-10-26", "venue": "Miami Arena, Miami", "tier": 2, "notes": "Last epic Dark Star, best post-1974 version" },
+        { "date": "1973-12-06", "venue": "Cleveland Public Hall", "tier": 3, "notes": "Longest Dark Star ever performed" }
+      ]
+    },
+    {
+      "songTitle": "Scarlet Begonias > Fire On The Mountain",
+      "performances": [
+        { "date": "1977-05-08", "venue": "Barton Hall, Cornell University", "tier": 1, "notes": "Most famous two-song segment of all time, required listening" },
+        { "date": "1980-11-30", "venue": "Fox Theatre, Atlanta", "tier": 1, "notes": "Silky smooth, magnificent playing during transition" },
+        { "date": "1978-02-05", "venue": "UNI-Dome, Cedar Falls, IA", "tier": 2, "notes": "Dripping with creativity" },
+        { "date": "1988-06-28", "venue": "SPAC, Saratoga Springs", "tier": 2, "notes": "Frequently cited top performance" },
+        { "date": "1991-10-31", "venue": "Oakland Coliseum", "tier": 2, "notes": "Bruce Hornsby on piano, trippy flute MIDI from Jerry" },
+        { "date": "1990-03-22", "venue": "Copps Coliseum, Hamilton, ON", "tier": 2, "notes": "Made one fan a Deadhead, flawless transition" },
+        { "date": "1981-03-10", "venue": "Madison Square Garden, NYC", "tier": 3, "notes": "Mighty version from 1981" },
+        { "date": "1979-11-01", "venue": "Nassau Coliseum, Uniondale", "tier": 3, "notes": "Longest version at 34 minutes" }
+      ]
+    },
+    {
+      "songTitle": "Eyes Of The World",
+      "performances": [
+        { "date": "1974-08-06", "venue": "Roosevelt Stadium, Jersey City", "tier": 1, "notes": "Beautiful, fast, inspired - best of 73-74" },
+        { "date": "1974-10-19", "venue": "Winterland Arena, San Francisco", "tier": 1, "notes": "Grateful Dead Movie, breathtaking Garcia/Godchaux interplay" },
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown, NJ", "tier": 1, "notes": "100,000+ crowd, Estimated>Eyes best pairing ever" },
+        { "date": "1973-02-09", "venue": "Stanford University, Palo Alto", "tier": 2, "notes": "First ever version, knocked it out of the park" },
+        { "date": "1974-06-16", "venue": "Des Moines, IA", "tier": 2, "notes": "Unique grasshopper cadence, segue into Big River" },
+        { "date": "1990-03-29", "venue": "Nassau Coliseum", "tier": 2, "notes": "Branford Marsalis on saxophone, jazzy and tight" },
+        { "date": "1977-10-29", "venue": "Northern Illinois University, DeKalb", "tier": 3, "notes": "Jazzy, explorative, blasts into stratosphere" }
+      ]
+    },
+    {
+      "songTitle": "Playing In The Band",
+      "performances": [
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "Most intense, in-sync jam of all time, incredible Donna harmonies" },
+        { "date": "1972-11-18", "venue": "Hofheinz Pavilion, Houston", "tier": 1, "notes": "226 HeadyVersion votes" },
+        { "date": "1973-12-02", "venue": "Music Hall, Boston", "tier": 1, "notes": "151 HeadyVersion votes" },
+        { "date": "1974-06-26", "venue": "Providence Civic Center", "tier": 2, "notes": "Peak 1974 jamming" }
+      ]
+    },
+    {
+      "songTitle": "The Other One",
+      "performances": [
+        { "date": "1970-05-02", "venue": "Harpur College, Binghamton", "tier": 1, "notes": "195 HeadyVersion votes, definitive version" },
+        { "date": "1970-02-13", "venue": "Fillmore East, New York", "tier": 1, "notes": "119 votes, legendary show" },
+        { "date": "1974-06-18", "venue": "Freedom Hall, Louisville", "tier": 1, "notes": "116 votes" },
+        { "date": "1972-05-26", "venue": "Strand Lyceum, London", "tier": 2, "notes": "Best Other One of all time per some fans" }
+      ]
+    },
+    {
+      "songTitle": "Morning Dew",
+      "performances": [
+        { "date": "1977-05-08", "venue": "Barton Hall, Cornell University", "tier": 1, "notes": "Quite possibly one of Dead's best-ever live performances - Lemieux" },
+        { "date": "1972-05-26", "venue": "Strand Lyceum, London", "tier": 1, "notes": "Europe '72 version, legendary" },
+        { "date": "1972-05-23", "venue": "Strand Lyceum, London", "tier": 2, "notes": "Following exploratory Dark Star" },
+        { "date": "1974-10-18", "venue": "Winterland Arena, San Francisco", "tier": 2, "notes": "Dark Star>Dew, WOW best ever, must be loud" },
+        { "date": "1984-10-12", "venue": "Augusta Civic Center, Augusta, ME", "tier": 2, "notes": "Most intense 80-95 version" },
+        { "date": "1970-05-06", "venue": "MIT, Boston", "tier": 2, "notes": "Powerful version 2 days after Kent State" },
+        { "date": "1983-06-18", "venue": "SPAC, Saratoga Springs", "tier": 3, "notes": "Called 'Best Morning Dew ever' in notes" },
+        { "date": "1980-09-02", "venue": "Rochester Community War Memorial", "tier": 3, "notes": "Best Brent era Morning Dew, top 5 Deadbase" }
+      ]
+    },
+    {
+      "songTitle": "Sugaree",
+      "performances": [
+        { "date": "1977-05-22", "venue": "Hollywood Sportatorium, Pembroke Pines, FL", "tier": 1, "notes": "Not just best Sugaree, finest single song performance of late 70s - Dick's Picks 3" },
+        { "date": "1977-05-28", "venue": "Hartford Civic Center", "tier": 1, "notes": "Record 21:30 length, solo after scorching solo" },
+        { "date": "1977-10-16", "venue": "LSU Assembly Center, Baton Rouge", "tier": 1, "notes": "Nearly 18 minutes, one of the most creative" },
+        { "date": "1977-05-19", "venue": "Fox Theatre, Atlanta", "tier": 2, "notes": "Some say blows away 5/22 - Dick's Picks 29" },
+        { "date": "1983-10-17", "venue": "Olympic Center, Lake Placid", "tier": 2, "notes": "Called 'the best' first set opening Sugaree" },
+        { "date": "1980-09-02", "venue": "Rochester Community War Memorial", "tier": 3, "notes": "So much energy, close to DP3" },
+        { "date": "1977-05-21", "venue": "Lakeland Civic Center Arena", "tier": 3, "notes": "Another great May 77 Sugaree" }
+      ]
+    },
+    {
+      "songTitle": "Estimated Prophet",
+      "performances": [
+        { "date": "1978-02-03", "venue": "Dane County Coliseum, Madison, WI", "tier": 1, "notes": "Frequently cited top version" },
+        { "date": "1977-10-29", "venue": "Northern Illinois University, DeKalb", "tier": 1, "notes": "Spacey-jazzy-gooey-Wah-Wah-chunk-fest" },
+        { "date": "1979-12-26", "venue": "Oakland Auditorium", "tier": 1, "notes": "One of the most frequently mentioned" },
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown", "tier": 2, "notes": "Showed the light for possibilities" },
+        { "date": "1977-11-02", "venue": "Seneca College, Toronto", "tier": 2, "notes": "Commercial release, hypnotic end section" },
+        { "date": "1977-10-16", "venue": "LSU Assembly Center, Baton Rouge", "tier": 3, "notes": "Strong fall 77 version" },
+        { "date": "1977-05-28", "venue": "Hartford Civic Center", "tier": 3, "notes": "Part of epic second set" }
+      ]
+    },
+    {
+      "songTitle": "Shakedown Street",
+      "performances": [
+        { "date": "1979-10-25", "venue": "New Haven Coliseum", "tier": 1, "notes": "Phil drives, universe of funk, 51 HeadyVersion comments" },
+        { "date": "1978-09-16", "venue": "Sphinx Theatre, Giza, Egypt", "tier": 1, "notes": "In the pocket start to finish, Rocking The Cradle" },
+        { "date": "1984-12-31", "venue": "SF Civic Auditorium", "tier": 2, "notes": "17-min show opener on NYE, never heard better" },
+        { "date": "1979-01-15", "venue": "Springfield Civic Center", "tier": 2, "notes": "Miracle>Shakedown...wait for it" },
+        { "date": "1979-12-26", "venue": "Oakland Auditorium", "tier": 2, "notes": "Brent's creativity during jam" },
+        { "date": "1985-06-30", "venue": "Merriweather Post Pavilion", "tier": 3, "notes": "Climactic and funky, impossibly good" },
+        { "date": "1984-04-16", "venue": "Unknown", "tier": 3, "notes": "Great vocal back and forth Jerry/Bob" },
+        { "date": "1982-04-06", "venue": "The Spectrum, Philadelphia", "tier": 3, "notes": "Jerry and Brent exchange fantastic" }
+      ]
+    },
+    {
+      "songTitle": "Help On The Way > Slipknot! > Franklin's Tower",
+      "performances": [
+        { "date": "1975-08-13", "venue": "Great American Music Hall, San Francisco", "tier": 1, "notes": "Gold Standard, One From The Vault" },
+        { "date": "1977-05-09", "venue": "Buffalo Memorial Auditorium", "tier": 1, "notes": "THE Help>Slip>Franklin's sequence, pure vocals" },
+        { "date": "1976-10-09", "venue": "Oakland-Alameda County Coliseum", "tier": 2, "notes": "One of best second sets ever" },
+        { "date": "1977-05-22", "venue": "Hollywood Sportatorium, Pembroke Pines", "tier": 2, "notes": "Dick's Picks 3, beautiful" },
+        { "date": "1976-09-24", "venue": "College of William and Mary, Williamsburg", "tier": 2, "notes": "Return to Slipknot>Franklin's, heady moment" },
+        { "date": "1991-09-10", "venue": "Madison Square Garden", "tier": 3, "notes": "30 Trips Bradford version" },
+        { "date": "1991-06-14", "venue": "RFK Stadium, Washington DC", "tier": 3, "notes": "One of best late-era returns - Lemieux" }
+      ]
+    },
+    {
+      "songTitle": "Terrapin Station",
+      "performances": [
+        { "date": "1977-03-18", "venue": "Winterland Arena, San Francisco", "tier": 1, "notes": "Most complete version, includes rare 'Alhambra' section" },
+        { "date": "1977-02-26", "venue": "Swing Auditorium, San Bernardino", "tier": 1, "notes": "Debut performance, great version" },
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown", "tier": 2, "notes": "Latter part Does Not Miss" },
+        { "date": "1977-05-07", "venue": "Boston Garden", "tier": 2, "notes": "Very good early version" },
+        { "date": "1979-01-15", "venue": "Springfield Civic Center", "tier": 2, "notes": "One fan's favorite live version" },
+        { "date": "1981-09-13", "venue": "Greek Theater, Berkeley", "tier": 3, "notes": "Only version with triple instrumental section" },
+        { "date": "1987-03-24", "venue": "Hampton Coliseum", "tier": 3, "notes": "Best post-terrapin jam" }
+      ]
+    },
+    {
+      "songTitle": "Wharf Rat",
+      "performances": [
+        { "date": "1978-04-22", "venue": "Unknown", "tier": 1, "notes": "Maybe the best Wharf Rat, huge climactic jams" },
+        { "date": "1971-02-18", "venue": "Capitol Theatre, Port Chester", "tier": 1, "notes": "First ever, sandwiched between Dark Star" },
+        { "date": "1979-11-09", "venue": "Buffalo Memorial Auditorium", "tier": 2, "notes": "Fantastic rendition right out of drums" },
+        { "date": "1981-02-27", "venue": "Unknown", "tier": 2, "notes": "Space>NFA>Wharf Rat exquisite, heart-rending" },
+        { "date": "1973-07-24", "venue": "Watkins Glen, NY", "tier": 2, "notes": "Soundcheck, sweet jam preceding" },
+        { "date": "1973-12-18", "venue": "Curtis Hixon Convention Hall, Tampa", "tier": 2, "notes": "Out of great Eyes, beautiful" },
+        { "date": "1984-04-21", "venue": "Unknown", "tier": 3, "notes": "A MONSTER" },
+        { "date": "1985-06-16", "venue": "Greek Theater, Berkeley", "tier": 3, "notes": "The best wharf rat...period" },
+        { "date": "1989-07-07", "venue": "JFK Stadium, Philadelphia", "tier": 3, "notes": "Jerry poured himself into song" },
+        { "date": "1993-09-22", "venue": "Madison Square Garden", "tier": 3, "notes": "With David Murray on sax, insane" }
+      ]
+    },
+    {
+      "songTitle": "St. Stephen",
+      "performances": [
+        { "date": "1969-02-27", "venue": "Fillmore West, San Francisco", "tier": 1, "notes": "Live/Dead canonical recording" },
+        { "date": "1978-01-22", "venue": "McArthur Court, U of Oregon", "tier": 1, "notes": "Epitome of Grateful Dead joy, best ever solo" },
+        { "date": "1977-10-29", "venue": "Northern Illinois University, DeKalb", "tier": 1, "notes": "Bluesy, rockin, just exactly perfect, best version" },
+        { "date": "1977-05-08", "venue": "Barton Hall, Cornell", "tier": 2, "notes": "Famous St. Stephen>NFA>St. Stephen>Morning Dew" },
+        { "date": "1971-08-06", "venue": "Hollywood Palladium", "tier": 2, "notes": "Favorite, so slow and under control but powerful" },
+        { "date": "1976-10-09", "venue": "Oakland-Alameda County Coliseum", "tier": 2, "notes": "Hot opener, flawless, best reprise ever" },
+        { "date": "1976-06-09", "venue": "Boston Music Hall", "tier": 3, "notes": "Transition into Eyes of the World stunning" }
+      ]
+    },
+    {
+      "songTitle": "Bertha",
+      "performances": [
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "Consensus best, never heard Jerry play this fast" },
+        { "date": "1971-08-06", "venue": "Hollywood Palladium", "tier": 1, "notes": "Raw unrefined power, a ripper" },
+        { "date": "1977-05-09", "venue": "Buffalo Memorial Auditorium", "tier": 2, "notes": "High-energy, exceptional musicianship" },
+        { "date": "1972-04-26", "venue": "Jahrhundert Halle, Frankfurt", "tier": 2, "notes": "Tight execution, dynamic energy, Europe 72" },
+        { "date": "1987-12-31", "venue": "Oakland Coliseum", "tier": 3, "notes": "Band comes out firing, great solo" },
+        { "date": "1994-03-21", "venue": "Unknown", "tier": 3, "notes": "Top pick by some fans" }
+      ]
+    },
+    {
+      "songTitle": "Not Fade Away",
+      "performances": [
+        { "date": "1971-11-15", "venue": "Austin Municipal Auditorium", "tier": 1, "notes": "Play for non-Deadheads, magical jam, China Cat quotes, Dark Star space" },
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown", "tier": 1, "notes": "Dave's Picks 15, 102,000+ tickets sold" },
+        { "date": "1970-09-19", "venue": "Fillmore East, NYC", "tier": 2, "notes": "NFA>Darkness Jam>China Cat Jam>NFA>Lovelight" },
+        { "date": "1970-02-14", "venue": "Fillmore East, NYC", "tier": 2, "notes": "Heavy jam, stunning Bid You Goodnight theme" },
+        { "date": "1971-10-31", "venue": "Ohio Theatre, Columbus", "tier": 2, "notes": "Legendary must-hear version" },
+        { "date": "1977-05-28", "venue": "Hartford Civic Center", "tier": 3, "notes": "Part of epic Playin' sandwich" }
+      ]
+    },
+    {
+      "songTitle": "Truckin'",
+      "performances": [
+        { "date": "1977-11-06", "venue": "Broome County Arena, Binghamton", "tier": 1, "notes": "Blistering 30-minute jam" },
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown", "tier": 1, "notes": "Very strong standalone, hard Truckin'" },
+        { "date": "1974-05-19", "venue": "Portland Memorial Coliseum", "tier": 1, "notes": "Flat-out awesome, gorgeous MLB/NFA jam" },
+        { "date": "1977-11-02", "venue": "Seneca College, Toronto", "tier": 2, "notes": "Balls out version" },
+        { "date": "1974-05-25", "venue": "UCSB, Santa Barbara", "tier": 2, "notes": "Band at height of powers tearing it apart" },
+        { "date": "1972-04-08", "venue": "Wembley Empire Pool, London", "tier": 2, "notes": "Jerry's guitar work crazy, Hundred Years Hall" },
+        { "date": "1970-09-20", "venue": "Fillmore East, NYC", "tier": 3, "notes": "Incredible acoustic set, last acoustic Truckin'" }
+      ]
+    },
+    {
+      "songTitle": "Jack Straw",
+      "performances": [
+        { "date": "1979-01-11", "venue": "Nassau Coliseum, Uniondale", "tier": 1, "notes": "LEGENDARY!!" },
+        { "date": "1977-10-29", "venue": "Northern Illinois University, DeKalb", "tier": 1, "notes": "The gold standard" },
+        { "date": "1984-10-20", "venue": "Carrier Dome, Syracuse", "tier": 1, "notes": "Crazy hard driving insanity, builds and KABOOMS" },
+        { "date": "1977-12-29", "venue": "Winterland, San Francisco", "tier": 2, "notes": "Best Jack Straw ever heard - Dick's Picks 10" },
+        { "date": "1972-05-26", "venue": "Strand Lyceum, London", "tier": 2, "notes": "Great buildup, cooks like no other" },
+        { "date": "1978-01-22", "venue": "McArthur Court, U of Oregon", "tier": 3, "notes": "Very strong, one of the longest" },
+        { "date": "1987-03-31", "venue": "The Spectrum, Philadelphia", "tier": 3, "notes": "Great one, multiple votes" }
+      ]
+    },
+    {
+      "songTitle": "Bird Song",
+      "performances": [
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "Greatest Bird Song, best 10 minutes of GD history" },
+        { "date": "1973-06-22", "venue": "PNE Coliseum, Vancouver", "tier": 1, "notes": "Unique dream-like voyaging, stupefyingly beautiful" },
+        { "date": "1989-10-08", "venue": "Hampton Coliseum", "tier": 2, "notes": "Shoots straight into cosmos, very spacey" },
+        { "date": "1980-11-30", "venue": "Fox Theatre, Atlanta", "tier": 2, "notes": "Featured on Spring 1990 compilation" },
+        { "date": "1984-07-15", "venue": "Greek Theater, Berkeley", "tier": 3, "notes": "Dancin>Bird Song wonderful version, nice peak jam" },
+        { "date": "1990-03-29", "venue": "Nassau Coliseum", "tier": 3, "notes": "Branford Marsalis version" }
+      ]
+    },
+    {
+      "songTitle": "Cassidy",
+      "performances": [
+        { "date": "1983-10-12", "venue": "Madison Square Garden", "tier": 1, "notes": "Favorite all-time, intense build-up, Weir nails it" },
+        { "date": "1977-11-04", "venue": "Colgate University, Hamilton, NY", "tier": 1, "notes": "Smoker, was cooking" },
+        { "date": "1982-08-03", "venue": "Starlight Theatre, Kansas City", "tier": 2, "notes": "Best one you will ever hear" },
+        { "date": "1978-01-22", "venue": "McArthur Court, U of Oregon", "tier": 2, "notes": "Stellar version" },
+        { "date": "1989-10-19", "venue": "The Spectrum, Philadelphia", "tier": 3, "notes": "Great later day version" }
+      ]
+    },
+    {
+      "songTitle": "Uncle John's Band",
+      "performances": [
+        { "date": "1972-09-27", "venue": "Stanley Theatre, Jersey City", "tier": 1, "notes": "Ladies and Gentlemen, fantastic version" },
+        { "date": "1974-08-06", "venue": "Roosevelt Stadium, Jersey City", "tier": 1, "notes": "Greatest Setlist debates, top-notch performance" },
+        { "date": "1994-10-05", "venue": "Unknown", "tier": 2, "notes": "Latter day gem" },
+        { "date": "1991-06-17", "venue": "Unknown", "tier": 2, "notes": "Jaw-dropping experience, heart of pre-drumz" }
+      ]
+    },
+    {
+      "songTitle": "Loose Lucy",
+      "performances": [
+        { "date": "1973-11-11", "venue": "Winterland Arena, San Francisco", "tier": 1, "notes": "Jazzy sound, great tempo, Bill so tight" },
+        { "date": "1974-05-19", "venue": "Portland Memorial Coliseum", "tier": 1, "notes": "Favorite early version, cooks" },
+        { "date": "1974-05-17", "venue": "PNE Coliseum, Vancouver", "tier": 2, "notes": "Faster than most, mad funky" },
+        { "date": "1990-03-14", "venue": "Unknown", "tier": 2, "notes": "First one since '74, crowd goes nuts" },
+        { "date": "1990-12-12", "venue": "Unknown", "tier": 2, "notes": "Far and away best post-1974 version" },
+        { "date": "1992-12-16", "venue": "Oakland Coliseum Arena", "tier": 3, "notes": "Favorite modern era version" }
+      ]
+    },
+    {
+      "songTitle": "Row Jimmy",
+      "performances": [
+        { "date": "1977-05-08", "venue": "Barton Hall, Cornell", "tier": 1, "notes": "Favorite version on Dead.net forums" },
+        { "date": "1978-01-22", "venue": "McArthur Court, U of Oregon", "tier": 1, "notes": "Dueling power, uplifting slide guitar, one of a kind" },
+        { "date": "1977-03-20", "venue": "Winterland Arena, San Francisco", "tier": 1, "notes": "On fire, probably best version ever played" },
+        { "date": "1973-11-17", "venue": "Pauley Pavilion, UCLA", "tier": 2, "notes": "Ethereal second set opener, EPIC show, heart-wrenching" },
+        { "date": "1973-02-28", "venue": "Salt Palace, Salt Lake City", "tier": 2, "notes": "All around beautiful, tender and emotional" }
+      ]
+    },
+    {
+      "songTitle": "Mississippi Half-Step Uptown Toodeloo",
+      "performances": [
+        { "date": "1977-09-03", "venue": "Raceway Park, Englishtown", "tier": 1, "notes": "Great year for Half-Step" },
+        { "date": "1977-11-05", "venue": "Rochester Community War Memorial", "tier": 2, "notes": "Great 1977 version" },
+        { "date": "1973-12-02", "venue": "Music Hall, Boston", "tier": 2, "notes": "Just exactly right" },
+        { "date": "1973-10-19", "venue": "Oklahoma City Fairgrounds", "tier": 2, "notes": "Dick's Picks 19" },
+        { "date": "1972-09-17", "venue": "Baltimore Civic Center", "tier": 3, "notes": "Sharp vocals, tight band" }
+      ]
+    },
+    {
+      "songTitle": "The Eleven",
+      "performances": [
+        { "date": "1969-01-26", "venue": "Avalon Ballroom, San Francisco", "tier": 1, "notes": "Live/Dead, Garcia on fire, all-timer" },
+        { "date": "1968-08-24", "venue": "Shrine Auditorium, Los Angeles", "tier": 1, "notes": "Even more exciting than Live/Dead - Guitar World" },
+        { "date": "1968-10-12", "venue": "Avalon Ballroom, San Francisco", "tier": 2, "notes": "Frequently cited as the best" },
+        { "date": "1969-03-01", "venue": "Unknown", "tier": 2, "notes": "Mentioned as favorite on Dead.net" },
+        { "date": "1969-02-22", "venue": "Dream Bowl, Vallejo", "tier": 3, "notes": "Pure '69 bliss" }
+      ]
+    },
+    {
+      "songTitle": "Good Lovin'",
+      "performances": [
+        { "date": "1971-04-17", "venue": "Dillon Gymnasium, Princeton", "tier": 1, "notes": "Famous Brooklyn Bridge rap, top version" },
+        { "date": "1972-01-02", "venue": "Winterland Ballroom, San Francisco", "tier": 1, "notes": "Guitar World #15, smokin' and amazingly varied, China Cat at 18 min" },
+        { "date": "1972-04-14", "venue": "Tivoli Concert Hall, Copenhagen", "tier": 2, "notes": "One of best ever, jam way out there" },
+        { "date": "1972-04-24", "venue": "Rheinhalle, Dusseldorf", "tier": 2, "notes": "Rockin' the Rhein" },
+        { "date": "1972-05-07", "venue": "Bickershaw Festival, UK", "tier": 2, "notes": "Steppin' Out" },
+        { "date": "1987-09-18", "venue": "Madison Square Garden", "tier": 3, "notes": "Stop everything and listen to this now" }
+      ]
+    },
+    {
+      "songTitle": "Fire On The Mountain",
+      "performances": [
+        { "date": "1980-10-31", "venue": "Radio City Music Hall, NYC", "tier": 1, "notes": "Rare standalone, Dead Set, barn-burner from Space" },
+        { "date": "1978-09-16", "venue": "Sphinx Theatre, Giza, Egypt", "tier": 1, "notes": "Just exactly perfect, priceless version" },
+        { "date": "1978-02-05", "venue": "UNI-Dome, Cedar Falls, IA", "tier": 2, "notes": "Crazy unique intro jam unlike any other" }
+      ]
+    },
+    {
+      "songTitle": "China Cat Sunflower > I Know You Rider",
+      "performances": [
+        { "date": "1974-06-26", "venue": "Providence Civic Center", "tier": 1, "notes": "316 HeadyVersion votes" },
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "246 HeadyVersion votes" },
+        { "date": "1972-05-03", "venue": "Olympia Theatre, Paris", "tier": 1, "notes": "188 HeadyVersion votes" },
+        { "date": "1970-05-02", "venue": "Harpur College, Binghamton", "tier": 2, "notes": "Best I Know You Rider per Dead.net forum" }
+      ]
+    },
+    {
+      "songTitle": "Sugar Magnolia",
+      "performances": [
+        { "date": "1972-08-27", "venue": "Old Renaissance Faire Grounds, Veneta, OR", "tier": 1, "notes": "Top HeadyVersion rated" },
+        { "date": "1977-05-08", "venue": "Barton Hall, Cornell", "tier": 2, "notes": "Part of legendary show" }
+      ]
+    },
+    {
+      "songTitle": "Deal",
+      "performances": [
+        { "date": "1978-12-16", "venue": "Nashville Municipal Auditorium", "tier": 1, "notes": "Smokin - Dick's Picks 18" },
+        { "date": "1978-01-07", "venue": "New Haven Coliseum", "tier": 1, "notes": "Extended solo 2-3 verses longer - Dick's Picks 25" },
+        { "date": "1989-07-19", "venue": "Alpine Valley, East Troy, WI", "tier": 2, "notes": "Great late 80s version, recommended starter" }
+      ]
+    }
+  ]
+}

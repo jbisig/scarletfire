@@ -1,0 +1,29 @@
+import { useEffect, useState } from 'react';
+
+/**
+ * Debounces a value change
+ * @param value - The value to debounce
+ * @param delay - Delay in milliseconds (default: 300)
+ * @returns Debounced value
+ *
+ * Usage:
+ * const [searchQuery, setSearchQuery] = useState('');
+ * const debouncedQuery = useDebounce(searchQuery, 400);
+ *
+ * // Use debouncedQuery in your filter logic instead of searchQuery
+ */
+export function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}

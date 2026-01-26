@@ -1,0 +1,2033 @@
+{
+  "appliedAt": "2026-01-20T16:14:23.129Z",
+  "backupPath": "/Users/jessebisignano/projects/grateful-dead-player/backups/songs.generated.before-phase1-2026-01-20T16-14-23.ts",
+  "ratingsApplied": [
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1969-06-08",
+      "identifier": "gd69-06-08.sbd.cotsman.19285.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1970-06-06",
+      "identifier": "gd70-06-06.sbd.ashley.2172.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-03",
+      "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-04",
+      "identifier": "gd76-06-04.sbd.cotsman.9797.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-09",
+      "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-17",
+      "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-19",
+      "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-22",
+      "identifier": "gd1976-06-22.sbd.digitalrbb.miller.112218.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-06-23",
+      "identifier": "gd76-06-23.moore.vernon.15534.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-07-12",
+      "identifier": "gd76-07-12.sbd.aj.7771.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1976-07-13",
+      "identifier": "gd76-07-13.sbd.ashley-bertha.9978.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1977-03-19",
+      "identifier": "gd77-03-19.sbd.chinacat.255.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1977-05-01",
+      "identifier": "gd77-05-01.set2-sbd.unknown.4763.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1977-05-04",
+      "identifier": "gd1977-05-04.sbd.miller.91970.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Dancin' in the Streets",
+      "date": "1977-05-08",
+      "identifier": "gd77-05-08.sbd.hicks.4982.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.109Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1966-01-08",
+      "identifier": "gd1966-01-08.sbd.bershaw.5410.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1967-03-18",
+      "identifier": "gd67-03-18.sbd.fink.10282.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1968-08-21",
+      "identifier": "gd68-08-21.sbd.cotsman.17355.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1968-08-22",
+      "identifier": "gd68-08-22.sbd.cotsman.14915.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1968-08-23",
+      "identifier": "gd68-08-23.sbd.sacks.52.sbefail.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1968-08-28",
+      "identifier": "gd68-08-28.sbd.cotsman.18104.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-02-12",
+      "identifier": "gd69-02-12.late.sbd.kaplan.9072.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-02-28",
+      "identifier": "gd69-02-28.sbd.16track.kaplan.3397.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-03-02",
+      "identifier": "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-05-24",
+      "identifier": "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-07-11",
+      "identifier": "gd69-07-11.sbd.hanno.4644.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1969-09-26",
+      "identifier": "gd69-09-26.aud.hanno.14856.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1970-01-16",
+      "identifier": "gd70-01-16.sbd.popi.7111.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Death Don't Have No Mercy",
+      "date": "1989-10-09",
+      "identifier": "gd89-10-09.sbd.serafin.7721.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-02-27",
+      "identifier": "gd69-02-27.sbd.16track.kaplan.6315.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-02-28",
+      "identifier": "gd69-02-28.sbd.16track.kaplan.3397.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-03-01",
+      "identifier": "gd69-03-01.sbd.16track.kaplan.4030.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-03-02",
+      "identifier": "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-05-03",
+      "identifier": "gd69-05-03.aud.phunk1.73.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-05-10",
+      "identifier": "gd69-05-10.sbd.tzuriel.1336.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-05-16",
+      "identifier": "gd69-05-16.sbd.clugston.6316.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-05-24",
+      "identifier": "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-06-05",
+      "identifier": "gd69-06-05.sbd.cotsman.15204.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Doin' That Rag",
+      "date": "1969-06-07",
+      "identifier": "gd69-06-07.sbd.kaplan.9074.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-09-28",
+      "identifier": "gd72-09-28.sbd.bill.12657.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-10-02",
+      "identifier": "gd72-10-02.sbd.lai.158.sbefail.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-10-17",
+      "identifier": "gd72-10-17.sbd.sacks.2219.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-10-18",
+      "identifier": "gd72-10-18.sbd.weir.7295.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-10-19",
+      "identifier": "gd72-10-19.sbd.des.4506.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-10-26",
+      "identifier": "gd1972-10-26.sbd.miller.32717.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-12-12",
+      "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1972-12-31",
+      "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1973-05-13",
+      "identifier": "gd73-05-13.sbd.powell-ladner.24997.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1973-07-01",
+      "identifier": "gd73-07-01.aud.lai.178.sbefail.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1973-07-31",
+      "identifier": "gd73-07-31.aud.weiner.gdADT12.12883.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1973-11-09",
+      "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1973-12-01",
+      "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1974-06-30",
+      "identifier": "gd74-06-30.sbd.weiner.17814.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Don't Ease Me In",
+      "date": "1974-08-06",
+      "identifier": "gd74-08-06.merin.weiner.gdADT.5914.sbefail.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.110Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-02-27",
+      "identifier": "gd69-02-27.sbd.16track.kaplan.6315.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-03-01",
+      "identifier": "gd69-03-01.sbd.16track.kaplan.4030.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-06-01",
+      "identifier": "gd1969-06-01.136665.sbd.sirmick.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-06-07",
+      "identifier": "gd69-06-07.sbd.kaplan.9074.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-06-20",
+      "identifier": "gd1969-06-20.gd.aoxomoxoa.32074.sbefail.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-06-21",
+      "identifier": "gd69-06-21.early-late.aud-sbd.cotsman.16334.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1969-06-27",
+      "identifier": "gd69-06-27.sbd.samaritano.20547.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1977-10-02",
+      "identifier": "gd77-10-02.sbd.unknown.278.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1977-11-04",
+      "identifier": "gd77-11-04.sbd.unknown.2595.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1977-11-06",
+      "identifier": "gd77-11-06.sbd.nawrocki.283.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1982-09-20",
+      "identifier": "gd1982-09-20.sbd.miller.88857.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1983-09-06",
+      "identifier": "gd83-09-06.sbd.clugston.5489.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1984-07-13",
+      "identifier": "gd84-07-13.sbd.ferguson.353.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1985-06-15",
+      "identifier": "gd85-06-15.sbd.griesman.5682.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Dupree's Diamond Blues",
+      "date": "1988-09-23",
+      "identifier": "gd88-09-23.sbd.miller.5291.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.111Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1975-06-04",
+      "identifier": "gd1975-06-04.145777.sbd.pcm.dalton.miller.noel.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1975-06-05",
+      "identifier": "gd75-06-05.sbd.hanno.21936.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1975-06-07",
+      "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1975-06-17",
+      "identifier": "gd1975-06-17.aud.unknown.87560.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1975-08-13",
+      "identifier": "gd75-08-13.fm.vernon.23661.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-03",
+      "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-04",
+      "identifier": "gd76-06-04.sbd.cotsman.9797.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-09",
+      "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-10",
+      "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-14",
+      "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-17",
+      "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-19",
+      "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1976-06-21",
+      "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1977-03-19",
+      "identifier": "gd77-03-19.sbd.chinacat.255.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Franklin's Tower",
+      "date": "1977-06-09",
+      "identifier": "gd1977-06-09.28614.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-01-02",
+      "identifier": "gd72-01-02.sbd.eD.8709.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-03-05",
+      "identifier": "gd72-03-05.sbd.miller.20739.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-03",
+      "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-04",
+      "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-07",
+      "identifier": "gd72-05-07.sbd-aud.clugston.9193.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-10",
+      "identifier": "gd72-05-10.sbd.kaplan.1582.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-13",
+      "identifier": "gd72-05-13.sbd.ladner.3457.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-23",
+      "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-05-26",
+      "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-06-17",
+      "identifier": "gd1972-06-17.shure.melton.miller.116272.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1972-12-12",
+      "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1974-02-22",
+      "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1974-02-24",
+      "identifier": "gd74-02-24.sbd.windsor.199.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1974-10-16",
+      "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "Goin' Down the Road Feeling Bad",
+      "date": "1974-10-18",
+      "identifier": "gd74-10-18.sbd.bertha-ashley.22796.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.113Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-03",
+      "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-04",
+      "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-07",
+      "identifier": "gd72-05-07.sbd-aud.clugston.9193.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-10",
+      "identifier": "gd72-05-10.sbd.kaplan.1582.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-13",
+      "identifier": "gd72-05-13.sbd.ladner.3457.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-23",
+      "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-05-26",
+      "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-07-16",
+      "identifier": "gd72-07-16.sbd-aud.cotsman.11258.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-10-09",
+      "identifier": "gd72-10-09.sbd.vernon.5249.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-12-11",
+      "identifier": "gd1972-12-11.121029.mtx.dusborne.flac16",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1972-12-12",
+      "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1973-12-02",
+      "identifier": "gd73-12-02.aud.vernon.17278.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1974-02-23",
+      "identifier": "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1974-10-17",
+      "identifier": "gd74-10-17.sbd.barbella.16189.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "He's Gone",
+      "date": "1974-10-19",
+      "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.114Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-05-03",
+      "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-05-26",
+      "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-07-21",
+      "identifier": "gd72-07-21.sbd.cotsman.9246.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-07-25",
+      "identifier": "gd72-07-25.sbd.cotsman.7046.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-10-09",
+      "identifier": "gd72-10-09.sbd.vernon.5249.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1972-12-10",
+      "identifier": "gd72-12-10.sbd.gorinsky.5801.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1973-05-20",
+      "identifier": "gd73-05-20.sbd-patched.schlissel.24495.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1973-06-22",
+      "identifier": "gd73-06-22.aud.weiner.gdADT19.16889.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1973-11-09",
+      "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1973-12-01",
+      "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1973-12-02",
+      "identifier": "gd73-12-02.aud.vernon.17278.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1974-05-19",
+      "identifier": "gd74-05-19.sbd.clugston.6957.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1974-10-16",
+      "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1974-10-18",
+      "identifier": "gd74-10-18.sbd.bertha-ashley.22796.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Jam",
+      "date": "1974-10-19",
+      "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1985-03-27",
+      "identifier": "gd85-03-27.sbd.ladner.8567.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1986-06-29",
+      "identifier": "gd86-06-29.aud.eD.12969.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1987-09-12",
+      "identifier": "gd87-09-12.sbd.ladner.31018.sbeok.flacf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1988-09-22",
+      "identifier": "gd88-09-22.sbd.miller.5290.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1989-04-03",
+      "identifier": "gd89-04-03.sbd.harrel.7507.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1989-07-12",
+      "identifier": "gd89-07-12.aud-fob.gardner.2554.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1989-12-27",
+      "identifier": "gd89-12-27.schoeps.ladner.20785.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1990-07-08",
+      "identifier": "gd1990-07-08.nak300.holtz.lmpp.97714.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1991-09-12",
+      "identifier": "gd91-09-12.sbd.roux.516.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1992-05-25",
+      "identifier": "gd92-05-25.sbd.wiley.16469.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1993-09-17",
+      "identifier": "gd93-09-17.ams.georges.5704.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1994-10-15",
+      "identifier": "gd94-10-15.sbd.miller.27249.sbeok.flacf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Just Like Tom Thumb's Blues",
+      "date": "1995-05-21",
+      "identifier": "gd95-05-21.schoeps.18799.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1978-11-17",
+      "identifier": "gd78-11-17.acoustic.sbd.dodd.7687.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1987-08-13",
+      "identifier": "gd87-08-13.sbd.larson.21348.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1987-09-18",
+      "identifier": "gd87-09-18.sbd.samaritano.20025.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1988-07-16",
+      "identifier": "gd88-07-16.sbd-matrix.braverman.10080.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1989-05-07",
+      "identifier": "gd89-05-07.sbd.gardner.3329.sbefail.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1989-06-19",
+      "identifier": "gd1989-06-19.sbd.walker-scotton.miller.83673.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1989-07-07",
+      "identifier": "gd89-07-07.aud.wiley.7855.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1989-07-10",
+      "identifier": "gd89-07-10.sbd.16071.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1990-07-08",
+      "identifier": "gd1990-07-08.nak300.holtz.lmpp.97714.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1990-07-22",
+      "identifier": "gd90-07-22.sbd.conner.7834.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1990-09-18",
+      "identifier": "gd90-09-18.sbd.miller.12885.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1991-09-13",
+      "identifier": "gd91-09-13.sbd.kowalski.520.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1992-05-23",
+      "identifier": "gd1992-05-23.sbd.miller.92271.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1993-01-24",
+      "identifier": "gd93-01-24.sbd.seff.5610.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Knockin' on Heaven's Door",
+      "date": "1994-06-19",
+      "identifier": "gd94-06-19.sbd.larson.12524.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1975-06-07",
+      "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-05-28",
+      "identifier": "gd76-05-2x.sbd.vernon.9769.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-03",
+      "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-09",
+      "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-10",
+      "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-12",
+      "identifier": "gd76-06-12.fm.wren.5556.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-14",
+      "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-17",
+      "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-21",
+      "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-23",
+      "identifier": "gd76-06-23.moore.vernon.15534.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-26",
+      "identifier": "gd76-06-26.aud.vernon.7340.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1976-06-27",
+      "identifier": "gd1976-06-27.sbd.digitalrbb.miller.112295.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1977-06-08",
+      "identifier": "gd77-06-08.sbd.clugston.15421.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1977-12-27",
+      "identifier": "gd77-12-27.sbd.cotsman.19288.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Lazy Lightning",
+      "date": "1977-12-31",
+      "identifier": "gd77-12-31.sbd.purvis.286.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.116Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1973-11-10",
+      "identifier": "gd73-11-10.sbd.unknown.3290.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-06-26",
+      "identifier": "gd76-06-26.aud.vernon.7340.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-06-29",
+      "identifier": "gd76-06-29.sbd.bertha.31144.sbeok.flacf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-07-16",
+      "identifier": "gd1976-07-16.mtx.dan.28042.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-09-24",
+      "identifier": "gd76-09-24.aud.unknown.16901.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-09-28",
+      "identifier": "gd76-09-28.aud.vernon.14356.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1976-10-10",
+      "identifier": "gd76-10-10.hollwein.vernon.11670.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1977-05-01",
+      "identifier": "gd77-05-01.set2-sbd.unknown.4763.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1977-06-04",
+      "identifier": "gd77-06-04.bertrando.goodbear.3417.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1982-08-01",
+      "identifier": "gd82-08-01.sbd.willy.10226.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1983-09-06",
+      "identifier": "gd83-09-06.sbd.clugston.5489.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1988-09-15",
+      "identifier": "gd88-09-15.sbd.barbella.5068.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1989-04-06",
+      "identifier": "gd89-04-06.sbd-matrix.kowalski.1092.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1990-06-23",
+      "identifier": "gd90-06-23.sbd.ladner.28690.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Playing in the Band Reprise",
+      "date": "1991-09-09",
+      "identifier": "gd91-09-09.sbd.ashley-miller.508.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.120Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1974-06-20",
+      "identifier": "gd74-06-20.sbd.clugston.2179.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1975-06-07",
+      "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1975-06-17",
+      "identifier": "gd1975-06-17.aud.unknown.87560.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1975-08-13",
+      "identifier": "gd75-08-13.fm.vernon.23661.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1975-09-28",
+      "identifier": "gd75-09-28.sbd.fink.9392.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-03",
+      "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-10",
+      "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-14",
+      "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-17",
+      "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-19",
+      "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-21",
+      "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-06-27",
+      "identifier": "gd1976-06-27.sbd.digitalrbb.miller.112295.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1976-07-12",
+      "identifier": "gd76-07-12.sbd.aj.7771.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1977-05-09",
+      "identifier": "gd77-05-09.sbd.connor.8304.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Slipknot!",
+      "date": "1977-06-09",
+      "identifier": "gd1977-06-09.28614.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1966-11-19",
+      "identifier": "gd66-11-19.sbd.seff.41.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1967-03-18",
+      "identifier": "gd67-03-18.sbd.fink.10282.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1968-03-03",
+      "identifier": "gd68-03-03.aud.vernon.9374.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1969-05-07",
+      "identifier": "gd69-05-07.sbd.cotsman.6028.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1969-06-06",
+      "identifier": "gd69-06-06.sbd.jupile.9494.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1970-02-08",
+      "identifier": "gd70-02-08.sbd-aud.cotsman.19152.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1970-02-13",
+      "identifier": "gd1970-02-13.sbd.miller.fix-97613.97639.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1971-02-19",
+      "identifier": "gd71-02-19.sbd.orf.1029.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1971-12-02",
+      "identifier": "gd71-12-02.sbd.lai.6255.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1971-12-04",
+      "identifier": "gd71-12-04.sbd.lai.6256.sbefail.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1971-12-07",
+      "identifier": "gd71-12-07.sbd.miller.3375.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1972-03-25",
+      "identifier": "gd1972-03-25.136684.sbd.sirmick.flac1648",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1985-06-14",
+      "identifier": "gd85-06-14.oade.sacks.4978.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1986-06-21",
+      "identifier": "gd86-06-21.sbd.brame.15406.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Smokestack Lightning",
+      "date": "1989-07-15",
+      "identifier": "gd89-07-15.sbd.11266.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.121Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1971-04-10",
+      "identifier": "gd71-04-10.sbd.willy.8674.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1971-11-11",
+      "identifier": "gd71-11-11.sbd.yubah-dodd.8326.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1971-11-20",
+      "identifier": "gd71-11-20.fm.willy.8806.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1976-06-11",
+      "identifier": "gd76-06-11.sbd.jmason.7824.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1976-06-12",
+      "identifier": "gd76-06-12.fm.wren.5556.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1976-06-15",
+      "identifier": "gd76-06-15.sbd.kempa.241.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1976-07-13",
+      "identifier": "gd76-07-13.sbd.ashley-bertha.9978.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1978-12-31",
+      "identifier": "gd78-12-31.sbd.ashley.1667.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1979-06-30",
+      "identifier": "gd79-06-30.senn.munder.10346.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1980-08-21",
+      "identifier": "gd80-08-21.sbd.munder.7913.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1981-05-08",
+      "identifier": "gd81-05-08.glassberg.vernon.17698.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1987-09-15",
+      "identifier": "gd87-09-15.schoeps.willy.15388.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1989-07-18",
+      "identifier": "gd89-07-18.sbd.9854.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1990-07-16",
+      "identifier": "gd90-07-16.sbd.knapp.1316.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "Sunshine Daydream",
+      "date": "1991-09-12",
+      "identifier": "gd91-09-12.sbd.roux.516.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-02-25",
+      "identifier": "gd1990-02-25.sbd.walker-scotton.miller.87786.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-03-16",
+      "identifier": "gd90-03-16.sbd.willy.5227.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-03-22",
+      "identifier": "gd90-03-22.sbd.bertha-ashley.21433.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-05-06",
+      "identifier": "gd90-05-06.sbd.wiley.11661.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-06-10",
+      "identifier": "gd90-06-10.sbd-matrix.miller-ladner.6937.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1990-07-14",
+      "identifier": "gd90-07-14.sbd.georges.463.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1991-09-09",
+      "identifier": "gd91-09-09.sbd.ashley-miller.508.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1991-09-17",
+      "identifier": "gd91-09-17.sbd.unknown.12847.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1992-05-24",
+      "identifier": "gd1992-05-24.sbd.miller.92272.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1993-09-21",
+      "identifier": "gd93-09-21.ST250s.brennecke-young.4532.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1994-10-15",
+      "identifier": "gd94-10-15.sbd.miller.27249.sbeok.flacf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Last Time",
+      "date": "1995-05-20",
+      "identifier": "gd95-05-20.akg.18798.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.122Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-05-25",
+      "identifier": "gd1972-05-25.sbd.miller.87682.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-07-18",
+      "identifier": "gd1972-07-18.sbd.miller.32878.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-07-26",
+      "identifier": "gd72-07-26.sbd.popi.8957.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-08-20",
+      "identifier": "gd1972-08-20.sbd.miller.83733.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-08-25",
+      "identifier": "gd1972-08-25.sbd.miller.92840.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1972-12-31",
+      "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1973-05-20",
+      "identifier": "gd73-05-20.sbd-patched.schlissel.24495.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1973-05-26",
+      "identifier": "gd73-05-26.sbd.cribbs.17076.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1973-06-10",
+      "identifier": "gd73-06-10.sbd.hollister.174.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1973-11-09",
+      "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1973-11-11",
+      "identifier": "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1974-02-22",
+      "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1974-02-23",
+      "identifier": "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1974-10-17",
+      "identifier": "gd74-10-17.sbd.barbella.16189.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "The Promised Land",
+      "date": "1974-10-20",
+      "identifier": "gd1974-10-20.sbd.smith-lee.GEMS.97193.flac16",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.123Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-05-04",
+      "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-05-23",
+      "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-05-25",
+      "identifier": "gd1972-05-25.sbd.miller.87682.sbeok.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-07-22",
+      "identifier": "gd72-07-22.sbd.vernon.13562.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-08-20",
+      "identifier": "gd1972-08-20.sbd.miller.83733.flac16",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-08-21",
+      "identifier": "gd72-08-21.sbd.hamilton.150.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-08-24",
+      "identifier": "gd72-08-24.sbd.miller.18093.sbeok.shnf",
+      "rating": 2,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-12-10",
+      "identifier": "gd72-12-10.sbd.gorinsky.5801.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1972-12-31",
+      "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1973-11-10",
+      "identifier": "gd73-11-10.sbd.unknown.3290.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1973-11-11",
+      "identifier": "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1973-12-01",
+      "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1974-02-22",
+      "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1974-10-16",
+      "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Uncle Johns Band",
+      "date": "1974-10-19",
+      "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+      "rating": 1,
+      "appliedAt": "2026-01-20T16:14:23.124Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1981-09-11",
+      "identifier": "gd81-09-11.wise.munder.7090.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1982-09-20",
+      "identifier": "gd1982-09-20.sbd.miller.88857.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1983-06-21",
+      "identifier": "gd83-06-21.sony.dodd.11491.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1984-03-31",
+      "identifier": "gd84-03-31.sbd.nawrocki.14078.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1985-06-21",
+      "identifier": "gd85-06-21.sbd.barbella.11492.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1987-06-21",
+      "identifier": "gd87-06-21.set1aud-set2sbd.clugston.13567.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1988-04-03",
+      "identifier": "gd88-04-03.sbd.painoman.9628.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1989-02-11",
+      "identifier": "gd89-02-11.sbd.wiley.9203.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1989-04-02",
+      "identifier": "gd89-04-02.beyer.wiley.9206.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1990-06-15",
+      "identifier": "gd90-06-15.naks.jill-rob.7762.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1990-06-24",
+      "identifier": "gd90-06-24.sbd.unknown.12092.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1990-07-06",
+      "identifier": "gd90-07-06.sbd.miller.12770.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1990-07-16",
+      "identifier": "gd90-07-16.sbd.knapp.1316.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1990-09-20",
+      "identifier": "gd90-09-20.sbd.ashley.14855.sbeok.shnf",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    },
+    {
+      "songTitle": "Women Are Smarter",
+      "date": "1992-05-23",
+      "identifier": "gd1992-05-23.sbd.miller.92271.sbeok.flac16",
+      "rating": 3,
+      "appliedAt": "2026-01-20T16:14:23.125Z"
+    }
+  ],
+  "summary": {
+    "totalApplied": 289,
+    "source": "Phase 1 Collection"
+  }
+}

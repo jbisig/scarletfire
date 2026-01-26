@@ -1,0 +1,118 @@
+{
+  "expo": {
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": false
+    },
+    "name": "Relisten",
+    "slug": "relisten",
+    "version": "6.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "relisten",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#004251"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "appStoreUrl": "https://apps.apple.com/us/app/relisten-all-live-music/id715886886",
+      "associatedDomains": [
+        "applinks:relisten.net"
+      ],
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alecgorge.ios.Listen-to-the-Dead",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      },
+      "buildNumber": "6022"
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=net.relisten.android",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "*.relisten.net",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "relisten.net",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ic_foreground.png",
+        "backgroundImage": "./assets/ic_background.png",
+        "backgroundColor": "#ffffff"
+      },
+      "icon": "./assets/ic_playstore.png",
+      "package": "net.relisten.android",
+      "versionCode": 6022
+    },
+    "jsEngine": "hermes",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "minSdkVersion": 30,
+            "targetSdkVersion": 35
+          },
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-asset",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "relisten-zp",
+          "project": "relisten-mobile",
+          "url": "https://sentry.io/"
+        }
+      ],
+      "expo-web-browser",
+      "expo-font",
+      "@sentry/react-native",
+      "react-native-google-cast"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "3b18b7db-fdf8-4a2c-8c24-19e24a8fd3a8"
+      }
+    },
+    "owner": "relisten",
+    "newArchEnabled": true
+  }
+}

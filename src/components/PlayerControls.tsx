@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   playButton: {
     padding: 16,
     marginHorizontal: 32,
-    backgroundColor: '#ff6b6b',
+    backgroundColor: '#E54C4F',
     borderRadius: 40,
     width: 80,
     height: 80,

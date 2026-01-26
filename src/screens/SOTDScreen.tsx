@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,48 +10,15 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { archiveApi } from '../services/archiveApi';
-import { GratefulDeadShow } from '../types/show.types';
 import { formatDate } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 
 type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SOTD'>;
 
 export function SOTDScreen() {
   const navigation = useNavigation<SOTDScreenNavigationProp>();
-  const [show, setShow] = useState<GratefulDeadShow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadShowOfTheDay();
-  }, []);
-
-  const loadShowOfTheDay = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Fetch top 365 most downloaded shows
-      const topShows = await archiveApi.getTopShows(365);
-
-      if (topShows.length === 0) {
-        setError('No shows found');
-        return;
-      }
-
-      // Select a random show
-      const randomIndex = Math.floor(Math.random() * topShows.length);
-      const selectedShow = topShows[randomIndex];
-
-      setShow(selectedShow);
-    } catch (err) {
-      console.error('Error loading show of the day:', err);
-      setError('Failed to load show of the day');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { show, isLoading, error, refreshShow } = useShowOfTheDay();
 
   const handleViewShow = () => {
     if (show) {
@@ -60,13 +27,13 @@ export function SOTDScreen() {
   };
 
   const handleRefresh = () => {
-    loadShowOfTheDay();
+    refreshShow();
   };
 
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ff6b6b" />
+        <ActivityIndicator size="large" color="#E54C4F" />
         <Text style={styles.loadingText}>Loading show of the day...</Text>
       </View>
     );
@@ -90,7 +57,7 @@ export function SOTDScreen() {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Ionicons name="star" size={48} color="#ff6b6b" />
+          <Ionicons name="star" size={48} color="#E54C4F" />
           <Text style={styles.headerTitle}>Show of the Day</Text>
           <Text style={styles.headerSubtitle}>
             Randomly selected from the top 365 most popular shows
@@ -127,7 +94,7 @@ export function SOTDScreen() {
           onPress={handleRefresh}
           activeOpacity={0.7}
         >
-          <Ionicons name="refresh" size={20} color="#ff6b6b" />
+          <Ionicons name="refresh" size={20} color="#E54C4F" />
           <Text style={styles.refreshButtonText}>Pick Another Show</Text>
         </TouchableOpacity>
       </View>
@@ -138,7 +105,7 @@ export function SOTDScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#121212',
   },
   scrollContent: {
     paddingBottom: 180,
@@ -147,7 +114,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#121212',
     padding: 20,
   },
   content: {
@@ -177,11 +144,11 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: '#ff6b6b',
+    borderColor: '#E54C4F',
   },
   date: {
     fontSize: 16,
-    color: '#ff6b6b',
+    color: '#E54C4F',
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -205,7 +172,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
   viewButton: {
-    backgroundColor: '#ff6b6b',
+    backgroundColor: '#E54C4F',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
@@ -230,7 +197,7 @@ const styles = StyleSheet.create({
   },
   refreshButtonText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    color: '#E54C4F',
     marginLeft: 8,
     fontWeight: '600',
   },
@@ -241,12 +208,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    color: '#E54C4F',
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#ff6b6b',
+    backgroundColor: '#E54C4F',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,

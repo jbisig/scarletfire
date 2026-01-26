@@ -10,6 +10,7 @@ const getRandomVideoIndex = (excludeIndex?: number): number => {
 
 interface VideoBackgroundContextType {
   videoSource: number; // Asset ID from require()
+  videoIndex: number; // Index for use as key prop
 }
 
 const VideoBackgroundContext = createContext<VideoBackgroundContextType | null>(null);
@@ -33,7 +34,7 @@ export function VideoBackgroundProvider({ children }: { children: ReactNode }) {
   }, [state.currentTrack?.id, videoIndex]);
 
   return (
-    <VideoBackgroundContext.Provider value={{ videoSource: VIDEO_SOURCES[videoIndex] }}>
+    <VideoBackgroundContext.Provider value={{ videoSource: VIDEO_SOURCES[videoIndex], videoIndex }}>
       {children}
     </VideoBackgroundContext.Provider>
   );

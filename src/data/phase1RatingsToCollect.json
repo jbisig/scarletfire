@@ -1,0 +1,2454 @@
+[
+  {
+    "songTitle": "He's Gone",
+    "totalPerformances": 318,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-10-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-10-09.sbd.vernon.5249.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-11",
+        "venue": "Winterland Ballroom",
+        "identifier": "gd1972-12-11.121029.mtx.dusborne.flac16",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-12",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-12-02",
+        "venue": "Boston Music Hall",
+        "identifier": "gd73-12-02.aud.vernon.17278.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-23",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-17",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-17.sbd.barbella.16189.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-19",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-03",
+        "venue": "Olympia Theater",
+        "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-04",
+        "venue": "L'olympia",
+        "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-07",
+        "venue": "Bickershaw Festival",
+        "identifier": "gd72-05-07.sbd-aud.clugston.9193.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-10",
+        "venue": "Concertgebouw",
+        "identifier": "gd72-05-10.sbd.kaplan.1582.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-13",
+        "venue": "Lille Fairgrounds",
+        "identifier": "gd72-05-13.sbd.ladner.3457.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-23",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-26",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-16",
+        "venue": "Dillon Stadium",
+        "identifier": "gd72-07-16.sbd-aud.cotsman.11258.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Uncle Johns Band",
+    "totalPerformances": 307,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-12-10",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-10.sbd.gorinsky.5801.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-31",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-10",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-10.sbd.unknown.3290.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-11",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-12-01",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-22",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-16",
+        "venue": "Winterland Arena",
+        "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-19",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-04",
+        "venue": "L'olympia",
+        "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-23",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-25",
+        "venue": "Strand Lyceum",
+        "identifier": "gd1972-05-25.sbd.miller.87682.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-22",
+        "venue": "Paramount Northwest Theater",
+        "identifier": "gd72-07-22.sbd.vernon.13562.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-08-20",
+        "venue": "San Jose Civic Auditorium",
+        "identifier": "gd1972-08-20.sbd.miller.83733.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-08-21",
+        "venue": "Berkeley Community Theater",
+        "identifier": "gd72-08-21.sbd.hamilton.150.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-08-24",
+        "venue": "Berkeley Community Theater",
+        "identifier": "gd72-08-24.sbd.miller.18093.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Don't Ease Me In",
+    "totalPerformances": 289,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-12-12",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-31",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-12-01",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-05-13",
+        "venue": "Des Moines State Fairgrounds",
+        "identifier": "gd73-05-13.sbd.powell-ladner.24997.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-07-01",
+        "venue": "Universal Amphitheatre",
+        "identifier": "gd73-07-01.aud.lai.178.sbefail.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-07-31",
+        "venue": "Roosevelt Stadium",
+        "identifier": "gd73-07-31.aud.weiner.gdADT12.12883.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-06-30",
+        "venue": "Springfield Civic Center",
+        "identifier": "gd74-06-30.sbd.weiner.17814.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-08-06",
+        "venue": "Roosevelt Stadium",
+        "identifier": "gd74-08-06.merin.weiner.gdADT.5914.sbefail.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-09-28",
+        "venue": "Stanley Theatre",
+        "identifier": "gd72-09-28.sbd.bill.12657.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-10-02",
+        "venue": "Springfield Civic Center",
+        "identifier": "gd72-10-02.sbd.lai.158.sbefail.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-10-17",
+        "venue": "Fox Theatre",
+        "identifier": "gd72-10-17.sbd.sacks.2219.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-10-18",
+        "venue": "Fox Theatre",
+        "identifier": "gd72-10-18.sbd.weir.7295.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-10-19",
+        "venue": "Fox Theatre",
+        "identifier": "gd72-10-19.sbd.des.4506.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-10-26",
+        "venue": "Music Hall",
+        "identifier": "gd1972-10-26.sbd.miller.32717.sbeok.flac16",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Goin' Down the Road Feeling Bad",
+    "totalPerformances": 256,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-01-02",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-01-02.sbd.eD.8709.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-03-05",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-03-05.sbd.miller.20739.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-12",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-12.sbd.miller.32041.sbeok.flacf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-22",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-24",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-24.sbd.windsor.199.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-16",
+        "venue": "Winterland Arena",
+        "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-18",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-18.sbd.bertha-ashley.22796.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-03",
+        "venue": "Olympia Theater",
+        "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-04",
+        "venue": "L'olympia",
+        "identifier": "gd1972-05-04.sbd.miller.77294.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-07",
+        "venue": "Bickershaw Festival",
+        "identifier": "gd72-05-07.sbd-aud.clugston.9193.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-10",
+        "venue": "Concertgebouw",
+        "identifier": "gd72-05-10.sbd.kaplan.1582.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-13",
+        "venue": "Lille Fairgrounds",
+        "identifier": "gd72-05-13.sbd.ladner.3457.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-23",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-23.sbd.cribbs.17700.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-26",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-06-17",
+        "venue": "Hollywood Bowl",
+        "identifier": "gd1972-06-17.shure.melton.miller.116272.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Franklin's Tower",
+    "totalPerformances": 219,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1975-06-17",
+        "venue": "Winterland Arena",
+        "identifier": "gd1975-06-17.aud.unknown.87560.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-09",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-10",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-17",
+        "venue": "Capitol Theatre",
+        "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-06-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd1977-06-09.28614.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-03-19",
+        "venue": "Winterland Arena",
+        "identifier": "gd77-03-19.sbd.chinacat.255.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-04",
+        "venue": "Ace's Studio",
+        "identifier": "gd1975-06-04.145777.sbd.pcm.dalton.miller.noel.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-05",
+        "venue": "Club Front",
+        "identifier": "gd75-06-05.sbd.hanno.21936.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-07",
+        "venue": "Bob Weir's Studio",
+        "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-08-13",
+        "venue": "Great American Music Hall",
+        "identifier": "gd75-08-13.fm.vernon.23661.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-03",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-04",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-04.sbd.cotsman.9797.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-14",
+        "venue": "Beacon Theatre",
+        "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-19",
+        "venue": "Capitol Theater",
+        "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-21",
+        "venue": "Tower Theatre",
+        "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "The Promised Land",
+    "totalPerformances": 218,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-12-31",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-31.prefm.vernon.20559.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-11",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-22",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-22.sbd.patched.sirmick.21539.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-02-23",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-17",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-17.sbd.barbella.16189.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-20",
+        "venue": "Winterland Arena",
+        "identifier": "gd1974-10-20.sbd.smith-lee.GEMS.97193.flac16",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-25",
+        "venue": "Strand Lyceum",
+        "identifier": "gd1972-05-25.sbd.miller.87682.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-18",
+        "venue": "Roosevelt Stadium",
+        "identifier": "gd1972-07-18.sbd.miller.32878.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-26",
+        "venue": "Paramount Theatre",
+        "identifier": "gd72-07-26.sbd.popi.8957.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-08-20",
+        "venue": "San Jose Civic Auditorium",
+        "identifier": "gd1972-08-20.sbd.miller.83733.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-08-25",
+        "venue": "Berkeley Community Theatre",
+        "identifier": "gd1972-08-25.sbd.miller.92840.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-05-20",
+        "venue": "Stadium, U.c Santa Barbara",
+        "identifier": "gd73-05-20.sbd-patched.schlissel.24495.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-05-26",
+        "venue": "Kezar Stadium",
+        "identifier": "gd73-05-26.sbd.cribbs.17076.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-06-10",
+        "venue": "Robert F. Kennedy Stadium",
+        "identifier": "gd73-06-10.sbd.hollister.174.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Jam",
+    "totalPerformances": 217,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-10-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-10-09.sbd.vernon.5249.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-12-10",
+        "venue": "Winterland Arena",
+        "identifier": "gd72-12-10.sbd.gorinsky.5801.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-11-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-09.sbd.kaplan.2657.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-12-01",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1973-12-01.sbd.clugston.6648.sbefail.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-12-02",
+        "venue": "Boston Music Hall",
+        "identifier": "gd73-12-02.aud.vernon.17278.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-16",
+        "venue": "Winterland Arena",
+        "identifier": "gd1974-10-16.sbd.patched.eaton-miller.90145.sbeok.flac16",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-18",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-18.sbd.bertha-ashley.22796.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-10-19",
+        "venue": "Winterland Arena",
+        "identifier": "gd74-10-19.sbd.miller.21927.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-03",
+        "venue": "Olympia Theater",
+        "identifier": "gd72-05-03.sbd.masse.142.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-05-26",
+        "venue": "The Strand Lyceum",
+        "identifier": "gd72-05-26.sbd.hollister.12758.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-21",
+        "venue": "Paramount Northwest Theater",
+        "identifier": "gd72-07-21.sbd.cotsman.9246.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1972-07-25",
+        "venue": "Paramount Theater",
+        "identifier": "gd72-07-25.sbd.cotsman.7046.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-05-20",
+        "venue": "Stadium, U.c Santa Barbara",
+        "identifier": "gd73-05-20.sbd-patched.schlissel.24495.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1973-06-22",
+        "venue": "P.n.e. Coliseum",
+        "identifier": "gd73-06-22.aud.weiner.gdADT19.16889.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1974-05-19",
+        "venue": "Portland Memorial Coliseum",
+        "identifier": "gd74-05-19.sbd.clugston.6957.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Dancin' in the Streets",
+    "totalPerformances": 103,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1976-06-09",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-17",
+        "venue": "Capitol Theatre",
+        "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-05-08",
+        "venue": "Barton Hall, Cornell University",
+        "identifier": "gd77-05-08.sbd.hicks.4982.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-03-19",
+        "venue": "Winterland Arena",
+        "identifier": "gd77-03-19.sbd.chinacat.255.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-08",
+        "venue": "Fillmore West",
+        "identifier": "gd69-06-08.sbd.cotsman.19285.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1970-06-06",
+        "venue": "Fillmore West",
+        "identifier": "gd70-06-06.sbd.ashley.2172.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-03",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-04",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-04.sbd.cotsman.9797.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-19",
+        "venue": "Capitol Theater",
+        "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-22",
+        "venue": "The Tower Theatre",
+        "identifier": "gd1976-06-22.sbd.digitalrbb.miller.112218.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-23",
+        "venue": "Tower Theatre",
+        "identifier": "gd76-06-23.moore.vernon.15534.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-07-12",
+        "venue": "Orpheum Theatre",
+        "identifier": "gd76-07-12.sbd.aj.7771.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-07-13",
+        "venue": "Orpheum Theatre",
+        "identifier": "gd76-07-13.sbd.ashley-bertha.9978.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-05-01",
+        "venue": "The Palladium",
+        "identifier": "gd77-05-01.set2-sbd.unknown.4763.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-05-04",
+        "venue": "The Palladium",
+        "identifier": "gd1977-05-04.sbd.miller.91970.sbeok.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Lazy Lightning",
+    "totalPerformances": 90,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1976-06-09",
+        "venue": "Boston Music Hall",
+        "identifier": "gd1976-06-09.sbd.miller.95399.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-10",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-12",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-12.fm.wren.5556.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-17",
+        "venue": "Capitol Theatre",
+        "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-06-08",
+        "venue": "Winterland Arena",
+        "identifier": "gd77-06-08.sbd.clugston.15421.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-12-27",
+        "venue": "Winterland Arena",
+        "identifier": "gd77-12-27.sbd.cotsman.19288.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-12-31",
+        "venue": "Winterland Arena",
+        "identifier": "gd77-12-31.sbd.purvis.286.sbeok.shnf",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-07",
+        "venue": "Bob Weir's Studio",
+        "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-05-28",
+        "venue": "Le Club Front Studios",
+        "identifier": "gd76-05-2x.sbd.vernon.9769.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-03",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-14",
+        "venue": "Beacon Theatre",
+        "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-21",
+        "venue": "Tower Theatre",
+        "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-23",
+        "venue": "Tower Theatre",
+        "identifier": "gd76-06-23.moore.vernon.15534.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-26",
+        "venue": "Auditorium Theatre",
+        "identifier": "gd76-06-26.aud.vernon.7340.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-27",
+        "venue": "Auditorium Theatre",
+        "identifier": "gd1976-06-27.sbd.digitalrbb.miller.112295.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Slipknot!",
+    "totalPerformances": 90,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1974-06-20",
+        "venue": "Atlanta Municipal Auditorium",
+        "identifier": "gd74-06-20.sbd.clugston.2179.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-17",
+        "venue": "Winterland Arena",
+        "identifier": "gd1975-06-17.aud.unknown.87560.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-10",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-10.sbd.bertha-ashley.23370.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-17",
+        "venue": "Capitol Theatre",
+        "identifier": "gd1976-06-17.sbd.miller.80739.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-06-09",
+        "venue": "Winterland Arena",
+        "identifier": "gd1977-06-09.28614.sbeok.flac16",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-06-07",
+        "venue": "Bob Weir's Studio",
+        "identifier": "gd1975-06-07.bluesruffs.sbd.smith.94427.sbeok.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-08-13",
+        "venue": "Great American Music Hall",
+        "identifier": "gd75-08-13.fm.vernon.23661.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-03",
+        "venue": "Paramount Theatre",
+        "identifier": "gd76-06-03.sbd.serafin.7719.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-14",
+        "venue": "Beacon Theatre",
+        "identifier": "gd76-06-14.sbd.hollister.22804.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-19",
+        "venue": "Capitol Theater",
+        "identifier": "gd1976-06-19.sbd.digitalrbb.miller.111852.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-21",
+        "venue": "Tower Theatre",
+        "identifier": "gd76-06-21.aud.vernon.6679.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-27",
+        "venue": "Auditorium Theatre",
+        "identifier": "gd1976-06-27.sbd.digitalrbb.miller.112295.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-07-12",
+        "venue": "Orpheum Theatre",
+        "identifier": "gd76-07-12.sbd.aj.7771.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-05-09",
+        "venue": "Buffalo Memorial Auditorium",
+        "identifier": "gd77-05-09.sbd.connor.8304.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1975-09-28",
+        "venue": "Lindley Meadows, Golden Gate Park",
+        "identifier": "gd75-09-28.sbd.fink.9392.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Dupree's Diamond Blues",
+    "totalPerformances": 71,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1969-06-07",
+        "venue": "Fillmore West",
+        "identifier": "gd69-06-07.sbd.kaplan.9074.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-21",
+        "venue": "Fillmore East",
+        "identifier": "gd69-06-21.early-late.aud-sbd.cotsman.16334.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-02-27",
+        "venue": "Fillmore West",
+        "identifier": "gd69-02-27.sbd.16track.kaplan.6315.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-03-01",
+        "venue": "Fillmore West",
+        "identifier": "gd69-03-01.sbd.16track.kaplan.4030.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-10-02",
+        "venue": "Paramount Theater",
+        "identifier": "gd77-10-02.sbd.unknown.278.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-11-04",
+        "venue": "Cotterrell Gym, Colgate U",
+        "identifier": "gd77-11-04.sbd.unknown.2595.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-11-06",
+        "venue": "Broome County Arena",
+        "identifier": "gd77-11-06.sbd.nawrocki.283.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-01",
+        "venue": "Avalon Ballroom",
+        "identifier": "gd1969-06-01.136665.sbd.sirmick.flac16",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-20",
+        "venue": "Pacific Recording Studios",
+        "identifier": "gd1969-06-20.gd.aoxomoxoa.32074.sbefail.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-27",
+        "venue": "Veterans Auditorium",
+        "identifier": "gd69-06-27.sbd.samaritano.20547.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1984-07-13",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd84-07-13.sbd.ferguson.353.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1985-06-15",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd85-06-15.sbd.griesman.5682.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1982-09-20",
+        "venue": "Madison Square Garden",
+        "identifier": "gd1982-09-20.sbd.miller.88857.sbeok.flac16",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1983-09-06",
+        "venue": "Red Rocks Amphitheatre",
+        "identifier": "gd83-09-06.sbd.clugston.5489.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1988-09-23",
+        "venue": "Madison Square Garden",
+        "identifier": "gd88-09-23.sbd.miller.5291.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "The Last Time",
+    "totalPerformances": 68,
+    "selectedCount": 12,
+    "performances": [
+      {
+        "date": "1990-05-06",
+        "venue": "Cal State Dominguez Hills",
+        "identifier": "gd90-05-06.sbd.wiley.11661.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-06-10",
+        "venue": "Cal Expo",
+        "identifier": "gd90-06-10.sbd-matrix.miller-ladner.6937.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-14",
+        "venue": "Foxboro Stadium",
+        "identifier": "gd90-07-14.sbd.georges.463.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-09",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-09.sbd.ashley-miller.508.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-17",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-17.sbd.unknown.12847.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1993-09-21",
+        "venue": "Madison Square Garden",
+        "identifier": "gd93-09-21.ST250s.brennecke-young.4532.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1994-10-15",
+        "venue": "Madison Square Garden",
+        "identifier": "gd94-10-15.sbd.miller.27249.sbeok.flacf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-02-25",
+        "venue": "Oakland-alameda County Coliseum Arena",
+        "identifier": "gd1990-02-25.sbd.walker-scotton.miller.87786.sbeok.flac16",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-03-16",
+        "venue": "Capital Centre",
+        "identifier": "gd90-03-16.sbd.willy.5227.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-03-22",
+        "venue": "Copps Coliseum",
+        "identifier": "gd90-03-22.sbd.bertha-ashley.21433.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1992-05-24",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd1992-05-24.sbd.miller.92272.sbeok.flac16",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1995-05-20",
+        "venue": "Sam Boyd Silver Bowl, U.n.l.v.",
+        "identifier": "gd95-05-20.akg.18798.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Knockin' on Heaven's Door",
+    "totalPerformances": 66,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1990-09-18",
+        "venue": "Madison Square Garden",
+        "identifier": "gd90-09-18.sbd.miller.12885.sbeok.shnf",
+        "score": 8,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1987-08-13",
+        "venue": "Red Rocks Amphitheatre",
+        "identifier": "gd87-08-13.sbd.larson.21348.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1988-07-16",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd88-07-16.sbd-matrix.braverman.10080.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1987-09-18",
+        "venue": "Madison Square Garden",
+        "identifier": "gd87-09-18.sbd.samaritano.20025.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-05-07",
+        "venue": "Frost Amphitheatre",
+        "identifier": "gd89-05-07.sbd.gardner.3329.sbefail.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-06-19",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd1989-06-19.sbd.walker-scotton.miller.83673.sbeok.flac16",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-07-07",
+        "venue": "John F Kennedy Stadium",
+        "identifier": "gd89-07-07.aud.wiley.7855.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-07-10",
+        "venue": "Giants Stadium",
+        "identifier": "gd89-07-10.sbd.16071.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-08",
+        "venue": "Three Rivers Stadium",
+        "identifier": "gd1990-07-08.nak300.holtz.lmpp.97714.sbeok.flac16",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-22",
+        "venue": "World Music Theater",
+        "identifier": "gd90-07-22.sbd.conner.7834.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-13",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-13.sbd.kowalski.520.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1992-05-23",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd1992-05-23.sbd.miller.92271.sbeok.flac16",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1994-06-19",
+        "venue": "Autzen Stadium, U. of Oregon",
+        "identifier": "gd94-06-19.sbd.larson.12524.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1978-11-17",
+        "venue": "Rambler Room, Loyola College",
+        "identifier": "gd78-11-17.acoustic.sbd.dodd.7687.sbeok.shnf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1993-01-24",
+        "venue": "Oakland-alameda County Coliseum",
+        "identifier": "gd93-01-24.sbd.seff.5610.sbeok.shnf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Women Are Smarter",
+    "totalPerformances": 60,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1990-09-20",
+        "venue": "Madison Square Garden",
+        "identifier": "gd90-09-20.sbd.ashley.14855.sbeok.shnf",
+        "score": 8,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1987-06-21",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd87-06-21.set1aud-set2sbd.clugston.13567.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1981-09-11",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd81-09-11.wise.munder.7090.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1982-09-20",
+        "venue": "Madison Square Garden",
+        "identifier": "gd1982-09-20.sbd.miller.88857.sbeok.flac16",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-06-15",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd90-06-15.naks.jill-rob.7762.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-06-24",
+        "venue": "Autzen Stadium, U. of Oregon",
+        "identifier": "gd90-06-24.sbd.unknown.12092.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-06",
+        "venue": "Cardinal Stadium",
+        "identifier": "gd90-07-06.sbd.miller.12770.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-16",
+        "venue": "Rich Stadium",
+        "identifier": "gd90-07-16.sbd.knapp.1316.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-02-11",
+        "venue": "Great Western La Forum",
+        "identifier": "gd89-02-11.sbd.wiley.9203.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-04-02",
+        "venue": "Civic Arena",
+        "identifier": "gd89-04-02.beyer.wiley.9206.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1983-06-21",
+        "venue": "Merriweather Post Pavilion",
+        "identifier": "gd83-06-21.sony.dodd.11491.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1985-06-21",
+        "venue": "Alpine Valley Music Theatre",
+        "identifier": "gd85-06-21.sbd.barbella.11492.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1992-05-23",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd1992-05-23.sbd.miller.92271.sbeok.flac16",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1984-03-31",
+        "venue": "Marin County Veterans Auditorium",
+        "identifier": "gd84-03-31.sbd.nawrocki.14078.sbeok.shnf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1988-04-03",
+        "venue": "Hartford Civic Center",
+        "identifier": "gd88-04-03.sbd.painoman.9628.sbeok.shnf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Smokestack Lightning",
+    "totalPerformances": 56,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1972-03-25",
+        "venue": "Academy of Music",
+        "identifier": "gd1972-03-25.136684.sbd.sirmick.flac1648",
+        "score": 15,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-06",
+        "venue": "Fillmore West",
+        "identifier": "gd69-06-06.sbd.jupile.9494.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1970-02-08",
+        "venue": "Fillmore West",
+        "identifier": "gd70-02-08.sbd-aud.cotsman.19152.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1970-02-13",
+        "venue": "Fillmore East",
+        "identifier": "gd1970-02-13.sbd.miller.fix-97613.97639.sbeok.flac16",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-02-19",
+        "venue": "Capitol Theatre",
+        "identifier": "gd71-02-19.sbd.orf.1029.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-12-02",
+        "venue": "Boston Music Hall",
+        "identifier": "gd71-12-02.sbd.lai.6255.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-12-04",
+        "venue": "Felt Forum, Madison Square Garden",
+        "identifier": "gd71-12-04.sbd.lai.6256.sbefail.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-12-07",
+        "venue": "Felt Forum, Madison Square Garden",
+        "identifier": "gd71-12-07.sbd.miller.3375.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-05-07",
+        "venue": "Polo Field, Golden Gate Park",
+        "identifier": "gd69-05-07.sbd.cotsman.6028.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1985-06-14",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd85-06-14.oade.sacks.4978.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1986-06-21",
+        "venue": "Greek Theatre, U. of California",
+        "identifier": "gd86-06-21.sbd.brame.15406.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1966-11-19",
+        "venue": "Fillmore Auditorium",
+        "identifier": "gd66-11-19.sbd.seff.41.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1967-03-18",
+        "venue": "Winterland Arena",
+        "identifier": "gd67-03-18.sbd.fink.10282.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1968-03-03",
+        "venue": "Haight Street",
+        "identifier": "gd68-03-03.aud.vernon.9374.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-07-15",
+        "venue": "Deer Creek Music Center",
+        "identifier": "gd89-07-15.sbd.11266.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Just Like Tom Thumb's Blues",
+    "totalPerformances": 48,
+    "selectedCount": 13,
+    "performances": [
+      {
+        "date": "1988-09-22",
+        "venue": "Madison Square Garden",
+        "identifier": "gd88-09-22.sbd.miller.5290.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-07-12",
+        "venue": "Robert F. Kennedy Stadium",
+        "identifier": "gd89-07-12.aud-fob.gardner.2554.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-08",
+        "venue": "Three Rivers Stadium",
+        "identifier": "gd1990-07-08.nak300.holtz.lmpp.97714.sbeok.flac16",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-12",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-12.sbd.roux.516.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1993-09-17",
+        "venue": "Madison Square Garden",
+        "identifier": "gd93-09-17.ams.georges.5704.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1994-10-15",
+        "venue": "Madison Square Garden",
+        "identifier": "gd94-10-15.sbd.miller.27249.sbeok.flacf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-04-03",
+        "venue": "Civic Arena",
+        "identifier": "gd89-04-03.sbd.harrel.7507.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-12-27",
+        "venue": "Oakland-alameda County Coliseum",
+        "identifier": "gd89-12-27.schoeps.ladner.20785.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1986-06-29",
+        "venue": "Alpine Valley Music Theatre",
+        "identifier": "gd86-06-29.aud.eD.12969.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1992-05-25",
+        "venue": "Shoreline Amphitheatre",
+        "identifier": "gd92-05-25.sbd.wiley.16469.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1995-05-21",
+        "venue": "Sam Boyd Silver Bowl, U.n.l.v.",
+        "identifier": "gd95-05-21.schoeps.18799.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1985-03-27",
+        "venue": "Nassau Coliseum",
+        "identifier": "gd85-03-27.sbd.ladner.8567.sbeok.shnf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1987-09-12",
+        "venue": "Capital Centre",
+        "identifier": "gd87-09-12.sbd.ladner.31018.sbeok.flacf",
+        "score": 0,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Sunshine Daydream",
+    "totalPerformances": 47,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1976-06-11",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-11.sbd.jmason.7824.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-12",
+        "venue": "Boston Music Hall",
+        "identifier": "gd76-06-12.fm.wren.5556.sbeok.shnf",
+        "score": 17,
+        "rating": 2,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-15",
+        "venue": "Beacon Theatre",
+        "identifier": "gd76-06-15.sbd.kempa.241.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-07-13",
+        "venue": "Orpheum Theatre",
+        "identifier": "gd76-07-13.sbd.ashley-bertha.9978.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-04-10",
+        "venue": "East Hall, Franklin & Marshall College",
+        "identifier": "gd71-04-10.sbd.willy.8674.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-11-11",
+        "venue": "Atlanta Municipal Auditorium",
+        "identifier": "gd71-11-11.sbd.yubah-dodd.8326.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1971-11-20",
+        "venue": "Pauley Pavilion, Ucla",
+        "identifier": "gd71-11-20.fm.willy.8806.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1978-12-31",
+        "venue": "Winterland Arena",
+        "identifier": "gd78-12-31.sbd.ashley.1667.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1987-09-15",
+        "venue": "Madison Square Garden",
+        "identifier": "gd87-09-15.schoeps.willy.15388.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-07-18",
+        "venue": "Alpine Valley Music Theatre",
+        "identifier": "gd89-07-18.sbd.9854.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-07-16",
+        "venue": "Rich Stadium",
+        "identifier": "gd90-07-16.sbd.knapp.1316.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-12",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-12.sbd.roux.516.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1979-06-30",
+        "venue": "Portland International Speedway",
+        "identifier": "gd79-06-30.senn.munder.10346.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1980-08-21",
+        "venue": "Uptown Theater",
+        "identifier": "gd80-08-21.sbd.munder.7913.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1981-05-08",
+        "venue": "Nassau Coliseum",
+        "identifier": "gd81-05-08.glassberg.vernon.17698.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Death Don't Have No Mercy",
+    "totalPerformances": 42,
+    "selectedCount": 14,
+    "performances": [
+      {
+        "date": "1968-08-21",
+        "venue": "Fillmore West",
+        "identifier": "gd68-08-21.sbd.cotsman.17355.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1968-08-22",
+        "venue": "Fillmore West",
+        "identifier": "gd68-08-22.sbd.cotsman.14915.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-02-12",
+        "venue": "Fillmore East",
+        "identifier": "gd69-02-12.late.sbd.kaplan.9072.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-02-28",
+        "venue": "Fillmore West",
+        "identifier": "gd69-02-28.sbd.16track.kaplan.3397.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-03-02",
+        "venue": "Fillmore West",
+        "identifier": "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-09-26",
+        "venue": "Fillmore East",
+        "identifier": "gd69-09-26.aud.hanno.14856.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1968-08-23",
+        "venue": "Shrine Auditorium",
+        "identifier": "gd68-08-23.sbd.sacks.52.sbefail.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1968-08-28",
+        "venue": "Avalon Ballroom",
+        "identifier": "gd68-08-28.sbd.cotsman.18104.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-05-24",
+        "venue": "Seminole Indian Village",
+        "identifier": "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-07-11",
+        "venue": "Ny State Pavilion, Flushing Meadow Park",
+        "identifier": "gd69-07-11.sbd.hanno.4644.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1966-01-08",
+        "venue": "Fillmore Auditorium",
+        "identifier": "gd1966-01-08.sbd.bershaw.5410.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1967-03-18",
+        "venue": "Winterland Arena",
+        "identifier": "gd67-03-18.sbd.fink.10282.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1970-01-16",
+        "venue": "Springer's Inn Portland",
+        "identifier": "gd70-01-16.sbd.popi.7111.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-10-09",
+        "venue": "Hampton Coliseum",
+        "identifier": "gd89-10-09.sbd.serafin.7721.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Playing in the Band Reprise",
+    "totalPerformances": 41,
+    "selectedCount": 15,
+    "performances": [
+      {
+        "date": "1973-11-10",
+        "venue": "Winterland Arena",
+        "identifier": "gd73-11-10.sbd.unknown.3290.sbeok.shnf",
+        "score": 20,
+        "rating": 1,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-26",
+        "venue": "Auditorium Theatre",
+        "identifier": "gd76-06-26.aud.vernon.7340.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-06-29",
+        "venue": "Auditorium Theatre",
+        "identifier": "gd76-06-29.sbd.bertha.31144.sbeok.flacf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-07-16",
+        "venue": "Orpheum Theatre",
+        "identifier": "gd1976-07-16.mtx.dan.28042.sbeok.flac16",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-05-01",
+        "venue": "The Palladium",
+        "identifier": "gd77-05-01.set2-sbd.unknown.4763.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1977-06-04",
+        "venue": "The Forum",
+        "identifier": "gd77-06-04.bertrando.goodbear.3417.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-09-24",
+        "venue": "William and Mary College Hall",
+        "identifier": "gd76-09-24.aud.unknown.16901.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-09-28",
+        "venue": "Onongada County War Memorial",
+        "identifier": "gd76-09-28.aud.vernon.14356.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1976-10-10",
+        "venue": "Oakland-alameda County Coliseum",
+        "identifier": "gd76-10-10.hollwein.vernon.11670.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1983-09-06",
+        "venue": "Red Rocks Amphitheatre",
+        "identifier": "gd83-09-06.sbd.clugston.5489.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1988-09-15",
+        "venue": "Madison Square Garden",
+        "identifier": "gd88-09-15.sbd.barbella.5068.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1990-06-23",
+        "venue": "Autzen Stadium, U. of Oregon",
+        "identifier": "gd90-06-23.sbd.ladner.28690.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1991-09-09",
+        "venue": "Madison Square Garden",
+        "identifier": "gd91-09-09.sbd.ashley-miller.508.sbeok.shnf",
+        "score": 5,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1989-04-06",
+        "venue": "Crisler Arena",
+        "identifier": "gd89-04-06.sbd-matrix.kowalski.1092.sbeok.shnf",
+        "score": 3,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1982-08-01",
+        "venue": "Zoo Amphitheater",
+        "identifier": "gd82-08-01.sbd.willy.10226.sbeok.shnf",
+        "score": 2,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  },
+  {
+    "songTitle": "Doin' That Rag",
+    "totalPerformances": 39,
+    "selectedCount": 10,
+    "performances": [
+      {
+        "date": "1969-05-03",
+        "venue": "Winterland Arena",
+        "identifier": "gd69-05-03.aud.phunk1.73.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-05",
+        "venue": "Fillmore West",
+        "identifier": "gd69-06-05.sbd.cotsman.15204.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-06-07",
+        "venue": "Fillmore West",
+        "identifier": "gd69-06-07.sbd.kaplan.9074.sbeok.shnf",
+        "score": 12,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-02-27",
+        "venue": "Fillmore West",
+        "identifier": "gd69-02-27.sbd.16track.kaplan.6315.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-02-28",
+        "venue": "Fillmore West",
+        "identifier": "gd69-02-28.sbd.16track.kaplan.3397.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-03-01",
+        "venue": "Fillmore West",
+        "identifier": "gd69-03-01.sbd.16track.kaplan.4030.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-03-02",
+        "venue": "Fillmore West",
+        "identifier": "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
+        "score": 10,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-05-10",
+        "venue": "Rose Palace",
+        "identifier": "gd69-05-10.sbd.tzuriel.1336.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-05-16",
+        "venue": "Campolindo High School",
+        "identifier": "gd69-05-16.sbd.clugston.6316.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      },
+      {
+        "date": "1969-05-24",
+        "venue": "Seminole Indian Village",
+        "identifier": "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
+        "score": 7,
+        "rating": 3,
+        "notes": "Sample rating based on venue/era score"
+      }
+    ]
+  }
+]
