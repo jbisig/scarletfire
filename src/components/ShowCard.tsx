@@ -7,6 +7,20 @@ import { useShows } from '../contexts/ShowsContext';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
 
+/**
+ * Extract venue name from show title (more accurate than venue field)
+ * Title format: "Grateful Dead Live at {Venue} on {Date}"
+ */
+function getVenueFromShow(show: GratefulDeadShow): string {
+  if (show.title) {
+    const match = show.title.match(/Live at (.+?) on \d{4}-\d{2}-\d{2}/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return show.venue || 'Unknown Venue';
+}
+
 interface ShowCardProps {
   show: GratefulDeadShow;
   onPress: (show: GratefulDeadShow) => void;
@@ -47,11 +61,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
       <View style={styles.contentRow}>
         <View style={styles.infoContainer}>
           {/* Venue name - large and bold */}
-          {show.venue && (
-            <Text style={styles.venue} numberOfLines={1}>
-              {show.venue}
-            </Text>
-          )}
+          <Text style={styles.venue} numberOfLines={1}>
+            {getVenueFromShow(show)}
+          </Text>
 
           {/* Date with stars */}
           <View style={styles.dateRow}>
