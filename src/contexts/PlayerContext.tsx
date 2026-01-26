@@ -2,14 +2,37 @@ import React, { createContext, useReducer, useContext, useEffect, useRef, useSta
 import { Image } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack } from '../types/player.types';
-import { Track, ShowDetail } from '../types/show.types';
+import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
+import { archiveApi } from '../services/archiveApi';
+import showsData from '../data/shows.json';
 
 // Resolve app icon for Now Playing artwork
 const appIcon = require('../../assets/icon.png');
 const appIconUri = Image.resolveAssetSource(appIcon).uri;
+
+// Load shows data for finding next chronological show
+const allShowsByYear = showsData as ShowsByYear;
+
+// Helper function to find the next show after a given date
+function findNextShow(currentDate: string): GratefulDeadShow | null {
+  const allShows: GratefulDeadShow[] = [];
+
+  // Collect all shows from all years
+  Object.values(allShowsByYear).forEach(yearShows => {
+    allShows.push(...yearShows);
+  });
+
+  // Filter shows that are after the current date and sort by date
+  const futureShows = allShows
+    .filter(s => s.date > currentDate)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Return the first one (next chronological show)
+  return futureShows.length > 0 ? futureShows[0] : null;
+}
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -337,6 +360,36 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Helper to load and play the next chronological show
+  const playNextShow = useCallback(async () => {
+    if (!state.currentShow?.date) {
+      dispatch({ type: 'STOP' });
+      return;
+    }
+
+    const nextShow = findNextShow(state.currentShow.date);
+    if (!nextShow) {
+      // No more shows - we've reached the end of the catalog
+      dispatch({ type: 'STOP' });
+      return;
+    }
+
+    try {
+      // Fetch the show details
+      const showDetail = await archiveApi.getShowDetail(nextShow.primaryIdentifier);
+
+      if (showDetail.tracks.length > 0) {
+        // Load the first track of the next show
+        dispatch({ type: 'LOAD_TRACK', track: showDetail.tracks[0], show: showDetail, playlist: showDetail.tracks });
+      } else {
+        dispatch({ type: 'STOP' });
+      }
+    } catch (error) {
+      console.error('Failed to load next show:', error);
+      dispatch({ type: 'STOP' });
+    }
+  }, [state.currentShow?.date]);
+
   // Listen to queue end event (all tracks finished)
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
@@ -345,12 +398,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         // but if it does, try to fetch more
         fetchMoreRadioTracks();
       } else {
-        dispatch({ type: 'STOP' });
+        // Show ended - play the next chronological show
+        playNextShow();
       }
     });
 
     return () => subscription.remove();
-  }, [state.playbackMode, fetchMoreRadioTracks]);
+  }, [state.playbackMode, fetchMoreRadioTracks, playNextShow]);
 
   // Radio auto-replenish: fetch more tracks when remaining <= 3
   useEffect(() => {
