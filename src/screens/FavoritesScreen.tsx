@@ -20,7 +20,9 @@ import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { ShowCard } from '../components/ShowCard';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
+import showsData from '../data/shows.json';
+import { ShowsByYear } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -30,6 +32,22 @@ import { StarRating } from '../components/StarRating';
 import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
 import { COLORS, FONTS } from '../constants/theme';
+
+const allShowsByYear = showsData as ShowsByYear;
+
+// Look up correct venue by show date
+function getCorrectVenue(showDate: string): string | undefined {
+  const normalizedDate = showDate.substring(0, 10); // YYYY-MM-DD
+  const year = normalizedDate.substring(0, 4);
+  const yearShows = allShowsByYear[year];
+  if (!yearShows) return undefined;
+
+  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
+  if (show) {
+    return getVenueFromShow(show);
+  }
+  return undefined;
+}
 
 // Memoized song item component to prevent unnecessary re-renders
 interface SongItemProps {
@@ -41,6 +59,7 @@ interface SongItemProps {
 
 const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+  const venue = getCorrectVenue(song.showDate) || song.venue;
 
   return (
     <TouchableOpacity
@@ -64,9 +83,9 @@ const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPres
             )}
           </View>
 
-          {song.venue && (
+          {venue && (
             <Text style={styles.songVenue} numberOfLines={1}>
-              {song.venue}
+              {venue}
             </Text>
           )}
         </View>

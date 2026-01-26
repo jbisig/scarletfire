@@ -20,6 +20,7 @@ import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { COLORS, FONTS } from '../constants/theme';
+import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
@@ -203,7 +204,7 @@ export function ShowDetailScreen() {
     >
       <View style={styles.headerContainer}>
         {/* Venue - Large white title */}
-        <Text style={styles.venue}>{show.venue || show.title}</Text>
+        <Text style={styles.venue}>{getVenueFromShow(show)}</Text>
 
         {/* Source and Save button row */}
         <View style={styles.sourceRow}>

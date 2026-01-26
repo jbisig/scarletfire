@@ -18,7 +18,9 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
+import showsData from '../data/shows.json';
+import { ShowsByYear } from '../types/show.types';
 import { StarRating } from '../components/StarRating';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
@@ -31,6 +33,18 @@ interface Performance {
   identifier: string;
   venue?: string;
   rating?: 1 | 2 | 3 | null; // Pre-computed performance rating
+}
+
+const allShowsByYear = showsData as ShowsByYear;
+
+// Look up show details by performance date
+function getShowByDate(performanceDate: string) {
+  const normalizedDate = performanceDate.substring(0, 10); // YYYY-MM-DD
+  const year = normalizedDate.substring(0, 4);
+  const yearShows = allShowsByYear[year];
+  if (!yearShows) return undefined;
+
+  return yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
 }
 
 // Calculate string similarity using Levenshtein distance
@@ -188,6 +202,9 @@ export function SongPerformancesScreen() {
     const isLoading = loadingIdentifier === item.identifier;
     const playCount = getPlayCount(songTitle, item.identifier);
     const performanceRating = item.rating;
+    const show = getShowByDate(item.date);
+    const venue = show ? getVenueFromShow(show) : item.venue;
+    const location = show?.location;
 
     return (
       <TouchableOpacity
@@ -196,32 +213,42 @@ export function SongPerformancesScreen() {
         activeOpacity={0.7}
         disabled={isLoading}
       >
-        <View style={styles.performanceInfo}>
-          {/* Venue name - large and bold */}
-          {item.venue && (
-            <Text style={styles.performanceVenue} numberOfLines={1}>
-              {item.venue}
+        <View style={styles.contentRow}>
+          <View style={styles.infoContainer}>
+            {/* Venue name - large and bold */}
+            <Text style={styles.venue} numberOfLines={1}>
+              {venue || 'Unknown Venue'}
             </Text>
-          )}
-          {/* Date with stars */}
-          <View style={styles.dateStarsRow}>
-            <Text style={styles.performanceDate}>{formatDate(item.date)}</Text>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={16} />
+
+            {/* Date with stars */}
+            <View style={styles.dateRow}>
+              <Text style={styles.date}>{formatDate(item.date)}</Text>
+              {performanceRating && (
+                <StarRating tier={performanceRating} size={14} />
+              )}
+            </View>
+
+            {/* Location */}
+            {location && (
+              <Text style={styles.location} numberOfLines={1}>
+                {location}
+              </Text>
             )}
           </View>
-        </View>
-        <View style={styles.rightContent}>
-          {playCount > 0 && (
-            <View style={styles.playCountBadge}>
-              <Text style={styles.playCountText}>
-                {playCount} {playCount === 1 ? 'play' : 'plays'}
-              </Text>
-            </View>
-          )}
-          {isLoading && (
-            <ActivityIndicator size="small" color={COLORS.accent} style={styles.loader} />
-          )}
+
+          {/* Play count badge and loading indicator on the right */}
+          <View style={styles.rightContent}>
+            {playCount > 0 && (
+              <View style={styles.playCountBadge}>
+                <Text style={styles.playCountText}>
+                  {playCount} {playCount === 1 ? 'play' : 'plays'}
+                </Text>
+              </View>
+            )}
+            {isLoading && (
+              <ActivityIndicator size="small" color={COLORS.accent} style={styles.loader} />
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -466,30 +493,39 @@ const styles = StyleSheet.create({
     paddingBottom: 180,
   },
   performanceItem: {
-    flexDirection: 'row',
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    backgroundColor: COLORS.background,
   },
-  performanceInfo: {
+  contentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoContainer: {
     flex: 1,
     marginRight: 12,
   },
-  performanceVenue: {
+  venue: {
     fontSize: 20,
     fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
-  dateStarsRow: {
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    marginBottom: 2,
   },
-  performanceDate: {
-    fontSize: 16,
+  date: {
+    fontSize: 14,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
+  },
+  location: {
+    fontSize: 14,
     fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },
@@ -499,13 +535,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   playCountBadge: {
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    paddingHorizontal: 14,
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   playCountText: {
-    fontSize: 16,
+    fontSize: 12,
     fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },

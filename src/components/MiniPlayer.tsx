@@ -7,7 +7,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useShows } from '../contexts/ShowsContext';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
@@ -97,7 +97,7 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
                 )}
               </View>
               <Text style={styles.showTitle} numberOfLines={1}>
-                {state.currentShow?.venue} on {state.currentShow?.date && formatDate(state.currentShow.date)}
+                {state.currentShow && getVenueFromShow(state.currentShow)} on {state.currentShow?.date && formatDate(state.currentShow.date)}
               </Text>
             </View>
 

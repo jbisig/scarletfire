@@ -20,7 +20,7 @@ import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useShows } from '../contexts/ShowsContext';
-import { formatDate, formatTime } from '../utils/formatters';
+import { formatDate, formatTime, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { StarRating } from './StarRating';
@@ -185,7 +185,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         trackTitle: state.currentTrack.title,
         showIdentifier: state.currentShow.identifier,
         showDate: state.currentShow.date,
-        venue: state.currentShow.venue,
+        venue: getVenueFromShow(state.currentShow),
         streamUrl: state.currentTrack.streamUrl,
       };
       addFavoriteSong(favoriteSong);
@@ -400,7 +400,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 style={styles.showLinkContainer}
               >
                 <Text style={styles.showInfo} numberOfLines={1}>
-                  {state.currentShow.venue}
+                  {getVenueFromShow(state.currentShow)}
                 </Text>
                 <View style={styles.dateWithStars}>
                   <Text style={styles.showDate}>
