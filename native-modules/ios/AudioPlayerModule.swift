@@ -64,10 +64,18 @@ class AudioPlayerModule: RCTEventEmitter {
   }
 
   @objc private func playerItemDidFinishPlaying(_ notification: Notification) {
-    // Check if this is from our player's current item
-    guard let finishedItem = notification.object as? AVPlayerItem,
-          let currentItem = player?.currentItem,
-          finishedItem == currentItem else {
+    // Check if this is from one of our player items
+    guard let finishedItem = notification.object as? AVPlayerItem else {
+      return
+    }
+
+    // Find the index of the finished item in our currentItems array
+    guard let finishedIndex = currentItems.firstIndex(of: finishedItem) else {
+      return // Not our item
+    }
+
+    // Only handle if this is the currently playing track
+    guard finishedIndex == currentTrackIndex else {
       return
     }
 
