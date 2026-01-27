@@ -97,6 +97,42 @@ class AuthService {
   }
 
   /**
+   * Delete the current user's account and all associated data
+   * Requires the delete_user() function to be set up in Supabase
+   * See: supabase/delete_user_function.sql
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    // First, delete user's avatar files from storage
+    try {
+      const { data: files } = await this.supabase.storage
+        .from('avatars')
+        .list(userId);
+
+      if (files && files.length > 0) {
+        const filePaths = files.map(file => `${userId}/${file.name}`);
+        await this.supabase.storage
+          .from('avatars')
+          .remove(filePaths);
+      }
+    } catch (storageError) {
+      console.log('Error deleting avatar files:', storageError);
+      // Continue with account deletion even if avatar deletion fails
+    }
+
+    // Delete the user via the database function
+    // This function must be created in Supabase SQL Editor
+    const { error: rpcError } = await this.supabase.rpc('delete_user');
+
+    if (rpcError) {
+      console.error('Error deleting user:', rpcError);
+      throw new Error('Failed to delete account. Please contact support.');
+    }
+
+    // Sign out the user (session cleanup)
+    await this.supabase.auth.signOut();
+  }
+
+  /**
    * Get the currently signed-in user
    */
   getCurrentUser(): User | null {

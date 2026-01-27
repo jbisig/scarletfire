@@ -99,6 +99,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   skipLogin: () => Promise<void>;
   showLogin: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -197,6 +198,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    if (!state.user?.id) {
+      throw new Error('No user logged in');
+    }
+    try {
+      dispatch({ type: 'SET_LOADING', isLoading: true });
+      await authService.deleteAccount(state.user.id);
+      dispatch({ type: 'LOGOUT' });
+      await AsyncStorage.removeItem('@auth_skipped');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account';
+      dispatch({ type: 'SET_ERROR', error: errorMessage });
+      throw error;
+    }
+  };
+
   const skipLogin = async () => {
     await AsyncStorage.setItem('@auth_skipped', 'true');
     dispatch({ type: 'SKIP_LOGIN' });
@@ -226,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUpWithEmail,
         loginWithGoogle,
         logout,
+        deleteAccount,
         skipLogin,
         showLogin,
         refreshUser,

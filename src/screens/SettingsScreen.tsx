@@ -21,9 +21,10 @@ const DEFAULT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { state: authState, logout, refreshUser } = useAuth();
+  const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
@@ -86,6 +87,48 @@ export function SettingsScreen() {
           onPress: async () => {
             await logout();
             navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation for extra safety
+            Alert.alert(
+              'Confirm Deletion',
+              'This will permanently delete your account and all associated data. Are you absolutely sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsDeleting(true);
+                    try {
+                      await deleteAccount();
+                      navigation.goBack();
+                    } catch (error) {
+                      Alert.alert(
+                        'Error',
+                        'Failed to delete account. Please try again or contact support.'
+                      );
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -169,6 +212,26 @@ export function SettingsScreen() {
           <Ionicons name="log-out-outline" size={22} color={COLORS.accent} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Danger Zone */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Danger Zone</Text>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDeleteAccount}
+          disabled={isDeleting}
+        >
+          <Ionicons name="trash-outline" size={22} color="#FF4444" />
+          <Text style={styles.deleteText}>
+            {isDeleting ? 'Deleting...' : 'Delete Account'}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.deleteWarning}>
+          This will permanently delete your account and all associated data.
+        </Text>
       </View>
     </View>
   );
@@ -317,5 +380,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: FONTS.secondary,
     color: COLORS.accent,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 12,
+  },
+  deleteText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: FONTS.secondary,
+    color: '#FF4444',
+  },
+  deleteWarning: {
+    fontSize: 13,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
 });

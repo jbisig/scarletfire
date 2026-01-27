@@ -334,8 +334,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
   const duration = state.duration > 0 ? state.duration : trackDuration;
   const currentPosition = isDragging ? dragPosition : state.position;
-  // Only used for time display, not for progress bar animation
-  const displayProgress = duration > 0 ? (currentPosition / duration) : 0;
 
   // Animated width for progress bar (avoids re-renders)
   const progressWidth = progressAnim.interpolate({
@@ -344,8 +342,15 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     extrapolate: 'clamp',
   });
 
-  // For thumb position during drag, we still use the drag position
-  const thumbProgress = isDragging ? (duration > 0 ? (dragPosition / duration) : 0) : displayProgress;
+  // Animated thumb position (same source as fill bar to stay in sync)
+  const thumbLeft = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  // For drag position only
+  const dragProgress = duration > 0 ? (dragPosition / duration) : 0;
 
   return (
     <Animated.View
@@ -443,12 +448,12 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             {...panResponder.panHandlers}
           >
             <View style={styles.progressBarBackground}>
-              <Animated.View style={[styles.progressBarFill, { width: isDragging ? `${thumbProgress * 100}%` : progressWidth }]} />
+              <Animated.View style={[styles.progressBarFill, { width: isDragging ? `${dragProgress * 100}%` : progressWidth }]} />
             </View>
-            <View
+            <Animated.View
               style={[
                 styles.progressThumb,
-                { left: `${thumbProgress * 100}%` },
+                { left: isDragging ? `${dragProgress * 100}%` : thumbLeft },
                 isDragging && styles.progressThumbActive
               ]}
               pointerEvents="none"
