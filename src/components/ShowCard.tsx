@@ -1,25 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { StarRating } from './StarRating';
+import { OfficialReleaseBadge } from './OfficialReleaseBadge';
+import { OfficialReleaseModal } from './OfficialReleaseModal';
+import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { COLORS, FONTS } from '../constants/theme';
-
-/**
- * Extract venue name from show title (more accurate than venue field)
- * Title format: "Grateful Dead Live at {Venue} on {Date}"
- */
-function getVenueFromShow(show: GratefulDeadShow): string {
-  if (show.title) {
-    const match = show.title.match(/Live at (.+?) on \d{4}-\d{2}-\d{2}/);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  return show.venue || 'Unknown Venue';
-}
 
 interface ShowCardProps {
   show: GratefulDeadShow;
@@ -33,6 +22,12 @@ interface ShowCardProps {
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { showDetailsCache } = useShows();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Get official releases for this show
+  const officialReleases = useMemo(() => {
+    return getOfficialReleasesForDate(show.date);
+  }, [show.date]);
 
   // Calculate play count synchronously from cache only - no API fetches
   // Play count badges only appear for shows the user has already viewed
@@ -52,45 +47,69 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
     return 0;
   }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowPlayCount]);
 
-  return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={() => onPress(show)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.contentRow}>
-        <View style={styles.infoContainer}>
-          {/* Venue name - large and bold */}
-          <Text style={styles.venue} numberOfLines={1}>
-            {getVenueFromShow(show)}
-          </Text>
+  const handleBadgePress = () => {
+    setModalVisible(true);
+  };
 
-          {/* Date with stars */}
-          <View style={styles.dateRow}>
-            <Text style={styles.date}>{formatDate(show.date)}</Text>
-            {show.classicTier && (
-              <StarRating tier={show.classicTier} size={14} />
+  return (
+    <>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => onPress(show)}
+        activeOpacity={0.7}
+      >
+        {/* Venue name - full width at top */}
+        <Text style={styles.venue} numberOfLines={1}>
+          {getVenueFromShow(show)}
+        </Text>
+
+        {/* Bottom row: info on left, badges on right */}
+        <View style={styles.bottomRow}>
+          <View style={styles.infoContainer}>
+            {/* Date with stars */}
+            <View style={styles.dateRow}>
+              <Text style={styles.date}>{formatDate(show.date)}</Text>
+              {show.classicTier && (
+                <StarRating tier={show.classicTier} size={14} />
+              )}
+            </View>
+
+            {/* Location */}
+            {show.location && (
+              <Text style={styles.location} numberOfLines={1}>
+                {show.location}
+              </Text>
             )}
           </View>
 
-          {/* Location */}
-          {show.location && (
-            <Text style={styles.location} numberOfLines={1}>
-              {show.location}
-            </Text>
-          )}
-        </View>
-
-        {/* Play count badge on the right */}
-        {playCount > 0 && (
-          <View style={styles.playCountBadge}>
-            <Text style={styles.playCountText}>
-              {playCount} {playCount === 1 ? 'play' : 'plays'}
-            </Text>
+          {/* Right side badges */}
+          <View style={styles.badgesContainer}>
+            {officialReleases.length > 0 && (
+              <OfficialReleaseBadge
+                onPress={handleBadgePress}
+                compact
+                releaseTitle={officialReleases[0].name}
+              />
+            )}
+            {playCount > 0 && (
+              <View style={styles.playCountBadge}>
+                <Text style={styles.playCountText}>
+                  {playCount} {playCount === 1 ? 'play' : 'plays'}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+
+      {/* Official Release Modal */}
+      <OfficialReleaseModal
+        visible={modalVisible}
+        releases={officialReleases}
+        show={show}
+        onClose={() => setModalVisible(false)}
+      />
+    </>
   );
 });
 
@@ -102,7 +121,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: COLORS.background,
   },
-  contentRow: {
+  venue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -110,13 +136,6 @@ const styles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     marginRight: 12,
-  },
-  venue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 4,
   },
   dateRow: {
     flexDirection: 'row',
@@ -133,6 +152,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   playCountBadge: {
     backgroundColor: COLORS.cardBackground,

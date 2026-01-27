@@ -13,15 +13,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
+import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
+import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { COLORS, FONTS } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { getOfficialReleasesForDate } from '../data/officialReleases';
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -32,6 +36,7 @@ export function ShowDetailScreen() {
   const { getShowDetail, showsByYear } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
+  const { getShowPlayCount } = usePlayCounts();
 
   const [show, setShow] = useState<ShowDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +44,19 @@ export function ShowDetailScreen() {
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
   const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(null);
+  const [releaseModalVisible, setReleaseModalVisible] = useState(false);
+
+  // Get official releases for this show
+  const officialReleases = useMemo(() => {
+    if (!show?.date) return [];
+    return getOfficialReleasesForDate(show.date);
+  }, [show?.date]);
+
+  // Calculate play count for this show
+  const playCount = useMemo(() => {
+    if (!show) return 0;
+    return getShowPlayCount(show.identifier, show.tracks.length);
+  }, [show?.identifier, show?.tracks.length, getShowPlayCount]);
 
   // Pre-compute track ratings for the current show
   const trackRatings = useMemo(() => {
@@ -203,12 +221,12 @@ export function ShowDetailScreen() {
       contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.headerContainer}>
-        {/* Venue - Large white title */}
-        <Text style={styles.venue}>{getVenueFromShow(show)}</Text>
+        {/* Venue - full width at top */}
+        <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
 
-        {/* Source and Save button row */}
-        <View style={styles.sourceRow}>
-          <View style={styles.sourceInfo}>
+        {/* Date/Location info row with Save button */}
+        <View style={styles.infoRow}>
+          <View style={styles.infoContainer}>
             {/* Date with stars */}
             <View style={styles.dateRow}>
               <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
@@ -239,6 +257,25 @@ export function ShowDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Badges row - Official Release and Play Count */}
+        {(officialReleases.length > 0 || playCount > 0) && (
+          <View style={styles.badgesRow}>
+            {officialReleases.length > 0 && (
+              <OfficialReleaseBadge
+                onPress={() => setReleaseModalVisible(true)}
+                releaseTitle={officialReleases[0].name}
+              />
+            )}
+            {playCount > 0 && (
+              <View style={styles.playCountBadge}>
+                <Text style={styles.playCountText}>
+                  {playCount} {playCount === 1 ? 'play' : 'plays'}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Version Picker / Source Info Pill */}
         {show.allVersions && show.allVersions.length > 1 ? (
@@ -288,6 +325,14 @@ export function ShowDetailScreen() {
           ))}
         </View>
       )}
+
+      {/* Official Release Modal */}
+      <OfficialReleaseModal
+        visible={releaseModalVisible}
+        releases={officialReleases}
+        show={show || undefined}
+        onClose={() => setReleaseModalVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -320,17 +365,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  sourceRow: {
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  sourceInfo: {
+  infoContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   dateRow: {
     flexDirection: 'row',
@@ -347,6 +392,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.primary,
     color: COLORS.accent,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  playCountBadge: {
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  playCountText: {
+    fontSize: 13,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
   },
   saveButton: {
     width: 33,

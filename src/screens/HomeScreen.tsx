@@ -23,6 +23,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { formatDate } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
+import { getOfficialReleasesForDate } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -41,11 +42,22 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
 };
 
+// Normalize string for fuzzy matching - removes apostrophes and special characters
+function normalizeForSearch(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[''`]/g, '')  // Remove various apostrophe types
+    .replace(/[^\w\s]/g, ' ')  // Replace other punctuation with spaces
+    .replace(/\s+/g, ' ')  // Collapse multiple spaces
+    .trim();
+}
+
 // Pure filter function - moved outside component to avoid recreation on each render
 function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow[] {
   if (!query.trim()) return shows;
 
   const lowerQuery = query.toLowerCase();
+  const normalizedQuery = normalizeForSearch(query);
   return shows.filter(show => {
     // Search in title
     if (show.title?.toLowerCase().includes(lowerQuery)) return true;
@@ -96,6 +108,22 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
     if (/[a-z]/.test(lowerQuery)) {
       const formattedDate = formatDate(show.date).toLowerCase();
       if (formattedDate.includes(lowerQuery)) return true;
+    }
+
+    // Search in official release names (e.g., "Europe 72", "Dick's Picks")
+    // Uses fuzzy matching to handle apostrophes and punctuation differences
+    const officialReleases = getOfficialReleasesForDate(show.date);
+    if (officialReleases.length > 0) {
+      for (const release of officialReleases) {
+        // Exact match first
+        if (release.name.toLowerCase().includes(lowerQuery)) return true;
+        if (release.series.toLowerCase().includes(lowerQuery)) return true;
+        // Fuzzy match (ignoring apostrophes/punctuation)
+        const normalizedName = normalizeForSearch(release.name);
+        const normalizedSeries = normalizeForSearch(release.series);
+        if (normalizedName.includes(normalizedQuery)) return true;
+        if (normalizedSeries.includes(normalizedQuery)) return true;
+      }
     }
 
     return false;
