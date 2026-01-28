@@ -13,13 +13,17 @@ import { COLORS, FONTS } from '../constants/theme';
 interface ShowCardProps {
   show: GratefulDeadShow;
   onPress: (show: GratefulDeadShow) => void;
+  /** Override the star rating (use performance rating instead of show rating) */
+  overrideRating?: 1 | 2 | 3 | null;
+  /** Override the play count (use song-specific count instead of show count) */
+  overridePlayCount?: number;
 }
 
 /**
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { showDetailsCache } = useShows();
   const [modalVisible, setModalVisible] = useState(false);
@@ -29,9 +33,13 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
     return getOfficialReleasesForDate(show.date);
   }, [show.date]);
 
-  // Calculate play count synchronously from cache only - no API fetches
-  // Play count badges only appear for shows the user has already viewed
+  // Use override play count if provided, otherwise calculate from show data
   const playCount = useMemo(() => {
+    // If override is provided, use it directly
+    if (overridePlayCount !== undefined) {
+      return overridePlayCount;
+    }
+
     // Quick check: does show have any played tracks?
     if (!hasShowBeenPlayed(show.primaryIdentifier)) {
       return 0;
@@ -45,7 +53,10 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
 
     // Details not cached - don't show play count yet (will appear after user opens show)
     return 0;
-  }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowPlayCount]);
+  }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowPlayCount, overridePlayCount]);
+
+  // Use override rating if provided, otherwise use show's classicTier
+  const displayRating = overrideRating !== undefined ? overrideRating : show.classicTier;
 
   const handleBadgePress = () => {
     setModalVisible(true);
@@ -69,8 +80,8 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
             {/* Date with stars */}
             <View style={styles.dateRow}>
               <Text style={styles.date}>{formatDate(show.date)}</Text>
-              {show.classicTier && (
-                <StarRating tier={show.classicTier} size={14} />
+              {displayRating && (
+                <StarRating tier={displayRating} size={14} />
               )}
             </View>
 

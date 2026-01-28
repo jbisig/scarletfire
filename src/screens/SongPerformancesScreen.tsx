@@ -16,6 +16,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
@@ -93,6 +94,7 @@ export function SongPerformancesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { loadTrack } = usePlayer();
+  const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('date');
   const [showSortModal, setShowSortModal] = useState(false);
@@ -200,19 +202,18 @@ export function SongPerformancesScreen() {
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
     const isLoading = loadingIdentifier === item.identifier;
     const show = getShowByDate(item.date);
+    // Get play count for this specific song performance
+    const songPlayCount = getPlayCount(songTitle, item.identifier);
 
     // If we have a full show object, use ShowCard for consistent display
     if (show) {
-      // Create a modified show with the performance rating if the show doesn't have one
-      const showWithRating: GratefulDeadShow = item.rating && !show.classicTier
-        ? { ...show, classicTier: item.rating }
-        : show;
-
       return (
         <View style={styles.performanceItemWrapper}>
           <ShowCard
-            show={showWithRating}
+            show={show}
             onPress={() => handlePerformancePress(item)}
+            overrideRating={item.rating}
+            overridePlayCount={songPlayCount}
           />
           {isLoading && (
             <View style={styles.loadingOverlay}>
@@ -237,7 +238,7 @@ export function SongPerformancesScreen() {
         )}
       </TouchableOpacity>
     );
-  }, [loadingIdentifier, handlePerformancePress]);
+  }, [loadingIdentifier, handlePerformancePress, getPlayCount, songTitle]);
 
   const getSortLabel = (type: SortType): string => {
     switch (type) {
