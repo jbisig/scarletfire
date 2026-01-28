@@ -642,25 +642,6 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setSongSortType('dateSavedNewest');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Newest First)</Text>
-              {songSortType === 'dateSavedNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
                 setSongSortType('dateSavedOldest');
                 setShowSongSortModal(false);
               }}
@@ -671,6 +652,25 @@ export function FavoritesScreen() {
                 songSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
               ]}>Date Saved (Oldest First)</Text>
               {songSortType === 'dateSavedOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSongSortType('dateSavedNewest');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                songSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Newest First)</Text>
+              {songSortType === 'dateSavedNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
@@ -736,25 +736,6 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setShowSortType('dateSavedNewest');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Newest First)</Text>
-              {showSortType === 'dateSavedNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
                 setShowSortType('dateSavedOldest');
                 setShowShowSortModal(false);
               }}
@@ -765,6 +746,25 @@ export function FavoritesScreen() {
                 showSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
               ]}>Date Saved (Oldest First)</Text>
               {showSortType === 'dateSavedOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowSortType('dateSavedNewest');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                showSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Newest First)</Text>
+              {showSortType === 'dateSavedNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
