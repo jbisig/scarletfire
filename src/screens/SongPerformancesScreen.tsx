@@ -16,12 +16,11 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
-import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
-import { formatDate, getVenueFromShow, matchesDateQuery } from '../utils/formatters';
+import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
-import { ShowsByYear } from '../types/show.types';
-import { StarRating } from '../components/StarRating';
+import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
+import { ShowCard } from '../components/ShowCard';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -94,7 +93,6 @@ export function SongPerformancesScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { loadTrack } = usePlayer();
-  const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('date');
   const [showSortModal, setShowSortModal] = useState(false);
@@ -201,12 +199,31 @@ export function SongPerformancesScreen() {
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
     const isLoading = loadingIdentifier === item.identifier;
-    const playCount = getPlayCount(songTitle, item.identifier);
-    const performanceRating = item.rating;
     const show = getShowByDate(item.date);
-    const venue = show ? getVenueFromShow(show) : item.venue;
-    const location = show?.location;
 
+    // If we have a full show object, use ShowCard for consistent display
+    if (show) {
+      // Create a modified show with the performance rating if the show doesn't have one
+      const showWithRating: GratefulDeadShow = item.rating && !show.classicTier
+        ? { ...show, classicTier: item.rating }
+        : show;
+
+      return (
+        <View style={styles.performanceItemWrapper}>
+          <ShowCard
+            show={showWithRating}
+            onPress={() => handlePerformancePress(item)}
+          />
+          {isLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // Fallback for performances without a matching show (shouldn't happen often)
     return (
       <TouchableOpacity
         style={styles.performanceItem}
@@ -214,46 +231,13 @@ export function SongPerformancesScreen() {
         activeOpacity={0.7}
         disabled={isLoading}
       >
-        <View style={styles.contentRow}>
-          <View style={styles.infoContainer}>
-            {/* Venue name - large and bold */}
-            <Text style={styles.venue} numberOfLines={1}>
-              {venue || 'Unknown Venue'}
-            </Text>
-
-            {/* Date with stars */}
-            <View style={styles.dateRow}>
-              <Text style={styles.date}>{formatDate(item.date)}</Text>
-              {performanceRating && (
-                <StarRating tier={performanceRating} size={14} />
-              )}
-            </View>
-
-            {/* Location */}
-            {location && (
-              <Text style={styles.location} numberOfLines={1}>
-                {location}
-              </Text>
-            )}
-          </View>
-
-          {/* Play count badge and loading indicator on the right */}
-          <View style={styles.rightContent}>
-            {playCount > 0 && (
-              <View style={styles.playCountBadge}>
-                <Text style={styles.playCountText}>
-                  {playCount} {playCount === 1 ? 'play' : 'plays'}
-                </Text>
-              </View>
-            )}
-            {isLoading && (
-              <ActivityIndicator size="small" color={COLORS.accent} style={styles.loader} />
-            )}
-          </View>
-        </View>
+        <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
+        {isLoading && (
+          <ActivityIndicator size="small" color={COLORS.accent} />
+        )}
       </TouchableOpacity>
     );
-  }, [loadingIdentifier, getPlayCount, songTitle, handlePerformancePress]);
+  }, [loadingIdentifier, handlePerformancePress]);
 
   const getSortLabel = (type: SortType): string => {
     switch (type) {
@@ -493,63 +477,28 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 180,
   },
+  performanceItemWrapper: {
+    position: 'relative',
+  },
   performanceItem: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     backgroundColor: COLORS.background,
-  },
-  contentRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  infoContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  venue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
+  fallbackText: {
+    fontSize: 16,
+    fontFamily: FONTS.secondary,
     color: COLORS.textPrimary,
-    marginBottom: 4,
   },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 2,
-  },
-  date: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  location: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playCountBadge: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  playCountText: {
-    fontSize: 12,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  loader: {
-    marginLeft: 8,
+  loadingOverlay: {
+    position: 'absolute',
+    right: 24,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   dropdownOverlay: {
     flex: 1,
