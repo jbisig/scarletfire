@@ -107,8 +107,8 @@ SongItem.displayName = 'SongItem';
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
 type TabType = 'shows' | 'songs';
-type SongSortType = 'alphabetical' | 'dateSaved' | 'performanceDate';
-type ShowSortType = 'dateSaved' | 'performanceDate';
+type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
+type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -118,7 +118,7 @@ export function FavoritesScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [songSortType, setSongSortType] = useState<SongSortType>('alphabetical');
-  const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDate');
+  const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDateOldest');
   const [showSongSortModal, setShowSongSortModal] = useState(false);
   const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [showSearchQuery, setShowSearchQuery] = useState('');
@@ -210,18 +210,27 @@ export function FavoritesScreen() {
       case 'alphabetical':
         return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
 
-      case 'dateSaved':
+      case 'dateSavedNewest':
         return songs.sort((a, b) => {
-          // Songs without savedAt go to the top (oldest)
+          if (!a.savedAt && !b.savedAt) return 0;
+          if (!a.savedAt) return 1;
+          if (!b.savedAt) return -1;
+          return b.savedAt - a.savedAt;
+        });
+
+      case 'dateSavedOldest':
+        return songs.sort((a, b) => {
           if (!a.savedAt && !b.savedAt) return 0;
           if (!a.savedAt) return -1;
           if (!b.savedAt) return 1;
-          // Oldest saves at top, newest at bottom (ascending order)
           return a.savedAt - b.savedAt;
         });
 
-      case 'performanceDate':
+      case 'performanceDateOldest':
         return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+
+      case 'performanceDateNewest':
+        return songs.sort((a, b) => b.showDate.localeCompare(a.showDate));
 
       default:
         return songs;
@@ -254,18 +263,27 @@ export function FavoritesScreen() {
 
     // Sort based on selected sort type
     switch (showSortType) {
-      case 'dateSaved':
+      case 'dateSavedNewest':
         return shows.sort((a, b) => {
-          // Shows without savedAt go to the top (oldest)
+          if (!a.savedAt && !b.savedAt) return 0;
+          if (!a.savedAt) return 1;
+          if (!b.savedAt) return -1;
+          return b.savedAt - a.savedAt;
+        });
+
+      case 'dateSavedOldest':
+        return shows.sort((a, b) => {
           if (!a.savedAt && !b.savedAt) return 0;
           if (!a.savedAt) return -1;
           if (!b.savedAt) return 1;
-          // Oldest saves at top, newest at bottom (ascending order)
           return a.savedAt - b.savedAt;
         });
 
-      case 'performanceDate':
+      case 'performanceDateOldest':
         return shows.sort((a, b) => a.date.localeCompare(b.date));
+
+      case 'performanceDateNewest':
+        return shows.sort((a, b) => b.date.localeCompare(a.date));
 
       default:
         return shows;
@@ -276,23 +294,47 @@ export function FavoritesScreen() {
     switch (sortType) {
       case 'alphabetical':
         return 'Alphabetical';
-      case 'dateSaved':
+      case 'dateSavedNewest':
+      case 'dateSavedOldest':
         return 'Date Saved';
-      case 'performanceDate':
-        return 'Performance Date';
+      case 'performanceDateOldest':
+      case 'performanceDateNewest':
+        return 'Perform. Date';
       default:
         return 'Sort';
     }
   };
 
+  const getSongSortIcon = (sortType: SongSortType): 'arrow-up' | 'arrow-down' => {
+    switch (sortType) {
+      case 'dateSavedOldest':
+      case 'performanceDateOldest':
+        return 'arrow-up';
+      default:
+        return 'arrow-down';
+    }
+  };
+
   const getShowSortLabel = (sortType: ShowSortType): string => {
     switch (sortType) {
-      case 'dateSaved':
+      case 'dateSavedNewest':
+      case 'dateSavedOldest':
         return 'Date Saved';
-      case 'performanceDate':
-        return 'Performance Date';
+      case 'performanceDateOldest':
+      case 'performanceDateNewest':
+        return 'Perform. Date';
       default:
         return 'Sort';
+    }
+  };
+
+  const getShowSortIcon = (sortType: ShowSortType): 'arrow-up' | 'arrow-down' => {
+    switch (sortType) {
+      case 'dateSavedOldest':
+      case 'performanceDateOldest':
+        return 'arrow-up';
+      default:
+        return 'arrow-down';
     }
   };
 
@@ -382,9 +424,9 @@ export function FavoritesScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.sortPillButtonText}>
-                {showSortType === 'performanceDate' ? 'Perform. Date' : 'Date Saved'}
+                {getShowSortLabel(showSortType)}
               </Text>
-              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
+              <Ionicons name={getShowSortIcon(showSortType)} size={18} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -474,7 +516,7 @@ export function FavoritesScreen() {
               <Text style={styles.sortPillButtonText}>
                 {getSongSortLabel(songSortType)}
               </Text>
-              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
+              <Ionicons name={getSongSortIcon(songSortType)} size={18} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -600,16 +642,16 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setSongSortType('dateSaved');
+                setSongSortType('dateSavedNewest');
                 setShowSongSortModal(false);
               }}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.dropdownItemText,
-                songSortType === 'dateSaved' && styles.dropdownItemTextSelected
-              ]}>Date Saved</Text>
-              {songSortType === 'dateSaved' && (
+                songSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Newest First)</Text>
+              {songSortType === 'dateSavedNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
@@ -619,16 +661,54 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setSongSortType('performanceDate');
+                setSongSortType('dateSavedOldest');
                 setShowSongSortModal(false);
               }}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.dropdownItemText,
-                songSortType === 'performanceDate' && styles.dropdownItemTextSelected
-              ]}>Performance Date</Text>
-              {songSortType === 'performanceDate' && (
+                songSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Oldest First)</Text>
+              {songSortType === 'dateSavedOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSongSortType('performanceDateOldest');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                songSortType === 'performanceDateOldest' && styles.dropdownItemTextSelected
+              ]}>Performance Date (Oldest First)</Text>
+              {songSortType === 'performanceDateOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSongSortType('performanceDateNewest');
+                setShowSongSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                songSortType === 'performanceDateNewest' && styles.dropdownItemTextSelected
+              ]}>Performance Date (Newest First)</Text>
+              {songSortType === 'performanceDateNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
@@ -656,16 +736,16 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setShowSortType('dateSaved');
+                setShowSortType('dateSavedNewest');
                 setShowShowSortModal(false);
               }}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.dropdownItemText,
-                showSortType === 'dateSaved' && styles.dropdownItemTextSelected
-              ]}>Date Saved</Text>
-              {showSortType === 'dateSaved' && (
+                showSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Newest First)</Text>
+              {showSortType === 'dateSavedNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
@@ -675,16 +755,54 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
-                setShowSortType('performanceDate');
+                setShowSortType('dateSavedOldest');
                 setShowShowSortModal(false);
               }}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.dropdownItemText,
-                showSortType === 'performanceDate' && styles.dropdownItemTextSelected
-              ]}>Performance Date</Text>
-              {showSortType === 'performanceDate' && (
+                showSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
+              ]}>Date Saved (Oldest First)</Text>
+              {showSortType === 'dateSavedOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowSortType('performanceDateOldest');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                showSortType === 'performanceDateOldest' && styles.dropdownItemTextSelected
+              ]}>Performance Date (Oldest First)</Text>
+              {showSortType === 'performanceDateOldest' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowSortType('performanceDateNewest');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                showSortType === 'performanceDateNewest' && styles.dropdownItemTextSelected
+              ]}>Performance Date (Newest First)</Text>
+              {showSortType === 'performanceDateNewest' && (
                 <Ionicons name="checkmark" size={20} color={COLORS.accent} />
               )}
             </TouchableOpacity>
