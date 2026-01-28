@@ -450,9 +450,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
-    borderRadius: 50,
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 48,
   },
   searchIcon: {
     marginRight: 10,
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
-    borderRadius: 50,
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 48,
     gap: 6,
   },
   sortPillButtonText: {
