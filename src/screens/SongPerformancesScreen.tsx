@@ -18,7 +18,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
+import { formatDate, getVenueFromShow, matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { ShowsByYear } from '../types/show.types';
 import { StarRating } from '../components/StarRating';
@@ -148,7 +148,8 @@ export function SongPerformancesScreen() {
 
     const query = debouncedSearchQuery.toLowerCase();
     return sortedPerformances.filter((performance) => {
-      const dateMatch = formatDate(performance.date).toLowerCase().includes(query);
+      // Fuzzy date matching - supports many common formats
+      const dateMatch = matchesDateQuery(performance.date, debouncedSearchQuery);
       const venueMatch = performance.venue?.toLowerCase().includes(query);
       return dateMatch || venueMatch;
     });

@@ -10,7 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 
@@ -66,7 +66,7 @@ export function SOTDScreen() {
 
         <View style={styles.showCard}>
           <Text style={styles.date}>{formatDate(show.date)}</Text>
-          <Text style={styles.venue}>{show.venue || show.title}</Text>
+          <Text style={styles.venue}>{getVenueFromShow(show)}</Text>
           {show.location && (
             <Text style={styles.location}>{show.location}</Text>
           )}

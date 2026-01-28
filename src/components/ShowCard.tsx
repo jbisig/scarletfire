@@ -85,11 +85,13 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress }) => {
           {/* Right side badges */}
           <View style={styles.badgesContainer}>
             {officialReleases.length > 0 && (
-              <OfficialReleaseBadge
-                onPress={handleBadgePress}
-                compact
-                releaseTitle={officialReleases[0].name}
-              />
+              <View style={styles.officialReleaseBadgeWrapper}>
+                <OfficialReleaseBadge
+                  onPress={handleBadgePress}
+                  compact
+                  releaseTitle={officialReleases[0].name}
+                />
+              </View>
             )}
             {playCount > 0 && (
               <View style={styles.playCountBadge}>
@@ -157,6 +159,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
+  },
+  officialReleaseBadgeWrapper: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   playCountBadge: {
     backgroundColor: COLORS.cardBackground,

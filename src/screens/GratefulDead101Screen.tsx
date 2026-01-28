@@ -17,7 +17,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { StarRating } from '../components/StarRating';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { COLORS, FONTS } from '../constants/theme';
 
 type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GratefulDead101'>;
@@ -78,11 +78,9 @@ export function GratefulDead101Screen() {
       >
         <View style={styles.showInfo}>
           {/* Venue name - large and bold */}
-          {item.venue && (
-            <Text style={styles.showVenue} numberOfLines={1}>
-              {item.venue}
-            </Text>
-          )}
+          <Text style={styles.showVenue} numberOfLines={1}>
+            {getVenueFromShow(item)}
+          </Text>
           {/* Date with stars */}
           <View style={styles.dateStarsRow}>
             <Text style={styles.showDate}>{formatDate(item.date)}</Text>

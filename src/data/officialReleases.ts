@@ -84,7 +84,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1974-09-09', '1974-09-10', '1974-09-11'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/6HGTZn0jmNyREqhFlAoHMF',
+      spotify: 'https://open.spotify.com/album/2tDQBnR5OrbHg8mfGbetxf',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-7-9-9-74-9-11-74-alexandra-palace-london/307800679',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/f8/69/78/mzi.ftvibfnh.jpg/600x600bb.jpg',
@@ -124,7 +124,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1972-09-27'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/3p3S98FmpvHHbE4kxr8KMv',
+      spotify: 'https://open.spotify.com/album/2pPrEb0IJFk3W6NoQSMnZM',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-11-9-27-72-stanley-theater-jersey-city-nj/307800865',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/79/91/7e/mzi.cgyuicjy.jpg/600x600bb.jpg',
@@ -174,7 +174,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1969-11-08'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/3JKXnIKivOTU5nIInnfbVZ',
+      spotify: 'https://open.spotify.com/album/1GbnL43DSgDRIIvKTVDSjP',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-16-11-8-69-fillmore-auditorium-san/308006119',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/6a/bf/ab/mzi.yxctqatd.jpg/600x600bb.jpg',
@@ -184,7 +184,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1991-09-25'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/1hEELCJG0pLN61ZTUE55J1',
+      spotify: 'https://open.spotify.com/album/1rZjJhRyYT3MAQrCSxoF6D',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-17-9-25-91-boston-garden-boston-ma/308732495',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/a8/ba/bb/mzi.wplenrnw.jpg/600x600bb.jpg',
@@ -214,7 +214,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1976-09-25'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/2cTKPb9lqwv7VgQYHQQT5j',
+      spotify: 'https://open.spotify.com/album/34KjKiNyuggM0g2No4ZnTv',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-20-9-25-76-capital-centre-landover-md/308726301',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/04/90/ca/mzi.kvvisajm.jpg/600x600bb.jpg',
@@ -244,7 +244,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1972-09-17'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/1RZuNPfLJm3g5K4nEMFTqB',
+      spotify: 'https://open.spotify.com/album/7gyyunPy7dVsDB4cp7ZReW',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-23-9-17-72-baltimore-civic-center-baltimore/307797076',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/41/22/af/mzi.crxhsagf.jpg/600x600bb.jpg',
@@ -254,7 +254,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1974-03-23'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/7E3xBPnYePMT3xq1wAZ9q2',
+      spotify: 'https://open.spotify.com/album/4jiBYEFx7rv6C6UTYywZZO',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-24-3-23-74-cow-palace-daly-city-ca/307796986',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/3d/b1/71/mzi.vdeovdac.jpg/600x600bb.jpg',
@@ -264,7 +264,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1978-05-10'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/0XwcCNVMBPIYO5bxJDRjVA',
+      spotify: 'https://open.spotify.com/album/1C1qBy9KA5ddXkl6Ya82gr',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-25-5-10-78-veterans-memorial-coliseum-new-haven-ct/307799899',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/91/a1/b7/mzi.fscpxfcm.jpg/600x600bb.jpg',
@@ -274,7 +274,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1969-04-26'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/5v7Mh2T8FWfQlLvTJNvBGo',
+      spotify: 'https://open.spotify.com/album/50rpHqRFD3K7bCTRBtraGH',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-26-4-26-69-electric-theater-chicago/307799435',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/59/af/c6/mzi.zpcglexg.jpg/600x600bb.jpg',
@@ -284,7 +284,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1992-12-16'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/2E5cPPgzHjYG8hL2KCgPqX',
+      spotify: 'https://open.spotify.com/album/1ao7jrAGQ6xf6ywjbKM8vU',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-27-12-16-92-oakland-coliseum-arena-oakland-ca/307799423',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/dc/1b/1d/mzi.wuhcslum.jpg/600x600bb.jpg',
@@ -294,7 +294,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1973-02-26', '1973-02-28'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/7bXMKoqXc4BCqzCmRSCrRj',
+      spotify: 'https://open.spotify.com/album/0xp6JpT8jrnK0FV4Xf4MG0',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-28-2-26-73-pershing-municipal-auditorium/308709683',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/8c/f6/f4/mzi.sypvxthm.jpg/600x600bb.jpg',
@@ -314,7 +314,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1972-03-25', '1972-03-28'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/0QcSA9Ww6UiC4FYHlx8sHH',
+      spotify: 'https://open.spotify.com/album/1cnArqU8gDNK2pPksZsQZw',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-30-3-25-72-3-28-72-academy-of-music-new-york-ny/307799408',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/be/06/93/mzi.sofzjdfl.jpg/600x600bb.jpg',
@@ -324,7 +324,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1974-08-04', '1974-08-05'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/0Z6r1E8jpNEeynZyXpSN37',
+      spotify: 'https://open.spotify.com/album/0EgV8QqWBeSt1U6MBK6NnC',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-31-8-4-74-8-5-74-philadelphia-civic/307798975',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/1f/f1/dc/mzi.uuvzscuo.jpg/600x600bb.jpg',
@@ -334,7 +334,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1982-08-07'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/4T6hYAA6djndSWBQ7F10fP',
+      spotify: 'https://open.spotify.com/album/3Nru2SaW3yVSxqHbWNXcwc',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-32-8-7-82-alpine-valley-music-theater/307798335',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/be/c6/7e/mzi.kqshrfcu.jpg/600x600bb.jpg',
@@ -354,7 +354,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1977-11-05'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/5T1bJiSXMh75YTOxD6mYSM',
+      spotify: 'https://open.spotify.com/album/24rc4HaQfvOOSnq32PkOC1',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-34-11-5-77-community-war-memorial-rochester/307802158',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/03/58/cd/mzi.ttukavzt.jpg/600x600bb.jpg',
@@ -364,7 +364,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     series: "Dick's Picks",
     showDates: ['1971-08-07', '1971-08-24'],
     streaming: {
-      spotify: 'https://open.spotify.com/album/0E6cZOuevmD2dz8SfaQzgJ',
+      spotify: 'https://open.spotify.com/album/3jzf0bKlIMjSQNk5wibVHT',
       appleMusic: 'https://music.apple.com/us/album/dicks-picks-vol-35-8-7-71-golden-hall-san-diego-ca/308720571',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/91/30/f5/mzi.dorwxpcn.jpg/600x600bb.jpg',
@@ -486,7 +486,7 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
   {
     name: 'Download Series Vol. 11',
     series: 'Download Series',
-    showDates: ['1991-06-19', '1991-06-20'],
+    showDates: ['1991-06-20'],
     streaming: {
       spotify: 'https://open.spotify.com/album/67fPMapwwewntR68xRwqfM',
       appleMusic: 'https://music.apple.com/us/album/download-series-vol-11-6-20-91-pine-knob-music-theater/312354625',
@@ -577,17 +577,6 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
       appleMusic: 'https://music.apple.com/us/album/reckoning-live/291317412',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a5/ff/6c/a5ff6cca-559d-126c-cf3a-7c88bb2e4d1d/603497977512.jpg/600x600bb.jpg',
-  },
-  {
-    name: 'Dead Set',
-    series: 'Studio Album',
-    showDates: ['1980-09-25', '1980-09-26', '1980-09-27', '1980-10-01', '1980-10-02', '1980-10-03',
-                '1980-10-06', '1980-10-08', '1980-10-09', '1980-10-10'],
-    streaming: {
-      spotify: 'https://open.spotify.com/album/3JkZNb121j49XR4ACjKV7q',
-      appleMusic: 'https://music.apple.com/us/album/dead-set-live/291317313',
-    },
-    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d9/27/7f/d9277f79-3f31-8c56-ebad-fd5d9b9581c9/603497977499.jpg/600x600bb.jpg',
   },
   {
     name: 'Without a Net',
@@ -1080,6 +1069,474 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
       appleMusic: 'https://music.apple.com/us/album/from-the-mars-hotel-50th-anniversary-deluxe-edition/1736839667',
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/87/06/4f/87064fca-f45f-195d-c4d8-5fdc3462437a/603497828005.jpg/600x600bb.jpg',
+  },
+
+  // ============================================
+  // ADDITIONAL STANDALONE RELEASES
+  // ============================================
+  {
+    name: "To Terrapin: Hartford '77",
+    series: 'Box Set',
+    showDates: ['1977-05-28'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/6aODZ83mana5oClW6sXEkx',
+      appleMusic: 'https://music.apple.com/us/album/to-terrapin-may-28-1977-hartford-ct-live/311069507',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Features4/v4/07/f6/e1/07f6e170-cfab-96e5-4828-474c2e9e210f/dj.lbmfqzza.jpg/600x600bb.jpg',
+  },
+  {
+    name: "Duke '78",
+    series: 'Box Set',
+    showDates: ['1978-04-12'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/5RINFTXQxiWNgoRT0Glwva',
+      appleMusic: 'https://music.apple.com/us/album/duke-78-live/1758759190',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/71/8a/3a/718a3a75-6317-d4f3-c010-8ea6b4e447d7/603497826148.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'RFK Stadium, Washington, DC 6/10/73',
+    series: 'Box Set',
+    showDates: ['1973-06-10'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/2Lxt0taVNc2Bv20rt0d21w',
+      appleMusic: 'https://music.apple.com/us/album/rfk-stadium-washington-dc-6-10-73-live/1684860222',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d3/01/69/d301696e-c1ec-ed9a-0d7b-d2adb0692a46/603497835539.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'R.F.K. Stadium Washington D.C. 1989',
+    series: 'Box Set',
+    showDates: ['1989-07-12', '1989-07-13'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/5xFcQa8U8P5Kdz87u8eOWm',
+    },
+  },
+  {
+    name: 'Madison Square Garden, New York, NY 3/9/81',
+    series: 'Box Set',
+    showDates: ['1981-03-09'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/50ER5uOSuN39s05PcrRgcm',
+      appleMusic: 'https://music.apple.com/us/album/madison-square-garden-new-york-ny-3-9-81-live/1634056104',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/41/22/d1/4122d152-ea78-cf43-2407-632a4b49353c/603497840298.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Saint of Circumstance: Giants Stadium 6/17/91',
+    series: 'Box Set',
+    showDates: ['1991-06-17'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/1f0whW4QE9bFNLpeyaPQiV',
+      appleMusic: 'https://music.apple.com/us/album/saint-of-circumstance-giants-stadium-east-rutherford-nj-6-17-91-live/1475144001',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/4a/b7/aa/4ab7aaac-d522-3e76-5359-140ca103b65f/603497852352.jpg/600x600bb.jpg',
+  },
+  {
+    name: "Pacific Northwest '73-'74: Believe It If You Need It",
+    series: 'Box Set',
+    showDates: ['1973-06-22', '1973-06-24', '1973-06-26', '1974-05-17', '1974-05-19', '1974-05-21'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/3EUx54No5UpMca8zIyTpbd',
+      appleMusic: 'https://music.apple.com/us/album/pacific-northwest-73-74-believe-it-if-you-need-it-live/1396306432',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/c4/80/23/c48023a9-66cf-0cac-6a33-b065e89f5114/603497857227.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Red Rocks Amphitheatre, Morrison, CO 7/8/78',
+    series: 'Box Set',
+    showDates: ['1978-07-08'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/6q4mDbsYJsixRai11qc2Vx',
+      appleMusic: 'https://music.apple.com/us/album/red-rocks-amphitheatre-morrison-co-7-8-78-live/1101954664',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/87/fb/38/87fb38da-4333-38f2-a57e-d48e66a1d3be/603497878192.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Wake Up to Find Out: Nassau Coliseum 3/29/90',
+    series: 'Box Set',
+    showDates: ['1990-03-29'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/7xWKImlu9fzB1ApqoLLMiL',
+      appleMusic: 'https://music.apple.com/us/album/wake-up-to-find-out-nassau-coliseum-uniondale-ny-3-29-90/899347170',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music3/v4/93/70/38/93703896-c7a1-e34d-0440-de987fb791b4/603497898268.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Crimson, White & Indigo: JFK Stadium 7/7/89',
+    series: 'Box Set',
+    showDates: ['1989-07-07'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/1ILNO0v1Natm87x5UPedHh',
+      appleMusic: 'https://music.apple.com/us/album/crimson-white-indigo-july-7-1989-jfk-stadium-philadelphia-live/366394085',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/bc/9f/b5/mzi.llrwrtyi.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Rocking the Cradle: Egypt 1978',
+    series: 'Box Set',
+    showDates: ['1978-09-15', '1978-09-16'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/1T3gjxFeNGxmbP697kIQ69',
+      appleMusic: 'https://music.apple.com/us/album/rocking-the-cradle-egypt-1978/291939491',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/7e/14/35/mzi.zzwsfdgc.jpg/600x600bb.jpg',
+  },
+  {
+    name: 'Spring 1990: So Glad You Made It',
+    series: 'Box Set',
+    showDates: ['1990-03-16', '1990-03-19', '1990-03-22'],
+    streaming: {
+      spotify: 'https://open.spotify.com/album/6qO4txEK5NKSHz3L4GAD5x',
+      appleMusic: 'https://music.apple.com/us/album/spring-1990-so-glad-you-made-it-live/558274264',
+    },
+    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music/v4/84/78/fd/8478fd10-6d86-9e69-7959-0436276a337d/603497928590.jpg/600x600bb.jpg',
+  },
+
+  // ============================================
+  // DAVE'S PICKS (56 volumes) - Not on streaming
+  // ============================================
+  {
+    name: "Dave's Picks Vol. 1",
+    series: "Dave's Picks",
+    showDates: ['1977-05-25'],
+    artwork: 'https://coverartarchive.org/release/9c5f09d9-a44a-4f6e-ac49-39f7ce0670bf/front',
+  },
+  {
+    name: "Dave's Picks Vol. 2",
+    series: "Dave's Picks",
+    showDates: ['1974-07-31'],
+    artwork: 'https://store.dead.net/cdn/shop/files/Daves_Vol2_Box_20_281_29.png',
+  },
+  {
+    name: "Dave's Picks Vol. 3",
+    series: "Dave's Picks",
+    showDates: ['1971-10-22'],
+    artwork: 'https://coverartarchive.org/release/0a29f2b1-ef47-41da-af44-fcaab5674965/front',
+  },
+  {
+    name: "Dave's Picks Vol. 4",
+    series: "Dave's Picks",
+    showDates: ['1976-09-24'],
+    artwork: 'https://coverartarchive.org/release/bfda0309-ee53-4f68-af8a-ad8b0019765d/front',
+  },
+  {
+    name: "Dave's Picks Vol. 5",
+    series: "Dave's Picks",
+    showDates: ['1973-11-17'],
+    artwork: 'https://store.dead.net/cdn/shop/files/gratefuldeaddavespicksvol5vinyl5lpcopy.png',
+  },
+  {
+    name: "Dave's Picks Vol. 6",
+    series: "Dave's Picks",
+    showDates: ['1969-12-20', '1970-02-02'],
+    artwork: 'https://coverartarchive.org/release/696ac822-78e6-4e28-a004-ca9c57e20eb3/front',
+  },
+  {
+    name: "Dave's Picks Vol. 7",
+    series: "Dave's Picks",
+    showDates: ['1978-04-24'],
+    artwork: 'https://coverartarchive.org/release/d2524ac7-9132-40e3-9304-f1ef4f32df1c/front',
+  },
+  {
+    name: "Dave's Picks Vol. 8",
+    series: "Dave's Picks",
+    showDates: ['1980-11-30'],
+    artwork: 'https://coverartarchive.org/release/1f5d362b-c14f-4795-9088-d63aa3f742fd/front',
+  },
+  {
+    name: "Dave's Picks Vol. 9",
+    series: "Dave's Picks",
+    showDates: ['1974-05-14'],
+    artwork: 'https://coverartarchive.org/release/6e9705e8-ebd9-46bf-aabd-a89490975bb1/front',
+  },
+  {
+    name: "Dave's Picks Vol. 10",
+    series: "Dave's Picks",
+    showDates: ['1969-12-12'],
+    artwork: 'https://coverartarchive.org/release/7c8e22f0-9e78-4fc5-81ed-c7ad9b26cba2/front',
+  },
+  {
+    name: "Dave's Picks Vol. 11",
+    series: "Dave's Picks",
+    showDates: ['1972-11-17'],
+    artwork: 'https://coverartarchive.org/release/5a7dd420-f6aa-47a2-9bbc-8cbee5e4764c/front',
+  },
+  {
+    name: "Dave's Picks Vol. 12",
+    series: "Dave's Picks",
+    showDates: ['1977-11-04'],
+    artwork: 'https://coverartarchive.org/release/6540218c-ee00-4e0f-ab7e-e2199f4cbffb/front',
+  },
+  {
+    name: "Dave's Picks Vol. 13",
+    series: "Dave's Picks",
+    showDates: ['1974-02-24'],
+    artwork: 'https://coverartarchive.org/release/dc8c7703-b44e-4d43-bd9d-05f12acc0b04/front',
+  },
+  {
+    name: "Dave's Picks Vol. 14",
+    series: "Dave's Picks",
+    showDates: ['1972-03-26'],
+    artwork: 'https://coverartarchive.org/release/7d7e7d97-2060-4e9a-968a-1cb429edfe89/front',
+  },
+  {
+    name: "Dave's Picks Vol. 15",
+    series: "Dave's Picks",
+    showDates: ['1978-04-22'],
+    artwork: 'https://coverartarchive.org/release/9e65f719-8430-4a9e-adf7-2c6ff283e627/front',
+  },
+  {
+    name: "Dave's Picks Vol. 16",
+    series: "Dave's Picks",
+    showDates: ['1973-03-28'],
+    artwork: 'https://coverartarchive.org/release/16d9cdbb-b511-4804-bd0a-5f84037406e9/front',
+  },
+  {
+    name: "Dave's Picks Vol. 17",
+    series: "Dave's Picks",
+    showDates: ['1974-07-19'],
+    artwork: 'https://coverartarchive.org/release/adb89dd9-34b1-4239-93ee-0e47e3565f89/front',
+  },
+  {
+    name: "Dave's Picks Vol. 18",
+    series: "Dave's Picks",
+    showDates: ['1976-07-17'],
+    artwork: 'https://coverartarchive.org/release/79c0bff3-f967-47b8-8936-479722c50cd7/front',
+  },
+  {
+    name: "Dave's Picks Vol. 19",
+    series: "Dave's Picks",
+    showDates: ['1970-01-23'],
+    artwork: 'https://coverartarchive.org/release/bd69179c-f040-4eca-8f03-99440e078ed8/front',
+  },
+  {
+    name: "Dave's Picks Vol. 20",
+    series: "Dave's Picks",
+    showDates: ['1981-12-09'],
+    artwork: 'https://coverartarchive.org/release/7aa9757e-e1fe-4ba3-a6fc-ede307a755a0/front',
+  },
+  {
+    name: "Dave's Picks Vol. 21",
+    series: "Dave's Picks",
+    showDates: ['1973-04-02'],
+    artwork: 'https://coverartarchive.org/release/d8709a7a-e747-4791-96f0-f49ea278327f/front',
+  },
+  {
+    name: "Dave's Picks Vol. 22",
+    series: "Dave's Picks",
+    showDates: ['1971-12-07'],
+    artwork: 'https://coverartarchive.org/release/0a6efac4-7351-4156-a3b1-f1dc8f2dc5b3/front',
+  },
+  {
+    name: "Dave's Picks Vol. 23",
+    series: "Dave's Picks",
+    showDates: ['1978-01-22'],
+    artwork: 'https://store.dead.net/cdn/shop/files/GD_DPVol23_LP_ProductShot.png',
+  },
+  {
+    name: "Dave's Picks Vol. 24",
+    series: "Dave's Picks",
+    showDates: ['1972-08-25'],
+    artwork: 'https://coverartarchive.org/release/7fb486e4-e1ab-4839-b94c-de95d1f32016/front',
+  },
+  {
+    name: "Dave's Picks Vol. 25",
+    series: "Dave's Picks",
+    showDates: ['1977-11-06'],
+    artwork: 'https://coverartarchive.org/release/4369d643-4491-469c-b9ee-a18d033b96e6/front',
+  },
+  {
+    name: "Dave's Picks Vol. 26",
+    series: "Dave's Picks",
+    showDates: ['1971-11-17'],
+    artwork: 'https://coverartarchive.org/release/07657aef-c4df-4edf-afbb-303225939134/front',
+  },
+  {
+    name: "Dave's Picks Vol. 27",
+    series: "Dave's Picks",
+    showDates: ['1983-09-02'],
+    artwork: 'https://coverartarchive.org/release/0611b7f2-08b2-4a17-9783-121e7296611b/front',
+  },
+  {
+    name: "Dave's Picks Vol. 28",
+    series: "Dave's Picks",
+    showDates: ['1976-06-17'],
+    artwork: 'https://coverartarchive.org/release/70a1adba-1c59-4e20-b2e8-7bd7dfafbfe1/front',
+  },
+  {
+    name: "Dave's Picks Vol. 29",
+    series: "Dave's Picks",
+    showDates: ['1977-02-26'],
+    artwork: 'https://coverartarchive.org/release/e061a0ca-12f9-4d08-b443-2c3f20af3e25/front',
+  },
+  {
+    name: "Dave's Picks Vol. 30",
+    series: "Dave's Picks",
+    showDates: ['1970-01-02'],
+    artwork: 'https://coverartarchive.org/release/58729adf-a698-4461-8770-cc972a88c909/front',
+  },
+  {
+    name: "Dave's Picks Vol. 31",
+    series: "Dave's Picks",
+    showDates: ['1979-12-03'],
+    artwork: 'https://coverartarchive.org/release/87c8b5bd-592d-48a5-beed-5dcc7bd9c5c8/front',
+  },
+  {
+    name: "Dave's Picks Vol. 32",
+    series: "Dave's Picks",
+    showDates: ['1973-03-24'],
+    artwork: 'https://coverartarchive.org/release/c067b1ae-6b6c-461a-a534-dacd861fc78d/front',
+  },
+  {
+    name: "Dave's Picks Vol. 33",
+    series: "Dave's Picks",
+    showDates: ['1977-10-29'],
+    artwork: 'https://coverartarchive.org/release/92841771-6c1a-4259-ad0c-7caea1e77117/front',
+  },
+  {
+    name: "Dave's Picks Vol. 34",
+    series: "Dave's Picks",
+    showDates: ['1974-06-23'],
+    artwork: 'https://coverartarchive.org/release/6658e498-d607-40e2-bb66-57e97a0cd01b/front',
+  },
+  {
+    name: "Dave's Picks Vol. 35",
+    series: "Dave's Picks",
+    showDates: ['1984-04-20'],
+    artwork: 'https://coverartarchive.org/release/b781f66f-2e9b-450b-a673-69efb7c3757d/front',
+  },
+  {
+    name: "Dave's Picks Vol. 36",
+    series: "Dave's Picks",
+    showDates: ['1987-03-26', '1987-03-27'],
+    artwork: 'https://coverartarchive.org/release/399f5ed3-fb18-4953-9ce0-1bc9b986dfc5/front',
+  },
+  {
+    name: "Dave's Picks Vol. 37",
+    series: "Dave's Picks",
+    showDates: ['1978-04-15'],
+    artwork: 'https://coverartarchive.org/release/625193e7-1f5b-46c1-81f3-f7a8b4384e02/front',
+  },
+  {
+    name: "Dave's Picks Vol. 38",
+    series: "Dave's Picks",
+    showDates: ['1973-09-08'],
+    artwork: 'https://coverartarchive.org/release/a9be28c5-d7f0-4427-a18c-e2260f7783fa/front',
+  },
+  {
+    name: "Dave's Picks Vol. 39",
+    series: "Dave's Picks",
+    showDates: ['1983-04-26'],
+    artwork: 'https://coverartarchive.org/release/d8b8a958-2b39-4d86-857c-95911f3c39f8/front',
+  },
+  {
+    name: "Dave's Picks Vol. 40",
+    series: "Dave's Picks",
+    showDates: ['1990-07-18', '1990-07-19'],
+    artwork: 'https://coverartarchive.org/release/9b8fed29-cbda-47be-818d-7bca4d02e314/front',
+  },
+  {
+    name: "Dave's Picks Vol. 41",
+    series: "Dave's Picks",
+    showDates: ['1977-05-26'],
+    artwork: 'https://coverartarchive.org/release/c139d3f9-6249-4be8-977b-8a33c2b07417/front',
+  },
+  {
+    name: "Dave's Picks Vol. 42",
+    series: "Dave's Picks",
+    showDates: ['1974-02-23'],
+    artwork: 'https://coverartarchive.org/release/cc8f23f7-6716-4f21-8b43-6d2a5e67e814/front',
+  },
+  {
+    name: "Dave's Picks Vol. 43",
+    series: "Dave's Picks",
+    showDates: ['1969-11-02', '1969-12-26'],
+    artwork: 'https://coverartarchive.org/release/4400a209-12d1-4600-b6cf-821c9a3975bb/front',
+  },
+  {
+    name: "Dave's Picks Vol. 44",
+    series: "Dave's Picks",
+    showDates: ['1990-06-23'],
+    artwork: 'https://coverartarchive.org/release/1515771c-fbfd-4760-9eda-84c551f6257f/front',
+  },
+  {
+    name: "Dave's Picks Vol. 45",
+    series: "Dave's Picks",
+    showDates: ['1977-10-01', '1977-10-02'],
+    artwork: 'https://store.dead.net/cdn/shop/files/DP45_cover_4K.jpg',
+  },
+  {
+    name: "Dave's Picks Vol. 46",
+    series: "Dave's Picks",
+    showDates: ['1972-09-09'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_46_product_shot_1000x1000_7c0e5f90-5e61-4c6b-9ba0-a1b642b7cae5.png',
+  },
+  {
+    name: "Dave's Picks Vol. 47",
+    series: "Dave's Picks",
+    showDates: ['1979-12-09'],
+    artwork: 'https://coverartarchive.org/release/8071720d-b0ba-4344-ac51-6eb96e3fad2c/front',
+  },
+  {
+    name: "Dave's Picks Vol. 48",
+    series: "Dave's Picks",
+    showDates: ['1971-11-20'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_48_product_shot_1000x1000_3ea52251-0192-404a-927a-46d8b1a49915.png',
+  },
+  {
+    name: "Dave's Picks Vol. 49",
+    series: "Dave's Picks",
+    showDates: ['1985-04-27', '1985-04-28'],
+    artwork: 'https://coverartarchive.org/release/b0a0232f-c7d4-4fdd-90f2-145580eaa107/front',
+  },
+  {
+    name: "Dave's Picks Vol. 50",
+    series: "Dave's Picks",
+    showDates: ['1977-05-03'],
+    artwork: 'https://coverartarchive.org/release/f8a96a7a-1413-491f-9cde-9ac30bf348e9/front',
+  },
+  {
+    name: "Dave's Picks Vol. 51",
+    series: "Dave's Picks",
+    showDates: ['1971-04-13'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_51_product_shot_4000x4000_5ec1cb55-8000-4783-85c7-a3609e93970d.png',
+  },
+  {
+    name: "Dave's Picks Vol. 52",
+    series: "Dave's Picks",
+    showDates: ['1983-09-11'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_52.png',
+  },
+  {
+    name: "Dave's Picks Vol. 53",
+    series: "Dave's Picks",
+    showDates: ['1976-10-02'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_53_product_shot_1000x1000_b58203fd-ca10-4044-b9e6-94051cb17998.webp',
+  },
+  {
+    name: "Dave's Picks Vol. 54",
+    series: "Dave's Picks",
+    showDates: ['1973-03-26'],
+    artwork: 'https://store.dead.net/cdn/shop/files/DavesPicks54_cover1K.webp',
+  },
+  {
+    name: "Dave's Picks Vol. 55",
+    series: "Dave's Picks",
+    showDates: ['1990-10-28'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_55_product_shot_discsv2.png',
+  },
+  {
+    name: "Dave's Picks Vol. 56",
+    series: "Dave's Picks",
+    showDates: ['1981-03-20', '1981-03-21'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_56_product_shot_discs_transparent.png',
+  },
+  {
+    name: "Dave's Picks Vol. 57",
+    series: "Dave's Picks",
+    showDates: ['1978-02-01'],
+    artwork: 'https://store.dead.net/cdn/shop/files/daves_picks_vol_57_product_shot_1000x1000_1.png',
   },
 ];
 

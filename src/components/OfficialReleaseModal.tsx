@@ -212,7 +212,7 @@ export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
           />
         ) : (
           <View style={styles.albumArtPlaceholder}>
-            <Ionicons name="disc" size={32} color="#FFD700" />
+            <Ionicons name="disc" size={32} color={COLORS.accent} />
           </View>
         )}
         <View style={styles.releaseInfo}>
@@ -273,7 +273,7 @@ export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
         </View>
         {!release.streaming?.spotify && !release.streaming?.appleMusic && (
           <Text style={styles.noStreamingText}>
-            No streaming links available
+            Not available on streaming services
           </Text>
         )}
       </View>

@@ -20,7 +20,7 @@ import { YearPicker } from '../components/YearPicker';
 import { PageHeader } from '../components/PageHeader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate } from '../utils/formatters';
+import { formatDate, matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
@@ -82,33 +82,9 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
       }
     }
 
-    // Search in date (multiple formats)
-    // Raw date: "1977-05-08" or "1977-05-08T00:00:00Z"
-    if (show.date.includes(lowerQuery)) return true;
-
-    // Year only
-    if (show.year && String(show.year).includes(lowerQuery)) return true;
-
-    // Extract date portion (handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ" formats)
-    const datePart = show.date.includes('T') ? show.date.split('T')[0] : show.date;
-    const [year, month, day] = datePart.split('-');
-
-    // Numeric date variations (using raw ISO date parts to avoid timezone issues)
-    const dateVariations = [
-      `${month}/${day}/${year}`,  // 05/08/1977
-      `${month}/${day}`,          // 05/08
-      `${parseInt(month)}/${parseInt(day)}/${year}`,  // 5/8/1977
-      `${parseInt(month)}/${parseInt(day)}`,          // 5/8
-    ];
-
-    if (dateVariations.some(variation => variation.includes(lowerQuery))) return true;
-
-    // Formatted date with month name: "May 8, 1977" (only for text searches)
-    // Only use formatted date for searches that contain letters (month names)
-    if (/[a-z]/.test(lowerQuery)) {
-      const formattedDate = formatDate(show.date).toLowerCase();
-      if (formattedDate.includes(lowerQuery)) return true;
-    }
+    // Fuzzy date matching - supports many common formats:
+    // 5/8/77, 5-8-1977, May 8, 8 May 1977, 1977-05-08, etc.
+    if (matchesDateQuery(show.date, query)) return true;
 
     // Search in official release names (e.g., "Europe 72", "Dick's Picks")
     // Uses fuzzy matching to handle apostrophes and punctuation differences

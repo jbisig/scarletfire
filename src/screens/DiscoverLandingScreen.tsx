@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
@@ -128,7 +128,7 @@ export function DiscoverLandingScreen() {
                   ) : show ? (
                     <View style={styles.showInfo}>
                       <Text style={styles.showVenue} numberOfLines={1}>
-                        {show.venue || show.title}
+                        {getVenueFromShow(show)}
                       </Text>
                       <View style={styles.dateStarsRow}>
                         <Text style={styles.showDate}>{formatDate(show.date)}</Text>
