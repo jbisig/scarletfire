@@ -46,7 +46,7 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
 function normalizeForSearch(str: string): string {
   return str
     .toLowerCase()
-    .replace(/[''`]/g, '')  // Remove various apostrophe types
+    .replace(/[''`'\u2018\u2019\u201B]/g, '')  // Remove all apostrophe/quote variants
     .replace(/[^\w\s]/g, ' ')  // Replace other punctuation with spaces
     .replace(/\s+/g, ' ')  // Collapse multiple spaces
     .trim();
