@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -103,6 +103,7 @@ export function SongPerformancesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const searchInputRef = useRef<TextInput>(null);
+  const flatListRef = useRef<FlatList<Performance>>(null);
 
   const handleSortPress = () => {
     sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -110,6 +111,11 @@ export function SongPerformancesScreen() {
       setShowSortModal(true);
     });
   };
+
+  // Scroll to top when sort type changes
+  useEffect(() => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [sortType]);
 
   const { songTitle, performances } = route.params;
 
@@ -317,6 +323,7 @@ export function SongPerformancesScreen() {
       </View>
 
       <FlatList
+        ref={flatListRef}
         data={filteredPerformances}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
