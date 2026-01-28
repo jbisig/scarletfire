@@ -12,12 +12,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShows } from '../contexts/ShowsContext';
-import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
-import { StarRating } from '../components/StarRating';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
+import { ShowCard } from '../components/ShowCard';
 import { COLORS, FONTS } from '../constants/theme';
 
 type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GratefulDead101'>;
@@ -25,8 +23,7 @@ type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamLis
 export function GratefulDead101Screen() {
   const navigation = useNavigation<GratefulDead101ScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { showsByYear, isLoading, showDetailsCache } = useShows();
-  const { getShowPlayCount, hasShowBeenPlayed } = usePlayCounts();
+  const { showsByYear, isLoading } = useShows();
   const [beginnerShows, setBeginnerShows] = useState<GratefulDeadShow[]>([]);
 
   useEffect(() => {
@@ -58,55 +55,9 @@ export function GratefulDead101Screen() {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
   }, [navigation]);
 
-  const getPlayCount = useCallback((show: GratefulDeadShow): number => {
-    if (!hasShowBeenPlayed(show.primaryIdentifier)) return 0;
-    const cachedDetails = showDetailsCache.get(show.primaryIdentifier);
-    if (cachedDetails) {
-      return getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
-    }
-    return 0;
-  }, [hasShowBeenPlayed, showDetailsCache, getShowPlayCount]);
-
   const renderShowItem = useCallback(({ item }: { item: GratefulDeadShow }) => {
-    const playCount = getPlayCount(item);
-
-    return (
-      <TouchableOpacity
-        style={styles.showItem}
-        onPress={() => handleShowPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.showInfo}>
-          {/* Venue name - large and bold */}
-          <Text style={styles.showVenue} numberOfLines={1}>
-            {getVenueFromShow(item)}
-          </Text>
-          {/* Date with stars */}
-          <View style={styles.dateStarsRow}>
-            <Text style={styles.showDate}>{formatDate(item.date)}</Text>
-            {item.classicTier && (
-              <StarRating tier={item.classicTier} size={16} />
-            )}
-          </View>
-          {/* Location */}
-          {item.location && (
-            <Text style={styles.showLocation} numberOfLines={1}>
-              {item.location}
-            </Text>
-          )}
-        </View>
-        <View style={styles.rightContent}>
-          {playCount > 0 && (
-            <View style={styles.playCountBadge}>
-              <Text style={styles.playCountText}>
-                {playCount} {playCount === 1 ? 'play' : 'plays'}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  }, [getPlayCount, handleShowPress]);
+    return <ShowCard show={item} onPress={handleShowPress} />;
+  }, [handleShowPress]);
 
   if (isLoading) {
     return (
@@ -196,56 +147,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 180,
-  },
-  showItem: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  showInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  showVenue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  dateStarsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  showDate: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  showLocation: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playCountBadge: {
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 50,
-  },
-  playCountText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
   },
   emptyState: {
     alignItems: 'center',
