@@ -324,11 +324,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // Ref to prevent concurrent replenish calls
   const isReplenishingRef = useRef(false);
+  // Track if queue ended while we were replenishing (need to restart playback)
+  const queueEndedWhileReplenishingRef = useRef(false);
 
   // Fetch more tracks for radio and add to queue - defined before useEffects that call it
   const fetchMoreRadioTracks = useCallback(async () => {
     if (isReplenishingRef.current) return;
     isReplenishingRef.current = true;
+    queueEndedWhileReplenishingRef.current = false;
 
     try {
       dispatch({ type: 'SET_RADIO_LOADING', isLoading: true });
@@ -346,12 +349,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           });
         }
         dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
+
+        // If playback stopped while we were fetching, restart it
+        if (queueEndedWhileReplenishingRef.current) {
+          await nativeAudioPlayer.play();
+          dispatch({ type: 'PLAY' });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch more radio tracks:', error);
     } finally {
       dispatch({ type: 'SET_RADIO_LOADING', isLoading: false });
       isReplenishingRef.current = false;
+      queueEndedWhileReplenishingRef.current = false;
     }
   }, []);
 
@@ -389,9 +399,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
       if (state.playbackMode === 'radio') {
-        // Radio queue ended - this shouldn't happen with auto-replenish
-        // but if it does, try to fetch more
-        fetchMoreRadioTracks();
+        // Radio queue ended - if we're already replenishing, mark that we need to
+        // restart playback when replenishment completes
+        if (isReplenishingRef.current) {
+          queueEndedWhileReplenishingRef.current = true;
+        } else {
+          // Not replenishing, fetch more tracks now
+          fetchMoreRadioTracks();
+        }
       } else {
         // Show ended - play the next chronological show
         playNextShow();
@@ -401,7 +416,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [state.playbackMode, fetchMoreRadioTracks, playNextShow]);
 
-  // Radio auto-replenish: fetch more tracks when remaining <= 3
+  // Radio auto-replenish: fetch more tracks when remaining <= 5
+  // Buffer of 5 gives more time for async fetch before queue exhausts
   useEffect(() => {
     if (
       state.playbackMode === 'radio' &&
@@ -410,7 +426,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       state.radioQueue.length > 0
     ) {
       const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
-      if (remainingTracks <= 3) {
+      if (remainingTracks <= 5) {
         fetchMoreRadioTracks();
       }
     }
