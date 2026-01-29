@@ -1,4 +1,4 @@
-import { VIDEO_SOURCES } from '../../constants/videoSources.generated';
+import { BUNDLED_VIDEO } from '../../constants/videoSources';
 
-// Shared video source for auth screens to maintain continuity
-export const AUTH_VIDEO_SOURCE = VIDEO_SOURCES[Math.floor(Math.random() * VIDEO_SOURCES.length)];
+// Auth screens always use the bundled video for immediate availability
+export const AUTH_VIDEO_SOURCE = BUNDLED_VIDEO;

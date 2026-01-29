@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,9 +17,9 @@ interface MiniPlayerProps {
 }
 
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
-  const { state, play, pause, isRadioMode, currentRadioTrack } = usePlayer();
+  const { state, play, pause, isRadioMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource, videoIndex } = useVideoBackground();
+  const { videoSource, videoId } = useVideoBackground();
   const { getShowDetail } = useShows();
 
   // Prefetch show details in background so navigation is instant when user taps show
@@ -61,19 +61,23 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
 
   if (!state.currentTrack) return null;
 
-  // Calculate progress percentage
-  const progress = state.duration > 0 ? (state.position / state.duration) * 100 : 0;
+  // Animated progress width from context
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity
         style={styles.container}
         onPress={onPress}
-        activeOpacity={0.9}
+        activeOpacity={1}
       >
         {/* Video Background */}
         <Video
-          key={`video-${videoIndex}`}
+          key={`video-${videoId}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
@@ -119,7 +123,7 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
           {/* Progress bar */}
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+              <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
             </View>
           </View>
         </BlurView>

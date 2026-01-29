@@ -1,4 +1,13 @@
-import { MMKV } from 'react-native-mmkv';
+// Lazy MMKV import and instance to avoid loading native module before it's ready
+let _MMKV: typeof import('react-native-mmkv').MMKV | null = null;
+let _storage: import('react-native-mmkv').MMKV | null = null;
+
+function getMMKV() {
+  if (!_MMKV) {
+    _MMKV = require('react-native-mmkv').MMKV;
+  }
+  return _MMKV;
+}
 
 // Cache versioning - increment when data structure changes
 const CACHE_VERSION = 1;
@@ -10,11 +19,29 @@ const CACHE_KEYS = {
   CACHE_TIMESTAMP: 'cache_timestamp',
 };
 
-// Create MMKV instance
-export const storage = new MMKV({
-  id: 'grateful-dead-cache',
-  encryptionKey: undefined, // No encryption needed for public data
-});
+// Lazy MMKV instance getter
+function getStorage() {
+  if (!_storage) {
+    const MMKVClass = getMMKV();
+    _storage = new MMKVClass({
+      id: 'grateful-dead-cache',
+      encryptionKey: undefined, // No encryption needed for public data
+    });
+  }
+  return _storage;
+}
+
+// Export storage as a getter for backwards compatibility
+export const storage = {
+  getString: (key: string) => getStorage().getString(key),
+  getNumber: (key: string) => getStorage().getNumber(key),
+  getBoolean: (key: string) => getStorage().getBoolean(key),
+  set: (key: string, value: string | number | boolean) => getStorage().set(key, value),
+  delete: (key: string) => getStorage().delete(key),
+  clearAll: () => getStorage().clearAll(),
+  contains: (key: string) => getStorage().contains(key),
+  getAllKeys: () => getStorage().getAllKeys(),
+};
 
 // Cache invalidation: 7 days
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;

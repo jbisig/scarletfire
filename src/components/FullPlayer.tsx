@@ -42,10 +42,10 @@ const VELOCITY_THRESHOLD = 0.5; // Velocity that triggers dismiss
  */
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const navigation = useNavigation<NavigationProp>();
-  const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, currentRadioTrack } = usePlayer();
+  const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, currentRadioTrack, progressRef, progressAnim } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource, videoIndex } = useVideoBackground();
+  const { videoSource, videoId } = useVideoBackground();
   const { getShowDetail } = useShows();
   const progressBarRef = useRef<View>(null);
 
@@ -56,8 +56,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const isDismissingRef = useRef(false);
   const isInteractingRef = useRef(false);
 
-  // Animated progress value to avoid re-renders during playback
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  // Time display state - updated via interval to avoid excessive re-renders
+  const [timeDisplay, setTimeDisplay] = useState({ position: 0, duration: 0 });
 
   // Combined position = slide position + drag offset
   const translateY = Animated.add(slideAnim, dragOffset);
@@ -96,13 +96,11 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const isDraggingRef = useRef(false);
   const barMeasurements = useRef({ pageX: 0, width: 0 });
   const currentTrackRef = useRef(state.currentTrack);
-  const currentDurationRef = useRef(state.duration);
 
   // Update refs when state changes
   useEffect(() => {
     currentTrackRef.current = state.currentTrack;
-    currentDurationRef.current = state.duration;
-  }, [state.currentTrack, state.duration]);
+  }, [state.currentTrack]);
 
   // Prefetch show details in background so navigation is instant
   useEffect(() => {
@@ -114,23 +112,23 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     }
   }, [state.currentShow?.identifier, getShowDetail]);
 
-  // Reset progress immediately when track changes
+  // Update time display at regular intervals (for text only, not animation)
+  // This prevents re-renders on every progress update while still showing current time
   useEffect(() => {
-    progressAnim.setValue(0);
-  }, [state.currentTrack?.id, progressAnim]);
+    if (!visible) return;
 
-  // Update animated progress value without causing re-renders
-  // This runs on position change but only updates the Animated.Value
-  useEffect(() => {
-    if (isDragging || isInteractingRef.current) return; // Don't update during user interaction
+    // Update immediately
+    setTimeDisplay({ ...progressRef.current });
 
-    const trackDuration = state.currentTrack?.duration ? state.currentTrack.duration * 1000 : 0;
-    const duration = state.duration > 0 ? state.duration : trackDuration;
-    const progress = duration > 0 ? (state.position / duration) : 0;
+    // Then update every second for the time text
+    const interval = setInterval(() => {
+      if (!isDragging && !isInteractingRef.current) {
+        setTimeDisplay({ ...progressRef.current });
+      }
+    }, 1000);
 
-    // Use setValue for immediate update without animation
-    progressAnim.setValue(progress);
-  }, [state.position, state.duration, state.currentTrack?.duration, isDragging, progressAnim]);
+    return () => clearInterval(interval);
+  }, [visible, progressRef, isDragging]);
 
   // Memoize performance rating lookup
   const performanceRating = useMemo(() => {
@@ -193,6 +191,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   };
 
   const handleNavigateToShow = (): void => {
+    // Don't navigate if user is dragging or dismissing
+    if (isInteractingRef.current || isDismissingRef.current) return;
     if (!state.currentShow) return;
     onClose();
     // Navigate to ShowDetail within ShowsTab stack so MiniPlayer remains visible
@@ -207,6 +207,13 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     });
   };
 
+  // Helper to get current duration from ref or track metadata
+  const getDurationMs = useCallback(() => {
+    const refDuration = progressRef.current.duration;
+    const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
+    return refDuration > 0 ? refDuration : trackDurationMs;
+  }, [progressRef]);
+
   // Progress bar pan responder
   const panResponder = useRef(
     PanResponder.create({
@@ -215,8 +222,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       onPanResponderGrant: (evt) => {
         progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
-          const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
-          const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
+          const durationMs = getDurationMs();
           const touchX = barPageX + evt.nativeEvent.locationX;
           const position = calculatePositionFromTouch(touchX, durationMs);
           isDraggingRef.current = true;
@@ -226,23 +232,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       },
       onPanResponderMove: (evt) => {
         if (barMeasurements.current.width === 0) return;
-        const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
-        const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
+        const durationMs = getDurationMs();
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
       },
       onPanResponderRelease: (evt) => {
         if (barMeasurements.current.width === 0) return;
-        const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
-        const durationMs = currentDurationRef.current > 0 ? currentDurationRef.current : trackDurationMs;
+        const durationMs = getDurationMs();
         const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
         seekTo(position);
-        // Update progress animation to the seek position
-        const seekProgress = durationMs > 0 ? position / durationMs : 0;
-        progressAnim.setValue(seekProgress);
+        // Update time display immediately after seek
+        setTimeDisplay({ position, duration: durationMs });
         setTimeout(() => {
           setIsDragging(false);
           isDraggingRef.current = false;
@@ -285,6 +288,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         if (shouldDismiss) {
           // Mark as dismissing to prevent duplicate animation
           isDismissingRef.current = true;
+          // Reset interaction state immediately on dismiss
+          isInteractingRef.current = false;
           // Calculate remaining distance and use velocity for natural feel
           const remainingDistance = screenHeight - gestureState.dy;
           const velocity = Math.max(gestureState.vy, 0.4); // Minimum velocity
@@ -318,13 +323,13 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         }
       },
       onPanResponderTerminate: () => {
+        // Reset interaction state immediately when gesture is interrupted
+        isInteractingRef.current = false;
         // Snap back if gesture is interrupted
         Animated.spring(dragOffset, {
           toValue: 0,
           useNativeDriver: true,
-        }).start(() => {
-          isInteractingRef.current = false;
-        });
+        }).start();
       },
     })
   ).current;
@@ -332,8 +337,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   if (!shouldRender || !state.currentTrack) return null;
 
   const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
-  const duration = state.duration > 0 ? state.duration : trackDuration;
-  const currentPosition = isDragging ? dragPosition : state.position;
+  const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDuration;
+  const currentPosition = isDragging ? dragPosition : timeDisplay.position;
 
   // Animated width for progress bar (avoids re-renders)
   const progressWidth = progressAnim.interpolate({
@@ -362,7 +367,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         <Video
-          key={`video-${videoIndex}`}
+          key={`video-${videoId}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}

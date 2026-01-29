@@ -1,17 +1,13 @@
 import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { Image } from 'react-native';
+import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
-import { PlayerState, PlayerAction, RadioTrack } from '../types/player.types';
+import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import showsData from '../data/shows.json';
-
-// Resolve app icon for Now Playing artwork
-const appIcon = require('../../assets/icon.png');
-const appIconUri = Image.resolveAssetSource(appIcon).uri;
 
 // Load shows data for finding next chronological show
 const allShowsByYear = showsData as ShowsByYear;
@@ -43,8 +39,6 @@ const initialState: PlayerState = {
   currentShow: null,
   isPlaying: false,
   isLoading: false,
-  position: 0,
-  duration: 0,
   playlist: [],
   currentTrackIndex: -1,
   shouldAutoPlay: false,
@@ -78,13 +72,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
     case 'STOP':
       return initialState;
 
-    case 'UPDATE_POSITION':
-      return {
-        ...state,
-        position: action.position,
-        duration: action.duration,
-      };
-
     case 'SET_LOADING':
       return { ...state, isLoading: action.isLoading };
 
@@ -95,9 +82,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[nextIndex],
           currentTrackIndex: nextIndex,
-          // Don't set isLoading - track is already in the queue
-          position: 0,
-          duration: 0,
         };
       }
       return state;
@@ -109,15 +93,9 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[prevIndex],
           currentTrackIndex: prevIndex,
-          // Don't set isLoading - track is already in the queue
-          position: 0,
-          duration: 0,
         };
       }
       return state;
-
-    case 'SEEK':
-      return { ...state, position: action.position };
 
     case 'SYNC_TRACK_INDEX':
       // Sync to a specific track index without reloading (used by native player events)
@@ -126,8 +104,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           ...state,
           currentTrack: state.playlist[action.index],
           currentTrackIndex: action.index,
-          position: 0,
-          duration: 0,
         };
       }
       return state;
@@ -152,8 +128,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         currentTrack: null,
         currentShow: null,
         isPlaying: false,
-        position: 0,
-        duration: 0,
       };
 
     case 'SET_RADIO_LOADING':
@@ -185,8 +159,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           radioQueueIndex: nextRadioIndex,
           currentTrack: nextRadioTrack.track,
           currentShow: nextRadioTrack.show,
-          position: 0,
-          duration: 0,
         };
       }
       return state;
@@ -200,8 +172,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           radioQueueIndex: prevRadioIndex,
           currentTrack: prevRadioTrack.track,
           currentShow: prevRadioTrack.show,
-          position: 0,
-          duration: 0,
         };
       }
       return state;
@@ -214,8 +184,6 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           radioQueueIndex: action.index,
           currentTrack: radioTrack.track,
           currentShow: radioTrack.show,
-          position: 0,
-          duration: 0,
         };
       }
       return state;
@@ -234,6 +202,9 @@ interface PlayerContextType {
   nextTrack: () => void;
   previousTrack: () => void;
   seekTo: (position: number) => Promise<void>;
+  // Progress tracking (refs to avoid re-renders)
+  progressRef: React.MutableRefObject<PlaybackProgress>;
+  progressAnim: Animated.Value;
   // Radio mode functions
   startRadio: () => Promise<void>;
   stopRadio: () => Promise<void>;
@@ -253,10 +224,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
 
+  // Progress tracking via refs to avoid re-renders on every position update
+  const progressRef = useRef<PlaybackProgress>({ position: 0, duration: 0 });
+  const progressAnimRef = useRef(new Animated.Value(0));
+  const progressAnim = progressAnimRef.current;
+
   useEffect(() => {
     audioService.initialize();
-    // Start prefetching radio tracks immediately on app start
-    radioService.prefetch(10);
+    // Defer non-critical work until after initial render is complete
+    InteractionManager.runAfterInteractions(() => {
+      radioService.prefetch(10);
+      // Start downloading background videos in the background
+      try {
+        const { videoDownloadService } = require('../services/videoDownloadService');
+        videoDownloadService.startDeferredDownloads();
+      } catch (e) {
+        console.warn('[PlayerContext] Failed to start video downloads:', e);
+      }
+    });
   }, []);
 
   // Auto-load track when currentTrack changes
@@ -307,11 +292,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
+  // Ref to track playback mode without causing listener re-subscription
+  const playbackModeRef = useRef(state.playbackMode);
+  useEffect(() => {
+    playbackModeRef.current = state.playbackMode;
+  }, [state.playbackMode]);
+
   // Listen to track changes for gapless playback and lock screen controls
+  // Uses ref for playbackMode to avoid re-subscribing when mode changes
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackTrackChanged, (event) => {
       // Handle radio mode vs show mode track changes
-      if (state.playbackMode === 'radio') {
+      if (playbackModeRef.current === 'radio') {
         if (event.trackIndex !== undefined) {
           dispatch({ type: 'SYNC_RADIO_TRACK_INDEX', index: event.trackIndex });
         } else {
@@ -328,7 +320,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.remove();
-  }, [state.playbackMode]);
+  }, []); // Empty deps - subscribe once, use ref for mode
 
   // Ref to prevent concurrent replenish calls
   const isReplenishingRef = useRef(false);
@@ -351,7 +343,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             title: radioTrack.track.title,
             artist: radioTrack.show.venue || 'Grateful Dead',
             duration: radioTrack.track.duration,
-            artwork: appIconUri,
           });
         }
         dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
@@ -426,44 +417,70 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, state.isRadioLoading, fetchMoreRadioTracks]);
 
   // Update position and duration from native audio player progress events
+  // Uses refs to avoid triggering re-renders on every position update
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, (data) => {
       const position = data.position * 1000; // Convert seconds to milliseconds
       const duration = data.duration * 1000;
       // Only update if we have valid duration (audio is actually loaded/playing)
-      // This prevents the progress bar from moving when buffering or offline
       if (duration > 0 && !isNaN(duration)) {
-        dispatch({ type: 'UPDATE_POSITION', position, duration });
+        // Update ref without triggering re-render
+        progressRef.current = { position, duration };
+        // Update animated value for smooth progress bar
+        const progress = duration > 0 ? position / duration : 0;
+        progressAnim.setValue(progress);
       }
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [progressAnim]);
 
-  // Reset recording flag when track changes
+  // Reset recording flag and progress when track changes
   useEffect(() => {
     hasRecordedPlayRef.current = false;
-  }, [state.currentTrack?.id, state.currentShow?.identifier]);
+    // Reset progress for new track
+    progressRef.current = { position: 0, duration: 0 };
+    progressAnim.setValue(0);
+  }, [state.currentTrack?.id, state.currentShow?.identifier, progressAnim]);
 
-  // Monitor playback progress for 50% threshold
+  // Monitor playback progress for 50% threshold using the progress listener
+  // We check the ref in the progress listener callback to avoid extra effects
+  const currentTrackRef = useRef(state.currentTrack);
+  const currentShowRef = useRef(state.currentShow);
+  const isPlayingRef = useRef(state.isPlaying);
+
+  // Keep refs in sync with state
   useEffect(() => {
-    if (
-      !hasRecordedPlayRef.current &&
-      state.isPlaying &&
-      state.currentTrack &&
-      state.currentShow &&
-      state.duration > 0 &&
-      state.position >= state.duration * 0.5
-    ) {
-      // Record the play (reached 50% threshold)
-      hasRecordedPlayRef.current = true;
-      recordTrackPlay(
-        state.currentTrack.title,
-        state.currentShow.identifier,
-        state.currentShow.date
-      );
-    }
-  }, [state.position, state.duration, state.isPlaying, state.currentTrack, state.currentShow, recordTrackPlay]);
+    currentTrackRef.current = state.currentTrack;
+    currentShowRef.current = state.currentShow;
+    isPlayingRef.current = state.isPlaying;
+  }, [state.currentTrack, state.currentShow, state.isPlaying]);
+
+  // Check 50% threshold in progress updates
+  useEffect(() => {
+    const checkThreshold = () => {
+      const { position, duration } = progressRef.current;
+      if (
+        !hasRecordedPlayRef.current &&
+        isPlayingRef.current &&
+        currentTrackRef.current &&
+        currentShowRef.current &&
+        duration > 0 &&
+        position >= duration * 0.5
+      ) {
+        hasRecordedPlayRef.current = true;
+        recordTrackPlay(
+          currentTrackRef.current.title,
+          currentShowRef.current.identifier,
+          currentShowRef.current.date
+        );
+      }
+    };
+
+    // Subscribe to progress updates for threshold checking
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, checkThreshold);
+    return () => subscription.remove();
+  }, [recordTrackPlay]);
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
     // If in radio mode, stop radio first
@@ -520,7 +537,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const seekTo = async (position: number) => {
     try {
-      dispatch({ type: 'SEEK', position });
+      // Update progress ref and animation immediately for responsive UI
+      const duration = progressRef.current.duration;
+      progressRef.current.position = position;
+      if (duration > 0) {
+        progressAnim.setValue(position / duration);
+      }
       await audioService.seekTo(position);
     } catch (error) {
       console.error('Seek failed:', error instanceof Error ? error.message : 'Unknown error');
@@ -556,7 +578,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         title: rt.track.title,
         artist: rt.show.venue || 'Grateful Dead',
         duration: rt.track.duration,
-        artwork: appIconUri,
       }));
 
       await nativeAudioPlayer.setQueue(nativeTracks, 0);
@@ -599,6 +620,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         nextTrack,
         previousTrack,
         seekTo,
+        progressRef,
+        progressAnim,
         startRadio,
         stopRadio,
         isRadioMode,
