@@ -16,14 +16,14 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
-import { YearPicker } from '../components/YearPicker';
+import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters, getFilterCount } from '../components/ShowsFilterTray';
 import { PageHeader } from '../components/PageHeader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { formatDate, matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
-import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -112,7 +112,8 @@ export function HomeScreen() {
   const sectionListRef = useRef<SectionList<any>>(null);
   const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
-  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [filterTrayOpen, setFilterTrayOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
@@ -126,19 +127,49 @@ export function HomeScreen() {
   const sections = useMemo(() => {
     if (!showsByYear) return [];
 
-    const yearsToShow = selectedYear
-      ? [selectedYear]
-      : availableYears;
+    // Determine which years to show based on filters
+    let yearsToShow: string[];
+    if (appliedFilters.selectedYears.length > 0) {
+      // Show only selected years
+      yearsToShow = appliedFilters.selectedYears.filter(y => availableYears.includes(y));
+    } else if (appliedFilters.selectedSeries.length > 0) {
+      // Show years that have releases from selected series
+      yearsToShow = getYearsForAnySeries(appliedFilters.selectedSeries)
+        .filter(y => availableYears.includes(y));
+    } else {
+      // Show all years
+      yearsToShow = availableYears;
+    }
+
+    // Sort years numerically
+    yearsToShow = yearsToShow.sort((a, b) => parseInt(a) - parseInt(b));
+
+    // Expand selected series for filtering
+    const expandedSeries = appliedFilters.selectedSeries.length > 0
+      ? expandDisplaySeries(appliedFilters.selectedSeries)
+      : [];
 
     return yearsToShow
-      .map(year => ({
-        title: year,
-        data: filterShows(showsByYear[year], debouncedSearchQuery),
-      }))
-      .filter(section => section.data.length > 0);
-  }, [showsByYear, selectedYear, availableYears, debouncedSearchQuery]);
+      .map(year => {
+        let shows = showsByYear[year];
 
-  // Scroll to top when year selection or search query changes
+        // Apply search filter
+        shows = filterShows(shows, debouncedSearchQuery);
+
+        // Apply series filter
+        if (expandedSeries.length > 0) {
+          shows = shows.filter(show => {
+            const releases = getOfficialReleasesForDate(show.date);
+            return releases.some(r => expandedSeries.includes(r.series));
+          });
+        }
+
+        return { title: year, data: shows };
+      })
+      .filter(section => section.data.length > 0);
+  }, [showsByYear, appliedFilters, availableYears, debouncedSearchQuery]);
+
+  // Scroll to top when filters or search query changes
   useEffect(() => {
     const timer = setTimeout(() => {
       const scrollResponder = sectionListRef.current?.getScrollResponder();
@@ -147,14 +178,14 @@ export function HomeScreen() {
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [selectedYear, debouncedSearchQuery]);
+  }, [appliedFilters, debouncedSearchQuery]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
   }, [navigation]);
 
-  const handleYearChange = useCallback((year: string | null) => {
-    setSelectedYear(year);
+  const handleApplyFilters = useCallback((filters: ShowsFilterState) => {
+    setAppliedFilters(filters);
   }, []);
 
   const handleClearSearch = useCallback(() => {
@@ -215,14 +246,37 @@ export function HomeScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Year Filter Pill */}
-        <YearPicker
-          years={availableYears}
-          selectedYear={selectedYear}
-          onYearChange={handleYearChange}
-          compact={true}
-        />
+        {/* Filter Button */}
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            hasActiveFilters(appliedFilters) && styles.filterButtonActive,
+          ]}
+          onPress={() => setFilterTrayOpen(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="options-outline"
+            size={18}
+            color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : 'rgba(255,255,255,0.66)'}
+          />
+          <Text style={[
+            styles.filterButtonText,
+            hasActiveFilters(appliedFilters) && styles.filterButtonTextActive,
+          ]}>
+            {hasActiveFilters(appliedFilters) ? `${getFilterCount(appliedFilters)}` : 'Filter'}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Filter Tray Modal */}
+      <ShowsFilterTray
+        isOpen={filterTrayOpen}
+        onClose={() => setFilterTrayOpen(false)}
+        appliedFilters={appliedFilters}
+        onApply={handleApplyFilters}
+        showsByYear={showsByYear}
+      />
 
       {/* Shows List */}
       {sections.length === 0 && debouncedSearchQuery.trim() ? (
@@ -320,5 +374,26 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 8,
     paddingBottom: 180,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 6,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
+  },
+  filterButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.secondary,
+    color: 'rgba(255,255,255,0.66)',
+  },
+  filterButtonTextActive: {
+    color: COLORS.textPrimary,
   },
 });

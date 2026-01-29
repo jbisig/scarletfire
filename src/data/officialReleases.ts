@@ -1580,3 +1580,75 @@ export function getPrimaryRelease(date: string): OfficialRelease | null {
   const releases = getOfficialReleasesForDate(date);
   return releases.length > 0 ? releases[0] : null;
 }
+
+// ============================================
+// FILTER TRAY UTILITIES
+// ============================================
+
+// Series grouped under "Others" in the filter UI
+export const OTHER_SERIES = ['Box Set', '50th Anniversary', 'Studio Album', 'From The Vault'];
+
+// Display series for the filter tray (6 pills)
+export const DISPLAY_SERIES = ["Dave's Picks", "Dick's Picks", "Europe '72", "Download Series", "Road Trips", "Others"];
+
+// Pre-compute years by series map for efficient filtering
+const yearsBySeriesMap = new Map<string, Set<string>>();
+OFFICIAL_RELEASES.forEach(release => {
+  const years = release.showDates.map(d => d.substring(0, 4));
+  const existing = yearsBySeriesMap.get(release.series) || new Set<string>();
+  years.forEach(y => existing.add(y));
+  yearsBySeriesMap.set(release.series, existing);
+});
+
+/**
+ * Get all unique series names from official releases
+ */
+export function getAllSeries(): string[] {
+  return Array.from(new Set(OFFICIAL_RELEASES.map(r => r.series))).sort();
+}
+
+/**
+ * Get all years that have releases for a specific series
+ */
+export function getYearsForSeries(series: string): string[] {
+  return Array.from(yearsBySeriesMap.get(series) || []).sort();
+}
+
+/**
+ * Expand display series name to actual series names
+ * "Others" expands to all OTHER_SERIES, other names pass through
+ */
+export function expandDisplaySeries(displaySeries: string[]): string[] {
+  const expanded: string[] = [];
+  displaySeries.forEach(s => {
+    if (s === 'Others') {
+      expanded.push(...OTHER_SERIES);
+    } else {
+      expanded.push(s);
+    }
+  });
+  return expanded;
+}
+
+/**
+ * Get all years that have releases for any of the specified series
+ */
+export function getYearsForAnySeries(seriesList: string[]): string[] {
+  // Expand "Others" if present
+  const expandedSeries = expandDisplaySeries(seriesList);
+
+  const years = new Set<string>();
+  expandedSeries.forEach(series => {
+    yearsBySeriesMap.get(series)?.forEach(y => years.add(y));
+  });
+  return Array.from(years).sort();
+}
+
+/**
+ * Check if a series has any releases in the specified years
+ */
+export function seriesHasYears(series: string, years: string[]): boolean {
+  const seriesYears = yearsBySeriesMap.get(series);
+  if (!seriesYears) return false;
+  return years.some(y => seriesYears.has(y));
+}
