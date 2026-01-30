@@ -456,15 +456,16 @@ These can be addressed incrementally over time.
 
 ---
 
-### 3.1 Extract Magic Numbers
+### 3.1 Extract Magic Numbers ⏳ PARTIAL
 **Issue:** 12.1 - Magic Numbers Throughout
 **Files:** Multiple, new file `src/constants/thresholds.ts`
 
 **Tasks:**
-- [ ] Create `src/constants/thresholds.ts`
-- [ ] Extract: DISMISS_THRESHOLD, VELOCITY_THRESHOLD, SIMILARITY_THRESHOLD, PREFETCH_COUNT
-- [ ] Add JSDoc comments explaining each threshold
-- [ ] Update all usages across codebase
+- [x] Create `src/constants/thresholds.ts`
+- [x] Extract: DISMISS_THRESHOLD, VELOCITY_THRESHOLD, SIMILARITY_THRESHOLD, PREFETCH_COUNT
+- [x] Add JSDoc comments explaining each threshold
+- [x] Update FullPlayer and OfficialReleaseModal to use shared constants
+- [ ] Update remaining usages (radioService, SongPerformancesScreen)
 
 ---
 

@@ -27,6 +27,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
+import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -36,8 +37,6 @@ interface FullPlayerProps {
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { height: screenHeight } = Dimensions.get('window');
-const DISMISS_THRESHOLD = 100; // Distance to drag before it dismisses on release
-const VELOCITY_THRESHOLD = 0.5; // Velocity that triggers dismiss
 
 /**
  * Full-screen player tray that slides up from bottom
@@ -288,8 +287,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       },
       onPanResponderRelease: (evt, gestureState) => {
         const shouldDismiss =
-          gestureState.dy > DISMISS_THRESHOLD ||
-          gestureState.vy > VELOCITY_THRESHOLD;
+          gestureState.dy > GESTURE_THRESHOLDS.DISMISS_DISTANCE ||
+          gestureState.vy > GESTURE_THRESHOLDS.DISMISS_VELOCITY;
 
         if (shouldDismiss) {
           // Mark as dismissing to prevent duplicate animation

@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfficialRelease } from '../data/officialReleases';
 import { COLORS, FONTS } from '../constants/theme';
+import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 
 interface ShowInfo {
@@ -37,8 +38,6 @@ interface OfficialReleaseModalProps {
  * Modal showing official release details with streaming links
  */
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const DISMISS_THRESHOLD = 100;
-const VELOCITY_THRESHOLD = 0.5;
 
 export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
   visible,
@@ -140,8 +139,8 @@ export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
       },
       onPanResponderRelease: (_, gestureState) => {
         const shouldDismiss =
-          gestureState.dy > DISMISS_THRESHOLD ||
-          gestureState.vy > VELOCITY_THRESHOLD;
+          gestureState.dy > GESTURE_THRESHOLDS.DISMISS_DISTANCE ||
+          gestureState.vy > GESTURE_THRESHOLDS.DISMISS_VELOCITY;
 
         if (shouldDismiss) {
           isDismissingRef.current = true;
