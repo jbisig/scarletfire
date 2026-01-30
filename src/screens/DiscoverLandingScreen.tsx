@@ -97,6 +97,10 @@ export function DiscoverLandingScreen() {
               activeOpacity={0.9}
               onPress={handleViewShow}
               disabled={isLoading || !show}
+              accessibilityRole="button"
+              accessibilityLabel={show ? `Show of the Day: ${getVenueFromShow(show)}, ${formatDate(show.date)}` : 'Show of the Day: Loading'}
+              accessibilityHint="Double tap to view this show"
+              accessibilityState={{ disabled: isLoading || !show }}
             >
               <ImageBackground
                 source={SHOW_OF_THE_DAY_IMAGE}
@@ -116,6 +120,9 @@ export function DiscoverLandingScreen() {
                       onPress={handlePickAnother}
                       activeOpacity={0.7}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Pick another show"
+                      accessibilityHint="Double tap to get a different random show"
                     >
                       <Ionicons name="refresh" size={28} color={COLORS.accent} />
                     </TouchableOpacity>
@@ -150,6 +157,10 @@ export function DiscoverLandingScreen() {
               activeOpacity={0.9}
               onPress={handleRadioPress}
               disabled={playerState.isRadioLoading}
+              accessibilityRole="button"
+              accessibilityLabel={isRadioMode ? 'Radio: Now Playing' : 'Radio: Non-stop legendary performances'}
+              accessibilityHint="Double tap to start radio mode"
+              accessibilityState={{ disabled: playerState.isRadioLoading }}
             >
               <ImageBackground
                 source={RADIO_IMAGE}
@@ -182,6 +193,9 @@ export function DiscoverLandingScreen() {
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => navigation.navigate('Classics')}
+              accessibilityRole="button"
+              accessibilityLabel="Classic Shows: Legendary shows from different eras"
+              accessibilityHint="Double tap to browse classic shows"
             >
               <ImageBackground
                 source={CLASSIC_SHOWS_IMAGE}
@@ -206,6 +220,9 @@ export function DiscoverLandingScreen() {
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => navigation.navigate('GratefulDead101')}
+              accessibilityRole="button"
+              accessibilityLabel="Grateful Dead 101: Get on the bus with 10 essential shows"
+              accessibilityHint="Double tap to view essential shows for beginners"
             >
               <ImageBackground
                 source={GD_101_IMAGE}

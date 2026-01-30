@@ -59,6 +59,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   // Track deletions for sync conflict resolution (doesn't need to trigger re-renders)
   const deletionLogRef = useRef<DeletionLog>({ shows: [], songs: [] });
 
+  // Refs to always have latest values for cloud sync (avoids race conditions)
+  const favoriteShowsRef = useRef<GratefulDeadShow[]>(favoriteShows);
+  const favoriteSongsRef = useRef<FavoriteSong[]>(favoriteSongs);
+
   // Helper function to enrich shows with classic tier data
   const enrichShowsWithTier = (shows: GratefulDeadShow[]): GratefulDeadShow[] => {
     return shows.map(show => {
@@ -145,6 +149,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authState.isAuthenticated, authState.user, isLoading]);
 
+  // Keep refs in sync with state (for race-condition-free cloud sync)
+  useEffect(() => {
+    favoriteShowsRef.current = favoriteShows;
+    favoriteSongsRef.current = favoriteSongs;
+  }, [favoriteShows, favoriteSongs]);
+
   const loadFavorites = async () => {
     try {
       // Migrate legacy favorites to new shows storage
@@ -211,13 +221,17 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     try {
       const cloudFavorites = await favoritesCloudService.loadFavorites(userId);
 
+      // Use refs for current local state to avoid race conditions
+      const localShows = favoriteShowsRef.current;
+      const localSongs = favoriteSongsRef.current;
+
       // Merge cloud + local shows (deduplicate by identifier)
       // Also check if cloud items were deleted locally after they were saved
       const mergedShows = [
-        ...favoriteShows,
+        ...localShows,
         ...cloudFavorites.shows.filter((cloudShow) => {
           // Skip if already exists locally
-          if (favoriteShows.some((localShow) => localShow.primaryIdentifier === cloudShow.primaryIdentifier)) {
+          if (localShows.some((localShow) => localShow.primaryIdentifier === cloudShow.primaryIdentifier)) {
             return false;
           }
           // Skip if was deleted locally after the cloud save
@@ -235,10 +249,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       // Merge cloud + local songs (deduplicate by trackId + showIdentifier)
       // Also check if cloud items were deleted locally after they were saved
       const mergedSongs = [
-        ...favoriteSongs,
+        ...localSongs,
         ...cloudFavorites.songs.filter((cloudSong) => {
           // Skip if already exists locally
-          if (favoriteSongs.some(
+          if (localSongs.some(
             (localSong) => localSong.trackId === cloudSong.trackId && localSong.showIdentifier === cloudSong.showIdentifier
           )) {
             return false;
@@ -289,9 +303,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteShows(newFavorites);
     await saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated - pass the already-updated list directly
+    // Sync to cloud if authenticated - use ref for songs to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch((error) => {
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
         console.error('Failed to sync favorite show to cloud:', error);
         // Data is saved locally, cloud sync will retry on next change or app restart
       });
@@ -306,9 +320,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteShows(newFavorites);
     await saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated - pass the already-updated list directly
+    // Sync to cloud if authenticated - use ref for songs to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch((error) => {
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
         console.error('Failed to sync favorite show removal to cloud:', error);
       });
     }
@@ -327,9 +341,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteSongs(newFavorites);
     await saveFavoriteSongs(newFavorites);
 
-    // Sync to cloud if authenticated - pass the already-updated list directly
+    // Sync to cloud if authenticated - use ref for shows to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch((error) => {
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
         console.error('Failed to sync favorite song to cloud:', error);
       });
     }
@@ -345,9 +359,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     setFavoriteSongs(newFavorites);
     await saveFavoriteSongs(newFavorites);
 
-    // Sync to cloud if authenticated - pass the already-updated list directly
+    // Sync to cloud if authenticated - use ref for shows to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch((error) => {
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
         console.error('Failed to sync favorite song removal to cloud:', error);
       });
     }

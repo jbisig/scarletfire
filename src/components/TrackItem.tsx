@@ -17,11 +17,20 @@ interface TrackItemProps {
  * Memoized to prevent unnecessary re-renders
  */
 export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating }) => {
+  const duration = formatDuration(track.duration);
+  const ratingText = rating ? `${4 - rating} star performance` : '';
+  const playingText = isPlaying ? 'Now playing. ' : '';
+  const accessibilityLabel = `${playingText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
+
   return (
     <TouchableOpacity
       style={[styles.container, isPlaying && styles.playing]}
       onPress={() => onPress(track)}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Double tap to play this track"
+      accessibilityState={{ selected: isPlaying }}
     >
       <View style={styles.infoContainer}>
         <View style={styles.titleRow}>
@@ -39,7 +48,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         </View>
       </View>
       <Text style={[styles.duration, isPlaying && styles.playingText]}>
-        {formatDuration(track.duration)}
+        {duration}
       </Text>
     </TouchableOpacity>
   );

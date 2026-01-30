@@ -249,11 +249,15 @@ export function ShowDetailScreen() {
             ]}
             onPress={handleToggleFavorite}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+            accessibilityHint={isSaved ? 'Double tap to remove this show from your favorites' : 'Double tap to save this show to your favorites'}
+            accessibilityState={{ selected: isSaved }}
           >
             {isSaved ? (
-              <Ionicons name="checkmark-sharp" size={18} color="#fff" />
+              <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
             ) : (
-              <Ionicons name="add" size={21} color="#fff" />
+              <Ionicons name="add" size={21} color={COLORS.textPrimary} />
             )}
           </TouchableOpacity>
         </View>

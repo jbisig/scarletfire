@@ -37,16 +37,26 @@ export function PlayerControls({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityRole="toolbar" accessibilityLabel="Playback controls">
       <TouchableOpacity
         onPress={handlePrevious}
         disabled={!canGoPrevious}
         style={[styles.button, !canGoPrevious && styles.disabled]}
+        accessibilityRole="button"
+        accessibilityLabel="Previous track"
+        accessibilityHint="Double tap to go to the previous track"
+        accessibilityState={{ disabled: !canGoPrevious }}
       >
         <Ionicons name="play-skip-back" size={32} color={canGoPrevious ? COLORS.textPrimary : COLORS.textMuted} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handlePlayPause} style={styles.playButton}>
+      <TouchableOpacity
+        onPress={handlePlayPause}
+        style={styles.playButton}
+        accessibilityRole="button"
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+        accessibilityHint={isPlaying ? 'Double tap to pause playback' : 'Double tap to start playback'}
+      >
         <Ionicons
           name={isPlaying ? 'pause' : 'play'}
           size={48}
@@ -58,6 +68,10 @@ export function PlayerControls({
         onPress={handleNext}
         disabled={!canGoNext}
         style={[styles.button, !canGoNext && styles.disabled]}
+        accessibilityRole="button"
+        accessibilityLabel="Next track"
+        accessibilityHint="Double tap to skip to the next track"
+        accessibilityState={{ disabled: !canGoNext }}
       >
         <Ionicons name="play-skip-forward" size={32} color={canGoNext ? COLORS.textPrimary : COLORS.textMuted} />
       </TouchableOpacity>

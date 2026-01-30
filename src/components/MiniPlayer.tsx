@@ -65,6 +65,9 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
         style={styles.container}
         onPress={onPress}
         activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={`Now playing: ${state.currentTrack.title}. Double tap to open full player.`}
+        accessibilityHint="Opens the full screen player"
       >
         {/* Video Background - only play when app is active to save battery */}
         <Video
@@ -107,11 +110,14 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
                 state.isPlaying ? pause() : play();
               }}
               style={styles.playButton}
+              accessibilityRole="button"
+              accessibilityLabel={state.isPlaying ? 'Pause' : 'Play'}
+              accessibilityHint={state.isPlaying ? 'Double tap to pause' : 'Double tap to play'}
             >
               <Ionicons
                 name={state.isPlaying ? 'pause' : 'play'}
                 size={28}
-                color="#fff"
+                color={COLORS.textPrimary}
               />
             </TouchableOpacity>
           </View>

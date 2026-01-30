@@ -688,6 +688,9 @@ export function FavoritesScreen() {
                 <TouchableOpacity
                   style={styles.shuffleButton}
                   onPress={handleShuffleShows}
+                  accessibilityRole="button"
+                  accessibilityLabel="Shuffle all favorite shows"
+                  accessibilityHint="Double tap to play your favorite shows in random order"
                 >
                   <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
                   <Text style={styles.shuffleButtonText}>Shuffle</Text>
@@ -834,6 +837,9 @@ export function FavoritesScreen() {
                   style={styles.shuffleButton}
                   onPress={handleShuffleSongs}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Shuffle all favorite songs"
+                  accessibilityHint="Double tap to play your favorite songs in random order"
                 >
                   <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
                   <Text style={styles.shuffleButtonText}>Shuffle</Text>
@@ -901,7 +907,7 @@ export function FavoritesScreen() {
         <PageHeader title="Favorites" />
 
         {/* Tab Navigation */}
-        <View style={styles.tabContainer} onLayout={handleTabContainerLayout}>
+        <View style={styles.tabContainer} onLayout={handleTabContainerLayout} accessibilityRole="tablist">
           {/* Sliding active indicator */}
           <Animated.View
             style={[
@@ -923,6 +929,10 @@ export function FavoritesScreen() {
             style={styles.tab}
             onPress={() => setActiveTab('shows')}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel="Shows tab"
+            accessibilityState={{ selected: activeTab === 'shows' }}
+            accessibilityHint="Double tap to view favorite shows"
           >
             <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
               Shows
@@ -932,6 +942,10 @@ export function FavoritesScreen() {
             style={styles.tab}
             onPress={() => setActiveTab('songs')}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel="Songs tab"
+            accessibilityState={{ selected: activeTab === 'songs' }}
+            accessibilityHint="Double tap to view favorite songs"
           >
             <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
               Songs
@@ -1371,7 +1385,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: 'auto',
     borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
+    paddingLeft: 14, // Match icon position from collapsed state (48/2 - 20/2 = 14)
+    paddingRight: SPACING.lg,
   },
   closeSearchButton: {
     width: 48,

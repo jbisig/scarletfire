@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +33,7 @@ export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const { showsByYear, isLoading } = useShows();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const listRef = useRef<FlatList<GratefulDeadShow>>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
   const [sortType, setSortType] = useState<SortType>('stars');
@@ -55,7 +55,7 @@ export function ClassicsScreen() {
 
   // Scroll to top when era or sort type changes
   useEffect(() => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, [selectedEra, sortType]);
 
   const getSortLabel = (type: SortType): string => {
@@ -97,9 +97,9 @@ export function ClassicsScreen() {
     }
   }, [classicShows, selectedEra, sortType]);
 
-  const handleShowPress = (show: GratefulDeadShow) => {
+  const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
-  };
+  }, [navigation]);
 
   const handleEraChange = (era: Era | null) => {
     setSelectedEra(era);
@@ -119,6 +119,9 @@ export function ClassicsScreen() {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            accessibilityHint="Returns to the previous screen"
           >
             <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
           </TouchableOpacity>
@@ -157,13 +160,22 @@ export function ClassicsScreen() {
       </View>
 
       {/* Classic Shows List */}
-      <ScrollView ref={scrollViewRef} style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.showsList}>
-          {sortedAndFilteredShows.map((show) => (
-            <ShowCard key={show.date} show={show} onPress={handleShowPress} />
-          ))}
-        </View>
-      </ScrollView>
+      <FlatList
+        ref={listRef}
+        data={sortedAndFilteredShows}
+        keyExtractor={(item) => item.primaryIdentifier}
+        renderItem={({ item }) => (
+          <ShowCard show={item} onPress={handleShowPress} />
+        )}
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        windowSize={11}
+        initialNumToRender={10}
+      />
     </View>
   );
 }

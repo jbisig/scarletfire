@@ -409,8 +409,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         />
 
         {/* Close button */}
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="chevron-down" size={32} color="#fff" />
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close player"
+          accessibilityHint="Double tap to minimize the player"
+        >
+          <Ionicons name="chevron-down" size={32} color={COLORS.textPrimary} />
         </TouchableOpacity>
 
         {/* Track Info */}
@@ -443,6 +449,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 onPress={handleNavigateToShow}
                 activeOpacity={0.7}
                 style={styles.showLinkContainer}
+                accessibilityRole="link"
+                accessibilityLabel={`View show: ${getVenueFromShow(state.currentShow)}, ${formatDate(state.currentShow.date)}`}
+                accessibilityHint="Double tap to view the full show"
               >
                 <Text style={styles.showInfo} numberOfLines={1}>
                   {getVenueFromShow(state.currentShow)}
@@ -465,11 +474,15 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 ]}
                 onPress={handleToggleFavoriteSong}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                accessibilityHint={isFavorite ? 'Double tap to remove this song from your favorites' : 'Double tap to save this song to your favorites'}
+                accessibilityState={{ selected: isFavorite }}
               >
                 {isFavorite ? (
-                  <Ionicons name="checkmark-sharp" size={18} color="#fff" />
+                  <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
                 ) : (
-                  <Ionicons name="add" size={21} color="#fff" />
+                  <Ionicons name="add" size={21} color={COLORS.textPrimary} />
                 )}
               </TouchableOpacity>
             </View>

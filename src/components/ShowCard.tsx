@@ -63,12 +63,23 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
     setModalVisible(true);
   };
 
+  const accessibilityLabel = useMemo(() => {
+    const venue = getVenueFromShow(show);
+    const date = formatDate(show.date);
+    const rating = displayRating ? `${4 - displayRating} star rating` : '';
+    const location = show.location || '';
+    return `${venue}, ${date}${location ? `, ${location}` : ''}${rating ? `. ${rating}` : ''}`;
+  }, [show, displayRating]);
+
   return (
     <>
       <TouchableOpacity
         style={styles.container}
         onPress={() => onPress(show)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Double tap to view show details and track list"
       >
         {/* Venue name - full width at top */}
         <Text style={styles.venue} numberOfLines={1}>
