@@ -8,6 +8,7 @@
 import { Track, ShowDetail } from '../types/show.types';
 import { RatedSongPerformance, TIER_1_SONG_PERFORMANCES } from '../data/songPerformanceRatings';
 import { archiveApi } from './archiveApi';
+import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleNormalization';
 
 export interface RadioTrack {
   track: Track;
@@ -43,28 +44,6 @@ function calculateSimilarity(str1: string, str2: string): number {
   const maxLength = Math.max(s1.length, s2.length);
   const distance = costs[s2.length];
   return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
-}
-
-function normalizeTrackTitle(title: string): string {
-  return title
-    .replace(/^\d+[\s.-]*/, '')
-    .replace(/^Track\s+\d+[\s:]*/, '')
-    .trim()
-    .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
-    .replace(/\s*[#]\d+.*$/i, '')
-    .replace(/\s*\(.*?\)\s*$/, '')
-    .replace(/\s*\[.*?\]\s*$/, '')
-    .replace(/\s+[Jj]am\s*$/, '');
-}
-
-// Clean up song titles from HeadyVersion format
-function normalizeSongTitle(title: string): string {
-  return title
-    .replace(/^Grateful Dead\s*-\s*/, '')
-    .replace(/&gt;/g, '>')
-    .replace(/&lt;/g, '<')
-    .replace(/&amp;/g, '&')
-    .trim();
 }
 
 // Fisher-Yates shuffle
@@ -168,8 +147,8 @@ class RadioService {
       // Fetch show details
       const showDetail = await archiveApi.getShowDetail(perf.showIdentifier, false);
 
-      // Clean up the song title for matching
-      const targetTitle = normalizeSongTitle(perf.songTitle);
+      // Clean up the song title for matching (HeadyVersion format)
+      const targetTitle = normalizeHeadyVersionTitle(perf.songTitle);
 
       // Find the best matching track using fuzzy matching
       let bestMatch: Track | null = null;

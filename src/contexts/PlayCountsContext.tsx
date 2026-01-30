@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { playCountsCloudService } from '../services/playCountsCloudService';
@@ -102,25 +102,29 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     return playCountsMap.get(key)?.count || 0;
   }, [playCountsMap]);
 
-  const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
+  // Pre-compute show-level index for O(1) lookups
+  // This is recalculated only when playCountsMap changes
+  const showPlayCountsIndex = useMemo(() => {
+    const index = new Map<string, PlayCount[]>();
     for (const pc of playCountsMap.values()) {
-      if (pc.showIdentifier === showIdentifier) return true;
+      if (!index.has(pc.showIdentifier)) {
+        index.set(pc.showIdentifier, []);
+      }
+      index.get(pc.showIdentifier)!.push(pc);
     }
-    return false;
+    return index;
   }, [playCountsMap]);
+
+  const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
+    return showPlayCountsIndex.has(showIdentifier);
+  }, [showPlayCountsIndex]);
 
   const getShowPlayCount = useCallback((showIdentifier: string, totalTracks: number): number => {
     if (totalTracks === 0) return 0;
 
-    // Get all play counts for this show
-    const showPlayCounts: PlayCount[] = [];
-    for (const pc of playCountsMap.values()) {
-      if (pc.showIdentifier === showIdentifier) {
-        showPlayCounts.push(pc);
-      }
-    }
-
-    if (showPlayCounts.length === 0) return 0;
+    // Use pre-computed index for O(1) lookup
+    const showPlayCounts = showPlayCountsIndex.get(showIdentifier);
+    if (!showPlayCounts || showPlayCounts.length === 0) return 0;
 
     // Calculate threshold (50% of tracks)
     const threshold = Math.ceil(totalTracks * 0.5);
@@ -138,7 +142,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     }
 
     return maxPlayCount;
-  }, [playCountsMap]);
+  }, [showPlayCountsIndex]);
 
   const recordTrackPlay = async (trackTitle: string, showIdentifier: string, showDate: string) => {
     const now = Date.now();
@@ -172,21 +176,24 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
       const playCounts = Array.from(newMap.values());
-      playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch(() => {});
+      playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch((error) => {
+        console.error('Failed to sync play counts to cloud:', error);
+      });
     }
   };
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    playCounts: Array.from(playCountsMap.values()), // Convert Map to array for compatibility
+    getPlayCount,
+    recordTrackPlay,
+    isLoading,
+    hasShowBeenPlayed,
+    getShowPlayCount,
+  }), [playCountsMap, getPlayCount, isLoading, hasShowBeenPlayed, getShowPlayCount]);
+
   return (
-    <PlayCountsContext.Provider
-      value={{
-        playCounts: Array.from(playCountsMap.values()), // Convert Map to array for compatibility
-        getPlayCount,
-        recordTrackPlay,
-        isLoading,
-        hasShowBeenPlayed,
-        getShowPlayCount,
-      }}
-    >
+    <PlayCountsContext.Provider value={contextValue}>
       {children}
     </PlayCountsContext.Provider>
   );

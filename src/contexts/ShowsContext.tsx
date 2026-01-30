@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { ShowsByYear, ShowDetail } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import showsData from '../data/shows.json';
@@ -32,19 +32,20 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
-  const [showDetailsCache] = useState(new Map<string, ShowDetail>());
+  // Use ref for cache - stable reference, mutated directly, no re-renders needed
+  const showDetailsCacheRef = useRef(new Map<string, ShowDetail>());
 
   const getShowDetail = useCallback(async (identifier: string): Promise<ShowDetail> => {
     // Check cache first
-    if (showDetailsCache.has(identifier)) {
-      return showDetailsCache.get(identifier)!;
+    if (showDetailsCacheRef.current.has(identifier)) {
+      return showDetailsCacheRef.current.get(identifier)!;
     }
 
     // Fetch from API
     const detail = await archiveApi.getShowDetail(identifier);
-    showDetailsCache.set(identifier, detail);
+    showDetailsCacheRef.current.set(identifier, detail);
     return detail;
-  }, [showDetailsCache]);
+  }, []); // Empty deps - ref is stable
 
   return (
     <ShowsContext.Provider
@@ -52,7 +53,7 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
         showsByYear,
         isLoading,
         error,
-        showDetailsCache,
+        showDetailsCache: showDetailsCacheRef.current,
         getShowDetail
       }}
     >

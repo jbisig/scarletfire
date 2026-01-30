@@ -199,14 +199,14 @@ Organized by impact and effort.
 
 ### 2.1 Performance Optimizations
 
-#### 2.1.1 Implement Fuzzy Match Caching
+#### 2.1.1 Implement Fuzzy Match Caching ✅ COMPLETED
 **Issue:** 4.2 - RadioService Levenshtein Distance Recalculation
 **Files:** `src/services/radioService.ts`
 
 **Tasks:**
-- [ ] Add similarity cache Map to RadioService
-- [ ] Cache Levenshtein calculations by normalized key
-- [ ] Clear cache when service resets or grows too large (>10000 entries)
+- [x] Add similarity cache Map to RadioService
+- [x] Cache Levenshtein calculations by normalized key
+- [x] Clear cache when service resets or grows too large (>10000 entries)
 
 ---
 
@@ -230,112 +230,112 @@ windowSize={10}
 
 ---
 
-#### 2.1.3 Optimize Video Component
+#### 2.1.3 Optimize Video Component ✅ COMPLETED
 **Issue:** 4.4 - Video Component Always Playing
 **Files:** `src/components/FullPlayer.tsx`, `src/components/MiniPlayer.tsx`
 
 **Tasks:**
-- [ ] Track app state (active/background) using AppState API
-- [ ] Only play video when visible AND app is active
-- [ ] Pause video when FullPlayer is dismissed
-- [ ] Add `isMuted={true}` explicitly
+- [x] Track app state (active/background) using AppState API
+- [x] Only play video when visible AND app is active
+- [x] Pause video when FullPlayer is dismissed
+- [x] Add `isMuted={true}` explicitly
 
 ---
 
-#### 2.1.4 Fix ShowsContext Cache Inefficiency
+#### 2.1.4 Fix ShowsContext Cache Inefficiency ✅ COMPLETED
 **Issue:** 4.1 - Inefficient Show Loading Logic
 **Files:** `src/contexts/ShowsContext.tsx`
 
 **Tasks:**
-- [ ] Change showDetailsCache from useState to useRef
-- [ ] Remove showDetailsCache from useCallback dependencies
-- [ ] Ensure getShowDetail callback is stable (empty deps array)
+- [x] Change showDetailsCache from useState to useRef
+- [x] Remove showDetailsCache from useCallback dependencies
+- [x] Ensure getShowDetail callback is stable (empty deps array)
 
 ---
 
-#### 2.1.5 Optimize PlayCountsContext Calculations
+#### 2.1.5 Optimize PlayCountsContext Calculations ✅ COMPLETED
 **Issue:** 4.5 - Missing useMemo for Expensive Calculations
 **Files:** `src/contexts/PlayCountsContext.tsx`
 
 **Tasks:**
-- [ ] Add memoization for getShowPlayCount results
-- [ ] Pre-compute play counts when playCountsMap changes
-- [ ] Use Map for O(1) lookups of cached results
+- [x] Add memoization for getShowPlayCount results
+- [x] Pre-compute play counts when playCountsMap changes (showPlayCountsIndex)
+- [x] Use Map for O(1) lookups of cached results
 
 ---
 
 ### 2.2 Error Handling Improvements
 
-#### 2.2.1 Fix Silent Error Catches
+#### 2.2.1 Fix Silent Error Catches ✅ COMPLETED
 **Issue:** 6.2 - Unhandled Promise Rejections
 **Files:** `src/contexts/FavoritesContext.tsx`
 
 **Tasks:**
-- [ ] Replace all `.catch(() => {})` with proper error logging
-- [ ] Implement exponential backoff retry for cloud sync
-- [ ] Add sync status indicator (syncing/synced/error)
-- [ ] Queue failed syncs for retry when connection restored
+- [x] Replace all `.catch(() => {})` with proper error logging
+- [ ] Implement exponential backoff retry for cloud sync (deferred)
+- [ ] Add sync status indicator (syncing/synced/error) (deferred)
+- [ ] Queue failed syncs for retry when connection restored (deferred)
 
 ---
 
-#### 2.2.2 Implement API Retry Logic
+#### 2.2.2 Implement API Retry Logic ✅ COMPLETED
 **Issue:** 6.4 - Archive API Timeout Handling
 **Files:** `src/services/archiveApi.ts`
 
 **Tasks:**
-- [ ] Create `fetchWithRetry` method with exponential backoff
-- [ ] Add max retry count (3)
-- [ ] Log retry attempts for debugging
-- [ ] Return user-friendly error messages
+- [x] Create `fetchWithRetry` method with exponential backoff
+- [x] Add max retry count (3)
+- [x] Log retry attempts for debugging
+- [x] Return user-friendly error messages
 
 ---
 
-#### 2.2.3 Add Radio Replenish Error Recovery
+#### 2.2.3 Add Radio Replenish Error Recovery ✅ COMPLETED
 **Issue:** 11.2 - No Error Recovery in Radio Replenish
 **Files:** `src/contexts/PlayerContext.tsx`
 
 **Tasks:**
-- [ ] Add retry logic with exponential backoff for fetchMoreRadioTracks
-- [ ] Set max retry count (3)
-- [ ] Notify user if radio queue cannot be replenished
-- [ ] Add fallback behavior (stop radio, show error message)
+- [x] Add retry logic with exponential backoff for fetchMoreRadioTracks
+- [x] Set max retry count (3)
+- [ ] Notify user if radio queue cannot be replenished (deferred - graceful degradation instead)
+- [x] Add fallback behavior (continues with remaining tracks)
 
 ---
 
 ### 2.3 Code Quality Improvements
 
-#### 2.3.1 Extract Common Player Hooks
+#### 2.3.1 Extract Common Player Hooks ✅ COMPLETED
 **Issue:** 2.3 - MiniPlayer and FullPlayer Code Duplication
 **Files:** New file `src/hooks/usePerformanceRating.ts`, `src/hooks/usePlayCountForTrack.ts`
 
 **Tasks:**
-- [ ] Create `usePerformanceRating` hook with shared logic
-- [ ] Create `usePlayCountForTrack` hook
-- [ ] Create `useVideoBackground` hook for video URL fetching
-- [ ] Refactor FullPlayer and MiniPlayer to use these hooks
+- [x] Create `usePerformanceRating` hook with shared logic
+- [ ] Create `usePlayCountForTrack` hook (deferred - inline is sufficient)
+- [ ] Create `useVideoBackground` hook for video URL fetching (deferred - already exists in VideoBackgroundContext)
+- [x] Refactor FullPlayer and MiniPlayer to use these hooks
 
 ---
 
-#### 2.3.2 Consolidate Title Normalization
+#### 2.3.2 Consolidate Title Normalization ✅ COMPLETED
 **Issue:** 5.1 - Normalization Logic Duplicated
 **Files:** New file `src/utils/titleNormalization.ts`, `src/services/archiveApi.ts`, `src/services/radioService.ts`
 
 **Tasks:**
-- [ ] Create `src/utils/titleNormalization.ts`
-- [ ] Export `normalizeTrackTitle`, `normalizeSongTitle`, `normalizeForComparison`
-- [ ] Update archiveApi.ts to use shared utilities
-- [ ] Update radioService.ts to use shared utilities
+- [x] Create `src/utils/titleNormalization.ts`
+- [x] Export `normalizeTrackTitle`, `normalizeSongTitle`, `normalizeForComparison`, `normalizeHeadyVersionTitle`
+- [x] Update archiveApi.ts to use shared utilities
+- [x] Update radioService.ts to use shared utilities
 
 ---
 
-#### 2.3.3 Fix Context Value Recreation
+#### 2.3.3 Fix Context Value Recreation ✅ COMPLETED
 **Issue:** 3.2 - Context Value Recreation Every Render
 **Files:** `src/contexts/PlayerContext.tsx`
 
 **Tasks:**
-- [ ] Wrap context value in useMemo
-- [ ] Include all callbacks in dependency array
-- [ ] Verify all callbacks are stable (use useCallback with proper deps)
+- [x] Wrap context value in useMemo
+- [x] Include all callbacks in dependency array
+- [x] Verify all callbacks are stable (use useCallback with proper deps)
 
 ---
 

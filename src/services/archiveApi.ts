@@ -11,6 +11,7 @@ import {
   AUDIO_FORMATS,
   SOURCE_TYPES,
 } from '../constants/api';
+import { normalizeSongTitle } from '../utils/titleNormalization';
 
 /**
  * Service for interacting with the Internet Archive API
@@ -398,7 +399,7 @@ class ArchiveApiService {
 
           show.tracks.forEach(track => {
             // Normalize song title (remove track numbers, clean up)
-            const songTitle = this.normalizeSongTitle(track.title);
+            const songTitle = normalizeSongTitle(track.title);
             if (!songTitle) return;
 
             if (!songToShows.has(songTitle)) {
@@ -432,48 +433,6 @@ class ArchiveApiService {
     } catch (error) {
       this.handleError(error, 'Failed to fetch song versions');
     }
-  }
-
-  /**
-   * Normalize song title by removing common prefixes and cleaning up
-   */
-  private normalizeSongTitle(title: string): string {
-    if (!title) return '';
-
-    // Remove common patterns
-    let normalized = title
-      // Remove track numbers at start (e.g., "01 ", "1. ", "Track 1: ")
-      .replace(/^\d+[\s.-]*/, '')
-      .replace(/^Track\s+\d+[\s:]*/, '')
-      // Remove leading/trailing whitespace
-      .trim()
-      // Remove version indicators
-      .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
-      .replace(/\s*[#]\d+.*$/i, '')
-      // Clean up common suffixes
-      .replace(/\s*\(.*?\)\s*$/, '')
-      .replace(/\s*\[.*?\]\s*$/, '')
-      // Remove "Jam" suffix but keep song name
-      .replace(/\s+[Jj]am\s*$/, '');
-
-    // Skip non-musical tracks
-    const skipPatterns = [
-      /^tuning/i,
-      /^talk/i,
-      /^announce/i,
-      /^intro/i,
-      /^crowd/i,
-      /^applause/i,
-      /^silence/i,
-      /^unknown/i,
-      /^banter/i,
-    ];
-
-    if (skipPatterns.some(pattern => pattern.test(normalized))) {
-      return '';
-    }
-
-    return normalized;
   }
 
   /**

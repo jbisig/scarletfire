@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress } from '../types/player.types';
@@ -327,38 +327,59 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Promise ref to allow callers to wait for ongoing replenish
   const replenishPromiseRef = useRef<Promise<void> | null>(null);
 
-  // Fetch more tracks for radio and add to queue
+  // Fetch more tracks for radio and add to queue with retry logic
   const fetchMoreRadioTracks = useCallback(async () => {
     // If already replenishing, return the existing promise so callers can wait
     if (replenishPromiseRef.current) {
       return replenishPromiseRef.current;
     }
 
-    const promise = (async () => {
-      try {
-        const newTracks = await radioService.getRandomTracks(20);
+    const MAX_RETRIES = 3;
+    const BASE_DELAY_MS = 1000;
 
-        if (newTracks.length > 0) {
-          // Add tracks to native player queue
-          for (const radioTrack of newTracks) {
-            await nativeAudioPlayer.addTrack({
-              id: radioTrack.track.id,
-              url: radioTrack.track.streamUrl,
-              title: radioTrack.track.title,
-              artist: radioTrack.show.venue || 'Grateful Dead',
-              duration: radioTrack.track.duration,
-            });
+    const promise = (async () => {
+      let lastError: Error | null = null;
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const newTracks = await radioService.getRandomTracks(20);
+
+          if (newTracks.length > 0) {
+            // Add tracks to native player queue
+            for (const radioTrack of newTracks) {
+              await nativeAudioPlayer.addTrack({
+                id: radioTrack.track.id,
+                url: radioTrack.track.streamUrl,
+                title: radioTrack.track.title,
+                artist: radioTrack.show.venue || 'Grateful Dead',
+                duration: radioTrack.track.duration,
+              });
+            }
+            dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
+            return; // Success - exit retry loop
           }
-          dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          console.warn(`Radio replenish attempt ${attempt + 1}/${MAX_RETRIES} failed:`, lastError.message);
+
+          if (attempt < MAX_RETRIES - 1) {
+            // Exponential backoff before retry
+            const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch more radio tracks:', error);
-      } finally {
-        replenishPromiseRef.current = null;
       }
+
+      // All retries failed
+      console.error('Failed to replenish radio queue after all retries:', lastError?.message);
+      // Don't stop radio - let it continue with remaining tracks
+      // User will naturally see the queue end if no more tracks can be fetched
     })();
 
     replenishPromiseRef.current = promise;
+    promise.finally(() => {
+      replenishPromiseRef.current = null;
+    });
     return promise;
   }, []);
 
@@ -481,16 +502,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [progressAnim, recordTrackPlay]);
 
-  const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
+  const loadTrack = useCallback(async (track: Track, show: ShowDetail, playlist: Track[]) => {
     // If in radio mode, stop radio first
     if (state.playbackMode === 'radio') {
       dispatch({ type: 'STOP_RADIO' });
       radioService.resetSession();
     }
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
-  };
+  }, [state.playbackMode]);
 
-  const play = async () => {
+  const play = useCallback(async () => {
     try {
       dispatch({ type: 'PLAY' });
       await audioService.play();
@@ -498,43 +519,43 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       console.error('Play failed:', error instanceof Error ? error.message : 'Unknown error');
       dispatch({ type: 'PAUSE' });
     }
-  };
+  }, []);
 
-  const pause = async () => {
+  const pause = useCallback(async () => {
     try {
       dispatch({ type: 'PAUSE' });
       await audioService.pause();
     } catch (error) {
       console.error('Pause failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, []);
 
-  const stop = async () => {
+  const stop = useCallback(async () => {
     try {
       dispatch({ type: 'STOP' });
       await audioService.stop();
     } catch (error) {
       console.error('Stop failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, []);
 
-  const nextTrack = async () => {
+  const nextTrack = useCallback(async () => {
     try {
       await audioService.skipToNext();
     } catch (error) {
       console.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, []);
 
-  const previousTrack = async () => {
+  const previousTrack = useCallback(async () => {
     try {
       await audioService.skipToPrevious();
     } catch (error) {
       console.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, []);
 
-  const seekTo = async (position: number) => {
+  const seekTo = useCallback(async (position: number) => {
     try {
       // Update progress ref and animation immediately for responsive UI
       const duration = progressRef.current.duration;
@@ -546,10 +567,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Seek failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, [progressAnim]);
 
   // Start radio mode
-  const startRadio = async () => {
+  const startRadio = useCallback(async () => {
     try {
       // If already in radio mode, do nothing
       if (state.playbackMode === 'radio') {
@@ -589,10 +610,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to start radio:', error);
       dispatch({ type: 'STOP_RADIO' });
     }
-  };
+  }, [state.playbackMode]);
 
   // Stop radio mode
-  const stopRadio = async () => {
+  const stopRadio = useCallback(async () => {
     try {
       dispatch({ type: 'STOP_RADIO' });
       radioService.resetSession();
@@ -602,7 +623,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to stop radio:', error);
     }
-  };
+  }, []);
 
   // Derived values
   const isRadioMode = state.playbackMode === 'radio';
@@ -610,27 +631,43 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ? state.radioQueue[state.radioQueueIndex]
     : null;
 
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const contextValue = useMemo(() => ({
+    state,
+    loadTrack,
+    play,
+    pause,
+    stop,
+    nextTrack,
+    previousTrack,
+    seekTo,
+    progressRef,
+    progressAnim,
+    startRadio,
+    stopRadio,
+    isRadioMode,
+    currentRadioTrack,
+    isFullPlayerVisible,
+    setFullPlayerVisible,
+  }), [
+    state,
+    loadTrack,
+    play,
+    pause,
+    stop,
+    nextTrack,
+    previousTrack,
+    seekTo,
+    progressAnim,
+    startRadio,
+    stopRadio,
+    isRadioMode,
+    currentRadioTrack,
+    isFullPlayerVisible,
+  ]);
+
   return (
-    <PlayerContext.Provider
-      value={{
-        state,
-        loadTrack,
-        play,
-        pause,
-        stop,
-        nextTrack,
-        previousTrack,
-        seekTo,
-        progressRef,
-        progressAnim,
-        startRadio,
-        stopRadio,
-        isRadioMode,
-        currentRadioTrack,
-        isFullPlayerVisible,
-        setFullPlayerVisible,
-      }}
-    >
+    <PlayerContext.Provider value={contextValue}>
       {children}
     </PlayerContext.Provider>
   );
