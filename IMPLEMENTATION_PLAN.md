@@ -502,14 +502,14 @@ These can be addressed incrementally over time.
 
 ---
 
-### 3.5 Request Deduplication
+### 3.5 Request Deduplication ✅ COMPLETED
 **Issue:** 8.1 - No Request/Response Interceptors
 **Files:** `src/services/archiveApi.ts`
 
 **Tasks:**
-- [ ] Add in-flight request Map
-- [ ] Return existing promise if same request in progress
-- [ ] Clear from map when request completes
+- [x] Add in-flight request Map (inFlightRequests)
+- [x] Return existing promise if same request in progress (fetchWithDedup)
+- [x] Clear from map when request completes
 
 ---
 

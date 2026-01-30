@@ -22,6 +22,9 @@ class ArchiveApiService {
   private showDetailCache: Map<string, { data: ShowDetail; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+  // In-flight request deduplication - prevents duplicate concurrent requests
+  private inFlightRequests: Map<string, Promise<Response>> = new Map();
+
   /**
    * Handle API errors consistently
    */
@@ -62,6 +65,27 @@ class ArchiveApiService {
   }
 
   /**
+   * Fetch with deduplication - returns existing in-flight request if one exists
+   */
+  private async fetchWithDedup(url: string, timeoutMs: number = ARCHIVE_CONFIG.TIMEOUT): Promise<Response> {
+    // Check if there's already an in-flight request for this URL
+    const existing = this.inFlightRequests.get(url);
+    if (existing) {
+      return existing;
+    }
+
+    // Create the request and track it
+    const requestPromise = this.fetchWithTimeout(url, timeoutMs)
+      .finally(() => {
+        // Clean up once the request completes
+        this.inFlightRequests.delete(url);
+      });
+
+    this.inFlightRequests.set(url, requestPromise);
+    return requestPromise;
+  }
+
+  /**
    * Fetch with retry logic and exponential backoff
    * Automatically retries on timeout or server errors (5xx)
    */
@@ -74,7 +98,8 @@ class ArchiveApiService {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await this.fetchWithTimeout(url);
+        // Use dedup fetch to prevent duplicate concurrent requests
+        const response = await this.fetchWithDedup(url);
 
         // Retry on server errors (5xx)
         if (response.status >= 500) {
