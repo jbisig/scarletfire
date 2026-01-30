@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '300',
     fontFamily: FONTS.primary,
-    color: '#aeaeae',
+    color: COLORS.textTertiary,
   },
   searchRow: {
     flexDirection: 'row',

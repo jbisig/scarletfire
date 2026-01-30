@@ -365,7 +365,7 @@ export function FavoritesScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#E54C4F" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>Loading favorites...</Text>
       </View>
     );
@@ -857,13 +857,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
     padding: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#999',
+    color: COLORS.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -995,15 +995,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: COLORS.cardBackground,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: COLORS.border,
     gap: 8,
   },
   sortButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
     flex: 1,
   },
   dropdownOverlay: {
