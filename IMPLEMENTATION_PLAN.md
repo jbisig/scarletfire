@@ -377,14 +377,15 @@ windowSize={10}
 
 ---
 
-#### 2.5.2 Fix VideoDownloadService Cleanup
+#### 2.5.2 Fix VideoDownloadService Cleanup ✅ COMPLETED
 **Issue:** 10.2 - VideoDownloadService Listeners Not Cleaned Up
 **Files:** `src/services/videoDownloadService.ts`, new hook `src/hooks/useVideoDownload.ts`
 
 **Tasks:**
-- [ ] Create `useVideoDownload` hook that handles cleanup automatically
-- [ ] Track active listeners with WeakRef or cleanup registry
-- [ ] Ensure cleanup on component unmount
+- [x] Create `useVideoDownload` hook that handles cleanup automatically
+- [x] Use isMountedRef to prevent state updates after unmount
+- [x] Cleanup listeners in useEffect return function
+- [x] Add lightweight `useVideoAvailability` hook for simple queries
 
 ---
 
