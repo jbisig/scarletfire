@@ -456,7 +456,7 @@ These can be addressed incrementally over time.
 
 ---
 
-### 3.1 Extract Magic Numbers ⏳ PARTIAL
+### 3.1 Extract Magic Numbers ✅ COMPLETED
 **Issue:** 12.1 - Magic Numbers Throughout
 **Files:** Multiple, new file `src/constants/thresholds.ts`
 
@@ -465,7 +465,7 @@ These can be addressed incrementally over time.
 - [x] Extract: DISMISS_THRESHOLD, VELOCITY_THRESHOLD, SIMILARITY_THRESHOLD, PREFETCH_COUNT
 - [x] Add JSDoc comments explaining each threshold
 - [x] Update FullPlayer and OfficialReleaseModal to use shared constants
-- [ ] Update remaining usages (radioService, SongPerformancesScreen)
+- [x] Update remaining usages (radioService, SongPerformancesScreen)
 
 ---
 
@@ -590,11 +590,11 @@ To be addressed before production deployment.
 - [ ] 2.9 ShowCard Prop Drilling
 
 ### Ongoing
-- [ ] 3.1 Extract Magic Numbers
+- [x] 3.1 Extract Magic Numbers ✓
 - [ ] 3.2 Environment Variable Validation
 - [ ] 3.3 Constants Registry
 - [ ] 3.4 Create Error Handling Utility
-- [ ] 3.5 Request Deduplication
+- [x] 3.5 Request Deduplication ✓
 
 ### Pre-Production
 - [ ] 4.1 Error Tracking (Sentry)

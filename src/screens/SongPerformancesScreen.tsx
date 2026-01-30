@@ -24,6 +24,8 @@ import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, FONTS } from '../constants/theme';
+import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
+import { normalizeTrackTitle } from '../utils/titleNormalization';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SortType = 'date' | 'rating';
@@ -75,18 +77,6 @@ function calculateSimilarity(str1: string, str2: string): number {
   const maxLength = Math.max(s1.length, s2.length);
   const distance = costs[s2.length];
   return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
-}
-
-function normalizeTrackTitle(title: string): string {
-  return title
-    .replace(/^\d+[\s.-]*/, '')
-    .replace(/^Track\s+\d+[\s:]*/, '')
-    .trim()
-    .replace(/\s*[-–]\s*(aborted|partial|incomplete|rehearsal|soundcheck).*$/i, '')
-    .replace(/\s*[#]\d+.*$/i, '')
-    .replace(/\s*\(.*?\)\s*$/, '')
-    .replace(/\s*\[.*?\]\s*$/, '')
-    .replace(/\s+[Jj]am\s*$/, '');
 }
 
 export function SongPerformancesScreen() {
@@ -171,7 +161,6 @@ export function SongPerformancesScreen() {
       // Find the track that matches this song using fuzzy matching
       let bestMatch = null;
       let bestScore = 0;
-      const SIMILARITY_THRESHOLD = 0.85; // 85% similarity required
 
       for (const track of showDetail.tracks) {
         const normalizedTitle = normalizeTrackTitle(track.title);
@@ -183,7 +172,7 @@ export function SongPerformancesScreen() {
         }
       }
 
-      if (bestMatch && bestScore >= SIMILARITY_THRESHOLD) {
+      if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
         // Load and play the matching track
         await loadTrack(bestMatch, showDetail, showDetail.tracks);
       } else {
