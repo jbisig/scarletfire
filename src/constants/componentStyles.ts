@@ -5,7 +5,7 @@
  * Use these as base styles and extend as needed.
  */
 import { StyleSheet } from 'react-native';
-import { COLORS, FONTS } from './theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from './theme';
 
 /**
  * Progress bar styles - used in MiniPlayer and FullPlayer
@@ -53,34 +53,28 @@ export const ProgressBarStyles = StyleSheet.create({
 export const TextStyles = StyleSheet.create({
   /** Primary track title */
   trackTitle: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
   },
   /** Large track title (for FullPlayer) */
   trackTitleLarge: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading3,
   },
   /** Secondary show/venue info */
   showInfo: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   /** Smaller show info */
   showInfoSmall: {
+    ...TYPOGRAPHY.bodySmall,
     fontSize: 13,
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },
   /** Time display text */
   timeText: {
+    ...TYPOGRAPHY.bodySmall,
     fontSize: 13,
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
     minWidth: 45,
   },
@@ -93,16 +87,14 @@ export const BadgeStyles = StyleSheet.create({
   /** Accent colored badge */
   accentBadge: {
     backgroundColor: COLORS.accent,
-    paddingHorizontal: 6,
+    paddingHorizontal: SPACING.sm - 2,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: RADIUS.sm,
   },
   /** Small badge text */
   badgeText: {
-    fontSize: 10,
+    ...TYPOGRAPHY.captionSmall,
     fontWeight: '700',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
     textTransform: 'uppercase',
   },
 });

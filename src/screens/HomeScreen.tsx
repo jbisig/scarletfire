@@ -3,9 +3,7 @@ import {
   View,
   StyleSheet,
   Text,
-  ActivityIndicator,
   SectionList,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
@@ -18,11 +16,13 @@ import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters, getFilterCount } from '../components/ShowsFilterTray';
 import { PageHeader } from '../components/PageHeader';
+import { SearchBar } from '../components/SearchBar';
+import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate, matchesDateQuery } from '../utils/formatters';
+import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -110,7 +110,6 @@ export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const sectionListRef = useRef<SectionList<any>>(null);
-  const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
@@ -188,26 +187,12 @@ export function HomeScreen() {
     setAppliedFilters(filters);
   }, []);
 
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    searchInputRef.current?.blur();
-  }, []);
-
   if (isLoading) {
-    return (
-      <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Loading shows...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading shows..." />;
   }
 
   if (error) {
-    return (
-      <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
+    return <ErrorState message={error} />;
   }
 
   return (
@@ -217,34 +202,13 @@ export function HomeScreen() {
 
       {/* Search and Filter Row */}
       <View style={styles.searchFilterRow}>
-        {/* Search Bar */}
-        <TouchableOpacity
-          style={styles.searchBar}
-          onPress={() => searchInputRef.current?.focus()}
-          activeOpacity={1}
-        >
-          <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
-          <TextInput
-            ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder="Date, venue, location"
-            placeholderTextColor="rgba(255,255,255,0.66)"
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            selectionColor="#FFFFFF"
+            placeholder="Date, venue, location"
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={handleClearSearch}
-              style={styles.clearButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
+        </View>
 
         {/* Filter Button */}
         <TouchableOpacity
@@ -258,7 +222,7 @@ export function HomeScreen() {
           <Ionicons
             name="options-outline"
             size={18}
-            color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : 'rgba(255,255,255,0.66)'}
+            color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
           />
           <Text style={[
             styles.filterButtonText,
@@ -281,9 +245,7 @@ export function HomeScreen() {
       {/* Shows List */}
       {sections.length === 0 && debouncedSearchQuery.trim() ? (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No shows found matching "{debouncedSearchQuery}"</Text>
-          </View>
+          <NoResultsState query={debouncedSearchQuery} entityName="shows" />
         </TouchableWithoutFeedback>
       ) : (
         <SectionList
@@ -321,77 +283,33 @@ const styles = StyleSheet.create({
   searchFilterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
     gap: 10,
   },
-  searchBar: {
+  searchBarWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 48,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
-  },
-  clearButton: {
-    padding: 4,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  errorText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.accent,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
   },
   listContent: {
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
     paddingBottom: 180,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
-    gap: 6,
+    gap: SPACING.sm - 2,
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
   },
   filterButtonText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
+    color: COLORS.textHint,
   },
   filterButtonTextActive: {
     color: COLORS.textPrimary,

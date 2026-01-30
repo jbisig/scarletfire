@@ -7,9 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
-  TextInput,
-  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -22,8 +19,11 @@ import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { SearchBar } from '../components/SearchBar';
+import { DropdownMenu, DropdownOption } from '../components/DropdownMenu';
+import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 
@@ -34,18 +34,22 @@ interface Performance {
   date: string;
   identifier: string;
   venue?: string;
-  rating?: 1 | 2 | 3 | null; // Pre-computed performance rating
+  rating?: 1 | 2 | 3 | null;
 }
 
 const allShowsByYear = showsData as ShowsByYear;
 
+const SORT_OPTIONS: DropdownOption<SortType>[] = [
+  { label: 'Date', value: 'date' },
+  { label: 'Rating', value: 'rating' },
+];
+
 // Look up show details by performance date
 function getShowByDate(performanceDate: string) {
-  const normalizedDate = performanceDate.substring(0, 10); // YYYY-MM-DD
+  const normalizedDate = performanceDate.substring(0, 10);
   const year = normalizedDate.substring(0, 4);
   const yearShows = allShowsByYear[year];
   if (!yearShows) return undefined;
-
   return yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
 }
 
@@ -87,20 +91,9 @@ export function SongPerformancesScreen() {
   const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('date');
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, right: 0 });
-  const sortButtonRef = useRef<View>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
-  const searchInputRef = useRef<TextInput>(null);
   const flatListRef = useRef<FlatList<Performance>>(null);
-
-  const handleSortPress = () => {
-    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSortButtonPosition({ top: pageY + height + 8, right: 20 });
-      setShowSortModal(true);
-    });
-  };
 
   // Scroll to top when sort type changes
   useEffect(() => {
@@ -111,13 +104,10 @@ export function SongPerformancesScreen() {
 
   // Sort performances based on selected sort type
   const sortedPerformances = useMemo(() => {
-    // Ratings are now pre-computed in the data structure, no runtime lookup needed
     const performancesWithRatings = performances;
 
     switch (sortType) {
       case 'rating':
-        // Sort by rating (1-3, with 1 being best), then by date
-        // Unrated performances go to the end
         return performancesWithRatings.sort((a, b) => {
           if (!a.rating && !b.rating) {
             return a.date.localeCompare(b.date);
@@ -125,7 +115,7 @@ export function SongPerformancesScreen() {
           if (!a.rating) return 1;
           if (!b.rating) return -1;
           if (a.rating !== b.rating) {
-            return a.rating - b.rating; // Lower tier number = better rating
+            return a.rating - b.rating;
           }
           return a.date.localeCompare(b.date);
         });
@@ -144,7 +134,6 @@ export function SongPerformancesScreen() {
 
     const query = debouncedSearchQuery.toLowerCase();
     return sortedPerformances.filter((performance) => {
-      // Fuzzy date matching - supports many common formats
       const dateMatch = matchesDateQuery(performance.date, debouncedSearchQuery);
       const venueMatch = performance.venue?.toLowerCase().includes(query);
       return dateMatch || venueMatch;
@@ -155,10 +144,8 @@ export function SongPerformancesScreen() {
     try {
       setLoadingIdentifier(performance.identifier);
 
-      // Fetch the show details using the real Archive.org identifier
       const showDetail = await archiveApi.getShowDetail(performance.identifier, false);
 
-      // Find the track that matches this song using fuzzy matching
       let bestMatch = null;
       let bestScore = 0;
 
@@ -173,7 +160,6 @@ export function SongPerformancesScreen() {
       }
 
       if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
-        // Load and play the matching track
         await loadTrack(bestMatch, showDetail, showDetail.tracks);
       } else {
         Alert.alert(
@@ -197,10 +183,8 @@ export function SongPerformancesScreen() {
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
     const isLoading = loadingIdentifier === item.identifier;
     const show = getShowByDate(item.date);
-    // Get play count for this specific song performance
     const songPlayCount = getPlayCount(songTitle, item.identifier);
 
-    // If we have a full show object, use ShowCard for consistent display
     if (show) {
       return (
         <View style={styles.performanceItemWrapper}>
@@ -219,7 +203,6 @@ export function SongPerformancesScreen() {
       );
     }
 
-    // Fallback for performances without a matching show (shouldn't happen often)
     return (
       <TouchableOpacity
         style={styles.performanceItem}
@@ -236,14 +219,8 @@ export function SongPerformancesScreen() {
   }, [loadingIdentifier, handlePerformancePress, getPlayCount, songTitle]);
 
   const getSortLabel = (type: SortType): string => {
-    switch (type) {
-      case 'rating':
-        return 'Rating';
-      case 'date':
-        return 'Date';
-      default:
-        return 'Sort';
-    }
+    const option = SORT_OPTIONS.find(o => o.value === type);
+    return option?.label ?? 'Sort';
   };
 
   return (
@@ -271,43 +248,19 @@ export function SongPerformancesScreen() {
 
         {/* Search Row */}
         <View style={styles.searchRow}>
-          <TouchableOpacity
-            style={styles.searchInputContainer}
-            onPress={() => searchInputRef.current?.focus()}
-            activeOpacity={1}
-          >
-            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder="Date, venue, location"
-              placeholderTextColor="rgba(255,255,255,0.66)"
+          <View style={styles.searchBarWrapper}>
+            <SearchBar
               value={searchQuery}
               onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              selectionColor="#FFFFFF"
+              placeholder="Date, venue, location"
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchQuery('')}
-                style={styles.clearButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-          <View ref={sortButtonRef} collapsable={false}>
-            <TouchableOpacity
-              style={styles.sortPillButton}
-              onPress={handleSortPress}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
-              <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
-            </TouchableOpacity>
           </View>
+          <DropdownMenu
+            options={SORT_OPTIONS}
+            selectedValue={sortType}
+            onSelect={setSortType}
+            triggerLabel={getSortLabel(sortType)}
+          />
         </View>
       </View>
 
@@ -320,77 +273,15 @@ export function SongPerformancesScreen() {
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           debouncedSearchQuery.trim() ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color="#666" />
-              <Text style={styles.emptyStateText}>
-                No performances found for "{debouncedSearchQuery}"
-              </Text>
-            </View>
+            <NoResultsState query={debouncedSearchQuery} entityName="performances" />
           ) : null
         }
-        // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={15}
         updateCellsBatchingPeriod={50}
         windowSize={11}
         initialNumToRender={15}
       />
-
-      {/* Sort Dropdown */}
-      <Modal
-        visible={showSortModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortModal(false)}
-      >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setShowSortModal(false)}
-        >
-          <View
-            style={[
-              styles.dropdownContainer,
-              { top: sortButtonPosition.top, right: sortButtonPosition.right }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('date');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'date' && styles.dropdownItemTextSelected
-              ]}>Date</Text>
-              {sortType === 'date' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('rating');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'rating' && styles.dropdownItemTextSelected
-              ]}>Rating</Text>
-              {sortType === 'rating' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -401,9 +292,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 20,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    gap: SPACING.xl,
   },
   backButton: {
     width: 40,
@@ -417,59 +308,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   songTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading2,
     flexShrink: 1,
   },
   performanceCount: {
-    fontSize: 28,
+    ...TYPOGRAPHY.heading2,
     fontWeight: '300',
-    fontFamily: FONTS.primary,
     color: COLORS.textTertiary,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.sm,
   },
-  searchInputContainer: {
+  searchBarWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 48,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  sortPillButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 48,
-    gap: 6,
-  },
-  sortPillButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
   },
   listContent: {
     paddingBottom: 180,
@@ -478,71 +331,21 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   performanceItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   fallbackText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
   },
   loadingOverlay: {
     position: 'absolute',
-    right: 24,
+    right: SPACING.xxl,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
-  },
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
-  },
-  dropdownItemTextSelected: {
-    color: COLORS.accent,
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 16,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 16,
   },
 });

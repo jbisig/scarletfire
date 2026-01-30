@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { FILTER_ERAS, FilterEra, ShowsByYear } from './types';
 import { expandDisplaySeries, getOfficialReleasesForDate } from '../../data/officialReleases';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface YearsSectionProps {
   selectedYears: string[];
@@ -165,15 +165,13 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
 
 const styles = StyleSheet.create({
   section: {
-    paddingTop: 24,
+    paddingTop: SPACING.xxl,
   },
   sectionLabel: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
-    marginBottom: 16,
-    paddingHorizontal: 20,
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
   },
   eraContainer: {
   },
@@ -181,21 +179,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 50,
+    borderRadius: RADIUS.full,
   },
   eraName: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: COLORS.textTertiary,
   },
   selectAllText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
     color: COLORS.accent,
   },
   yearsGrid: {
@@ -210,10 +206,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   yearText: {
-    fontSize: 18,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.bodyLarge,
     textAlign: 'center',
   },
   yearTextSelected: {
@@ -235,6 +228,6 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     position: 'absolute',
-    right: 12,
+    right: SPACING.md,
   },
 });

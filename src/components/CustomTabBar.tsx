@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   ShowsTab: { active: 'albums', inactive: 'albums-outline' },
@@ -59,7 +59,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const icons = TAB_ICONS[route.name] || { active: 'help', inactive: 'help-outline' };
           const iconName = isFocused ? icons.active : icons.inactive;
           const label = TAB_LABELS[route.name] || route.name;
-          const color = isFocused ? '#FFFFFF' : '#999999';
+          const color = isFocused ? COLORS.textPrimary : COLORS.textSecondary;
 
           return (
             <TouchableOpacity
@@ -97,16 +97,15 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingTop: 12,
+    paddingTop: SPACING.md,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: SPACING.xs,
   },
   tabLabel: {
-    fontSize: 10,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.captionSmall,
   },
 });

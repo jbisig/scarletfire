@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
 import { formatDownloads } from '../utils/formatters';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface VersionPickerProps {
   versions: RecordingVersion[];
@@ -104,22 +104,21 @@ const styles = StyleSheet.create({
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
   },
   sourceName: {
-    fontSize: 15,
+    ...TYPOGRAPHY.bodySmall,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    fontSize: 15,
   },
   downloads: {
     flex: 1,
+    ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },
   // Fullscreen modal styles
@@ -131,19 +130,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading4,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xs,
   },
   optionsList: {
     flex: 1,
@@ -152,7 +148,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -161,18 +157,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionSource: {
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   selectedText: {
     color: COLORS.accent,
   },
   optionDownloads: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
 });

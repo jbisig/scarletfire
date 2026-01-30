@@ -10,7 +10,7 @@ import { useShows } from '../contexts/ShowsContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -126,14 +126,14 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
 const styles = StyleSheet.create({
   wrapper: {
     overflow: 'hidden',
-    borderRadius: 12,
-    marginHorizontal: 12,
+    borderRadius: RADIUS.md,
+    marginHorizontal: SPACING.md,
   },
   container: {
     height: 72,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
   },
   video: {
     ...StyleSheet.absoluteFillObject,
@@ -146,53 +146,50 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.md,
   },
   infoContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: SPACING.lg,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   trackTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.labelLarge,
     flexShrink: 1,
   },
   radioBadge: {
     backgroundColor: COLORS.accent,
-    paddingHorizontal: 6,
+    paddingHorizontal: SPACING.sm - 2,
     paddingVertical: 3,
-    borderRadius: 8,
-    marginLeft: 8,
+    borderRadius: RADIUS.sm,
+    marginLeft: SPACING.sm,
     flexShrink: 0,
   },
   showTitle: {
-    fontSize: 13,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.85)',
   },
   playButton: {
-    padding: 8,
+    padding: SPACING.sm,
   },
   progressBarContainer: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   progressBarBackground: {
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.33)',
-    borderRadius: 6,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: RADIUS.sm,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: RADIUS.sm,
   },
 });

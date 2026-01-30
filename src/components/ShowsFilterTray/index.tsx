@@ -23,7 +23,7 @@ import {
   getOfficialReleasesForDate,
   expandDisplaySeries,
 } from '../../data/officialReleases';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
 export function ShowsFilterTray({
   isOpen,
@@ -225,27 +225,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading4,
   },
   closeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SPACING.xs,
   },
   closeText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   scrollView: {
     flex: 1,

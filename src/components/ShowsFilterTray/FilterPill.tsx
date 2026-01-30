@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface FilterPillProps {
   label: string;
@@ -49,12 +49,12 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 50,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 6,
-    marginBottom: 8,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    marginRight: SPACING.sm - 2,
+    marginBottom: SPACING.sm,
   },
   pillSelected: {
     backgroundColor: COLORS.accent,
@@ -63,10 +63,8 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   pillText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   pillTextSelected: {
     color: COLORS.textPrimary,
@@ -75,6 +73,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   checkmark: {
-    marginRight: 4,
+    marginRight: SPACING.xs,
   },
 });

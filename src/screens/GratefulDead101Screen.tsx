@@ -16,7 +16,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { ShowCard } from '../components/ShowCard';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GratefulDead101'>;
 
@@ -124,30 +124,26 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
+    marginTop: SPACING.lg,
     color: COLORS.textSecondary,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    gap: SPACING.md,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: SPACING.xxxxl,
+    height: SPACING.xxxxl,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading2,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     lineHeight: 22,
   },
@@ -158,10 +154,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xxxxl,
   },
   emptyStateText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },

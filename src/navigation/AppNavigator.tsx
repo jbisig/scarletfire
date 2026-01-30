@@ -19,7 +19,7 @@ import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-nat
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
-import { COLORS } from '../constants/theme';
+import { COLORS, FONTS, TYPOGRAPHY } from '../constants/theme';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -31,7 +31,7 @@ export type RootStackParamList = {
   SongList: undefined;
   SongPerformances: {
     songTitle: string;
-    performances: Array<{ date: string; identifier: string; venue?: string }>;
+    performances: Array<{ date: string; identifier: string; venue?: string; rating?: 1 | 2 | 3 | null }>;
   };
   Settings: undefined;
   MainTabs: undefined;
@@ -54,7 +54,7 @@ function ShowsStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
-          fontFamily: 'FamiljenGrotesk',
+          fontFamily: FONTS.primary,
           fontSize: 18,
         },
       }}
@@ -91,7 +91,7 @@ function SongsStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
-          fontFamily: 'FamiljenGrotesk',
+          fontFamily: FONTS.primary,
           fontSize: 18,
         },
       }}
@@ -131,7 +131,7 @@ function FavoritesStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
-          fontFamily: 'FamiljenGrotesk',
+          fontFamily: FONTS.primary,
           fontSize: 18,
         },
       }}
@@ -165,7 +165,7 @@ function DiscoverStack() {
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',
-          fontFamily: 'FamiljenGrotesk',
+          fontFamily: FONTS.primary,
           fontSize: 18,
         },
       }}

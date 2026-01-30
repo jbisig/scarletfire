@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
 import { StarRating } from './StarRating';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 interface TrackItemProps {
   track: Track;
@@ -50,8 +50,8 @@ TrackItem.displayName = 'TrackItem';
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xxl,
     alignItems: 'baseline',
   },
   playing: {
@@ -65,19 +65,16 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   title: {
-    fontSize: 18,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
-    color: COLORS.textPrimary,
   },
   ratingContainer: {
-    marginLeft: 8,
+    marginLeft: SPACING.sm,
   },
   duration: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginLeft: 12,
+    marginLeft: SPACING.md,
     marginTop: 2,
   },
   playingText: {

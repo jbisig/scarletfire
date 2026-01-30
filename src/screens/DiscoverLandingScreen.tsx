@@ -21,7 +21,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { radioService } from '../services/radioService';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -244,48 +244,45 @@ const styles = StyleSheet.create({
     paddingBottom: 184,
   },
   content: {
-    padding: 20,
-    paddingTop: 8,
+    padding: SPACING.xl,
+    paddingTop: SPACING.sm,
   },
   cardsContainer: {
-    gap: 20,
+    gap: SPACING.xl,
   },
   imageCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     overflow: 'hidden',
     minHeight: 180,
   },
   smallImageCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     overflow: 'hidden',
     minHeight: 120,
   },
   imageCardBackground: {
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
   },
   cardGradient: {
     flex: 1,
-    padding: 32,
+    padding: SPACING.xxxl,
     justifyContent: 'center',
     minHeight: 180,
   },
   smallCardGradient: {
     flex: 1,
-    padding: 32,
+    padding: SPACING.xxxl,
     justifyContent: 'center',
     minHeight: 120,
   },
   cardTitle: {
-    fontSize: 26,
+    ...TYPOGRAPHY.heading3,
     fontWeight: '500',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 8,
+    fontSize: 26,
+    marginBottom: SPACING.sm,
   },
   cardDescription: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
     opacity: 0.8,
     lineHeight: 22,
   },
@@ -294,22 +291,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.5)',
-    paddingBottom: 6,
-    marginBottom: 12,
+    borderBottomColor: COLORS.borderMedium,
+    paddingBottom: SPACING.sm - 2,
+    marginBottom: SPACING.md,
   },
   sotdLoading: {
     paddingVertical: 30,
     alignItems: 'flex-start',
   },
   showInfo: {
-    gap: 4,
+    gap: SPACING.xs,
   },
   showVenue: {
-    fontSize: 22,
+    ...TYPOGRAPHY.heading3,
     fontWeight: '500',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    fontSize: 22,
   },
   dateStarsRow: {
     flexDirection: 'row',
@@ -317,36 +313,30 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   showDate: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
     opacity: 0.7,
   },
   showLocation: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
     opacity: 0.7,
   },
   radioTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   radioIcon: {
-    marginRight: 8,
+    marginRight: SPACING.sm,
   },
   nowPlayingBadge: {
     backgroundColor: COLORS.accent,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 12,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.md,
+    marginLeft: SPACING.md,
   },
   nowPlayingText: {
-    fontSize: 12,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
 });

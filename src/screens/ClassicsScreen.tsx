@@ -4,10 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -16,32 +13,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { EraPicker } from '../components/EraPicker';
+import { DropdownMenu, DropdownOption } from '../components/DropdownMenu';
+import { LoadingState } from '../components/StateViews';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ERAS, Era } from '../constants/classicShows';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Classics'>;
 type SortType = 'performanceDate' | 'stars';
+
+const SORT_OPTIONS: DropdownOption<SortType>[] = [
+  { label: 'Date', value: 'performanceDate' },
+  { label: 'Rating', value: 'stars' },
+];
 
 export function ClassicsScreen() {
   const navigation = useNavigation<ClassicsScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const { showsByYear, isLoading } = useShows();
   const scrollViewRef = useRef<ScrollView>(null);
-  const sortButtonRef = useRef<View>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [selectedEra, setSelectedEra] = useState<Era | null>(null);
   const [sortType, setSortType] = useState<SortType>('stars');
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, right: 0 });
-
-  const handleSortPress = () => {
-    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSortButtonPosition({ top: pageY + height + 8, right: 20 });
-      setShowSortModal(true);
-    });
-  };
 
   useEffect(() => {
     if (showsByYear) {
@@ -63,15 +57,9 @@ export function ClassicsScreen() {
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   }, [selectedEra, sortType]);
 
-  const getSortLabel = (sort: SortType): string => {
-    switch (sort) {
-      case 'performanceDate':
-        return 'Date';
-      case 'stars':
-        return 'Rating';
-      default:
-        return 'Sort';
-    }
+  const getSortLabel = (type: SortType): string => {
+    const option = SORT_OPTIONS.find(o => o.value === type);
+    return option?.label ?? 'Sort';
   };
 
   // Filter by era and sort based on sort type
@@ -117,12 +105,7 @@ export function ClassicsScreen() {
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Loading classic shows...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading classic shows..." />;
   }
 
   return (
@@ -153,16 +136,12 @@ export function ClassicsScreen() {
             selectedEra={selectedEra}
             onEraChange={handleEraChange}
           />
-          <View ref={sortButtonRef} collapsable={false}>
-            <TouchableOpacity
-              style={styles.sortPillButton}
-              onPress={handleSortPress}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sortPillButtonText}>{getSortLabel(sortType)}</Text>
-              <Ionicons name="arrow-down" size={18} color={COLORS.accent} />
-            </TouchableOpacity>
-          </View>
+          <DropdownMenu
+            options={SORT_OPTIONS}
+            selectedValue={sortType}
+            onSelect={setSortType}
+            triggerLabel={getSortLabel(sortType)}
+          />
         </View>
       </View>
 
@@ -174,62 +153,6 @@ export function ClassicsScreen() {
           ))}
         </View>
       </ScrollView>
-
-      {/* Sort Dropdown */}
-      <Modal
-        visible={showSortModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortModal(false)}
-      >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setShowSortModal(false)}
-        >
-          <View
-            style={[
-              styles.dropdownContainer,
-              { top: sortButtonPosition.top, right: sortButtonPosition.right }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('performanceDate');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'performanceDate' && styles.dropdownItemTextSelected
-              ]}>Date</Text>
-              {sortType === 'performanceDate' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('stars');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'stars' && styles.dropdownItemTextSelected
-              ]}>Rating</Text>
-              {sortType === 'stars' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -239,21 +162,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: COLORS.textSecondary,
-  },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    gap: SPACING.md,
   },
   backButton: {
     width: 40,
@@ -262,36 +174,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading2,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     lineHeight: 22,
   },
   filtersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  sortPillButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 6,
-  },
-  sortPillButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
+    gap: SPACING.sm,
   },
   scrollContainer: {
     flex: 1,
@@ -301,41 +194,5 @@ const styles = StyleSheet.create({
   },
   showsList: {
     gap: 0,
-  },
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
-  },
-  dropdownItemTextSelected: {
-    color: COLORS.accent,
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 16,
   },
 });

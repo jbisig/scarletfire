@@ -7,19 +7,20 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 export function SignupScreen() {
   const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signUpWithEmail, loginWithGoogle, skipLogin, state } = useAuth();
+  const { signUpWithEmail, loginWithGoogle, loginWithApple, skipLogin, state } = useAuth();
 
   const handleSignup = async () => {
     if (!email || !password) {
@@ -43,6 +44,15 @@ export function SignupScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      await loginWithApple();
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert('Apple Sign-In Failed', error.message || 'An error occurred');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -62,7 +72,7 @@ export function SignupScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
-                    placeholderTextColor="rgba(255, 255, 255, 0.75)"
+                    placeholderTextColor={COLORS.textPlaceholder}
                     selectionColor="#FFFFFF"
                     value={email}
                     onChangeText={setEmail}
@@ -79,7 +89,7 @@ export function SignupScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Password"
-                    placeholderTextColor="rgba(255, 255, 255, 0.75)"
+                    placeholderTextColor={COLORS.textPlaceholder}
                     selectionColor="#FFFFFF"
                     value={password}
                     onChangeText={setPassword}
@@ -94,7 +104,7 @@ export function SignupScreen() {
                     <Ionicons
                       name={showPassword ? 'eye-off' : 'eye'}
                       size={20}
-                      color="rgba(255, 255, 255, 0.75)"
+                      color={COLORS.textPlaceholder}
                     />
                   </TouchableOpacity>
                 </BlurView>
@@ -121,16 +131,31 @@ export function SignupScreen() {
 
               {/* Google Sign In Button */}
               <TouchableOpacity
-                style={[styles.googleButton, state.isLoading && styles.buttonDisabled]}
+                style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
                 onPress={handleGoogleSignIn}
                 disabled={state.isLoading}
                 activeOpacity={0.8}
               >
-                <BlurView intensity={6} tint="light" style={styles.googleButtonBlur}>
+                <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
                   <Ionicons name="logo-google" size={20} color="#fff" />
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                  <Text style={styles.socialButtonText}>Continue with Google</Text>
                 </BlurView>
               </TouchableOpacity>
+
+              {/* Apple Sign In Button (iOS only) */}
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
+                  onPress={handleAppleSignIn}
+                  disabled={state.isLoading}
+                  activeOpacity={0.8}
+                >
+                  <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
+                    <Ionicons name="logo-apple" size={22} color="#fff" />
+                    <Text style={styles.socialButtonText}>Continue with Apple</Text>
+                  </BlurView>
+                </TouchableOpacity>
+              )}
 
               {/* Login Link */}
               <View style={styles.loginLink}>
@@ -173,123 +198,111 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
-    minHeight: 40,
+    minHeight: SPACING.xxxxl,
   },
   content: {
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xxxxl,
     paddingBottom: 60,
   },
   title: {
-    fontSize: 36,
+    ...TYPOGRAPHY.display,
     fontWeight: '500',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 40,
+    marginBottom: SPACING.xxxxl,
   },
   formContainer: {
-    gap: 20,
+    gap: SPACING.xl,
   },
   inputWrapper: {
-    borderRadius: 100,
+    borderRadius: RADIUS.full,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    borderColor: COLORS.borderLight,
   },
   inputBlur: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: COLORS.surfaceMedium,
   },
   input: {
     flex: 1,
     paddingVertical: 18,
     paddingHorizontal: 28,
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
   },
   eyeButton: {
-    paddingRight: 20,
+    paddingRight: SPACING.xl,
   },
   primaryButton: {
     backgroundColor: COLORS.accent,
     paddingVertical: 18,
-    borderRadius: 100,
+    borderRadius: RADIUS.full,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: SPACING.lg,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: SPACING.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: COLORS.surfaceFocused,
   },
   dividerText: {
-    color: '#CCCCCC',
-    paddingHorizontal: 20,
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
+    paddingHorizontal: SPACING.xl,
   },
-  googleButton: {
-    borderRadius: 100,
+  socialButton: {
+    borderRadius: RADIUS.full,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    borderColor: COLORS.borderLight,
   },
-  googleButtonBlur: {
+  socialButtonBlur: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
     paddingHorizontal: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    gap: 12,
+    backgroundColor: COLORS.surfaceLight,
+    gap: SPACING.md,
   },
-  googleButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
+  socialButtonText: {
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
   },
   loginLink: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: SPACING.lg,
   },
   loginLinkText: {
-    color: '#CCCCCC',
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
   },
   loginLinkButton: {
-    color: COLORS.accent,
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
+    color: COLORS.accent,
   },
   skipButton: {
-    paddingVertical: 12,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   skipText: {
-    color: '#CCCCCC',
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
   },
 });

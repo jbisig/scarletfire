@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService } from '../services/profileService';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 // Default profile image
 const DEFAULT_PROFILE = require('../../assets/images/logged-out-pfp.png');
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -258,35 +258,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
   },
   headerSpacer: {
     width: 40,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.xxl,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   sectionTitle: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   profileContainer: {
     alignItems: 'center',
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   avatar: {
     width: 120,
@@ -301,17 +298,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 60,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.backdrop,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cameraBadge: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: SPACING.xs,
+    right: SPACING.xs,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -319,26 +316,23 @@ const styles = StyleSheet.create({
     borderColor: COLORS.background,
   },
   email: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   photoButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.md,
   },
   photoButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: RADIUS.xl,
     backgroundColor: COLORS.cardBackground,
   },
   photoButtonText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   removeButton: {
     backgroundColor: 'transparent',
@@ -346,57 +340,49 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   removeButtonText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },
   accountItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   accountLabel: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
   },
   accountValue: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    gap: 12,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.md,
   },
   logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelLarge,
     color: COLORS.accent,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    gap: 12,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.md,
   },
   deleteText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelLarge,
     color: '#FF4444',
   },
   deleteWarning: {
-    fontSize: 13,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '400',
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: SPACING.xs,
   },
 });

@@ -22,7 +22,7 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
@@ -349,73 +349,67 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   errorText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.accent,
   },
   scrollContent: {
     paddingBottom: 180,
   },
   headerContainer: {
-    padding: 20,
-    paddingTop: 8,
+    padding: SPACING.xl,
+    paddingTop: SPACING.sm,
   },
   venue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 8,
+    ...TYPOGRAPHY.heading2,
+    marginBottom: SPACING.sm,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   infoContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   date: {
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
     color: COLORS.accent,
   },
   sourceName: {
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
     color: COLORS.accent,
   },
   badgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   playCountBadge: {
     backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   playCountText: {
-    fontSize: 13,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '400',
     color: COLORS.textSecondary,
   },
   saveButton: {
     width: 33,
     height: 33,
-    borderRadius: 17,
+    borderRadius: RADIUS.full,
     borderWidth: 2,
     borderColor: COLORS.textPrimary,
     justifyContent: 'center',
@@ -428,40 +422,36 @@ const styles = StyleSheet.create({
   sourceInfoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
   },
   sourceInfoText: {
+    ...TYPOGRAPHY.body,
     fontSize: 15,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   downloadsText: {
+    ...TYPOGRAPHY.body,
     fontSize: 15,
-    fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
   },
   tracksContainer: {
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
   },
   nextTourStopsSection: {
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginHorizontal: 20,
-    marginBottom: 16,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   nextTourStopsHeader: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    paddingHorizontal: 24,
-    marginBottom: 4,
+    ...TYPOGRAPHY.heading2,
+    paddingHorizontal: SPACING.xxl,
+    marginBottom: SPACING.xs,
   },
 });

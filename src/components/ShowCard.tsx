@@ -7,8 +7,9 @@ import { useShows } from '../contexts/ShowsContext';
 import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
+import { PlayCountBadge } from './PlayCountBadge';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 interface ShowCardProps {
   show: GratefulDeadShow;
@@ -104,13 +105,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                 />
               </View>
             )}
-            {playCount > 0 && (
-              <View style={styles.playCountBadge}>
-                <Text style={styles.playCountText}>
-                  {playCount} {playCount === 1 ? 'play' : 'plays'}
-                </Text>
-              </View>
-            )}
+            <PlayCountBadge count={playCount} size="small" />
           </View>
         </View>
       </TouchableOpacity>
@@ -130,16 +125,13 @@ ShowCard.displayName = 'ShowCard';
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
   },
   venue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 4,
+    ...TYPOGRAPHY.heading4,
+    marginBottom: SPACING.xs,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -148,7 +140,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   dateRow: {
     flexDirection: 'row',
@@ -157,36 +149,21 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   date: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   location: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   badgesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.sm,
     flexShrink: 1,
   },
   officialReleaseBadgeWrapper: {
     flexShrink: 1,
     minWidth: 0,
-  },
-  playCountBadge: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  playCountText: {
-    fontSize: 12,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
   },
 });

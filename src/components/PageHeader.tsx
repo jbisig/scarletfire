@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService } from '../services/profileService';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 // Default profile image for logged out users
@@ -131,21 +131,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    gap: SPACING.lg,
   },
   profileImage: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading2,
   },
   dropdownOverlay: {
     flex: 1,
@@ -154,32 +151,25 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     position: 'absolute',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
     minWidth: 150,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOWS.lg,
   },
   dropdownItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   dropdownItemText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
   },
   dropdownItemTextRed: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.accent,
   },
   dropdownDivider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginHorizontal: 16,
+    marginHorizontal: SPACING.lg,
   },
 });

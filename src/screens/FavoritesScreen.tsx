@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
   Modal,
   TextInput,
@@ -29,9 +28,11 @@ import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { archiveApi } from '../services/archiveApi';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { StarRating } from '../components/StarRating';
+import { PlayCountBadge } from '../components/PlayCountBadge';
+import { LoadingState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 const allShowsByYear = showsData as ShowsByYear;
 
@@ -90,13 +91,7 @@ const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPres
           )}
         </View>
 
-        {playCount > 0 && (
-          <View style={styles.playCountBadge}>
-            <Text style={styles.playCountText}>
-              {playCount} {playCount === 1 ? 'play' : 'plays'}
-            </Text>
-          </View>
-        )}
+        <PlayCountBadge count={playCount} size="small" />
       </View>
     </TouchableOpacity>
   );
@@ -363,12 +358,7 @@ export function FavoritesScreen() {
   }, [loadTrack]);
 
   if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Loading favorites...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading favorites..." />;
   }
 
   const renderShowsTab = () => {
@@ -392,12 +382,12 @@ export function FavoritesScreen() {
             onPress={() => showSearchInputRef.current?.focus()}
             activeOpacity={1}
           >
-            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIcon} />
             <TextInput
               ref={showSearchInputRef}
               style={styles.searchInput}
               placeholder="Date, venue, location"
-              placeholderTextColor="rgba(255,255,255,0.66)"
+              placeholderTextColor={COLORS.textHint}
               value={showSearchQuery}
               onChangeText={setShowSearchQuery}
               autoCapitalize="none"
@@ -413,7 +403,7 @@ export function FavoritesScreen() {
                 style={styles.clearButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
+                <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
               </TouchableOpacity>
             )}
           </TouchableOpacity>
@@ -482,12 +472,12 @@ export function FavoritesScreen() {
             onPress={() => songSearchInputRef.current?.focus()}
             activeOpacity={1}
           >
-            <Ionicons name="search" size={20} color="rgba(255,255,255,0.66)" style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIcon} />
             <TextInput
               ref={songSearchInputRef}
               style={styles.searchInput}
               placeholder="Song, date, venue"
-              placeholderTextColor="rgba(255,255,255,0.66)"
+              placeholderTextColor={COLORS.textHint}
               value={songSearchQuery}
               onChangeText={setSongSearchQuery}
               autoCapitalize="none"
@@ -503,7 +493,7 @@ export function FavoritesScreen() {
                 style={styles.clearButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.66)" />
+                <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
               </TouchableOpacity>
             )}
           </TouchableOpacity>
@@ -820,34 +810,33 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: 20,
+    marginHorizontal: SPACING.xl,
     marginTop: 0,
     marginBottom: 0,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 28,
-    padding: 4,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xxl,
+    padding: SPACING.xs,
     height: 56,
   },
   tabSlider: {
     position: 'absolute',
-    top: 4,
-    left: 4,
-    bottom: 4,
+    top: SPACING.xs,
+    left: SPACING.xs,
+    bottom: SPACING.xs,
     backgroundColor: '#484848',
-    borderRadius: 24,
+    borderRadius: RADIUS.xl,
   },
   tab: {
     flex: 1,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
+    borderRadius: RADIUS.xl,
     zIndex: 1,
   },
   tabText: {
-    fontSize: 20,
+    ...TYPOGRAPHY.heading4,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
     color: COLORS.textSecondary,
   },
   activeTabText: {
@@ -858,41 +847,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: COLORS.textSecondary,
+    padding: SPACING.xxxxl,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xxxxl,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 12,
+    ...TYPOGRAPHY.heading3,
+    marginBottom: SPACING.md,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   listContent: {
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
     paddingBottom: 180,
   },
   songItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
   },
   songContentRow: {
@@ -902,14 +882,11 @@ const styles = StyleSheet.create({
   },
   songInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   songTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 4,
+    ...TYPOGRAPHY.heading4,
+    marginBottom: SPACING.xs,
   },
   songDateRow: {
     flexDirection: 'row',
@@ -918,26 +895,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   songDate: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
-  },
-  playCountBadge: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  playCountText: {
-    fontSize: 12,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   songVenue: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   tabContentContainer: {
@@ -946,17 +908,17 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 8,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
   },
   searchInputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
     height: 48,
   },
   searchIcon: {
@@ -964,28 +926,25 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
   },
   clearButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: SPACING.xs,
+    marginLeft: SPACING.sm,
   },
   sortPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 24,
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
     height: 48,
-    gap: 6,
+    gap: SPACING.sm - 2,
   },
   sortPillButtonText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
+    color: COLORS.textHint,
   },
   songsTabContainer: {
     flex: 1,
@@ -993,17 +952,16 @@ const styles = StyleSheet.create({
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     backgroundColor: COLORS.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    gap: 8,
+    gap: SPACING.sm,
   },
   sortButtonText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     flex: 1,
   },
   dropdownOverlay: {
@@ -1013,26 +971,20 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     position: 'absolute',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
     minWidth: 180,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOWS.lg,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   dropdownItemText: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.body,
   },
   dropdownItemTextSelected: {
     color: COLORS.accent,
@@ -1040,6 +992,6 @@ const styles = StyleSheet.create({
   dropdownDivider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginHorizontal: 16,
+    marginHorizontal: SPACING.lg,
   },
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FilterPill } from './FilterPill';
 import { DISPLAY_SERIES } from '../../data/officialReleases';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
 interface SeriesSectionProps {
   selectedSeries: string[];
@@ -43,25 +43,22 @@ export const SeriesSection = React.memo<SeriesSectionProps>(function SeriesSecti
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xxl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   sectionLabel: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   selectAllText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
     color: COLORS.accent,
   },
   pillsGrid: {

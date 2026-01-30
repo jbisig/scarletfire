@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface FilterActionBarProps {
   matchingCount: number;
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
     backgroundColor: COLORS.background,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -55,33 +55,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 6,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm - 2,
   },
   resetText: {
+    ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   matchingText: {
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   applyButton: {
     backgroundColor: COLORS.accent,
-    borderRadius: 50,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.xxl,
+    paddingVertical: SPACING.md,
   },
   applyText: {
+    ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
 });

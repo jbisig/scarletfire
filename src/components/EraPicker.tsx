@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Era } from '../constants/classicShows';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface EraPickerProps {
   eras: Era[];
@@ -112,16 +112,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 50,
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 14,
   },
   eraText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
+    color: COLORS.textHint,
   },
   // Fullscreen modal styles
   modalContainer: {
@@ -132,19 +131,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading4,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xs,
   },
   optionsList: {
     flex: 1,
@@ -153,16 +149,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   eraOption: {
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   selectedText: {
     color: COLORS.accent,

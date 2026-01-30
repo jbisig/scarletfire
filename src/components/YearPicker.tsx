@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface YearPickerProps {
   years: string[];
@@ -115,29 +115,27 @@ export const YearPicker = React.memo<YearPickerProps>(function YearPicker({ year
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
     backgroundColor: COLORS.background,
   },
   selector: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: SPACING.sm,
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: COLORS.border,
     overflow: 'hidden',
   },
   selectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   yearText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   // Fullscreen modal styles
   modalContainer: {
@@ -148,19 +146,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
+    ...TYPOGRAPHY.heading4,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xs,
   },
   optionsList: {
     flex: 1,
@@ -169,16 +164,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   yearOption: {
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   selectedText: {
     color: COLORS.accent,
@@ -191,16 +184,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 50,
-    gap: 6,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.full,
+    gap: SPACING.sm - 2,
   },
   compactYearText: {
-    fontSize: 16,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
-    fontFamily: FONTS.secondary,
-    color: 'rgba(255,255,255,0.66)',
+    color: COLORS.textHint,
   },
 });

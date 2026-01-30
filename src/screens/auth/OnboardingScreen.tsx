@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useAuth } from '../../contexts/AuthContext';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 const { width: screenWidth } = Dimensions.get('window');
 const LOGO_SIZE = screenWidth * 0.7; // 70% of screen width
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xxxxl,
   },
   logo: {
     width: LOGO_SIZE,
@@ -80,55 +80,49 @@ const styles = StyleSheet.create({
   },
   buttonsWrapper: {
     width: '100%',
-    gap: 16,
-    marginBottom: 32,
+    gap: SPACING.lg,
+    marginBottom: SPACING.xxxl,
   },
   primaryButton: {
     backgroundColor: COLORS.accent,
     paddingVertical: 18,
-    paddingHorizontal: 40,
-    borderRadius: 100,
+    paddingHorizontal: SPACING.xxxxl,
+    borderRadius: RADIUS.full,
     width: '100%',
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
   },
   secondaryButton: {
-    borderRadius: 100,
+    borderRadius: RADIUS.full,
     width: '100%',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    borderColor: COLORS.borderLight,
   },
   secondaryButtonBlur: {
     paddingVertical: 18,
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.xxxxl,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: COLORS.surfaceMedium,
   },
   secondaryButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    fontFamily: FONTS.primary,
   },
   skipButton: {
-    paddingVertical: 12,
+    paddingVertical: SPACING.md,
     marginBottom: 50,
   },
   skipText: {
-    color: '#CCCCCC',
-    fontSize: 16,
-    fontFamily: FONTS.primary,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
   },
   benefitsText: {
-    fontSize: 14,
-    color: '#CCCCCC',
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textTertiary,
     textAlign: 'center',
-    fontFamily: FONTS.secondary,
   },
 });

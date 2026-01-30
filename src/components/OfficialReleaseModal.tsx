@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfficialRelease } from '../data/officialReleases';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 
@@ -316,7 +316,7 @@ export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.backdrop,
   },
   backdropPressable: {
     flex: 1,
@@ -327,10 +327,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.md,
     maxHeight: '70%',
   },
   dragHandle: {
@@ -342,27 +342,27 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: SPACING.xxl,
   },
   releaseCard: {
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   releaseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginBottom: 24,
+    marginBottom: SPACING.xxl,
   },
   albumArt: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.background,
   },
   albumArtPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -371,15 +371,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   releaseTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 6,
+    ...TYPOGRAPHY.heading4,
+    marginBottom: SPACING.sm - 2,
   },
   showDetail: {
-    fontSize: 14,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
     marginBottom: 2,
   },
@@ -387,7 +383,7 @@ const styles = StyleSheet.create({
   },
   streamingButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.md,
   },
   spotifyButton: {
     flex: 1,
@@ -395,9 +391,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1DB954',
-    paddingVertical: 12,
-    borderRadius: 50,
-    gap: 8,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.full,
+    gap: SPACING.sm,
   },
   spotifyLogo: {
     height: 20,
@@ -409,19 +405,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FC3C44',
-    paddingVertical: 12,
-    borderRadius: 50,
-    gap: 8,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.full,
+    gap: SPACING.sm,
   },
   buttonText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: '#FFFFFF',
   },
   noStreamingText: {
+    ...TYPOGRAPHY.labelSmall,
     fontSize: 13,
-    fontFamily: FONTS.secondary,
+    fontWeight: '400',
     color: COLORS.textMuted,
     fontStyle: 'italic',
   },

@@ -26,7 +26,7 @@ import { formatDate, formatTime, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 
 interface FullPlayerProps {
@@ -384,7 +384,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
         {/* Gradient overlay for text readability */}
         <LinearGradient
-          colors={['rgba(18, 18, 18, 0)', '#121212']}
+          colors={['rgba(18, 18, 18, 0)', COLORS.background]}
           locations={[0, 1]}
           style={styles.gradientOverlay}
         />
@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: RADIUS.lg,
+    borderTopRightRadius: RADIUS.lg,
     overflow: 'hidden',
     zIndex: 1000,
   },
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 60,
-    left: 16,
-    padding: 8,
+    left: SPACING.lg,
+    padding: SPACING.sm,
     zIndex: 10,
   },
   trackInfoContainer: {
@@ -548,31 +548,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
+    padding: SPACING.xxl,
   },
   radioIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.accent,
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 12,
-    gap: 6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm - 2,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm - 2,
   },
   radioIndicatorText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
-    color: COLORS.textPrimary,
   },
   trackTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    fontFamily: FONTS.primary,
-    color: COLORS.textPrimary,
-    marginBottom: 8,
+    ...TYPOGRAPHY.heading1,
+    marginBottom: SPACING.sm,
   },
   showInfoRow: {
     flexDirection: 'row',
@@ -581,17 +576,15 @@ const styles = StyleSheet.create({
   },
   showLinkContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: SPACING.lg,
   },
   showInfo: {
-    fontSize: 18,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.bodyLarge,
     color: COLORS.accent,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   showDate: {
-    fontSize: 16,
-    fontFamily: FONTS.secondary,
+    ...TYPOGRAPHY.body,
     color: COLORS.accent,
   },
   dateWithStars: {
@@ -602,7 +595,7 @@ const styles = StyleSheet.create({
   saveButton: {
     width: 33,
     height: 33,
-    borderRadius: 17,
+    borderRadius: RADIUS.full,
     borderWidth: 2,
     borderColor: COLORS.textPrimary,
     justifyContent: 'center',
@@ -614,12 +607,12 @@ const styles = StyleSheet.create({
   },
   controlsSection: {
     backgroundColor: COLORS.background,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: SPACING.xxl,
+    paddingTop: SPACING.lg,
     paddingBottom: 60,
   },
   progressContainer: {
-    marginBottom: 24,
+    marginBottom: SPACING.xxl,
   },
   progressBarWrapper: {
     position: 'relative',
@@ -642,25 +635,23 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     backgroundColor: COLORS.textPrimary,
-    borderRadius: 6,
+    borderRadius: RADIUS.sm,
     marginLeft: -6,
   },
   progressThumbActive: {
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: RADIUS.sm,
     marginLeft: -8,
     transform: [{ scale: 1.1 }],
   },
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: SPACING.sm,
   },
   timeText: {
-    fontSize: 12,
-    fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
+    ...TYPOGRAPHY.caption,
   },
   controlsContainer: {
     flexDirection: 'row',
@@ -669,13 +660,13 @@ const styles = StyleSheet.create({
     gap: 48,
   },
   controlButton: {
-    padding: 12,
+    padding: SPACING.md,
   },
   playButton: {
     width: 64,
     height: 64,
     backgroundColor: COLORS.textPrimary,
-    borderRadius: 32,
+    borderRadius: RADIUS.full,
     justifyContent: 'center',
     alignItems: 'center',
   },

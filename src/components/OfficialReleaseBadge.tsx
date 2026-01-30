@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface OfficialReleaseBadgeProps {
   onPress: () => void;
@@ -51,33 +51,32 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(229, 76, 79, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 50,
-    gap: 6,
+    backgroundColor: COLORS.accentTransparent,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    gap: SPACING.sm - 2,
   },
   text: {
+    ...TYPOGRAPHY.labelSmall,
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: COLORS.accent,
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(229, 76, 79, 0.15)',
+    backgroundColor: COLORS.accentTransparent,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 50,
-    gap: 4,
+    paddingVertical: SPACING.sm - 2,
+    borderRadius: RADIUS.full,
+    gap: SPACING.xs,
     flexShrink: 1,
     minWidth: 0,
   },
   compactText: {
-    fontSize: 12,
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '600',
-    fontFamily: FONTS.secondary,
     color: COLORS.accent,
     flexShrink: 1,
   },
