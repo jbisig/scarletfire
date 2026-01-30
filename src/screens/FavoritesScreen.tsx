@@ -11,14 +11,24 @@ import {
   Keyboard,
   Pressable,
   Animated,
+  Easing,
+  LayoutAnimation,
+  Platform,
+  UIManager,
   LayoutChangeEvent,
   RefreshControl,
 } from 'react-native';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { ShowCard } from '../components/ShowCard';
 import { GratefulDeadShow } from '../types/show.types';
+import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import showsData from '../data/shows.json';
@@ -26,6 +36,7 @@ import { ShowsByYear } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
+import { haptics } from '../services/hapticService';
 import { archiveApi } from '../services/archiveApi';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { StarRating } from '../components/StarRating';
@@ -106,12 +117,12 @@ type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Fa
 
 type TabType = 'shows' | 'songs';
 type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
-type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
+type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
-  const { loadTrack } = usePlayer();
+  const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
@@ -123,6 +134,8 @@ export function FavoritesScreen() {
   const [songSearchQuery, setSongSearchQuery] = useState('');
   const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, right: 0 });
   const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, right: 0 });
+  const [isShowSearchExpanded, setIsShowSearchExpanded] = useState(false);
+  const [isSongSearchExpanded, setIsSongSearchExpanded] = useState(false);
   const debouncedShowSearchQuery = useDebounce(showSearchQuery, 400);
   const debouncedSongSearchQuery = useDebounce(songSearchQuery, 400);
   const showSearchInputRef = useRef<TextInput>(null);
@@ -138,6 +151,16 @@ export function FavoritesScreen() {
   // Tab sliding animation
   const [tabWidth, setTabWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Search expansion animations (for other buttons fading out)
+  const showSearchAnim = useRef(new Animated.Value(0)).current;
+  const songSearchAnim = useRef(new Animated.Value(0)).current;
+  // Input fade-in animations
+  const showInputAnim = useRef(new Animated.Value(0)).current;
+  const songInputAnim = useRef(new Animated.Value(0)).current;
+  // Close button fade-in animations
+  const showCloseButtonAnim = useRef(new Animated.Value(0)).current;
+  const songCloseButtonAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -270,6 +293,13 @@ export function FavoritesScreen() {
 
     // Sort based on selected sort type
     switch (showSortType) {
+      case 'alphabetical':
+        return shows.sort((a, b) => {
+          const venueA = a.venue || '';
+          const venueB = b.venue || '';
+          return venueA.localeCompare(venueB);
+        });
+
       case 'dateSavedNewest':
         return shows.sort((a, b) => {
           if (!a.savedAt && !b.savedAt) return 0;
@@ -324,6 +354,8 @@ export function FavoritesScreen() {
 
   const getShowSortLabel = (sortType: ShowSortType): string => {
     switch (sortType) {
+      case 'alphabetical':
+        return 'Alphabetical';
       case 'dateSavedNewest':
       case 'dateSavedOldest':
         return 'Date Saved';
@@ -340,6 +372,8 @@ export function FavoritesScreen() {
       case 'dateSavedOldest':
       case 'performanceDateOldest':
         return 'arrow-up';
+      case 'alphabetical':
+        return 'arrow-down';
       default:
         return 'arrow-down';
     }
@@ -369,6 +403,191 @@ export function FavoritesScreen() {
     }
   }, [loadTrack]);
 
+  // Shuffle handlers
+  const handleShuffleShows = useCallback(() => {
+    if (favoriteShows.length === 0) return;
+    haptics.medium();
+    startShuffleShows(favoriteShows);
+  }, [favoriteShows, startShuffleShows]);
+
+  const handleShuffleSongs = useCallback(() => {
+    if (favoriteSongs.length === 0) return;
+    haptics.medium();
+    // Convert FavoriteSong to ShuffleSongItem (same interface, just different name)
+    const shuffleSongs: ShuffleSongItem[] = favoriteSongs.map(song => ({
+      trackId: song.trackId,
+      trackTitle: song.trackTitle,
+      showIdentifier: song.showIdentifier,
+      showDate: song.showDate,
+      venue: song.venue,
+      streamUrl: song.streamUrl,
+    }));
+    startShuffleSongs(shuffleSongs);
+  }, [favoriteSongs, startShuffleSongs]);
+
+  // Search expand/collapse handlers
+  const handleShowSearchExpand = useCallback(() => {
+    // Reset animations
+    showInputAnim.setValue(0);
+    showCloseButtonAnim.setValue(0);
+
+    // Configure smooth layout animation for icon sliding
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.scaleXY,
+      },
+    });
+    setIsShowSearchExpanded(true);
+
+    // Fade out other buttons with easing
+    Animated.timing(showSearchAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    // Fade in input after short delay
+    Animated.sequence([
+      Animated.delay(80),
+      Animated.timing(showInputAnim, {
+        toValue: 1,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Fade in close button after expansion completes
+    Animated.sequence([
+      Animated.delay(250),
+      Animated.timing(showCloseButtonAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => showSearchInputRef.current?.focus(), 150);
+  }, [showSearchAnim, showInputAnim, showCloseButtonAnim]);
+
+  const handleShowSearchCollapse = useCallback(() => {
+    showSearchInputRef.current?.blur();
+
+    // Hide input and close button immediately
+    showInputAnim.setValue(0);
+    showCloseButtonAnim.setValue(0);
+
+    // Reset animation value first so buttons fade in from 0
+    showSearchAnim.setValue(1);
+
+    // Configure smooth layout animation for icon sliding back
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.scaleXY,
+      },
+    });
+    setIsShowSearchExpanded(false);
+    setShowSearchQuery('');
+
+    // Fade in other buttons after collapse animation progresses
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.timing(showSearchAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [showSearchAnim, showInputAnim, showCloseButtonAnim]);
+
+  const handleSongSearchExpand = useCallback(() => {
+    // Reset animations
+    songInputAnim.setValue(0);
+    songCloseButtonAnim.setValue(0);
+
+    // Configure smooth layout animation for icon sliding
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.scaleXY,
+      },
+    });
+    setIsSongSearchExpanded(true);
+
+    // Fade out other buttons with easing
+    Animated.timing(songSearchAnim, {
+      toValue: 1,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    // Fade in input after short delay
+    Animated.sequence([
+      Animated.delay(80),
+      Animated.timing(songInputAnim, {
+        toValue: 1,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Fade in close button after expansion completes
+    Animated.sequence([
+      Animated.delay(250),
+      Animated.timing(songCloseButtonAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => songSearchInputRef.current?.focus(), 150);
+  }, [songSearchAnim, songInputAnim, songCloseButtonAnim]);
+
+  const handleSongSearchCollapse = useCallback(() => {
+    songSearchInputRef.current?.blur();
+
+    // Hide input and close button immediately
+    songInputAnim.setValue(0);
+    songCloseButtonAnim.setValue(0);
+
+    // Reset animation value first so buttons fade in from 0
+    songSearchAnim.setValue(1);
+
+    // Configure smooth layout animation for icon sliding back
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.scaleXY,
+      },
+    });
+    setIsSongSearchExpanded(false);
+    setSongSearchQuery('');
+
+    // Fade in other buttons after collapse animation progresses
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.timing(songSearchAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [songSearchAnim, songInputAnim, songCloseButtonAnim]);
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -390,52 +609,100 @@ export function FavoritesScreen() {
       );
     }
 
+    // Animated styles for shows search
+    const showShuffleOpacity = showSearchAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
     return (
       <View style={styles.tabContentContainer}>
-        {/* Search Bar with Sort Button */}
-        <View style={styles.searchRow}>
-          <TouchableOpacity
-            style={styles.searchInputContainer}
-            onPress={() => showSearchInputRef.current?.focus()}
-            activeOpacity={1}
-          >
-            <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIcon} />
-            <TextInput
-              ref={showSearchInputRef}
-              style={styles.searchInput}
-              placeholder="Date, venue, location"
-              placeholderTextColor={COLORS.textHint}
-              value={showSearchQuery}
-              onChangeText={setShowSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              selectionColor="#FFFFFF"
-            />
-            {showSearchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => {
-                  setShowSearchQuery('');
-                  showSearchInputRef.current?.blur();
-                }}
-                style={styles.clearButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-          <View ref={showSortButtonRef} collapsable={false}>
+        {/* Action Bar Section with Gradient */}
+        <View style={styles.actionBarSection}>
+          <View style={styles.searchRow}>
+            {/* Search input - expands to take full row */}
             <TouchableOpacity
-              style={styles.sortPillButton}
-              onPress={handleShowSortPress}
-              activeOpacity={0.7}
+              style={[
+                styles.searchPillButton,
+                isShowSearchExpanded && styles.searchInputContainerExpanded,
+              ]}
+              onPress={!isShowSearchExpanded ? handleShowSearchExpand : undefined}
+              activeOpacity={1}
             >
-              <Text style={styles.sortPillButtonText}>
-                {getShowSortLabel(showSortType)}
-              </Text>
-              <Ionicons name={getShowSortIcon(showSortType)} size={18} color={COLORS.accent} />
+              <Ionicons
+                name="search"
+                size={20}
+                color={COLORS.textHint}
+                style={isShowSearchExpanded ? styles.searchIconExpanded : undefined}
+              />
+              {isShowSearchExpanded && (
+                <>
+                  <Animated.View style={{ opacity: showInputAnim, flex: 1 }}>
+                    <TextInput
+                      ref={showSearchInputRef}
+                      style={styles.searchInput}
+                      placeholder="Date, venue, location"
+                      placeholderTextColor={COLORS.textHint}
+                      value={showSearchQuery}
+                      onChangeText={setShowSearchQuery}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      selectionColor="#FFFFFF"
+                    />
+                  </Animated.View>
+                  <Animated.View style={{ opacity: showCloseButtonAnim }}>
+                    <TouchableOpacity
+                      style={styles.closeSearchButtonInline}
+                      onPress={handleShowSearchCollapse}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+                    </TouchableOpacity>
+                  </Animated.View>
+                </>
+              )}
             </TouchableOpacity>
+
+            {/* Sort button - fades out */}
+            {!isShowSearchExpanded && (
+              <Animated.View style={{ opacity: showShuffleOpacity, flex: 1 }}>
+                <View ref={showSortButtonRef} collapsable={false} style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    style={styles.sortPillButton}
+                    onPress={handleShowSortPress}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sortPillButtonText}>
+                      {getShowSortLabel(showSortType)}
+                    </Text>
+                    <Ionicons name={getShowSortIcon(showSortType)} size={18} color={COLORS.accent} />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Shuffle button - fades out */}
+            {!isShowSearchExpanded && (
+              <Animated.View style={{ opacity: showShuffleOpacity }}>
+                <TouchableOpacity
+                  style={styles.shuffleButton}
+                  onPress={handleShuffleShows}
+                >
+                  <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
+                  <Text style={styles.shuffleButtonText}>Shuffle</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
+
+          {/* Gradient fade overlay */}
+          <LinearGradient
+            colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.actionBarGradient}
+            pointerEvents="none"
+          />
         </View>
 
         {sortedAndFilteredShows.length === 0 && debouncedShowSearchQuery.trim() ? (
@@ -487,52 +754,101 @@ export function FavoritesScreen() {
       );
     }
 
+    // Animated styles for songs search
+    const songShuffleOpacity = songSearchAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
     return (
       <View style={styles.tabContentContainer}>
-        {/* Search Bar with Sort Button */}
-        <View style={styles.searchRow}>
-          <TouchableOpacity
-            style={styles.searchInputContainer}
-            onPress={() => songSearchInputRef.current?.focus()}
-            activeOpacity={1}
-          >
-            <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIcon} />
-            <TextInput
-              ref={songSearchInputRef}
-              style={styles.searchInput}
-              placeholder="Song, date, venue"
-              placeholderTextColor={COLORS.textHint}
-              value={songSearchQuery}
-              onChangeText={setSongSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              selectionColor="#FFFFFF"
-            />
-            {songSearchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSongSearchQuery('');
-                  songSearchInputRef.current?.blur();
-                }}
-                style={styles.clearButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-          <View ref={songSortButtonRef} collapsable={false}>
+        {/* Action Bar Section with Gradient */}
+        <View style={styles.actionBarSection}>
+          <View style={styles.searchRow}>
+            {/* Search input - expands to take full row */}
             <TouchableOpacity
-              style={styles.sortPillButton}
-              onPress={handleSongSortPress}
-              activeOpacity={0.7}
+              style={[
+                styles.searchPillButton,
+                isSongSearchExpanded && styles.searchInputContainerExpanded,
+              ]}
+              onPress={!isSongSearchExpanded ? handleSongSearchExpand : undefined}
+              activeOpacity={1}
             >
-              <Text style={styles.sortPillButtonText}>
-                {getSongSortLabel(songSortType)}
-              </Text>
-              <Ionicons name={getSongSortIcon(songSortType)} size={18} color={COLORS.accent} />
+              <Ionicons
+                name="search"
+                size={20}
+                color={COLORS.textHint}
+                style={isSongSearchExpanded ? styles.searchIconExpanded : undefined}
+              />
+              {isSongSearchExpanded && (
+                <>
+                  <Animated.View style={{ opacity: songInputAnim, flex: 1 }}>
+                    <TextInput
+                      ref={songSearchInputRef}
+                      style={styles.searchInput}
+                      placeholder="Song, date, venue"
+                      placeholderTextColor={COLORS.textHint}
+                      value={songSearchQuery}
+                      onChangeText={setSongSearchQuery}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      selectionColor="#FFFFFF"
+                    />
+                  </Animated.View>
+                  <Animated.View style={{ opacity: songCloseButtonAnim }}>
+                    <TouchableOpacity
+                      style={styles.closeSearchButtonInline}
+                      onPress={handleSongSearchCollapse}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+                    </TouchableOpacity>
+                  </Animated.View>
+                </>
+              )}
             </TouchableOpacity>
+
+            {/* Sort button - fades out */}
+            {!isSongSearchExpanded && (
+              <Animated.View style={{ opacity: songShuffleOpacity, flex: 1 }}>
+                <View ref={songSortButtonRef} collapsable={false} style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    style={styles.sortPillButton}
+                    onPress={handleSongSortPress}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sortPillButtonText}>
+                      {getSongSortLabel(songSortType)}
+                    </Text>
+                    <Ionicons name={getSongSortIcon(songSortType)} size={18} color={COLORS.accent} />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Shuffle button - fades out */}
+            {!isSongSearchExpanded && (
+              <Animated.View style={{ opacity: songShuffleOpacity }}>
+                <TouchableOpacity
+                  style={styles.shuffleButton}
+                  onPress={handleShuffleSongs}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
+                  <Text style={styles.shuffleButtonText}>Shuffle</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
+
+          {/* Gradient fade overlay */}
+          <LinearGradient
+            colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.actionBarGradient}
+            pointerEvents="none"
+          />
         </View>
 
         {sortedAndFilteredSongs.length === 0 && debouncedSongSearchQuery.trim() ? (
@@ -622,14 +938,6 @@ export function FavoritesScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Gradient fade overlay */}
-        <LinearGradient
-          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
-          locations={[0, 0.3, 0.7, 1]}
-          style={styles.headerGradient}
-          pointerEvents="none"
-        />
       </View>
 
       {/* Tab Content */}
@@ -768,6 +1076,25 @@ export function FavoritesScreen() {
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
+                setShowSortType('alphabetical');
+                setShowShowSortModal(false);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                showSortType === 'alphabetical' && styles.dropdownItemTextSelected
+              ]}>Alphabetical</Text>
+              {showSortType === 'alphabetical' && (
+                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
                 setShowSortType('dateSavedOldest');
                 setShowShowSortModal(false);
               }}
@@ -855,6 +1182,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
+  actionBarSection: {
+    backgroundColor: COLORS.background,
+    zIndex: 10,
+    overflow: 'visible',
+  },
+  actionBarGradient: {
     position: 'absolute',
     bottom: -30,
     left: 0,
@@ -962,7 +1301,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
     gap: SPACING.sm,
   },
   searchInputContainer: {
@@ -977,6 +1317,9 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 10,
   },
+  searchIconExpanded: {
+    marginRight: 12,
+  },
   searchInput: {
     flex: 1,
     ...TYPOGRAPHY.body,
@@ -986,18 +1329,59 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
   sortPillButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
     height: 48,
-    gap: SPACING.sm - 2,
   },
   sortPillButtonText: {
     ...TYPOGRAPHY.labelLarge,
     fontWeight: '500',
     color: COLORS.textHint,
+  },
+  shuffleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
+    height: 48,
+    gap: SPACING.sm,
+  },
+  shuffleButtonText: {
+    ...TYPOGRAPHY.labelLarge,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  searchPillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.full,
+    width: 48,
+    height: 48,
+  },
+  searchInputContainerExpanded: {
+    flex: 1,
+    width: 'auto',
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.lg,
+  },
+  closeSearchButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeSearchButtonInline: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
   },
   songsTabContainer: {
     flex: 1,

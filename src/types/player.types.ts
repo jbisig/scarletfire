@@ -1,12 +1,28 @@
-import { Track, ShowDetail } from './show.types';
+import { Track, ShowDetail, GratefulDeadShow } from './show.types';
 import { RatedSongPerformance } from '../data/songPerformanceRatings';
 
-export type PlaybackMode = 'show' | 'radio';
+export type PlaybackMode = 'show' | 'radio' | 'shuffle';
+export type ShuffleType = 'shows' | 'songs';
+
+// Minimal interface for shuffle queue items (matches FavoriteSong from FavoritesContext)
+export interface ShuffleSongItem {
+  trackId: string;
+  trackTitle: string;
+  showIdentifier: string;
+  showDate: string;
+  venue?: string;
+  streamUrl: string;
+}
 
 export interface RadioTrack {
   track: Track;
   show: ShowDetail;
   performance: RatedSongPerformance;
+}
+
+export interface PlaybackProgress {
+  position: number;
+  duration: number;
 }
 
 export interface PlayerState {
@@ -24,6 +40,11 @@ export interface PlayerState {
   radioQueue: RadioTrack[];
   radioQueueIndex: number;
   isRadioLoading: boolean;
+  // Shuffle mode state
+  shuffleQueue: ShuffleSongItem[] | GratefulDeadShow[];
+  shuffleQueueIndex: number;
+  shuffleType: ShuffleType | null;
+  isShuffleLoading: boolean;
 }
 
 export type PlayerAction =
@@ -44,4 +65,11 @@ export type PlayerAction =
   | { type: 'ADD_RADIO_TRACKS'; tracks: RadioTrack[] }
   | { type: 'RADIO_NEXT_TRACK' }
   | { type: 'RADIO_PREVIOUS_TRACK' }
-  | { type: 'SYNC_RADIO_TRACK_INDEX'; index: number };
+  | { type: 'SYNC_RADIO_TRACK_INDEX'; index: number }
+  // Shuffle mode actions
+  | { type: 'START_SHUFFLE'; shuffleType: ShuffleType; queue: ShuffleSongItem[] | GratefulDeadShow[] }
+  | { type: 'STOP_SHUFFLE' }
+  | { type: 'SET_SHUFFLE_LOADING'; isLoading: boolean }
+  | { type: 'SHUFFLE_NEXT' }
+  | { type: 'SHUFFLE_PREVIOUS' }
+  | { type: 'SET_SHUFFLE_QUEUE'; queue: ShuffleSongItem[] | GratefulDeadShow[] };

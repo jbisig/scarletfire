@@ -29,6 +29,7 @@ import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { haptics } from '../services/hapticService';
+import { BUNDLED_VIDEO } from '../constants/videoSources';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -44,7 +45,7 @@ const { height: screenHeight } = Dimensions.get('window');
  */
 export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => {
   const navigation = useNavigation<NavigationProp>();
-  const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, currentRadioTrack, progressRef, progressAnim } = usePlayer();
+  const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, isShuffleMode, currentRadioTrack, progressRef, progressAnim } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId } = useVideoBackground();
@@ -60,6 +61,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  // Fallback to bundled video if current video fails to load
+  const [useVideoFallback, setUseVideoFallback] = useState(false);
+  const currentVideoSource = useVideoFallback ? BUNDLED_VIDEO : videoSource;
+
+  // Reset fallback when video changes
+  useEffect(() => {
+    setUseVideoFallback(false);
+  }, [videoId]);
+
+  const handleVideoError = useCallback(() => {
+    console.warn('[FullPlayer] Video failed to load, falling back to bundled video');
+    setUseVideoFallback(true);
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', setAppState);
@@ -376,13 +391,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         <Video
-          key={`video-${videoId}`}
-          source={videoSource}
+          key={`video-${videoId}-${useVideoFallback ? 'fallback' : 'primary'}`}
+          source={currentVideoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
           shouldPlay={visible && appState === 'active'}
           isLooping
           isMuted
+          onError={handleVideoError}
         />
 
         {/* Gradient overlay for text readability */}
@@ -404,6 +420,16 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             <View style={styles.radioIndicator}>
               <Ionicons name="radio" size={16} color={COLORS.textPrimary} />
               <Text style={styles.radioIndicatorText}>Radio</Text>
+            </View>
+          )}
+
+          {/* Shuffle Mode Indicator */}
+          {isShuffleMode && (
+            <View style={styles.radioIndicator}>
+              <Ionicons name="shuffle" size={16} color={COLORS.textPrimary} />
+              <Text style={styles.radioIndicatorText}>
+                {state.shuffleType === 'shows' ? 'Saved Shows' : 'Saved Songs'}
+              </Text>
             </View>
           )}
 

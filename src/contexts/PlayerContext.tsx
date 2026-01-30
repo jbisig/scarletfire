@@ -1,12 +1,13 @@
 import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
-import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress } from '../types/player.types';
+import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
+import { shuffleArray } from '../utils/shuffle';
 import showsData from '../data/shows.json';
 
 // Load shows data for finding next chronological show
@@ -39,6 +40,8 @@ const initialState: PlayerState = {
   currentShow: null,
   isPlaying: false,
   isLoading: false,
+  position: 0,
+  duration: 0,
   playlist: [],
   currentTrackIndex: -1,
   shouldAutoPlay: false,
@@ -47,6 +50,11 @@ const initialState: PlayerState = {
   radioQueue: [],
   radioQueueIndex: -1,
   isRadioLoading: false,
+  // Shuffle mode state
+  shuffleQueue: [],
+  shuffleQueueIndex: -1,
+  shuffleType: null,
+  isShuffleLoading: false,
 };
 
 function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
@@ -188,6 +196,74 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       }
       return state;
 
+    // Shuffle mode actions
+    case 'START_SHUFFLE':
+      return {
+        ...state,
+        playbackMode: 'shuffle',
+        shuffleQueue: action.queue,
+        shuffleQueueIndex: 0,
+        shuffleType: action.shuffleType,
+        isShuffleLoading: true,
+        // Clear radio state
+        radioQueue: [],
+        radioQueueIndex: -1,
+      };
+
+    case 'STOP_SHUFFLE':
+      return {
+        ...state,
+        playbackMode: 'show',
+        shuffleQueue: [],
+        shuffleQueueIndex: -1,
+        shuffleType: null,
+        isShuffleLoading: false,
+        currentTrack: null,
+        currentShow: null,
+        isPlaying: false,
+      };
+
+    case 'SET_SHUFFLE_LOADING':
+      return {
+        ...state,
+        isShuffleLoading: action.isLoading,
+      };
+
+    case 'SHUFFLE_NEXT':
+      const nextShuffleIndex = state.shuffleQueueIndex + 1;
+      if (nextShuffleIndex < state.shuffleQueue.length) {
+        return {
+          ...state,
+          shuffleQueueIndex: nextShuffleIndex,
+          isShuffleLoading: true,
+        };
+      }
+      // Queue exhausted - will be handled by the effect to reshuffle
+      return {
+        ...state,
+        shuffleQueueIndex: -1, // Signal to reshuffle
+        isShuffleLoading: true,
+      };
+
+    case 'SHUFFLE_PREVIOUS':
+      const prevShuffleIndex = state.shuffleQueueIndex - 1;
+      if (prevShuffleIndex >= 0) {
+        return {
+          ...state,
+          shuffleQueueIndex: prevShuffleIndex,
+          isShuffleLoading: true,
+        };
+      }
+      // At the beginning, stay at current position
+      return state;
+
+    case 'SET_SHUFFLE_QUEUE':
+      return {
+        ...state,
+        shuffleQueue: action.queue,
+        shuffleQueueIndex: 0,
+      };
+
     default:
       return state;
   }
@@ -210,6 +286,11 @@ interface PlayerContextType {
   stopRadio: () => Promise<void>;
   isRadioMode: boolean;
   currentRadioTrack: RadioTrack | null;
+  // Shuffle mode functions
+  startShuffleSongs: (songs: ShuffleSongItem[]) => Promise<void>;
+  startShuffleShows: (shows: GratefulDeadShow[]) => Promise<void>;
+  stopShuffle: () => Promise<void>;
+  isShuffleMode: boolean;
   // Full player visibility
   isFullPlayerVisible: boolean;
   setFullPlayerVisible: (visible: boolean) => void;
@@ -245,8 +326,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Auto-load track when currentTrack changes
+  // Skip in shuffle mode - loadShuffleSong/loadShuffleShow handle loading directly
   useEffect(() => {
     if (state.currentTrack && state.isLoading) {
+      // In shuffle mode, loading is handled by loadShuffleSong/loadShuffleShow
+      if (state.playbackMode === 'shuffle') {
+        dispatch({ type: 'SET_LOADING', isLoading: false });
+        return;
+      }
+
       const trackId = state.currentTrack.id;
       const shouldPlay = state.shouldAutoPlay;
       currentLoadingTrackIdRef.current = trackId;
@@ -275,7 +363,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_LOADING', isLoading: false });
       });
     }
-  }, [state.currentTrack, state.isLoading, state.shouldAutoPlay]);
+  }, [state.currentTrack, state.isLoading, state.shouldAutoPlay, state.playbackMode]);
 
   // Listen to playback state changes from native audio player
   useEffect(() => {
@@ -286,17 +374,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'PLAY' });
       } else if (playbackState === 'paused') {
         dispatch({ type: 'PAUSE' });
+      } else if (playbackState === 'stopped' || playbackState === 'idle' || playbackState === 'ended') {
+        // Check if we need to load next shuffled show
+        if (playbackModeRef.current === 'shuffle' && shuffleTypeRef.current === 'shows') {
+          shuffleNextRef.current();
+        }
       }
     });
 
     return () => subscription.remove();
   }, []);
 
-  // Ref to track playback mode without causing listener re-subscription
+  // Refs to track playback mode and shuffle type without causing listener re-subscription
   const playbackModeRef = useRef(state.playbackMode);
+  const shuffleTypeRef = useRef(state.shuffleType);
   useEffect(() => {
     playbackModeRef.current = state.playbackMode;
-  }, [state.playbackMode]);
+    shuffleTypeRef.current = state.shuffleType;
+  }, [state.playbackMode, state.shuffleType]);
 
   // Listen to track changes for gapless playback and lock screen controls
   // Uses ref for playbackMode to avoid re-subscribing when mode changes
@@ -308,6 +403,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SYNC_RADIO_TRACK_INDEX', index: event.trackIndex });
         } else {
           dispatch({ type: 'RADIO_NEXT_TRACK' });
+        }
+      } else if (playbackModeRef.current === 'shuffle') {
+        // In shuffle mode, sync track changes within a show
+        if (event.trackIndex !== undefined) {
+          nativeTrackIndexRef.current = event.trackIndex;
+          dispatch({ type: 'SYNC_TRACK_INDEX', index: event.trackIndex });
+        } else if (shuffleTypeRef.current === 'shows') {
+          // Show ended in shuffle shows mode - load next shuffled show
+          shuffleNextRef.current();
         }
       } else {
         // Sync React state to the track index from native player
@@ -413,22 +517,42 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.currentShow?.date]);
 
+  // Ref to hold shuffleNext to avoid stale closures in event listener
+  const shuffleNextRef = useRef<() => Promise<void>>(async () => {});
+  const shufflePreviousRef = useRef<() => Promise<void>>(async () => {});
+
+  // Refs to track the current show's playlist length and native track index for shuffle shows mode
+  const shuffleShowPlaylistLengthRef = useRef(0);
+  const nativeTrackIndexRef = useRef(0);
+
+  // Refs for stable event handler references
+  const fetchMoreRadioTracksRef = useRef(fetchMoreRadioTracks);
+  const playNextShowRef = useRef(playNextShow);
+  useEffect(() => {
+    fetchMoreRadioTracksRef.current = fetchMoreRadioTracks;
+    playNextShowRef.current = playNextShow;
+  }, [fetchMoreRadioTracks, playNextShow]);
+
   // Listen to queue end event (all tracks finished)
+  // Uses refs to avoid re-subscribing when callbacks change
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
-      if (state.playbackMode === 'radio') {
+      if (playbackModeRef.current === 'radio') {
         // Radio queue ended - fetch more and restart
-        fetchMoreRadioTracks().then(() => {
+        fetchMoreRadioTracksRef.current().then(() => {
           nativeAudioPlayer.play();
         });
+      } else if (playbackModeRef.current === 'shuffle') {
+        // Shuffle queue ended - play next shuffled item
+        shuffleNextRef.current();
       } else {
         // Show ended - play the next chronological show
-        playNextShow();
+        playNextShowRef.current();
       }
     });
 
     return () => subscription.remove();
-  }, [state.playbackMode, fetchMoreRadioTracks, playNextShow]);
+  }, []); // Empty deps - subscribe once, use refs for callbacks
 
   // Radio auto-replenish: fetch more tracks when 15 tracks remaining
   // API fetches can take 45-90 seconds, so we need a large buffer for rapid skipping
@@ -450,13 +574,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentTrackRef = useRef(state.currentTrack);
   const currentShowRef = useRef(state.currentShow);
   const isPlayingRef = useRef(state.isPlaying);
+  const currentTrackIndexRef = useRef(state.currentTrackIndex);
+  const playlistLengthRef = useRef(state.playlist.length);
+  const hasTriggeredEndOfShowRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => {
     currentTrackRef.current = state.currentTrack;
     currentShowRef.current = state.currentShow;
     isPlayingRef.current = state.isPlaying;
-  }, [state.currentTrack, state.currentShow, state.isPlaying]);
+    currentTrackIndexRef.current = state.currentTrackIndex;
+    playlistLengthRef.current = state.playlist.length;
+  }, [state.currentTrack, state.currentShow, state.isPlaying, state.currentTrackIndex, state.playlist.length]);
+
+  // Reset end-of-show trigger when show changes
+  useEffect(() => {
+    hasTriggeredEndOfShowRef.current = false;
+  }, [state.currentShow?.identifier]);
 
   // Reset recording flag and progress when track changes
   useEffect(() => {
@@ -495,6 +629,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             currentShowRef.current.identifier,
             currentShowRef.current.date
           );
+        }
+
+        // Check for end of last track in shuffle shows mode
+        // Trigger next show when we're within 1 second of the end
+        const isLastTrack = playlistLengthRef.current > 0 &&
+                            currentTrackIndexRef.current === playlistLengthRef.current - 1;
+        if (
+          !hasTriggeredEndOfShowRef.current &&
+          playbackModeRef.current === 'shuffle' &&
+          shuffleTypeRef.current === 'shows' &&
+          isLastTrack &&
+          duration - position < 1000 // Within 1 second of end
+        ) {
+          hasTriggeredEndOfShowRef.current = true;
+          shuffleNextRef.current();
         }
       }
     });
@@ -541,19 +690,46 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(async () => {
     try {
+      // In shuffle songs mode, manually advance to next shuffled song
+      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
+        shuffleNextRef.current();
+        return;
+      }
+      // In shuffle shows mode, check if we're on the last track using refs (more reliable than state)
+      if (state.playbackMode === 'shuffle' && state.shuffleType === 'shows') {
+        const nativeIndex = nativeTrackIndexRef.current;
+        const playlistLen = shuffleShowPlaylistLengthRef.current;
+        const isLastTrack = playlistLen > 0 && nativeIndex === playlistLen - 1;
+        if (isLastTrack) {
+          // On last track, load next shuffled show
+          shuffleNextRef.current();
+          return;
+        }
+      }
       await audioService.skipToNext();
     } catch (error) {
       console.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  }, []);
+  }, [state.playbackMode, state.shuffleType]);
 
   const previousTrack = useCallback(async () => {
     try {
+      // In shuffle songs mode, restart current song or go to previous
+      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
+        // If we're more than 3 seconds in, restart the current song
+        if (progressRef.current.position > 3000) {
+          await audioService.seekTo(0);
+        } else {
+          // Go to previous song in shuffle queue
+          shufflePreviousRef.current();
+        }
+        return;
+      }
       await audioService.skipToPrevious();
     } catch (error) {
       console.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  }, []);
+  }, [state.playbackMode, state.shuffleType]);
 
   const seekTo = useCallback(async (position: number) => {
     try {
@@ -625,8 +801,212 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Helper to load and play a song from shuffle queue
+  const loadShuffleSong = useCallback(async (song: ShuffleSongItem) => {
+    try {
+      dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: true });
+
+      // Fetch the show details
+      const showDetail = await archiveApi.getShowDetail(song.showIdentifier, false);
+
+      // Find the matching track
+      const track = showDetail.tracks.find(t => t.id === song.trackId);
+
+      if (track) {
+        // Set up native player with just this track (not the full show playlist)
+        const nativeTrack = {
+          id: track.id,
+          url: track.streamUrl,
+          title: track.title,
+          artist: showDetail.venue || 'Grateful Dead',
+          duration: track.duration,
+        };
+
+        await nativeAudioPlayer.setQueue([nativeTrack], 0);
+
+        // Update state with current track/show
+        dispatch({ type: 'LOAD_TRACK', track, show: showDetail, playlist: [track] });
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+
+        // Start playback
+        await nativeAudioPlayer.play();
+        dispatch({ type: 'PLAY' });
+      } else {
+        console.error('Track not found in show:', song.trackId);
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+      }
+    } catch (error) {
+      console.error('Failed to load shuffle song:', error);
+      dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+    }
+  }, []);
+
+  // Helper to load and play a show from shuffle queue
+  const loadShuffleShow = useCallback(async (show: GratefulDeadShow) => {
+    try {
+      dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: true });
+
+      // Fetch the show details
+      const showDetail = await archiveApi.getShowDetail(show.primaryIdentifier);
+
+      if (showDetail.tracks.length > 0) {
+        // Set up native player queue with all tracks
+        const nativeTracks = showDetail.tracks.map(t => ({
+          id: t.id,
+          url: t.streamUrl,
+          title: t.title,
+          artist: showDetail.venue || 'Grateful Dead',
+          duration: t.duration,
+        }));
+
+        await nativeAudioPlayer.setQueue(nativeTracks, 0);
+
+        // Store playlist length in ref for skip detection
+        shuffleShowPlaylistLengthRef.current = showDetail.tracks.length;
+
+        // Update state
+        dispatch({ type: 'LOAD_TRACK', track: showDetail.tracks[0], show: showDetail, playlist: showDetail.tracks });
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+
+        // Start playback
+        await nativeAudioPlayer.play();
+        dispatch({ type: 'PLAY' });
+      } else {
+        console.error('No tracks in show:', show.primaryIdentifier);
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+      }
+    } catch (error) {
+      console.error('Failed to load shuffle show:', error);
+      dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+    }
+  }, []);
+
+  // Start shuffle mode for songs
+  const startShuffleSongs = useCallback(async (songs: ShuffleSongItem[]) => {
+    if (songs.length === 0) {
+      console.warn('No songs to shuffle');
+      return;
+    }
+
+    try {
+      // Stop any current playback mode
+      if (state.playbackMode === 'radio') {
+        radioService.resetSession();
+        lastReplenishIndexRef.current = -1;
+        replenishPromiseRef.current = null;
+      }
+
+      // Shuffle the songs
+      const shuffledSongs = shuffleArray(songs);
+
+      // Start shuffle mode
+      dispatch({ type: 'START_SHUFFLE', shuffleType: 'songs', queue: shuffledSongs });
+
+      // Load and play the first song
+      await loadShuffleSong(shuffledSongs[0]);
+    } catch (error) {
+      console.error('Failed to start shuffle songs:', error);
+      dispatch({ type: 'STOP_SHUFFLE' });
+    }
+  }, [state.playbackMode, loadShuffleSong]);
+
+  // Start shuffle mode for shows
+  const startShuffleShows = useCallback(async (shows: GratefulDeadShow[]) => {
+    if (shows.length === 0) {
+      console.warn('No shows to shuffle');
+      return;
+    }
+
+    try {
+      // Stop any current playback mode
+      if (state.playbackMode === 'radio') {
+        radioService.resetSession();
+        lastReplenishIndexRef.current = -1;
+        replenishPromiseRef.current = null;
+      }
+
+      // Shuffle the shows
+      const shuffledShows = shuffleArray(shows);
+
+      // Start shuffle mode
+      dispatch({ type: 'START_SHUFFLE', shuffleType: 'shows', queue: shuffledShows });
+
+      // Load and play the first show
+      await loadShuffleShow(shuffledShows[0]);
+    } catch (error) {
+      console.error('Failed to start shuffle shows:', error);
+      dispatch({ type: 'STOP_SHUFFLE' });
+    }
+  }, [state.playbackMode, loadShuffleShow]);
+
+  // Stop shuffle mode
+  const stopShuffle = useCallback(async () => {
+    try {
+      dispatch({ type: 'STOP_SHUFFLE' });
+      await audioService.stop();
+    } catch (error) {
+      console.error('Failed to stop shuffle:', error);
+    }
+  }, []);
+
+  // Handle shuffle next - called when track/show ends in shuffle mode
+  const shuffleNext = useCallback(async () => {
+    if (state.shuffleType === 'songs') {
+      const nextIndex = state.shuffleQueueIndex + 1;
+      if (nextIndex < state.shuffleQueue.length) {
+        dispatch({ type: 'SHUFFLE_NEXT' });
+        const nextSong = state.shuffleQueue[nextIndex] as ShuffleSongItem;
+        await loadShuffleSong(nextSong);
+      } else {
+        // Queue exhausted - reshuffle and continue
+        const reshuffled = shuffleArray(state.shuffleQueue as ShuffleSongItem[]);
+        dispatch({ type: 'SET_SHUFFLE_QUEUE', queue: reshuffled });
+        await loadShuffleSong(reshuffled[0]);
+      }
+    } else if (state.shuffleType === 'shows') {
+      const nextIndex = state.shuffleQueueIndex + 1;
+      if (nextIndex < state.shuffleQueue.length) {
+        dispatch({ type: 'SHUFFLE_NEXT' });
+        const nextShow = state.shuffleQueue[nextIndex] as GratefulDeadShow;
+        await loadShuffleShow(nextShow);
+      } else {
+        // Queue exhausted - reshuffle and continue
+        const reshuffled = shuffleArray(state.shuffleQueue as GratefulDeadShow[]);
+        dispatch({ type: 'SET_SHUFFLE_QUEUE', queue: reshuffled });
+        await loadShuffleShow(reshuffled[0]);
+      }
+    }
+  }, [state.shuffleType, state.shuffleQueueIndex, state.shuffleQueue, loadShuffleSong, loadShuffleShow]);
+
+  // Handle shuffle previous - go back to previous song in shuffle queue
+  const shufflePrevious = useCallback(async () => {
+    if (state.shuffleType === 'songs') {
+      const prevIndex = state.shuffleQueueIndex - 1;
+      if (prevIndex >= 0) {
+        dispatch({ type: 'SHUFFLE_PREVIOUS' });
+        const prevSong = state.shuffleQueue[prevIndex] as ShuffleSongItem;
+        await loadShuffleSong(prevSong);
+      }
+      // If at the beginning, just restart the current song
+      else if (state.shuffleQueueIndex >= 0 && state.shuffleQueueIndex < state.shuffleQueue.length) {
+        const currentSong = state.shuffleQueue[state.shuffleQueueIndex] as ShuffleSongItem;
+        await loadShuffleSong(currentSong);
+      }
+    }
+  }, [state.shuffleType, state.shuffleQueueIndex, state.shuffleQueue, loadShuffleSong]);
+
+  // Keep shuffleNextRef and shufflePreviousRef updated to avoid stale closures
+  useEffect(() => {
+    shuffleNextRef.current = shuffleNext;
+  }, [shuffleNext]);
+
+  useEffect(() => {
+    shufflePreviousRef.current = shufflePrevious;
+  }, [shufflePrevious]);
+
   // Derived values
   const isRadioMode = state.playbackMode === 'radio';
+  const isShuffleMode = state.playbackMode === 'shuffle';
   const currentRadioTrack = isRadioMode && state.radioQueueIndex >= 0 && state.radioQueueIndex < state.radioQueue.length
     ? state.radioQueue[state.radioQueueIndex]
     : null;
@@ -647,6 +1027,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     stopRadio,
     isRadioMode,
     currentRadioTrack,
+    startShuffleSongs,
+    startShuffleShows,
+    stopShuffle,
+    isShuffleMode,
     isFullPlayerVisible,
     setFullPlayerVisible,
   }), [
@@ -663,6 +1047,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     stopRadio,
     isRadioMode,
     currentRadioTrack,
+    startShuffleSongs,
+    startShuffleShows,
+    stopShuffle,
+    isShuffleMode,
     isFullPlayerVisible,
   ]);
 

@@ -17,7 +17,7 @@ interface MiniPlayerProps {
 }
 
 export function MiniPlayer({ onPress }: MiniPlayerProps) {
-  const { state, play, pause, isRadioMode, currentRadioTrack, progressAnim } = usePlayer();
+  const { state, play, pause, isRadioMode, isShuffleMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId } = useVideoBackground();
   const { getShowDetail } = useShows();
@@ -88,6 +88,11 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
                 {isRadioMode && (
                   <View style={styles.radioBadge}>
                     <Ionicons name="radio" size={12} color={COLORS.textPrimary} />
+                  </View>
+                )}
+                {isShuffleMode && (
+                  <View style={styles.radioBadge}>
+                    <Ionicons name="shuffle" size={12} color={COLORS.textPrimary} />
                   </View>
                 )}
               </View>
