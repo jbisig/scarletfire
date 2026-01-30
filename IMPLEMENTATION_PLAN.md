@@ -441,15 +441,23 @@ windowSize={10}
 
 ---
 
-### 2.9 ShowCard Prop Drilling
+### 2.9 ShowCard Prop Drilling ⚠️ DEFERRED
 **Issue:** 2.2 - Prop Drilling in Show Card Chain
 **Files:** `src/components/ShowCard.tsx`, parent components
 
+**Current State:** ShowCard is already well-optimized:
+- Uses `React.memo` for memoization
+- Has `overrideRating` and `overridePlayCount` props for parent-controlled data
+- Uses `useMemo` for internal calculations
+- 6 usages across the codebase would need updating
+
+**Recommendation:** Current implementation is acceptable. The suggested refactor would
+require significant changes for marginal benefit. Revisit if performance issues are observed.
+
 **Tasks:**
-- [ ] Pre-compute playCount and rating in parent
-- [ ] Pass as props instead of using hooks in ShowCard
-- [ ] Remove override props pattern
-- [ ] Consider using React context selector pattern for performance
+- [x] Evaluated current implementation - already optimized with memo and useMemo
+- [ ] Pre-compute values in parent (deferred - current override pattern works well)
+- [ ] Consider context selector pattern (deferred - no observed perf issues)
 
 ---
 
