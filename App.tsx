@@ -11,6 +11,7 @@ import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
@@ -43,23 +44,27 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ShowsProvider>
-          <ShowOfTheDayProvider>
-            <FavoritesProvider>
-              <PlayCountsProvider>
-                <PlayerProvider>
-                  <VideoBackgroundProvider>
-                    <AppNavigator />
-                    <StatusBar style="light" />
-                  </VideoBackgroundProvider>
-                </PlayerProvider>
-              </PlayCountsProvider>
-            </FavoritesProvider>
-          </ShowOfTheDayProvider>
-        </ShowsProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ShowsProvider>
+            <ShowOfTheDayProvider>
+              <FavoritesProvider>
+                <PlayCountsProvider>
+                  <PlayerProvider>
+                    <VideoBackgroundProvider>
+                      <ErrorBoundary>
+                        <AppNavigator />
+                      </ErrorBoundary>
+                      <StatusBar style="light" />
+                    </VideoBackgroundProvider>
+                  </PlayerProvider>
+                </PlayCountsProvider>
+              </FavoritesProvider>
+            </ShowOfTheDayProvider>
+          </ShowsProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

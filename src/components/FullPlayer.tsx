@@ -56,8 +56,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const isDismissingRef = useRef(false);
   const isInteractingRef = useRef(false);
 
-  // Time display state - updated via interval to avoid excessive re-renders
-  const [timeDisplay, setTimeDisplay] = useState({ position: 0, duration: 0 });
+  // Time display via ref to avoid re-renders on every update
+  // Only force re-render when position changes by more than 1 second
+  const timeDisplayRef = useRef({ position: 0, duration: 0 });
+  const [, forceTimeUpdate] = useState(0);
 
   // Combined position = slide position + drag offset
   const translateY = Animated.add(slideAnim, dragOffset);
@@ -113,17 +115,24 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   }, [state.currentShow?.identifier, getShowDetail]);
 
   // Update time display at regular intervals (for text only, not animation)
-  // This prevents re-renders on every progress update while still showing current time
+  // Uses ref to avoid re-renders; only forces update when position changes significantly
   useEffect(() => {
     if (!visible) return;
 
-    // Update immediately
-    setTimeDisplay({ ...progressRef.current });
+    // Update ref immediately
+    timeDisplayRef.current = { ...progressRef.current };
+    forceTimeUpdate(n => n + 1);
 
-    // Then update every second for the time text
+    // Then update every second for the time text, but only re-render if changed by >= 1 second
     const interval = setInterval(() => {
       if (!isDragging && !isInteractingRef.current) {
-        setTimeDisplay({ ...progressRef.current });
+        const prev = timeDisplayRef.current;
+        const next = progressRef.current;
+        // Only force re-render if position changed by at least 1 second
+        if (Math.abs(next.position - prev.position) >= 1000 || prev.duration !== next.duration) {
+          timeDisplayRef.current = { ...next };
+          forceTimeUpdate(n => n + 1);
+        }
       }
     }, 1000);
 
@@ -244,8 +253,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         const position = calculatePositionFromTouch(touchX, durationMs);
         setDragPosition(position);
         seekTo(position);
-        // Update time display immediately after seek
-        setTimeDisplay({ position, duration: durationMs });
+        // Update time display ref immediately after seek
+        timeDisplayRef.current = { position, duration: durationMs };
         setTimeout(() => {
           setIsDragging(false);
           isDraggingRef.current = false;
@@ -337,6 +346,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   if (!shouldRender || !state.currentTrack) return null;
 
   const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
+  const timeDisplay = timeDisplayRef.current;
   const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDuration;
   const currentPosition = isDragging ? dragPosition : timeDisplay.position;
 

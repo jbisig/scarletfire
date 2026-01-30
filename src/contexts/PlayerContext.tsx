@@ -425,35 +425,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, fetchMoreRadioTracks]);
 
-  // Update position and duration from native audio player progress events
-  // Uses refs to avoid triggering re-renders on every position update
-  useEffect(() => {
-    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, (data) => {
-      const position = data.position * 1000; // Convert seconds to milliseconds
-      const duration = data.duration * 1000;
-      // Only update if we have valid duration (audio is actually loaded/playing)
-      if (duration > 0 && !isNaN(duration)) {
-        // Update ref without triggering re-render
-        progressRef.current = { position, duration };
-        // Update animated value for smooth progress bar
-        const progress = duration > 0 ? position / duration : 0;
-        progressAnim.setValue(progress);
-      }
-    });
-
-    return () => subscription.remove();
-  }, [progressAnim]);
-
-  // Reset recording flag and progress when track changes
-  useEffect(() => {
-    hasRecordedPlayRef.current = false;
-    // Reset progress for new track
-    progressRef.current = { position: 0, duration: 0 };
-    progressAnim.setValue(0);
-  }, [state.currentTrack?.id, state.currentShow?.identifier, progressAnim]);
-
-  // Monitor playback progress for 50% threshold using the progress listener
-  // We check the ref in the progress listener callback to avoid extra effects
+  // Refs to track state for 50% play count threshold checking without re-subscribing
   const currentTrackRef = useRef(state.currentTrack);
   const currentShowRef = useRef(state.currentShow);
   const isPlayingRef = useRef(state.isPlaying);
@@ -465,31 +437,49 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     isPlayingRef.current = state.isPlaying;
   }, [state.currentTrack, state.currentShow, state.isPlaying]);
 
-  // Check 50% threshold in progress updates
+  // Reset recording flag and progress when track changes
   useEffect(() => {
-    const checkThreshold = () => {
-      const { position, duration } = progressRef.current;
-      if (
-        !hasRecordedPlayRef.current &&
-        isPlayingRef.current &&
-        currentTrackRef.current &&
-        currentShowRef.current &&
-        duration > 0 &&
-        position >= duration * 0.5
-      ) {
-        hasRecordedPlayRef.current = true;
-        recordTrackPlay(
-          currentTrackRef.current.title,
-          currentShowRef.current.identifier,
-          currentShowRef.current.date
-        );
-      }
-    };
+    hasRecordedPlayRef.current = false;
+    // Reset progress for new track
+    progressRef.current = { position: 0, duration: 0 };
+    progressAnim.setValue(0);
+  }, [state.currentTrack?.id, state.currentShow?.identifier, progressAnim]);
 
-    // Subscribe to progress updates for threshold checking
-    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, checkThreshold);
+  // Consolidated progress listener: updates refs/animation AND checks 50% threshold
+  // Single listener prevents duplicate event subscriptions
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackProgress, (data) => {
+      const position = data.position * 1000; // Convert seconds to milliseconds
+      const duration = data.duration * 1000;
+
+      // Only update if we have valid duration (audio is actually loaded/playing)
+      if (duration > 0 && !isNaN(duration)) {
+        // Update ref without triggering re-render
+        progressRef.current = { position, duration };
+        // Update animated value for smooth progress bar
+        const progress = duration > 0 ? position / duration : 0;
+        progressAnim.setValue(progress);
+
+        // Check 50% threshold for play count recording
+        if (
+          !hasRecordedPlayRef.current &&
+          isPlayingRef.current &&
+          currentTrackRef.current &&
+          currentShowRef.current &&
+          position >= duration * 0.5
+        ) {
+          hasRecordedPlayRef.current = true;
+          recordTrackPlay(
+            currentTrackRef.current.title,
+            currentShowRef.current.identifier,
+            currentShowRef.current.date
+          );
+        }
+      }
+    });
+
     return () => subscription.remove();
-  }, [recordTrackPlay]);
+  }, [progressAnim, recordTrackPlay]);
 
   const loadTrack = async (track: Track, show: ShowDetail, playlist: Track[]) => {
     // If in radio mode, stop radio first

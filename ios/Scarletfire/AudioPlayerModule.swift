@@ -14,6 +14,7 @@ class AudioPlayerModule: RCTEventEmitter {
   private var originalTracks: [[String: Any]] = []
   private var currentTrackIndex: Int = 0
   private var queueStartIndex: Int = 0  // Tracks offset between currentItems and originalTracks
+  private var isRebuildingQueue: Bool = false  // Prevents race conditions during queue rebuild
   private lazy var artworkImage: MPMediaItemArtwork? = {
     // Try to load the app icon from the bundle
     // Check multiple possible locations where Expo/RN might bundle the icon
@@ -305,7 +306,16 @@ class AudioPlayerModule: RCTEventEmitter {
   }
 
   private func rebuildQueueFromCurrentIndex() {
+    // Prevent concurrent rebuilds which could cause race conditions
+    guard !isRebuildingQueue else { return }
+    isRebuildingQueue = true
+
+    // Capture playback state atomically before any modifications
     let wasPlaying = player?.rate != 0
+    let seekPosition = player?.currentTime()
+
+    // Pause during rebuild to prevent state changes
+    player?.pause()
 
     // Clear existing queue
     player?.removeAllItems()
@@ -346,10 +356,13 @@ class AudioPlayerModule: RCTEventEmitter {
       currentItems.append(item)
     }
 
+    updateNowPlayingInfo()
+
+    // Restore playback state atomically after rebuild is complete
+    isRebuildingQueue = false
     if wasPlaying {
       player?.play()
     }
-    updateNowPlayingInfo()
   }
 
   @objc func setQueue(_ tracks: [[String: Any]], startIndex: Int, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {

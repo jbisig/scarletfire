@@ -98,6 +98,7 @@ interface AuthContextType {
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   skipLogin: () => Promise<void>;
@@ -119,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     timeoutId = setTimeout(() => {
       if (!hasResolved) {
         hasResolved = true;
+        console.warn('Auth check timed out after 5 seconds');
+        dispatch({ type: 'SET_ERROR', error: 'Authentication check timed out. Some features may be unavailable.' });
         dispatch({ type: 'AUTH_STATE_CHANGED', user: null });
       }
     }, 5000); // 5 second timeout
@@ -187,6 +190,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithApple = async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', isLoading: true });
+      const user = await authService.loginWithApple();
+      dispatch({ type: 'LOGIN_SUCCESS', user });
+      await AsyncStorage.removeItem('@auth_skipped');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Apple';
+      dispatch({ type: 'SET_ERROR', error: errorMessage });
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -242,6 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithEmail,
         signUpWithEmail,
         loginWithGoogle,
+        loginWithApple,
         logout,
         deleteAccount,
         skipLogin,
