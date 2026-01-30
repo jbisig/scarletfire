@@ -4,10 +4,7 @@ import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
 import { favoritesCloudService } from '../services/favoritesCloudService';
 import { getClassicTier } from '../data/classicShowsTiers';
-
-const FAVORITES_SHOWS_STORAGE_KEY = '@grateful_dead_favorites_shows';
-const FAVORITES_SONGS_STORAGE_KEY = '@grateful_dead_favorites_songs';
-const LEGACY_FAVORITES_STORAGE_KEY = '@grateful_dead_favorites'; // For migration
+import { STORAGE_KEYS } from '../constants/registry';
 
 export interface FavoriteSong {
   trackId: string;
@@ -62,11 +59,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const loadFavorites = async () => {
     try {
       // Migrate legacy favorites to new shows storage
-      const legacyFavorites = await AsyncStorage.getItem(LEGACY_FAVORITES_STORAGE_KEY);
+      const legacyFavorites = await AsyncStorage.getItem(STORAGE_KEYS.FAVORITES_LEGACY);
       if (legacyFavorites) {
         const parsed = JSON.parse(legacyFavorites);
-        await AsyncStorage.setItem(FAVORITES_SHOWS_STORAGE_KEY, legacyFavorites);
-        await AsyncStorage.removeItem(LEGACY_FAVORITES_STORAGE_KEY);
+        await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SHOWS, legacyFavorites);
+        await AsyncStorage.removeItem(STORAGE_KEYS.FAVORITES_LEGACY);
         const sorted = parsed.sort((a: GratefulDeadShow, b: GratefulDeadShow) =>
           a.date.localeCompare(b.date)
         );
@@ -74,7 +71,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         setFavoriteShows(enriched);
       } else {
         // Load shows from new storage
-        const storedShows = await AsyncStorage.getItem(FAVORITES_SHOWS_STORAGE_KEY);
+        const storedShows = await AsyncStorage.getItem(STORAGE_KEYS.FAVORITES_SHOWS);
         if (storedShows) {
           const parsed = JSON.parse(storedShows);
           const sorted = parsed.sort((a: GratefulDeadShow, b: GratefulDeadShow) =>
@@ -86,7 +83,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Load songs
-      const storedSongs = await AsyncStorage.getItem(FAVORITES_SONGS_STORAGE_KEY);
+      const storedSongs = await AsyncStorage.getItem(STORAGE_KEYS.FAVORITES_SONGS);
       if (storedSongs) {
         const parsed = JSON.parse(storedSongs);
         const sorted = parsed.sort((a: FavoriteSong, b: FavoriteSong) => {
@@ -107,7 +104,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const saveFavoriteShows = async (newFavorites: GratefulDeadShow[]) => {
     try {
-      await AsyncStorage.setItem(FAVORITES_SHOWS_STORAGE_KEY, JSON.stringify(newFavorites));
+      await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SHOWS, JSON.stringify(newFavorites));
     } catch (error) {
       console.error('Error saving favorite shows:', error);
     }
@@ -115,7 +112,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const saveFavoriteSongs = async (newFavorites: FavoriteSong[]) => {
     try {
-      await AsyncStorage.setItem(FAVORITES_SONGS_STORAGE_KEY, JSON.stringify(newFavorites));
+      await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SONGS, JSON.stringify(newFavorites));
     } catch (error) {
       console.error('Error saving favorite songs:', error);
     }
@@ -154,8 +151,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       setFavoriteSongs(mergedSongs);
 
       // Save merged back to both local and cloud
-      await AsyncStorage.setItem(FAVORITES_SHOWS_STORAGE_KEY, JSON.stringify(enrichedShows));
-      await AsyncStorage.setItem(FAVORITES_SONGS_STORAGE_KEY, JSON.stringify(mergedSongs));
+      await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SHOWS, JSON.stringify(enrichedShows));
+      await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SONGS, JSON.stringify(mergedSongs));
       await favoritesCloudService.syncFavorites(userId, enrichedShows, mergedSongs);
     } catch (error) {
       console.error('Failed to sync from cloud:', error);

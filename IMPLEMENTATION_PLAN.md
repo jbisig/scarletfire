@@ -469,26 +469,26 @@ These can be addressed incrementally over time.
 
 ---
 
-### 3.2 Environment Variable Validation
+### 3.2 Environment Variable Validation ✅ COMPLETED
 **Issue:** 12.2 - Environment Variable Access Pattern
-**Files:** `src/constants/config.ts`
+**Files:** `src/constants/config.ts`, `App.tsx`
 
 **Tasks:**
-- [ ] Add validation function that throws if required config missing
-- [ ] Call validation at app startup
-- [ ] Provide clear error messages for missing config
+- [x] Add validation function that throws if required config missing (in dev mode)
+- [x] Call validation at app startup
+- [x] Provide clear error messages for missing config
 
 ---
 
-### 3.3 Constants Registry
+### 3.3 Constants Registry ✅ COMPLETED
 **Issue:** 1.2 - Missing Type Safety in Constants
-**Files:** New file `src/constants/registry.ts`
+**Files:** New file `src/constants/registry.ts`, contexts
 
 **Tasks:**
-- [ ] Create centralized constants registry
-- [ ] Include STORAGE_KEYS, EVENT_NAMES, CACHE_KEYS
-- [ ] Use `as const` for type safety
-- [ ] Deprecate scattered magic strings
+- [x] Create centralized constants registry
+- [x] Include STORAGE_KEYS, CACHE_KEYS, SUPABASE_TABLES
+- [x] Use `as const` for type safety
+- [x] Update AuthContext, FavoritesContext, PlayCountsContext to use centralized keys
 
 ---
 
@@ -591,8 +591,8 @@ To be addressed before production deployment.
 
 ### Ongoing
 - [x] 3.1 Extract Magic Numbers ✓
-- [ ] 3.2 Environment Variable Validation
-- [ ] 3.3 Constants Registry
+- [x] 3.2 Environment Variable Validation ✓
+- [x] 3.3 Constants Registry ✓
 - [ ] 3.4 Create Error Handling Utility
 - [x] 3.5 Request Deduplication ✓
 

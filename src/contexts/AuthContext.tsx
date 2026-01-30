@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/registry';
 
 interface AuthState {
   user: User | null;
@@ -143,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user previously skipped login
   useEffect(() => {
     const checkSkipStatus = async () => {
-      const skipped = await AsyncStorage.getItem('@auth_skipped');
+      const skipped = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_SKIPPED);
       if (skipped === 'true' && !state.user) {
         dispatch({ type: 'SKIP_LOGIN' });
       }
@@ -156,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithEmail(email, password);
       dispatch({ type: 'LOGIN_SUCCESS', user });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to login';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -169,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.signUpWithEmail(email, password);
       dispatch({ type: 'LOGIN_SUCCESS', user });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign up';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -182,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithGoogle();
       dispatch({ type: 'LOGIN_SUCCESS', user });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Google';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -195,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithApple();
       dispatch({ type: 'LOGIN_SUCCESS', user });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Apple';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -207,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.logout();
       dispatch({ type: 'LOGOUT' });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to logout';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -222,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       await authService.deleteAccount(state.user.id);
       dispatch({ type: 'LOGOUT' });
-      await AsyncStorage.removeItem('@auth_skipped');
+      await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete account';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
@@ -231,12 +232,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const skipLogin = async () => {
-    await AsyncStorage.setItem('@auth_skipped', 'true');
+    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_SKIPPED, 'true');
     dispatch({ type: 'SKIP_LOGIN' });
   };
 
   const showLogin = async () => {
-    await AsyncStorage.removeItem('@auth_skipped');
+    await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     dispatch({ type: 'UNSKIP_LOGIN' });
   };
 

@@ -12,6 +12,11 @@ import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { validateConfig } from './src/constants/config';
+
+// Validate environment configuration at startup
+// In dev: throws if required config missing; in prod: logs error and continues
+validateConfig();
 
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();

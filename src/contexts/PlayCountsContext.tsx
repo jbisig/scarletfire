@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { playCountsCloudService } from '../services/playCountsCloudService';
-
-const PLAY_COUNTS_STORAGE_KEY = '@grateful_dead_play_counts';
+import { STORAGE_KEYS } from '../constants/registry';
 
 export interface PlayCount {
   trackTitle: string;      // Song name
@@ -45,7 +44,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
 
   const loadPlayCounts = async () => {
     try {
-      const stored = await AsyncStorage.getItem(PLAY_COUNTS_STORAGE_KEY);
+      const stored = await AsyncStorage.getItem(STORAGE_KEYS.PLAY_COUNTS);
       if (stored) {
         const parsed: PlayCount[] = JSON.parse(stored);
         // Convert array to Map with keys "trackTitle:showIdentifier"
@@ -63,7 +62,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     try {
       // Convert Map to array before saving
       const array = Array.from(map.values());
-      await AsyncStorage.setItem(PLAY_COUNTS_STORAGE_KEY, JSON.stringify(array));
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAY_COUNTS, JSON.stringify(array));
     } catch (error) {
       console.error('Error saving play counts:', error);
     }

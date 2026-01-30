@@ -43,15 +43,26 @@ export const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: getRequiredConfig('GOOGLE_IOS_CLIENT_ID', extra?.googleIosClientId),
 } as const;
 
-// Validate that required config is present
-export function validateConfig(): boolean {
-  const required = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
-  const missing = required.filter(key => !CONFIG[key as keyof typeof CONFIG]);
+/**
+ * Validate that required config is present.
+ * In development: throws an error to catch missing config early
+ * In production: logs error but allows app to continue (may have partial functionality)
+ */
+export function validateConfig(): void {
+  const required: (keyof typeof CONFIG)[] = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+  const missing = required.filter(key => !CONFIG[key]);
 
   if (missing.length > 0) {
-    console.error('Missing required configuration:', missing);
-    return false;
-  }
+    const errorMessage = `Missing required configuration: ${missing.join(', ')}. ` +
+      'Please set these values in your .env file or EAS secrets.';
 
-  return true;
+    console.error(errorMessage);
+    console.error('Available config keys:', Object.keys(extra).join(', ') || '(none)');
+
+    if (__DEV__) {
+      // In development, throw to make missing config obvious
+      throw new Error(errorMessage);
+    }
+    // In production, continue with degraded functionality (auth features won't work)
+  }
 }
