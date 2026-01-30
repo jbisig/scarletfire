@@ -19,6 +19,7 @@ import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-nat
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
+import { COLORS } from '../constants/theme';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -48,7 +49,7 @@ function ShowsStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: COLORS.background,
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -85,7 +86,7 @@ function SongsStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: COLORS.background,
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -125,7 +126,7 @@ function FavoritesStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: COLORS.background,
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -159,7 +160,7 @@ function DiscoverStack() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: COLORS.background,
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -249,7 +250,7 @@ export function AppNavigator() {
     return (
       <NavigationContainer>
         <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color="#E54C4F" />
+          <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
       </NavigationContainer>
     );
@@ -270,7 +271,7 @@ export function AppNavigator() {
             component={ShowDetailScreen}
             options={{
               headerShown: true,
-              headerStyle: { backgroundColor: '#121212' },
+              headerStyle: { backgroundColor: COLORS.background },
               headerTintColor: '#fff',
               headerTitle: '',
               headerBackTitleVisible: false,
@@ -293,7 +294,7 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     justifyContent: 'center',

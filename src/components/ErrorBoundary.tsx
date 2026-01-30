@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS } from '../constants/theme';
 
 interface Props {
   children: ReactNode;
@@ -76,25 +77,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
     padding: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#E54C4F',
+    color: COLORS.accent,
     marginBottom: 16,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: '#999',
+    color: COLORS.textSecondary,
     marginBottom: 32,
     textAlign: 'center',
     lineHeight: 24,
   },
   button: {
-    backgroundColor: '#E54C4F',
+    backgroundColor: COLORS.accent,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
@@ -102,6 +103,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
   },
 });

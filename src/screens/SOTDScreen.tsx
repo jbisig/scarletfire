@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
+import { COLORS } from '../constants/theme';
 
 type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SOTD'>;
 
@@ -33,7 +34,7 @@ export function SOTDScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#E54C4F" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>Loading show of the day...</Text>
       </View>
     );
@@ -57,7 +58,7 @@ export function SOTDScreen() {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Ionicons name="star" size={48} color="#E54C4F" />
+          <Ionicons name="star" size={48} color={COLORS.accent} />
           <Text style={styles.headerTitle}>Show of the Day</Text>
           <Text style={styles.headerSubtitle}>
             Randomly selected from the top 365 most popular shows
@@ -94,7 +95,7 @@ export function SOTDScreen() {
           onPress={handleRefresh}
           activeOpacity={0.7}
         >
-          <Ionicons name="refresh" size={20} color="#E54C4F" />
+          <Ionicons name="refresh" size={20} color={COLORS.accent} />
           <Text style={styles.refreshButtonText}>Pick Another Show</Text>
         </TouchableOpacity>
       </View>
@@ -105,7 +106,7 @@ export function SOTDScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
     paddingBottom: 180,
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
     padding: 20,
   },
   content: {
@@ -129,26 +130,26 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: 'bold',
     fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
     marginTop: 16,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   showCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
     padding: 24,
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: '#E54C4F',
+    borderColor: COLORS.accent,
   },
   date: {
     fontSize: 16,
-    color: '#E54C4F',
+    color: COLORS.accent,
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -156,12 +157,12 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: 'bold',
     fontFamily: 'FamiljenGrotesk',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   location: {
     fontSize: 16,
-    color: '#999',
+    color: COLORS.textSecondary,
     marginBottom: 16,
   },
   versionsInfo: {
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
   viewButton: {
-    backgroundColor: '#E54C4F',
+    backgroundColor: COLORS.accent,
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
     marginRight: 8,
   },
   refreshButton: {
@@ -190,30 +191,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#444',
   },
   refreshButtonText: {
     fontSize: 16,
-    color: '#E54C4F',
+    color: COLORS.accent,
     marginLeft: 8,
     fontWeight: '600',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#999',
+    color: COLORS.textSecondary,
   },
   errorText: {
     fontSize: 16,
-    color: '#E54C4F',
+    color: COLORS.accent,
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#E54C4F',
+    backgroundColor: COLORS.accent,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -221,6 +222,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.textPrimary,
   },
 });

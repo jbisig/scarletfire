@@ -9,13 +9,14 @@ export const COLORS = {
 
   // Background colors
   background: '#121212',
-  backgroundSecondary: '#121212',
+  backgroundSecondary: '#191919',
   cardBackground: '#2a2a2a',
 
   // Text colors
   textPrimary: '#FFFFFF',
   textSecondary: '#999999',
   textMuted: '#666666',
+  textTertiary: '#AEAEAE',
 
   // UI elements
   border: '#333333',

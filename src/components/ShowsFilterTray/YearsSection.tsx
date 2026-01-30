@@ -183,14 +183,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#191919',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 50,
   },
   eraName: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: FONTS.secondary,
-    color: '#AEAEAE',
+    color: COLORS.textTertiary,
   },
   selectAllText: {
     fontSize: 14,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   yearsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
   },
   yearButton: {
     width: '25%',
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.background,
     height: 64,
   },
   yearContent: {

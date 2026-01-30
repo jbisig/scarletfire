@@ -1,5 +1,7 @@
 import { createClient, Session, User } from '@supabase/supabase-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { Platform } from 'react-native';
 import { supabaseStorage } from './supabaseStorage';
 import { CONFIG } from '../constants/config';
 
@@ -89,6 +91,41 @@ class AuthService {
   }
 
   /**
+   * Sign in with Apple (iOS only)
+   */
+  async loginWithApple(): Promise<User> {
+    if (Platform.OS !== 'ios') {
+      throw new Error('Apple Sign-In is only available on iOS');
+    }
+
+    const isAvailable = await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      throw new Error('Apple Sign-In is not available on this device');
+    }
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('No identity token returned from Apple');
+    }
+
+    const { data, error } = await this.supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+    });
+
+    if (error) throw error;
+    if (!data.user) throw new Error('No user returned from Apple login');
+
+    return data.user;
+  }
+
+  /**
    * Sign out the current user
    */
   async logout(): Promise<void> {
@@ -135,8 +172,9 @@ class AuthService {
   /**
    * Get the currently signed-in user
    */
-  getCurrentUser(): User | null {
-    return this.supabase.auth.getSession().then(({ data }) => data.session?.user ?? null) as any;
+  async getCurrentUser(): Promise<User | null> {
+    const { data } = await this.supabase.auth.getSession();
+    return data.session?.user ?? null;
   }
 
   /**
