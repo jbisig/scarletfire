@@ -23,6 +23,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
@@ -203,40 +204,51 @@ export function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Page Header with Profile */}
-      <PageHeader title="Shows" />
+      {/* Header Section with Gradient Fade */}
+      <View style={styles.headerSection}>
+        {/* Page Header with Profile */}
+        <PageHeader title="Shows" />
 
-      {/* Search and Filter Row */}
-      <View style={styles.searchFilterRow}>
-        <View style={styles.searchBarWrapper}>
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Date, venue, location"
-          />
+        {/* Search and Filter Row */}
+        <View style={styles.searchFilterRow}>
+          <View style={styles.searchBarWrapper}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Date, venue, location"
+            />
+          </View>
+
+          {/* Filter Button */}
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              hasActiveFilters(appliedFilters) && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterTrayOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
+            />
+            <Text style={[
+              styles.filterButtonText,
+              hasActiveFilters(appliedFilters) && styles.filterButtonTextActive,
+            ]}>
+              {hasActiveFilters(appliedFilters) ? `${getFilterCount(appliedFilters)}` : 'Filter'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Filter Button */}
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            hasActiveFilters(appliedFilters) && styles.filterButtonActive,
-          ]}
-          onPress={() => setFilterTrayOpen(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="options-outline"
-            size={18}
-            color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
-          />
-          <Text style={[
-            styles.filterButtonText,
-            hasActiveFilters(appliedFilters) && styles.filterButtonTextActive,
-          ]}>
-            {hasActiveFilters(appliedFilters) ? `${getFilterCount(appliedFilters)}` : 'Filter'}
-          </Text>
-        </TouchableOpacity>
+        {/* Gradient fade overlay */}
+        <LinearGradient
+          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+          locations={[0, 0.3, 0.7, 1]}
+          style={styles.headerGradient}
+          pointerEvents="none"
+        />
       </View>
 
       {/* Filter Tray Modal */}
@@ -286,11 +298,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerSection: {
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
   searchFilterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
     gap: 10,
   },
   searchBarWrapper: {

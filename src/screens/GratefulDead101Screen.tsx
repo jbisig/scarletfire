@@ -16,6 +16,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { ShowCard } from '../components/ShowCard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 
@@ -63,18 +64,26 @@ export function GratefulDead101Screen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Grateful Dead 101</Text>
-          <Text style={styles.subtitle}>
-            New to the Grateful Dead? Start your journey with these 10 essential shows.
-          </Text>
+        <View style={styles.headerSection}>
+          <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Grateful Dead 101</Text>
+            <Text style={styles.subtitle}>
+              New to the Grateful Dead? Start your journey with these 10 essential shows.
+            </Text>
+          </View>
+          <LinearGradient
+            colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.headerGradient}
+            pointerEvents="none"
+          />
         </View>
         <SkeletonLoader variant="showCard" count={10} />
       </View>
@@ -83,24 +92,34 @@ export function GratefulDead101Screen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+      {/* Header Section with Gradient Fade */}
+      <View style={styles.headerSection}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
 
-        {/* Title */}
-        <Text style={styles.title}>Grateful Dead 101</Text>
+          {/* Title */}
+          <Text style={styles.title}>Grateful Dead 101</Text>
 
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>
-          New to the Grateful Dead? Start your journey with these 10 essential shows.
-        </Text>
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>
+            New to the Grateful Dead? Start your journey with these 10 essential shows.
+          </Text>
+        </View>
+
+        {/* Gradient fade overlay */}
+        <LinearGradient
+          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+          locations={[0, 0.3, 0.7, 1]}
+          style={styles.headerGradient}
+          pointerEvents="none"
+        />
       </View>
 
       <FlatList
@@ -130,6 +149,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerSection: {
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -143,7 +173,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
     gap: SPACING.md,
   },
   backButton: {

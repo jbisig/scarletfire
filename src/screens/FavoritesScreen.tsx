@@ -34,6 +34,7 @@ import { LoadingState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 const allShowsByYear = showsData as ShowsByYear;
@@ -578,46 +579,57 @@ export function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Page Header */}
-      <PageHeader title="Favorites" />
+      {/* Header Section with Gradient Fade */}
+      <View style={styles.headerSection}>
+        {/* Page Header */}
+        <PageHeader title="Favorites" />
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer} onLayout={handleTabContainerLayout}>
-        {/* Sliding active indicator */}
-        <Animated.View
-          style={[
-            styles.tabSlider,
-            {
-              width: tabWidth,
-              transform: [
-                {
-                  translateX: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, tabWidth],
-                  }),
-                },
-              ],
-            },
-          ]}
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer} onLayout={handleTabContainerLayout}>
+          {/* Sliding active indicator */}
+          <Animated.View
+            style={[
+              styles.tabSlider,
+              {
+                width: tabWidth,
+                transform: [
+                  {
+                    translateX: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, tabWidth],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+          <TouchableOpacity
+            style={styles.tab}
+            onPress={() => setActiveTab('shows')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
+              Shows
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.tab}
+            onPress={() => setActiveTab('songs')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
+              Songs
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Gradient fade overlay */}
+        <LinearGradient
+          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+          locations={[0, 0.3, 0.7, 1]}
+          style={styles.headerGradient}
+          pointerEvents="none"
         />
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => setActiveTab('shows')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-            Shows
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => setActiveTab('songs')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
-            Songs
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Tab Content */}
@@ -837,6 +849,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  headerSection: {
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
   },
   tabContainer: {
     flexDirection: 'row',

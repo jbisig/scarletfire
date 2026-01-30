@@ -18,6 +18,7 @@ import { LoadingState } from '../components/StateViews';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ERAS, Era } from '../constants/classicShows';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 type ClassicsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Classics'>;
@@ -110,39 +111,49 @@ export function ClassicsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+      {/* Header Section with Gradient Fade */}
+      <View style={styles.headerSection}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
 
-        {/* Title */}
-        <Text style={styles.title}>Classic Shows</Text>
+          {/* Title */}
+          <Text style={styles.title}>Classic Shows</Text>
 
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>
-          The most legendary performances from the band's 30-year history.
-        </Text>
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>
+            The most legendary performances from the band's 30-year history.
+          </Text>
 
-        {/* Era Picker and Sort Button Row */}
-        <View style={styles.filtersRow}>
-          <EraPicker
-            eras={ERAS}
-            selectedEra={selectedEra}
-            onEraChange={handleEraChange}
-          />
-          <DropdownMenu
-            options={SORT_OPTIONS}
-            selectedValue={sortType}
-            onSelect={setSortType}
-            triggerLabel={getSortLabel(sortType)}
-          />
+          {/* Era Picker and Sort Button Row */}
+          <View style={styles.filtersRow}>
+            <EraPicker
+              eras={ERAS}
+              selectedEra={selectedEra}
+              onEraChange={handleEraChange}
+            />
+            <DropdownMenu
+              options={SORT_OPTIONS}
+              selectedValue={sortType}
+              onSelect={setSortType}
+              triggerLabel={getSortLabel(sortType)}
+            />
+          </View>
         </View>
+
+        {/* Gradient fade overlay */}
+        <LinearGradient
+          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+          locations={[0, 0.3, 0.7, 1]}
+          style={styles.headerGradient}
+          pointerEvents="none"
+        />
       </View>
 
       {/* Classic Shows List */}
@@ -162,9 +173,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerSection: {
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
   header: {
     paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
     gap: SPACING.md,
   },
   backButton: {

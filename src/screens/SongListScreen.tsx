@@ -17,6 +17,7 @@ import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
 import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
@@ -148,14 +149,25 @@ export function SongListScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <PageHeader title="Songs" />
+        {/* Header Section with Gradient Fade */}
+        <View style={styles.headerSection}>
+          <PageHeader title="Songs" />
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search Songs"
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search Songs"
+            />
+          </View>
+
+          {/* Gradient fade overlay */}
+          <LinearGradient
+            colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.headerGradient}
+            pointerEvents="none"
           />
         </View>
 
@@ -194,9 +206,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerSection: {
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
   searchContainer: {
     paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   listContent: {
     paddingBottom: 180,
