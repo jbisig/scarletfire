@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#191919',
+    borderRadius: 50,
   },
   eraName: {
     fontSize: 14,
@@ -226,8 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#191919',
     height: 64,
   },
   yearContent: {
