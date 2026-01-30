@@ -15,6 +15,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -260,34 +261,36 @@ export function AppNavigator() {
   const showAuthFlow = !authState.isAuthenticated && !authState.hasSkippedLogin;
 
   return (
-    <NavigationContainer>
-      {showAuthFlow ? (
-        <AuthNavigator />
-      ) : (
-        <RootStack.Navigator screenOptions={{ headerShown: false }}>
-          <RootStack.Screen name="MainTabs" component={MainTabsWithPlayer} />
-          <RootStack.Screen
-            name="ShowDetail"
-            component={ShowDetailScreen}
-            options={{
-              headerShown: true,
-              headerStyle: { backgroundColor: COLORS.background },
-              headerTintColor: COLORS.textPrimary,
-              headerTitle: '',
-              headerBackTitleVisible: false,
-            }}
-          />
-          <RootStack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{
-              presentation: 'modal',
-              gestureEnabled: true,
-            }}
-          />
-        </RootStack.Navigator>
-      )}
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer>
+        {showAuthFlow ? (
+          <AuthNavigator />
+        ) : (
+          <RootStack.Navigator screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="MainTabs" component={MainTabsWithPlayer} />
+            <RootStack.Screen
+              name="ShowDetail"
+              component={ShowDetailScreen}
+              options={{
+                headerShown: true,
+                headerStyle: { backgroundColor: COLORS.background },
+                headerTintColor: COLORS.textPrimary,
+                headerTitle: '',
+                headerBackTitleVisible: false,
+              }}
+            />
+            <RootStack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                presentation: 'modal',
+                gestureEnabled: true,
+              }}
+            />
+          </RootStack.Navigator>
+        )}
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }
 

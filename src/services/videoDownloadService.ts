@@ -7,22 +7,33 @@
  */
 import { InteractionManager } from 'react-native';
 
+// Type for the auth service methods we use
+interface AuthServiceInterface {
+  getClient(): {
+    storage: {
+      from(bucket: string): {
+        getPublicUrl(path: string): { data: { publicUrl: string } };
+      };
+    };
+  };
+}
+
 // Lazy imports to avoid loading native modules before they're ready
 let _FileSystem: typeof import('expo-file-system/legacy') | null = null;
-let _authService: any = null;
+let _authService: AuthServiceInterface | null = null;
 
-function getFileSystem() {
+function getFileSystem(): typeof import('expo-file-system/legacy') {
   if (!_FileSystem) {
     _FileSystem = require('expo-file-system/legacy');
   }
-  return _FileSystem;
+  return _FileSystem!;
 }
 
-function getAuthService() {
+function getAuthService(): AuthServiceInterface {
   if (!_authService) {
     _authService = require('./authService').authService;
   }
-  return _authService;
+  return _authService!;
 }
 
 // Video metadata

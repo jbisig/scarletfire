@@ -24,10 +24,16 @@ export const ALL_VIDEO_IDS = [
 // Remote video IDs (downloadable from Supabase)
 export const REMOTE_VIDEO_IDS = ALL_VIDEO_IDS.filter((id) => id !== BUNDLED_VIDEO_ID);
 
-// Lazy import to avoid circular dependency - only load when needed
-let _videoDownloadService: any = null;
+// Type for the video download service methods we use
+interface VideoDownloadServiceInterface {
+  getVideoSource(videoId: string): { uri: string } | null;
+  getAvailableVideoIds(): string[];
+}
 
-function getVideoDownloadService() {
+// Lazy import to avoid circular dependency - only load when needed
+let _videoDownloadService: VideoDownloadServiceInterface | null = null;
+
+function getVideoDownloadService(): VideoDownloadServiceInterface | null {
   if (!_videoDownloadService) {
     try {
       _videoDownloadService = require('../services/videoDownloadService').videoDownloadService;
