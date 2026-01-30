@@ -65,7 +65,7 @@ export function getEraForYear(year: number): Era | null {
 
 export function getClassicShowsByEra(era: Era, allShows: GratefulDeadShow[]): GratefulDeadShow[] {
   return allShows.filter(show => {
-    const showYear = parseInt(show.year, 10);
+    const showYear = typeof show.year === 'number' ? show.year : parseInt(show.year, 10);
     return showYear >= era.startYear &&
            showYear <= era.endYear &&
            isClassicShow(show.date);

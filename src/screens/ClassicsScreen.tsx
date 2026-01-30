@@ -70,7 +70,7 @@ export function ClassicsScreen() {
     // Filter by era
     if (selectedEra) {
       shows = shows.filter(show => {
-        const showYear = parseInt(show.year);
+        const showYear = typeof show.year === 'number' ? show.year : parseInt(show.year, 10);
         return showYear >= selectedEra.startYear && showYear <= selectedEra.endYear;
       });
     }

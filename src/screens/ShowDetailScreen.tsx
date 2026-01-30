@@ -143,7 +143,6 @@ export function ShowDetailScreen() {
       // Update navigation title - empty title, just show back button
       navigation.setOptions({
         title: '',
-        headerBackTitleVisible: false,
         headerLeftContainerStyle: {
           paddingLeft: 10,
         },
@@ -294,10 +293,10 @@ export function ShowDetailScreen() {
         ) : (
           <View style={styles.sourceInfoPill}>
             <Text style={styles.sourceInfoText}>
-              {show.source || 'Unknown source'}
+              {show.allVersions?.[0]?.source || 'Unknown source'}
             </Text>
             <Text style={styles.downloadsText}>
-              {formatDownloads(show.downloads)}
+              {formatDownloads(show.allVersions?.[0]?.downloads)}
             </Text>
           </View>
         )}

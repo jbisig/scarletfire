@@ -220,7 +220,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     // Navigate to ShowDetail within ShowsTab stack so MiniPlayer remains visible
     // (MiniPlayer is rendered inside MainTabs, so navigating within a tab stack keeps it visible)
     // Navigate through the full hierarchy: MainTabs > ShowsTab > ShowDetail
-    navigation.navigate('MainTabs', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (navigation.navigate as any)('MainTabs', {
       screen: 'ShowsTab',
       params: {
         screen: 'ShowDetail',

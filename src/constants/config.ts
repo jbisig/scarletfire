@@ -21,7 +21,8 @@ if (__DEV__) {
   });
 }
 
-const extra = expoConfig?.extra ?? manifest?.extra ?? manifest2?.extra ?? {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const extra = expoConfig?.extra ?? (manifest as any)?.extra ?? (manifest2 as any)?.extra ?? {};
 
 // Helper to get a required config value
 function getRequiredConfig(key: string, value: string | undefined): string {

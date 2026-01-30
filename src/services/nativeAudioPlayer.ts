@@ -100,7 +100,9 @@ class NativeAudioPlayer {
   }
 
   removeAllListeners() {
-    eventEmitter.removeAllListeners();
+    Object.values(Event).forEach(eventName => {
+      eventEmitter.removeAllListeners(eventName);
+    });
   }
 }
 

@@ -73,8 +73,7 @@ function ShowsStack() {
         component={ShowDetailScreen}
         options={{
           title: '',
-          headerBackTitleVisible: false,
-          headerBackTitle: ' ',
+                    headerBackTitle: ' ',
         }}
       />
     </Stack.Navigator>
@@ -112,8 +111,7 @@ function SongsStack() {
         component={ShowDetailScreen}
         options={{
           title: '',
-          headerBackTitleVisible: false,
-          headerBackTitle: ' ',
+                    headerBackTitle: ' ',
         }}
       />
     </Stack.Navigator>
@@ -147,8 +145,7 @@ function FavoritesStack() {
         component={ShowDetailScreen}
         options={{
           title: '',
-          headerBackTitleVisible: false,
-          headerBackTitle: ' ',
+                    headerBackTitle: ' ',
         }}
       />
     </Stack.Navigator>
@@ -191,8 +188,7 @@ function DiscoverStack() {
         component={ShowDetailScreen}
         options={{
           title: '',
-          headerBackTitleVisible: false,
-          headerBackTitle: ' ',
+                    headerBackTitle: ' ',
         }}
       />
     </Stack.Navigator>
@@ -276,8 +272,7 @@ export function AppNavigator() {
                 headerStyle: { backgroundColor: COLORS.background },
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
-                headerBackTitleVisible: false,
-              }}
+                              }}
             />
             <RootStack.Screen
               name="Settings"

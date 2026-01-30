@@ -15,7 +15,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
-type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SOTD'>;
+type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 export function SOTDScreen() {
   const navigation = useNavigation<SOTDScreenNavigationProp>();

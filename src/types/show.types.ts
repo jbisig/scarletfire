@@ -7,7 +7,7 @@ export interface RecordingVersion {
 
 export interface GratefulDeadShow {
   date: string;
-  year: string;
+  year: string | number;
   venue?: string;
   location?: string;
   versions: RecordingVersion[]; // All recording versions of this show
@@ -21,7 +21,7 @@ export interface ShowDetail {
   identifier: string;
   title: string;
   date: string;
-  year: string;
+  year: string | number;
   venue?: string;
   location?: string;
   description?: string;

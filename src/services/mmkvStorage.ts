@@ -1,12 +1,27 @@
-// Lazy MMKV import and instance to avoid loading native module before it's ready
-let _MMKV: typeof import('react-native-mmkv').MMKV | null = null;
-let _storage: import('react-native-mmkv').MMKV | null = null;
+// Type for MMKV instance
+interface MMKVInstance {
+  getString(key: string): string | undefined;
+  getNumber(key: string): number | undefined;
+  getBoolean(key: string): boolean | undefined;
+  set(key: string, value: string | number | boolean): void;
+  delete(key: string): void;
+  clearAll(): void;
+  contains(key: string): boolean;
+  getAllKeys(): string[];
+}
 
-function getMMKV() {
+// Type for MMKV constructor
+type MMKVConstructor = new (options: { id: string; encryptionKey?: string }) => MMKVInstance;
+
+// Lazy MMKV import and instance to avoid loading native module before it's ready
+let _MMKV: MMKVConstructor | null = null;
+let _storage: MMKVInstance | null = null;
+
+function getMMKV(): MMKVConstructor {
   if (!_MMKV) {
     _MMKV = require('react-native-mmkv').MMKV;
   }
-  return _MMKV;
+  return _MMKV!;
 }
 
 // Cache versioning - increment when data structure changes

@@ -70,8 +70,8 @@ class AuthService {
     await GoogleSignin.hasPlayServices();
     const userInfo = await GoogleSignin.signIn();
 
-    // Try both possible response structures
-    const idToken = userInfo.idToken || userInfo.data?.idToken;
+    // Try both possible response structures (types vary between library versions)
+    const idToken = (userInfo as { idToken?: string }).idToken || (userInfo as { data?: { idToken?: string } }).data?.idToken;
 
     if (!idToken) {
       throw new Error('No ID token present');
