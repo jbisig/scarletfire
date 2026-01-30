@@ -13,6 +13,7 @@ import {
   SOURCE_TYPES,
 } from '../constants/api';
 import { normalizeSongTitle } from '../utils/titleNormalization';
+import { logger } from '../utils/logger';
 
 /**
  * Service for interacting with the Internet Archive API
@@ -118,7 +119,7 @@ class ArchiveApiService {
         // Don't retry on the last attempt
         if (attempt < maxRetries - 1) {
           const delay = baseDelayMs * Math.pow(2, attempt);
-          console.log(`[ArchiveAPI] Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${lastError.message}`);
+          logger.api.debug(`Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${lastError.message}`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }

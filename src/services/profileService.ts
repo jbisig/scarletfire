@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { User } from '@supabase/supabase-js';
 import { authService } from './authService';
 import { Alert } from 'react-native';
+import { logger } from '../utils/logger';
 
 class ProfileService {
   /**
@@ -42,7 +43,7 @@ class ProfileService {
       });
 
     if (error) {
-      console.error('Upload error:', error);
+      logger.profile.error('Upload error:', error);
       throw new Error(`Failed to upload avatar: ${error.message}`);
     }
 
@@ -108,7 +109,7 @@ class ProfileService {
 
       return publicUrl;
     } catch (error) {
-      console.error('Error changing profile picture:', error);
+      logger.profile.error('Error changing profile picture:', error);
       Alert.alert(
         'Upload Failed',
         'There was a problem uploading your profile picture. Please try again.',
@@ -130,7 +131,7 @@ class ProfileService {
       .list(userId);
 
     if (listError) {
-      console.error('Error listing avatar files:', listError);
+      logger.profile.error('Error listing avatar files:', listError);
     }
 
     // Delete all avatar files for this user
@@ -141,7 +142,7 @@ class ProfileService {
         .remove(filePaths);
 
       if (deleteError) {
-        console.error('Error deleting avatar files:', deleteError);
+        logger.profile.error('Error deleting avatar files:', deleteError);
       }
     }
 

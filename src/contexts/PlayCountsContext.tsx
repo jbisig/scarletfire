@@ -3,6 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { playCountsCloudService } from '../services/playCountsCloudService';
 import { STORAGE_KEYS } from '../constants/registry';
+import { logger } from '../utils/logger';
+
+const playCountsLogger = logger.create('PlayCounts');
 
 export interface PlayCount {
   trackTitle: string;      // Song name
@@ -52,7 +55,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
         setPlayCountsMap(map);
       }
     } catch (error) {
-      console.error('Error loading play counts:', error);
+      playCountsLogger.error('Error loading play counts:', error);
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +67,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       const array = Array.from(map.values());
       await AsyncStorage.setItem(STORAGE_KEYS.PLAY_COUNTS, JSON.stringify(array));
     } catch (error) {
-      console.error('Error saving play counts:', error);
+      playCountsLogger.error('Error saving play counts:', error);
     }
   };
 
@@ -92,7 +95,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       const mergedArray = Array.from(mergedMap.values());
       await playCountsCloudService.syncPlayCounts(userId, mergedArray);
     } catch (error) {
-      console.error('Failed to sync play counts from cloud:', error);
+      playCountsLogger.error('Failed to sync play counts from cloud:', error);
     }
   };
 
@@ -176,7 +179,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     if (authState.isAuthenticated && authState.user) {
       const playCounts = Array.from(newMap.values());
       playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch((error) => {
-        console.error('Failed to sync play counts to cloud:', error);
+        playCountsLogger.error('Failed to sync play counts to cloud:', error);
       });
     }
   };

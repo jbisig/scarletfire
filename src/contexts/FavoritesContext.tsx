@@ -5,6 +5,9 @@ import { useAuth } from './AuthContext';
 import { favoritesCloudService } from '../services/favoritesCloudService';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { STORAGE_KEYS } from '../constants/registry';
+import { logger } from '../utils/logger';
+
+const favoritesLogger = logger.create('Favorites');
 
 export interface FavoriteSong {
   trackId: string;
@@ -115,7 +118,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         JSON.stringify(deletionLogRef.current)
       );
     } catch (error) {
-      console.error('Error saving deletion log:', error);
+      favoritesLogger.error('Error saving deletion log:', error);
     }
   };
 
@@ -133,7 +136,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         };
       }
     } catch (error) {
-      console.error('Error loading deletion log:', error);
+      favoritesLogger.error('Error loading deletion log:', error);
     }
   };
 
@@ -195,7 +198,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         setFavoriteSongs(sorted);
       }
     } catch (error) {
-      console.error('Error loading favorites:', error);
+      favoritesLogger.error('Error loading favorites:', error);
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +208,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SHOWS, JSON.stringify(newFavorites));
     } catch (error) {
-      console.error('Error saving favorite shows:', error);
+      favoritesLogger.error('Error saving favorite shows:', error);
     }
   };
 
@@ -213,7 +216,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SONGS, JSON.stringify(newFavorites));
     } catch (error) {
-      console.error('Error saving favorite songs:', error);
+      favoritesLogger.error('Error saving favorite songs:', error);
     }
   };
 
@@ -235,7 +238,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
             return false;
           }
           // Skip if was deleted locally after the cloud save
-          const cloudSavedAt = (cloudShow as any).savedAt || 0;
+          const cloudSavedAt = (cloudShow as { savedAt?: number }).savedAt || 0;
           if (wasShowDeletedAfter(cloudShow.primaryIdentifier, cloudSavedAt)) {
             return false;
           }
@@ -278,7 +281,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(STORAGE_KEYS.FAVORITES_SONGS, JSON.stringify(mergedSongs));
       await favoritesCloudService.syncFavorites(userId, enrichedShows, mergedSongs);
     } catch (error) {
-      console.error('Failed to sync from cloud:', error);
+      favoritesLogger.error('Failed to sync from cloud:', error);
     }
   };
 
@@ -306,7 +309,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // Sync to cloud if authenticated - use ref for songs to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-        console.error('Failed to sync favorite show to cloud:', error);
+        favoritesLogger.error('Failed to sync favorite show to cloud:', error);
         // Data is saved locally, cloud sync will retry on next change or app restart
       });
     }
@@ -323,7 +326,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // Sync to cloud if authenticated - use ref for songs to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-        console.error('Failed to sync favorite show removal to cloud:', error);
+        favoritesLogger.error('Failed to sync favorite show removal to cloud:', error);
       });
     }
   };
@@ -344,7 +347,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // Sync to cloud if authenticated - use ref for shows to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-        console.error('Failed to sync favorite song to cloud:', error);
+        favoritesLogger.error('Failed to sync favorite song to cloud:', error);
       });
     }
   };
@@ -362,7 +365,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // Sync to cloud if authenticated - use ref for shows to avoid race conditions
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-        console.error('Failed to sync favorite song removal to cloud:', error);
+        favoritesLogger.error('Failed to sync favorite song removal to cloud:', error);
       });
     }
   };

@@ -4,6 +4,7 @@
  * Provides standardized error handling for async operations,
  * especially API calls and service layer functions.
  */
+import { logger } from './logger';
 
 /**
  * Custom error class with additional context for debugging
@@ -73,7 +74,7 @@ export async function withErrorHandling<T>(
     const apiError = new ApiError(errorMessage, context, error);
 
     // Log with context
-    console.error(apiError.toDetailedString());
+    logger.api.error(apiError.toDetailedString());
 
     if (rethrow) {
       throw apiError;
@@ -101,7 +102,7 @@ export function createErrorHandler(baseContext: string) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const apiError = new ApiError(message, context, error);
 
-    console.error(apiError.toDetailedString());
+    logger.api.error(apiError.toDetailedString());
     throw apiError;
   };
 }

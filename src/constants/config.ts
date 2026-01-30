@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { logger } from '../utils/logger';
 
 /**
  * App configuration loaded from environment variables via app.config.js
@@ -12,14 +13,12 @@ const manifest = Constants.manifest;
 const manifest2 = Constants.manifest2;
 
 // Log available config sources for debugging
-if (__DEV__) {
-  console.log('Config sources available:', {
-    hasExpoConfig: !!expoConfig,
-    hasManifest: !!manifest,
-    hasManifest2: !!manifest2,
-    expoConfigExtra: expoConfig?.extra,
-  });
-}
+logger.config.debug('Config sources available:', {
+  hasExpoConfig: !!expoConfig,
+  hasManifest: !!manifest,
+  hasManifest2: !!manifest2,
+  expoConfigExtra: expoConfig?.extra,
+});
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const extra = expoConfig?.extra ?? (manifest as any)?.extra ?? (manifest2 as any)?.extra ?? {};
@@ -27,8 +26,8 @@ const extra = expoConfig?.extra ?? (manifest as any)?.extra ?? (manifest2 as any
 // Helper to get a required config value
 function getRequiredConfig(key: string, value: string | undefined): string {
   if (!value || value.trim().length === 0) {
-    console.error(`Missing required config: ${key}. Set it in EAS secrets or .env file.`);
-    console.error(`Available extra keys: ${Object.keys(extra).join(', ')}`);
+    logger.config.error(`Missing required config: ${key}. Set it in EAS secrets or .env file.`);
+    logger.config.error(`Available extra keys: ${Object.keys(extra).join(', ')}`);
     return '';
   }
   return value;
@@ -57,8 +56,8 @@ export function validateConfig(): void {
     const errorMessage = `Missing required configuration: ${missing.join(', ')}. ` +
       'Please set these values in your .env file or EAS secrets.';
 
-    console.error(errorMessage);
-    console.error('Available config keys:', Object.keys(extra).join(', ') || '(none)');
+    logger.config.error(errorMessage);
+    logger.config.error('Available config keys:', Object.keys(extra).join(', ') || '(none)');
 
     if (__DEV__) {
       // In development, throw to make missing config obvious

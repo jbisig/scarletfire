@@ -3,6 +3,7 @@ import { authService } from '../services/authService';
 import { User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/registry';
+import { logger } from '../utils/logger';
 
 interface AuthState {
   user: User | null;
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     timeoutId = setTimeout(() => {
       if (!hasResolved) {
         hasResolved = true;
-        console.warn('Auth check timed out after 5 seconds');
+        logger.auth.warn('Auth check timed out after 5 seconds');
         dispatch({ type: 'SET_ERROR', error: 'Authentication check timed out. Some features may be unavailable.' });
         dispatch({ type: 'AUTH_STATE_CHANGED', user: null });
       }
@@ -248,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'USER_UPDATED', user: session.user });
       }
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      logger.auth.error('Failed to refresh user:', error);
     }
   };
 

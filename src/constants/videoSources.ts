@@ -37,8 +37,8 @@ function getVideoDownloadService(): VideoDownloadServiceInterface | null {
   if (!_videoDownloadService) {
     try {
       _videoDownloadService = require('../services/videoDownloadService').videoDownloadService;
-    } catch (e) {
-      console.warn('[videoSources] Failed to load videoDownloadService:', e);
+    } catch {
+      // Service not available - silent fallback to bundled video
       return null;
     }
   }

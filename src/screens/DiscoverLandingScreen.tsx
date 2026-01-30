@@ -22,6 +22,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { radioService } from '../services/radioService';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { logger } from '../utils/logger';
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -68,7 +69,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         const count = getShowPlayCount(show.primaryIdentifier, details.tracks.length);
         setShowPlayCount(count);
       } catch (error) {
-        console.error('Failed to fetch show details for play count:', error);
+        logger.api.error('Failed to fetch show details for play count:', error);
         setShowPlayCount(0);
       }
     };

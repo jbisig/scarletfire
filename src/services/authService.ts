@@ -4,6 +4,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { supabaseStorage } from './supabaseStorage';
 import { CONFIG } from '../constants/config';
+import { logger } from '../utils/logger';
 
 // Track if Google Sign-In has been configured
 let isGoogleSignInConfigured = false;
@@ -152,7 +153,7 @@ class AuthService {
           .remove(filePaths);
       }
     } catch (storageError) {
-      console.log('Error deleting avatar files:', storageError);
+      logger.auth.warn('Error deleting avatar files:', storageError);
       // Continue with account deletion even if avatar deletion fails
     }
 
@@ -161,7 +162,7 @@ class AuthService {
     const { error: rpcError } = await this.supabase.rpc('delete_user');
 
     if (rpcError) {
-      console.error('Error deleting user:', rpcError);
+      logger.auth.error('Error deleting user:', rpcError);
       throw new Error('Failed to delete account. Please contact support.');
     }
 

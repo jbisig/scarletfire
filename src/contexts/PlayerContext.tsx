@@ -8,6 +8,7 @@ import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import { shuffleArray } from '../utils/shuffle';
+import { logger } from '../utils/logger';
 import showsData from '../data/shows.json';
 
 // Load shows data for finding next chronological show
@@ -320,7 +321,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const { videoDownloadService } = require('../services/videoDownloadService');
         videoDownloadService.startDeferredDownloads();
       } catch (e) {
-        console.warn('[PlayerContext] Failed to start video downloads:', e);
+        logger.player.warn('Failed to start video downloads:', e);
       }
     });
   }, []);
@@ -355,11 +356,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           audioService.play().then(() => {
             dispatch({ type: 'PLAY' });
           }).catch((error) => {
-            console.error('Auto-play failed:', error.message);
+            logger.player.error('Auto-play failed:', error.message);
           });
         }
       }).catch((error) => {
-        console.error('Track load failed:', error.message);
+        logger.player.error('Track load failed:', error.message);
         dispatch({ type: 'SET_LOADING', isLoading: false });
       });
     }
@@ -464,7 +465,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          console.warn(`Radio replenish attempt ${attempt + 1}/${MAX_RETRIES} failed:`, lastError.message);
+          logger.player.warn(`Radio replenish attempt ${attempt + 1}/${MAX_RETRIES} failed:`, lastError.message);
 
           if (attempt < MAX_RETRIES - 1) {
             // Exponential backoff before retry
@@ -475,7 +476,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
 
       // All retries failed
-      console.error('Failed to replenish radio queue after all retries:', lastError?.message);
+      logger.player.error('Failed to replenish radio queue after all retries:', lastError?.message);
       // Don't stop radio - let it continue with remaining tracks
       // User will naturally see the queue end if no more tracks can be fetched
     })();
@@ -512,7 +513,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'STOP' });
       }
     } catch (error) {
-      console.error('Failed to load next show:', error);
+      logger.player.error('Failed to load next show:', error);
       dispatch({ type: 'STOP' });
     }
   }, [state.currentShow?.date]);
@@ -665,7 +666,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'PLAY' });
       await audioService.play();
     } catch (error) {
-      console.error('Play failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Play failed:', error instanceof Error ? error.message : 'Unknown error');
       dispatch({ type: 'PAUSE' });
     }
   }, []);
@@ -675,7 +676,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'PAUSE' });
       await audioService.pause();
     } catch (error) {
-      console.error('Pause failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Pause failed:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, []);
 
@@ -684,7 +685,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'STOP' });
       await audioService.stop();
     } catch (error) {
-      console.error('Stop failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Stop failed:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, []);
 
@@ -708,7 +709,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
       await audioService.skipToNext();
     } catch (error) {
-      console.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, [state.playbackMode, state.shuffleType]);
 
@@ -727,7 +728,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
       await audioService.skipToPrevious();
     } catch (error) {
-      console.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, [state.playbackMode, state.shuffleType]);
 
@@ -741,7 +742,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
       await audioService.seekTo(position);
     } catch (error) {
-      console.error('Seek failed:', error instanceof Error ? error.message : 'Unknown error');
+      logger.player.error('Seek failed:', error instanceof Error ? error.message : 'Unknown error');
     }
   }, [progressAnim]);
 
@@ -762,7 +763,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const initialTracks = await radioService.getRandomTracks(10);
 
       if (initialTracks.length === 0) {
-        console.error('No radio tracks available');
+        logger.player.error('No radio tracks available');
         dispatch({ type: 'STOP_RADIO' });
         return;
       }
@@ -783,7 +784,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       await nativeAudioPlayer.play();
       dispatch({ type: 'PLAY' });
     } catch (error) {
-      console.error('Failed to start radio:', error);
+      logger.player.error('Failed to start radio:', error);
       dispatch({ type: 'STOP_RADIO' });
     }
   }, [state.playbackMode]);
@@ -797,7 +798,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       replenishPromiseRef.current = null;
       await audioService.stop();
     } catch (error) {
-      console.error('Failed to stop radio:', error);
+      logger.player.error('Failed to stop radio:', error);
     }
   }, []);
 
@@ -832,11 +833,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await nativeAudioPlayer.play();
         dispatch({ type: 'PLAY' });
       } else {
-        console.error('Track not found in show:', song.trackId);
+        logger.player.error('Track not found in show:', song.trackId);
         dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
       }
     } catch (error) {
-      console.error('Failed to load shuffle song:', error);
+      logger.player.error('Failed to load shuffle song:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
   }, []);
@@ -872,11 +873,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await nativeAudioPlayer.play();
         dispatch({ type: 'PLAY' });
       } else {
-        console.error('No tracks in show:', show.primaryIdentifier);
+        logger.player.error('No tracks in show:', show.primaryIdentifier);
         dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
       }
     } catch (error) {
-      console.error('Failed to load shuffle show:', error);
+      logger.player.error('Failed to load shuffle show:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
   }, []);
@@ -884,7 +885,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Start shuffle mode for songs
   const startShuffleSongs = useCallback(async (songs: ShuffleSongItem[]) => {
     if (songs.length === 0) {
-      console.warn('No songs to shuffle');
+      logger.player.warn('No songs to shuffle');
       return;
     }
 
@@ -905,7 +906,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Load and play the first song
       await loadShuffleSong(shuffledSongs[0]);
     } catch (error) {
-      console.error('Failed to start shuffle songs:', error);
+      logger.player.error('Failed to start shuffle songs:', error);
       dispatch({ type: 'STOP_SHUFFLE' });
     }
   }, [state.playbackMode, loadShuffleSong]);
@@ -913,7 +914,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Start shuffle mode for shows
   const startShuffleShows = useCallback(async (shows: GratefulDeadShow[]) => {
     if (shows.length === 0) {
-      console.warn('No shows to shuffle');
+      logger.player.warn('No shows to shuffle');
       return;
     }
 
@@ -934,7 +935,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Load and play the first show
       await loadShuffleShow(shuffledShows[0]);
     } catch (error) {
-      console.error('Failed to start shuffle shows:', error);
+      logger.player.error('Failed to start shuffle shows:', error);
       dispatch({ type: 'STOP_SHUFFLE' });
     }
   }, [state.playbackMode, loadShuffleShow]);
@@ -945,7 +946,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'STOP_SHUFFLE' });
       await audioService.stop();
     } catch (error) {
-      console.error('Failed to stop shuffle:', error);
+      logger.player.error('Failed to stop shuffle:', error);
     }
   }, []);
 

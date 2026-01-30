@@ -10,6 +10,7 @@ import { RatedSongPerformance, TIER_1_SONG_PERFORMANCES } from '../data/songPerf
 import { archiveApi } from './archiveApi';
 import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
+import { logger } from '../utils/logger';
 
 export interface RadioTrack {
   track: Track;
@@ -183,7 +184,7 @@ class RadioService {
 
       return null;
     } catch (error) {
-      console.error(`Failed to resolve performance: ${perf.songTitle} from ${perf.showDate}`, error);
+      logger.radio.error(`Failed to resolve performance: ${perf.songTitle} from ${perf.showDate}`, error);
       return null;
     }
   }
@@ -195,12 +196,12 @@ class RadioService {
   async prefetch(count: number = 10): Promise<void> {
     // Don't prefetch if already prefetching or have enough tracks
     if (this.isPrefetching || this.prefetchedTracks.length >= count) {
-      console.log(`[Radio] Prefetch skipped - already have ${this.prefetchedTracks.length} tracks`);
+      logger.radio.debug(`Prefetch skipped - already have ${this.prefetchedTracks.length} tracks`);
       return;
     }
 
     this.isPrefetching = true;
-    console.log('[Radio] Starting prefetch...');
+    logger.radio.debug('Starting prefetch...');
     const startTime = Date.now();
 
     this.prefetchPromise = (async () => {
@@ -208,9 +209,9 @@ class RadioService {
         const needed = count - this.prefetchedTracks.length;
         const newTracks = await this.fetchTracks(needed);
         this.prefetchedTracks.push(...newTracks);
-        console.log(`[Radio] Prefetch complete - ${this.prefetchedTracks.length} tracks ready (${Date.now() - startTime}ms)`);
+        logger.radio.debug(`Prefetch complete - ${this.prefetchedTracks.length} tracks ready (${Date.now() - startTime}ms)`);
       } catch (error) {
-        console.error('Failed to prefetch radio tracks:', error);
+        logger.radio.error('Failed to prefetch radio tracks:', error);
       } finally {
         this.isPrefetching = false;
         this.prefetchPromise = null;
@@ -284,7 +285,7 @@ class RadioService {
 
     // Wait for any in-progress prefetch to complete first
     if (this.prefetchPromise) {
-      console.log('[Radio] Waiting for prefetch to complete...');
+      logger.radio.debug('Waiting for prefetch to complete...');
       await this.prefetchPromise;
     }
 
@@ -293,19 +294,19 @@ class RadioService {
     while (tracks.length < count && this.prefetchedTracks.length > 0) {
       tracks.push(this.prefetchedTracks.shift()!);
     }
-    console.log(`[Radio] Used ${prefetchedUsed} prefetched tracks`);
+    logger.radio.debug(`Used ${prefetchedUsed} prefetched tracks`);
 
     // Fetch more if needed
     if (tracks.length < count) {
       const needed = count - tracks.length;
-      console.log(`[Radio] Need to fetch ${needed} more tracks...`);
+      logger.radio.debug(`Need to fetch ${needed} more tracks...`);
       const fetchStart = Date.now();
       const newTracks = await this.fetchTracks(needed);
-      console.log(`[Radio] Fetched ${newTracks.length} tracks in ${Date.now() - fetchStart}ms`);
+      logger.radio.debug(`Fetched ${newTracks.length} tracks in ${Date.now() - fetchStart}ms`);
       tracks.push(...newTracks);
     }
 
-    console.log(`[Radio] getRandomTracks complete: ${tracks.length} tracks in ${Date.now() - startTime}ms`);
+    logger.radio.debug(`getRandomTracks complete: ${tracks.length} tracks in ${Date.now() - startTime}ms`);
 
     // Start background prefetch for next time
     this.prefetch(20);

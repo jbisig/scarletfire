@@ -30,6 +30,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { haptics } from '../services/hapticService';
 import { BUNDLED_VIDEO } from '../constants/videoSources';
+import { logger } from '../utils/logger';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -72,7 +73,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   }, [videoId]);
 
   const handleVideoError = useCallback(() => {
-    console.warn('[FullPlayer] Video failed to load, falling back to bundled video');
+    logger.video.warn('Video failed to load, falling back to bundled video');
     setUseVideoFallback(true);
   }, []);
 

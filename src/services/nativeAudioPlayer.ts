@@ -40,6 +40,35 @@ export enum Event {
   PlaybackQueueEnded = 'playback-queue-ended',
 }
 
+// Event data types for type-safe event handling
+export interface PlaybackStateEventData {
+  state: string;
+}
+
+export interface PlaybackTrackChangedEventData {
+  trackIndex?: number;
+}
+
+export interface PlaybackProgressEventData {
+  position: number;
+  duration: number;
+}
+
+export interface PlaybackErrorEventData {
+  error: string;
+}
+
+// Empty for queue ended event
+export interface PlaybackQueueEndedEventData {}
+
+// Union type for all event data
+export type EventData =
+  | PlaybackStateEventData
+  | PlaybackTrackChangedEventData
+  | PlaybackProgressEventData
+  | PlaybackErrorEventData
+  | PlaybackQueueEndedEventData;
+
 class NativeAudioPlayer {
   async setupPlayer(): Promise<void> {
     return AudioPlayerModule.setupPlayer();
@@ -94,6 +123,13 @@ class NativeAudioPlayer {
     return AudioPlayerModule.refreshAudioSession();
   }
 
+  // Overloaded addEventListener for type-safe event handling
+  addEventListener(event: Event.PlaybackState, handler: (data: PlaybackStateEventData) => void): { remove: () => void };
+  addEventListener(event: Event.PlaybackTrackChanged, handler: (data: PlaybackTrackChangedEventData) => void): { remove: () => void };
+  addEventListener(event: Event.PlaybackProgress, handler: (data: PlaybackProgressEventData) => void): { remove: () => void };
+  addEventListener(event: Event.PlaybackError, handler: (data: PlaybackErrorEventData) => void): { remove: () => void };
+  addEventListener(event: Event.PlaybackQueueEnded, handler: (data: PlaybackQueueEndedEventData) => void): { remove: () => void };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addEventListener(event: Event, handler: (data: any) => void): { remove: () => void } {
     const subscription = eventEmitter.addListener(event, handler);
     return subscription;

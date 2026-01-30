@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../utils/logger';
 
 /**
  * Custom storage adapter for Supabase to work with React Native AsyncStorage
@@ -10,7 +11,7 @@ export const supabaseStorage = {
       const value = await AsyncStorage.getItem(key);
       return value;
     } catch (error) {
-      console.error('Error getting item from storage:', error);
+      logger.auth.error('Error getting item from storage:', error);
       return null;
     }
   },
@@ -18,14 +19,14 @@ export const supabaseStorage = {
     try {
       await AsyncStorage.setItem(key, value);
     } catch (error) {
-      console.error('Error setting item in storage:', error);
+      logger.auth.error('Error setting item in storage:', error);
     }
   },
   removeItem: async (key: string) => {
     try {
       await AsyncStorage.removeItem(key);
     } catch (error) {
-      console.error('Error removing item from storage:', error);
+      logger.auth.error('Error removing item from storage:', error);
     }
   },
 };

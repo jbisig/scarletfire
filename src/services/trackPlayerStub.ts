@@ -20,42 +20,19 @@ export const Event = {
 
 const TrackPlayer = {
   async setupPlayer() {
-    console.log('TrackPlayer stub: setup');
     return Promise.resolve();
   },
-  async updateOptions() {
-    console.log('TrackPlayer stub: updateOptions');
-  },
-  async add() {
-    console.log('TrackPlayer stub: add');
-  },
-  async reset() {
-    console.log('TrackPlayer stub: reset');
-  },
-  async play() {
-    console.log('TrackPlayer stub: play');
-  },
-  async pause() {
-    console.log('TrackPlayer stub: pause');
-  },
-  async stop() {
-    console.log('TrackPlayer stub: stop');
-  },
-  async skip() {
-    console.log('TrackPlayer stub: skip');
-  },
-  async skipToNext() {
-    console.log('TrackPlayer stub: skipToNext');
-  },
-  async skipToPrevious() {
-    console.log('TrackPlayer stub: skipToPrevious');
-  },
-  async seekTo() {
-    console.log('TrackPlayer stub: seekTo');
-  },
-  async setRepeatMode() {
-    console.log('TrackPlayer stub: setRepeatMode');
-  },
+  async updateOptions() {},
+  async add() {},
+  async reset() {},
+  async play() {},
+  async pause() {},
+  async stop() {},
+  async skip() {},
+  async skipToNext() {},
+  async skipToPrevious() {},
+  async seekTo() {},
+  async setRepeatMode() {},
   async getQueue() {
     return [];
   },
@@ -73,11 +50,14 @@ const TrackPlayer = {
   },
 };
 
-export function useTrackPlayerEvents(events: any, handler: any) {
+export function useTrackPlayerEvents(
+  _events: string[],
+  _handler: (event: { type: string }) => void
+): void {
   // Stub - no-op
 }
 
-export function useProgress(updateInterval?: number) {
+export function useProgress(_updateInterval?: number) {
   return { position: 0, duration: 0, buffered: 0 };
 }
 

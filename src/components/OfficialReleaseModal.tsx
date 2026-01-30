@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfficialRelease } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
+import { logger } from '../utils/logger';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 
 interface ShowInfo {
@@ -195,7 +196,7 @@ export const OfficialReleaseModal: React.FC<OfficialReleaseModalProps> = ({
         await Linking.openURL(url);
       }
     } catch (error) {
-      console.error('Failed to open link:', error);
+      logger.api.error('Failed to open link:', error);
     }
   };
 

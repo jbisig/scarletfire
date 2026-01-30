@@ -26,6 +26,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
+import { logger } from '../utils/logger';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SortType = 'date' | 'rating';
@@ -169,7 +170,7 @@ export function SongPerformancesScreen() {
         );
       }
     } catch (error) {
-      console.error('Failed to load performance:', error);
+      logger.player.error('Failed to load performance:', error);
       Alert.alert(
         'Error Loading Show',
         'Unable to load this performance. Please try another one.',

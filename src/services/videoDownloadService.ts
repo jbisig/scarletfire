@@ -6,6 +6,7 @@
  * competing with initial render and audio playback.
  */
 import { InteractionManager } from 'react-native';
+import { logger } from '../utils/logger';
 
 // Type for the auth service methods we use
 interface AuthServiceInterface {
@@ -267,7 +268,7 @@ class VideoDownloadService {
       };
       this.notifyStatusListeners();
     } catch (error) {
-      console.error(`[VideoDownload] Failed to download ${videoId}:`, error);
+      logger.video.error(`Failed to download ${videoId}:`, error);
 
       // Clean up partial file
       try {

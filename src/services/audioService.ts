@@ -1,6 +1,7 @@
 import { Image } from 'react-native';
 import nativeAudioPlayer, { Track as NativeTrack, State } from './nativeAudioPlayer';
 import { Track, ShowDetail } from '../types/show.types';
+import { logger } from '../utils/logger';
 
 // Resolve app icon for Now Playing artwork
 const appIcon = require('../../assets/icon.png');
@@ -39,7 +40,7 @@ class AudioService {
         this.isSetup = true;
       }
     } catch (error) {
-      console.error(`Audio initialization error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.audio.error(`Audio initialization error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error;
     }
   }

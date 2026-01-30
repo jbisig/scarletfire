@@ -47,6 +47,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { logger } from '../utils/logger';
 
 const allShowsByYear = showsData as ShowsByYear;
 
@@ -397,7 +398,7 @@ export function FavoritesScreen() {
         await loadTrack(track, showDetail, showDetail.tracks);
       }
     } catch (error) {
-      console.error('Failed to load song:', error);
+      logger.player.error('Failed to load song:', error);
     } finally {
       setLoadingSongId(null);
     }
