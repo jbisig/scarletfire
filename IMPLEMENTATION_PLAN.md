@@ -492,14 +492,15 @@ These can be addressed incrementally over time.
 
 ---
 
-### 3.4 Create Error Handling Utility
+### 3.4 Create Error Handling Utility ✅ COMPLETED
 **Issue:** 5.2 - Error Handling Boilerplate Repeated
 **Files:** New file `src/utils/apiError.ts`
 
 **Tasks:**
-- [ ] Create `ApiError` class with context
-- [ ] Create `withErrorHandling` wrapper
-- [ ] Refactor services to use wrapper
+- [x] Create `ApiError` class with context, timestamp, and original error
+- [x] Create `withErrorHandling` wrapper for async functions
+- [x] Create `createErrorHandler` factory for per-service handlers
+- [x] Add `isApiError` type guard and `getErrorMessage` helper
 
 ---
 
@@ -593,7 +594,7 @@ To be addressed before production deployment.
 - [x] 3.1 Extract Magic Numbers ✓
 - [x] 3.2 Environment Variable Validation ✓
 - [x] 3.3 Constants Registry ✓
-- [ ] 3.4 Create Error Handling Utility
+- [x] 3.4 Create Error Handling Utility ✓
 - [x] 3.5 Request Deduplication ✓
 
 ### Pre-Production
