@@ -233,7 +233,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     audioService.initialize();
     // Defer non-critical work until after initial render is complete
     InteractionManager.runAfterInteractions(() => {
-      radioService.prefetch(10);
+      radioService.prefetch(20);
       // Start downloading background videos in the background
       try {
         const { videoDownloadService } = require('../services/videoDownloadService');
@@ -322,47 +322,44 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []); // Empty deps - subscribe once, use ref for mode
 
-  // Ref to prevent concurrent replenish calls
-  const isReplenishingRef = useRef(false);
-  // Track if queue ended while we were replenishing (need to restart playback)
-  const queueEndedWhileReplenishingRef = useRef(false);
+  // Track the last index where we triggered a replenish to avoid duplicate fetches
+  const lastReplenishIndexRef = useRef(-1);
+  // Promise ref to allow callers to wait for ongoing replenish
+  const replenishPromiseRef = useRef<Promise<void> | null>(null);
 
-  // Fetch more tracks for radio and add to queue - defined before useEffects that call it
+  // Fetch more tracks for radio and add to queue
   const fetchMoreRadioTracks = useCallback(async () => {
-    if (isReplenishingRef.current) return;
-    isReplenishingRef.current = true;
-    queueEndedWhileReplenishingRef.current = false;
-
-    try {
-      dispatch({ type: 'SET_RADIO_LOADING', isLoading: true });
-      const newTracks = await radioService.getRandomTracks(10);
-
-      if (newTracks.length > 0) {
-        // Add tracks to native player queue
-        for (const radioTrack of newTracks) {
-          await nativeAudioPlayer.addTrack({
-            id: radioTrack.track.id,
-            url: radioTrack.track.streamUrl,
-            title: radioTrack.track.title,
-            artist: radioTrack.show.venue || 'Grateful Dead',
-            duration: radioTrack.track.duration,
-          });
-        }
-        dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
-
-        // If playback stopped while we were fetching, restart it
-        if (queueEndedWhileReplenishingRef.current) {
-          await nativeAudioPlayer.play();
-          dispatch({ type: 'PLAY' });
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch more radio tracks:', error);
-    } finally {
-      dispatch({ type: 'SET_RADIO_LOADING', isLoading: false });
-      isReplenishingRef.current = false;
-      queueEndedWhileReplenishingRef.current = false;
+    // If already replenishing, return the existing promise so callers can wait
+    if (replenishPromiseRef.current) {
+      return replenishPromiseRef.current;
     }
+
+    const promise = (async () => {
+      try {
+        const newTracks = await radioService.getRandomTracks(20);
+
+        if (newTracks.length > 0) {
+          // Add tracks to native player queue
+          for (const radioTrack of newTracks) {
+            await nativeAudioPlayer.addTrack({
+              id: radioTrack.track.id,
+              url: radioTrack.track.streamUrl,
+              title: radioTrack.track.title,
+              artist: radioTrack.show.venue || 'Grateful Dead',
+              duration: radioTrack.track.duration,
+            });
+          }
+          dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
+        }
+      } catch (error) {
+        console.error('Failed to fetch more radio tracks:', error);
+      } finally {
+        replenishPromiseRef.current = null;
+      }
+    })();
+
+    replenishPromiseRef.current = promise;
+    return promise;
   }, []);
 
   // Helper to load and play the next chronological show
@@ -399,14 +396,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
       if (state.playbackMode === 'radio') {
-        // Radio queue ended - if we're already replenishing, mark that we need to
-        // restart playback when replenishment completes
-        if (isReplenishingRef.current) {
-          queueEndedWhileReplenishingRef.current = true;
-        } else {
-          // Not replenishing, fetch more tracks now
-          fetchMoreRadioTracks();
-        }
+        // Radio queue ended - fetch more and restart
+        fetchMoreRadioTracks().then(() => {
+          nativeAudioPlayer.play();
+        });
       } else {
         // Show ended - play the next chronological show
         playNextShow();
@@ -416,21 +409,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [state.playbackMode, fetchMoreRadioTracks, playNextShow]);
 
-  // Radio auto-replenish: fetch more tracks when remaining <= 5
-  // Buffer of 5 gives more time for async fetch before queue exhausts
+  // Radio auto-replenish: fetch more tracks when 15 tracks remaining
+  // API fetches can take 45-90 seconds, so we need a large buffer for rapid skipping
   useEffect(() => {
     if (
       state.playbackMode === 'radio' &&
-      !state.isRadioLoading &&
-      !isReplenishingRef.current &&
-      state.radioQueue.length > 0
+      state.radioQueue.length > 0 &&
+      state.radioQueueIndex !== lastReplenishIndexRef.current
     ) {
       const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
-      if (remainingTracks <= 5) {
+      if (remainingTracks <= 15) {
+        lastReplenishIndexRef.current = state.radioQueueIndex;
         fetchMoreRadioTracks();
       }
     }
-  }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, state.isRadioLoading, fetchMoreRadioTracks]);
+  }, [state.playbackMode, state.radioQueueIndex, state.radioQueue.length, fetchMoreRadioTracks]);
 
   // Update position and duration from native audio player progress events
   // Uses refs to avoid triggering re-renders on every position update
@@ -613,6 +606,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     try {
       dispatch({ type: 'STOP_RADIO' });
       radioService.resetSession();
+      lastReplenishIndexRef.current = -1;
+      replenishPromiseRef.current = null;
       await audioService.stop();
     } catch (error) {
       console.error('Failed to stop radio:', error);

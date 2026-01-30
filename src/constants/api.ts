@@ -4,7 +4,7 @@
 
 export const ARCHIVE_CONFIG = {
   BASE_URL: 'https://archive.org',
-  TIMEOUT: 30000, // 30 seconds
+  TIMEOUT: 60000, // 60 seconds
   MAX_RETRIES: 3,
 } as const;
 

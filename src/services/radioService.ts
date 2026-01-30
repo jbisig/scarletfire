@@ -85,6 +85,7 @@ class RadioService {
   // Prefetched tracks ready for immediate playback
   private prefetchedTracks: RadioTrack[] = [];
   private isPrefetching: boolean = false;
+  private prefetchPromise: Promise<void> | null = null;
 
   /**
    * Get a unique key for a performance to track what's been played
@@ -194,16 +195,21 @@ class RadioService {
     console.log('[Radio] Starting prefetch...');
     const startTime = Date.now();
 
-    try {
-      const needed = count - this.prefetchedTracks.length;
-      const newTracks = await this.fetchTracks(needed);
-      this.prefetchedTracks.push(...newTracks);
-      console.log(`[Radio] Prefetch complete - ${this.prefetchedTracks.length} tracks ready (${Date.now() - startTime}ms)`);
-    } catch (error) {
-      console.error('Failed to prefetch radio tracks:', error);
-    } finally {
-      this.isPrefetching = false;
-    }
+    this.prefetchPromise = (async () => {
+      try {
+        const needed = count - this.prefetchedTracks.length;
+        const newTracks = await this.fetchTracks(needed);
+        this.prefetchedTracks.push(...newTracks);
+        console.log(`[Radio] Prefetch complete - ${this.prefetchedTracks.length} tracks ready (${Date.now() - startTime}ms)`);
+      } catch (error) {
+        console.error('Failed to prefetch radio tracks:', error);
+      } finally {
+        this.isPrefetching = false;
+        this.prefetchPromise = null;
+      }
+    })();
+
+    return this.prefetchPromise;
   }
 
   /**
@@ -222,23 +228,38 @@ class RadioService {
 
   /**
    * Internal method to fetch and resolve tracks
+   * Uses parallel fetching for faster performance
    */
   private async fetchTracks(count: number): Promise<RadioTrack[]> {
     const tracks: RadioTrack[] = [];
-    let attempts = 0;
-    const maxAttempts = count * 3; // Allow for some failures
+    const BATCH_SIZE = 3; // Fetch 3 shows in parallel (more causes timeouts)
+    let totalAttempts = 0;
+    const maxAttempts = count * 3;
 
-    while (tracks.length < count && attempts < maxAttempts) {
-      const perf = this.getNextPerformance();
-      if (!perf) break;
+    while (tracks.length < count && totalAttempts < maxAttempts) {
+      // Get a batch of performances to try
+      const batch: RatedSongPerformance[] = [];
+      for (let i = 0; i < BATCH_SIZE && totalAttempts < maxAttempts; i++) {
+        const perf = this.getNextPerformance();
+        if (!perf) break;
+        batch.push(perf);
+        totalAttempts++;
+      }
 
-      attempts++;
-      const resolved = await this.resolvePerformance(perf);
+      if (batch.length === 0) break;
 
-      if (resolved) {
-        // Mark as played
-        this.playedPerformances.add(this.getPerformanceKey(perf));
-        tracks.push(resolved);
+      // Resolve all performances in parallel
+      const results = await Promise.all(
+        batch.map(perf => this.resolvePerformance(perf).catch(() => null))
+      );
+
+      // Collect successful results
+      for (let i = 0; i < results.length; i++) {
+        const resolved = results[i];
+        if (resolved && tracks.length < count) {
+          this.playedPerformances.add(this.getPerformanceKey(batch[i]));
+          tracks.push(resolved);
+        }
       }
     }
 
@@ -252,6 +273,12 @@ class RadioService {
   async getRandomTracks(count: number): Promise<RadioTrack[]> {
     const startTime = Date.now();
     const tracks: RadioTrack[] = [];
+
+    // Wait for any in-progress prefetch to complete first
+    if (this.prefetchPromise) {
+      console.log('[Radio] Waiting for prefetch to complete...');
+      await this.prefetchPromise;
+    }
 
     // Use prefetched tracks first
     const prefetchedUsed = Math.min(count, this.prefetchedTracks.length);
@@ -273,7 +300,7 @@ class RadioService {
     console.log(`[Radio] getRandomTracks complete: ${tracks.length} tracks in ${Date.now() - startTime}ms`);
 
     // Start background prefetch for next time
-    this.prefetch(10);
+    this.prefetch(20);
 
     return tracks;
   }
@@ -286,6 +313,8 @@ class RadioService {
     this.shuffledQueue = [];
     this.queueIndex = 0;
     this.prefetchedTracks = [];
+    this.prefetchPromise = null;
+    this.isPrefetching = false;
   }
 
   /**

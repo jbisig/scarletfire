@@ -16,6 +16,10 @@ import {
  * Service for interacting with the Internet Archive API
  */
 class ArchiveApiService {
+  // Simple in-memory cache for show details to avoid re-fetching
+  private showDetailCache: Map<string, { data: ShowDetail; timestamp: number }> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   /**
    * Handle API errors consistently
    */
@@ -435,6 +439,15 @@ class ArchiveApiService {
    * Get detailed metadata for a specific show
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
+    // Check cache first (only for non-version requests to keep cache simple)
+    if (!includeAllVersions) {
+      const cacheKey = identifier;
+      const cached = this.showDetailCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+        return cached.data;
+      }
+    }
+
     try {
       const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
 
@@ -467,7 +480,7 @@ class ArchiveApiService {
         allVersions = await this.getShowVersions(metadata.date);
       }
 
-      return {
+      const showDetail: ShowDetail = {
         identifier,
         title: metadata.title,
         date: metadata.date,
@@ -478,6 +491,13 @@ class ArchiveApiService {
         tracks,
         allVersions
       };
+
+      // Cache the result (without versions for simplicity)
+      if (!includeAllVersions) {
+        this.showDetailCache.set(identifier, { data: showDetail, timestamp: Date.now() });
+      }
+
+      return showDetail;
     } catch (error) {
       this.handleError(error, 'Failed to fetch show details');
     }

@@ -414,8 +414,20 @@ class AudioPlayerModule: RCTEventEmitter {
     // Add to originalTracks so track end observer knows about it
     originalTracks.append(trackData)
 
-    player?.insert(item, after: nil)
-    currentItems.append(item)
+    // If player has no current item (queue ended), we need to make this track current
+    let needsToBecomeCurrent = player?.currentItem == nil
+
+    if needsToBecomeCurrent {
+      // Recreate player with this item as current
+      player = AVQueuePlayer(playerItem: item)
+      setupTimeObserver()
+      currentItems = [item]
+      currentTrackIndex = originalTracks.count - 1
+      queueStartIndex = currentTrackIndex
+    } else {
+      player?.insert(item, after: nil)
+      currentItems.append(item)
+    }
 
     resolve(nil)
   }
