@@ -31,7 +31,7 @@ const CLASSIC_SHOWS_IMAGE = require('../../assets/images/red-rocks.jpg');
 const GD_101_IMAGE = require('../../assets/images/wall-of-sound.jpg');
 const RADIO_IMAGE = require('../../assets/images/radio.webp');
 
-export function DiscoverLandingScreen() {
+export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen() {
   const navigation = useNavigation<DiscoverLandingNavigationProp>();
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { getShowDetail, showDetailsCache } = useShows();
@@ -247,7 +247,7 @@ export function DiscoverLandingScreen() {
       </ScrollView>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

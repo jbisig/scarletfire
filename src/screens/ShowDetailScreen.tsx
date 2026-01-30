@@ -24,8 +24,13 @@ import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
+
+// Pre-compute song lookup Map for O(1) access instead of O(n) find() on each track
+const songsByTitle: Map<string, Song> = new Map(
+  GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
+);
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -58,15 +63,13 @@ export function ShowDetailScreen() {
     return getShowPlayCount(show.identifier, show.tracks.length);
   }, [show?.identifier, show?.tracks.length, getShowPlayCount]);
 
-  // Pre-compute track ratings for the current show
+  // Pre-compute track ratings for the current show using O(1) Map lookup
   const trackRatings = useMemo(() => {
     if (!show) return {};
     const ratings: Record<string, 1 | 2 | 3 | null> = {};
 
     show.tracks.forEach(track => {
-      const song = GRATEFUL_DEAD_SONGS.find(s =>
-        s.title.toLowerCase() === track.title.toLowerCase()
-      );
+      const song = songsByTitle.get(track.title.toLowerCase());
       if (song) {
         const performance = song.performances.find(p => p.date === show.date);
         ratings[track.id] = performance?.rating || null;
