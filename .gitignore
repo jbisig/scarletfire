@@ -46,3 +46,6 @@ yarn-error.*
 /ios/Scarletfire/*
 !/ios/Scarletfire/AudioPlayerModule.swift
 !/ios/Scarletfire/AudioPlayerModule.m
+*.swp
+*.swo
+*~
