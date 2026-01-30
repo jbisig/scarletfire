@@ -25,7 +25,7 @@ interface PageHeaderProps {
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-export function PageHeader({ title }: PageHeaderProps) {
+export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { state: authState, logout, showLogin } = useAuth();
@@ -125,7 +125,7 @@ export function PageHeader({ title }: PageHeaderProps) {
       </Modal>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   header: {

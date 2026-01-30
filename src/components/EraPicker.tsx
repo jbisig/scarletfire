@@ -11,7 +11,7 @@ interface EraPickerProps {
   onEraChange: (era: Era | null) => void;
 }
 
-export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
+export const EraPicker = React.memo(function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -102,7 +102,7 @@ export function EraPicker({ eras, selectedEra, onEraChange }: EraPickerProps) {
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -21,7 +21,7 @@ const TAB_LABELS: Record<string, string> = {
   FavoritesTab: 'Favorites',
 };
 
-export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -83,7 +83,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

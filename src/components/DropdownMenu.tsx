@@ -33,7 +33,7 @@ export interface DropdownMenuProps<T extends string = string> {
  * Reusable dropdown menu component.
  * Renders a pill-shaped trigger button that opens a positioned dropdown.
  */
-export function DropdownMenu<T extends string = string>({
+function DropdownMenuInner<T extends string = string>({
   options,
   selectedValue,
   onSelect,
@@ -127,6 +127,9 @@ export function DropdownMenu<T extends string = string>({
     </>
   );
 }
+
+// Memoize for performance - generic component requires type assertion
+export const DropdownMenu = React.memo(DropdownMenuInner) as typeof DropdownMenuInner;
 
 const styles = StyleSheet.create({
   trigger: {
