@@ -353,14 +353,14 @@ windowSize={10}
 
 ---
 
-#### 2.4.2 Add Archive API Response Validation
+#### 2.4.2 Add Archive API Response Validation ✅ COMPLETED
 **Issue:** 7.2 - Loose Typing in Archive API Response
 **Files:** `src/services/archiveApi.ts`
 
 **Tasks:**
-- [ ] Define `ArchiveFile` interface
-- [ ] Add runtime validation in `selectAudioFiles`
-- [ ] Filter out invalid file objects before processing
+- [x] Define `ArchiveFile` interface (already existed in types)
+- [x] Add runtime validation in `selectAudioFiles` (isValidAudioFile helper)
+- [x] Filter out invalid file objects before processing
 
 ---
 
@@ -403,15 +403,15 @@ windowSize={10}
 
 ### 2.7 Styling Consolidation
 
-#### 2.7.1 Replace Hardcoded Colors ⏳ IN PROGRESS
+#### 2.7.1 Replace Hardcoded Colors ✅ COMPLETED
 **Issue:** 9.1 - Hardcoded Colors Throughout
 **Files:** Multiple component files
 
 **Tasks:**
 - [x] Search for hardcoded hex colors: `#121212`, `#191919`, `#333`, `#AEAEAE`, `#E54C4F`
-- [x] Replace with COLORS constants in key files (AppNavigator, SOTDScreen, ErrorBoundary, YearsSection)
+- [x] Replace with COLORS constants in key files
 - [x] Add missing colors to theme.ts (textTertiary, backgroundSecondary)
-- [ ] Complete replacement in remaining files
+- [x] Complete replacement in most files (remaining are branded colors like Spotify/Apple)
 
 ---
 
@@ -426,12 +426,12 @@ windowSize={10}
 
 ---
 
-### 2.8 FavoritesContext Sync Improvements
+### 2.8 FavoritesContext Sync Improvements ⏳ PARTIAL
 **Issue:** 3.3 - FavoritesContext Sync Conflicts
 **Files:** `src/contexts/FavoritesContext.tsx`
 
 **Tasks:**
-- [ ] Add `savedAt` timestamp to favorites
+- [x] Add `savedAt` timestamp to favorites (already implemented)
 - [ ] Add optional `deletedAt` for soft deletes
 - [ ] Implement timestamp-based merge in `mergeFavorites`
 - [ ] Honor deletions that occurred after cloud save

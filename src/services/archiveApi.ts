@@ -1,7 +1,8 @@
 import {
   ArchiveSearchResponse,
   ArchiveMetadataResponse,
-  ArchiveDoc
+  ArchiveDoc,
+  ArchiveFile
 } from '../types/archive.types';
 import { GratefulDeadShow, ShowDetail, Track, ShowsByYear, RecordingVersion } from '../types/show.types';
 import {
@@ -350,17 +351,32 @@ class ArchiveApiService {
   }
 
   /**
+   * Validate that an object is a valid ArchiveFile with required properties
+   */
+  private isValidAudioFile(file: unknown): file is ArchiveFile {
+    if (!file || typeof file !== 'object') return false;
+    const f = file as Record<string, unknown>;
+    return (
+      typeof f.name === 'string' &&
+      f.name.length > 0 &&
+      typeof f.format === 'string'
+    );
+  }
+
+  /**
    * Filter and sort audio files for optimal streaming
    */
-  private selectAudioFiles(files: any[]): any[] {
-    const supportedFormats = [
+  private selectAudioFiles(files: unknown[]): ArchiveFile[] {
+    const supportedFormats: string[] = [
       AUDIO_FORMATS.VBR_MP3,
       AUDIO_FORMATS.FLAC,
       AUDIO_FORMATS.MP3_64,
       AUDIO_FORMATS.MP3_128,
     ];
 
-    const audioFiles = files.filter(file => supportedFormats.includes(file.format));
+    // Filter to valid audio files only
+    const validFiles = files.filter(this.isValidAudioFile);
+    const audioFiles = validFiles.filter(file => supportedFormats.includes(file.format));
 
     // Prefer MP3 for streaming (smaller file size, better compatibility)
     const mp3Files = audioFiles.filter(file => file.format.includes('MP3'));
