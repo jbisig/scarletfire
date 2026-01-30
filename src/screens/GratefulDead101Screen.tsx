@@ -101,6 +101,12 @@ export function GratefulDead101Screen() {
             <Text style={styles.emptyStateText}>No shows available</Text>
           </View>
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        windowSize={11}
+        initialNumToRender={10}
       />
     </View>
   );

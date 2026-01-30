@@ -87,6 +87,35 @@ class RadioService {
   private isPrefetching: boolean = false;
   private prefetchPromise: Promise<void> | null = null;
 
+  // Cache for similarity calculations to avoid redundant Levenshtein computations
+  private similarityCache: Map<string, number> = new Map();
+  private readonly MAX_CACHE_SIZE = 10000;
+
+  /**
+   * Get cached similarity score or calculate and cache it
+   */
+  private getCachedSimilarity(str1: string, str2: string): number {
+    const key = `${str1}|${str2}`;
+    const cached = this.similarityCache.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const score = calculateSimilarity(str1, str2);
+
+    // Prevent unbounded cache growth
+    if (this.similarityCache.size >= this.MAX_CACHE_SIZE) {
+      // Clear half the cache when full (simple eviction strategy)
+      const entries = Array.from(this.similarityCache.keys());
+      for (let i = 0; i < entries.length / 2; i++) {
+        this.similarityCache.delete(entries[i]);
+      }
+    }
+
+    this.similarityCache.set(key, score);
+    return score;
+  }
+
   /**
    * Get a unique key for a performance to track what's been played
    */
@@ -149,7 +178,7 @@ class RadioService {
 
       for (const track of showDetail.tracks) {
         const normalizedTitle = normalizeTrackTitle(track.title);
-        const similarity = calculateSimilarity(normalizedTitle, targetTitle);
+        const similarity = this.getCachedSimilarity(normalizedTitle, targetTitle);
 
         if (similarity > bestScore) {
           bestScore = similarity;
@@ -158,7 +187,7 @@ class RadioService {
 
         // Also try matching against the full title with "Grateful Dead - " prefix
         const fullTitle = `Grateful Dead - ${normalizedTitle}`;
-        const fullSimilarity = calculateSimilarity(fullTitle, perf.songTitle);
+        const fullSimilarity = this.getCachedSimilarity(fullTitle, perf.songTitle);
         if (fullSimilarity > bestScore) {
           bestScore = fullSimilarity;
           bestMatch = track;

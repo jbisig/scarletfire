@@ -227,6 +227,12 @@ export function SongListScreen() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
+            // Performance optimizations
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={20}
+            updateCellsBatchingPeriod={50}
+            windowSize={11}
+            initialNumToRender={20}
           />
         )}
       </View>

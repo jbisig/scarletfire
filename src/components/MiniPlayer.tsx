@@ -1,5 +1,5 @@
-import React, { useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import React, { useMemo, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,14 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId } = useVideoBackground();
   const { getShowDetail } = useShows();
+
+  // Track app state to pause video when in background (saves battery)
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', setAppState);
+    return () => subscription.remove();
+  }, []);
 
   // Prefetch show details in background so navigation is instant when user taps show
   useEffect(() => {
@@ -75,13 +83,13 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
         onPress={onPress}
         activeOpacity={1}
       >
-        {/* Video Background */}
+        {/* Video Background - only play when app is active to save battery */}
         <Video
           key={`video-${videoId}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
-          shouldPlay
+          shouldPlay={appState === 'active'}
           isLooping
           isMuted
         />

@@ -9,6 +9,8 @@ import {
   Animated,
   Easing,
   InteractionManager,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,6 +57,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const [shouldRender, setShouldRender] = useState(false);
   const isDismissingRef = useRef(false);
   const isInteractingRef = useRef(false);
+
+  // Track app state to pause video when in background (saves battery)
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', setAppState);
+    return () => subscription.remove();
+  }, []);
 
   // Time display via ref to avoid re-renders on every update
   // Only force re-render when position changes by more than 1 second
@@ -374,14 +384,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         { transform: [{ translateY }] }
       ]}
     >
-      {/* Video Background */}
+      {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         <Video
           key={`video-${videoId}`}
           source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
-          shouldPlay
+          shouldPlay={visible && appState === 'active'}
           isLooping
           isMuted
         />
