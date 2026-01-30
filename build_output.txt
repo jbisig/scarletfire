@@ -1,5 +1,0 @@
-Command line invocation:
-    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project grateful-dead-player.xcodeproj -scheme grateful-dead-player build
-
-2026-01-16 20:22:32.028 xcodebuild[89849:3404018] Writing error result bundle to /var/folders/97/1fzmgvpd4q302299v3m_581h0000gn/T/ResultBundle_2026-16-01_20-22-0032.xcresult
-xcodebuild: error: 'grateful-dead-player.xcodeproj' does not exist.
