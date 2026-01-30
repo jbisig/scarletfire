@@ -480,15 +480,27 @@ class ArchiveApiService {
    * Get detailed metadata for a specific show
    */
   async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
-    // Check cache first (only for non-version requests to keep cache simple)
-    if (!includeAllVersions) {
-      const cacheKey = identifier;
-      const cached = this.showDetailCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+    // Always check cache first - the base show detail can be reused
+    const cached = this.showDetailCache.get(identifier);
+    const cacheIsValid = cached && Date.now() - cached.timestamp < this.CACHE_TTL;
+
+    if (cacheIsValid) {
+      // If versions not needed, return cached data immediately
+      if (!includeAllVersions) {
         return cached.data;
       }
+
+      // If versions needed and we have cached base data, fetch versions separately
+      if (cached.data.date) {
+        const allVersions = await this.getShowVersions(cached.data.date);
+        return { ...cached.data, allVersions };
+      }
+
+      // No date to fetch versions, return cached as-is
+      return cached.data;
     }
 
+    // Cache miss - fetch fresh data
     try {
       const response = await this.fetchWithRetry(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
 
@@ -515,13 +527,8 @@ class ArchiveApiService {
         })
         .sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0));
 
-      // Get all versions of this show if requested
-      let allVersions: RecordingVersion[] | undefined;
-      if (includeAllVersions && metadata.date) {
-        allVersions = await this.getShowVersions(metadata.date);
-      }
-
-      const showDetail: ShowDetail = {
+      // Build base show detail (without versions) for caching
+      const baseShowDetail: ShowDetail = {
         identifier,
         title: metadata.title,
         date: metadata.date,
@@ -530,15 +537,18 @@ class ArchiveApiService {
         location: metadata.coverage,
         description: metadata.description,
         tracks,
-        allVersions
       };
 
-      // Cache the result (without versions for simplicity)
-      if (!includeAllVersions) {
-        this.showDetailCache.set(identifier, { data: showDetail, timestamp: Date.now() });
+      // Cache the base show detail (without versions to keep cache entries small)
+      this.showDetailCache.set(identifier, { data: baseShowDetail, timestamp: Date.now() });
+
+      // Fetch versions separately if requested
+      if (includeAllVersions && metadata.date) {
+        const allVersions = await this.getShowVersions(metadata.date);
+        return { ...baseShowDetail, allVersions };
       }
 
-      return showDetail;
+      return baseShowDetail;
     } catch (error) {
       this.handleError(error, 'Failed to fetch show details');
     }

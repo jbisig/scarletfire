@@ -390,14 +390,14 @@ windowSize={10}
 
 ### 2.6 API/Services Layer
 
-#### 2.6.1 Fix Cache TTL for Show Details
+#### 2.6.1 Fix Cache TTL for Show Details ✅ COMPLETED
 **Issue:** 8.2 - Cache TTL Not Enforced Properly
 **Files:** `src/services/archiveApi.ts`
 
 **Tasks:**
-- [ ] Always check cache first in `getShowDetail`
-- [ ] Separate version fetching from cached show detail
-- [ ] Return cached data immediately, fetch versions separately if needed
+- [x] Always check cache first in `getShowDetail`
+- [x] Separate version fetching from cached show detail
+- [x] Return cached data immediately, fetch versions separately if needed
 
 ---
 
