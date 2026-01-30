@@ -11,6 +11,12 @@ import { COLORS } from '../constants/theme';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+export type AuthStackParamList = {
+  Onboarding: undefined;
+  Login: undefined;
+  Signup: undefined;
+};
+
 // Faster transition timing
 const fastTransitionSpec = {
   open: {

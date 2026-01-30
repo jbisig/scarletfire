@@ -16,7 +16,7 @@ interface MiniPlayerProps {
   onPress: () => void;
 }
 
-export function MiniPlayer({ onPress }: MiniPlayerProps) {
+export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause, isRadioMode, isShuffleMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId } = useVideoBackground();
@@ -132,7 +132,7 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   showTitle: {
     ...TYPOGRAPHY.labelSmall,
     fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.85)',
+    opacity: 0.85,
   },
   playButton: {
     padding: SPACING.sm,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.textPrimary,
     borderRadius: RADIUS.sm,
   },
 });

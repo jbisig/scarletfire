@@ -13,7 +13,7 @@ interface PlayerControlsProps {
   canGoPrevious: boolean;
 }
 
-export function PlayerControls({
+export const PlayerControls = React.memo(function PlayerControls({
   isPlaying,
   onPlayPause,
   onNext,
@@ -77,7 +77,7 @@ export function PlayerControls({
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

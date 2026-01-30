@@ -9,14 +9,15 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 export function SignupScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<AuthStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,8 +31,8 @@ export function SignupScreen() {
 
     try {
       await signUpWithEmail(email, password);
-    } catch (error: any) {
-      const errorMessage = getErrorMessage(error);
+    } catch (error) {
+      const errorMessage = getErrorMessage(error as AuthError);
       Alert.alert('Signup Failed', errorMessage);
     }
   };
@@ -39,17 +40,19 @@ export function SignupScreen() {
   const handleGoogleSignIn = async () => {
     try {
       await loginWithGoogle();
-    } catch (error: any) {
-      Alert.alert('Google Sign-In Failed', error.message || 'An error occurred');
+    } catch (error) {
+      const authError = error as AuthError;
+      Alert.alert('Google Sign-In Failed', authError.message || 'An error occurred');
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
       await loginWithApple();
-    } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('Apple Sign-In Failed', error.message || 'An error occurred');
+    } catch (error) {
+      const authError = error as AuthError;
+      if (authError.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert('Apple Sign-In Failed', authError.message || 'An error occurred');
     }
   };
 
@@ -73,7 +76,7 @@ export function SignupScreen() {
                     style={styles.input}
                     placeholder="Email"
                     placeholderTextColor={COLORS.textPlaceholder}
-                    selectionColor="#FFFFFF"
+                    selectionColor={COLORS.textPrimary}
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -90,7 +93,7 @@ export function SignupScreen() {
                     style={styles.input}
                     placeholder="Password"
                     placeholderTextColor={COLORS.textPlaceholder}
-                    selectionColor="#FFFFFF"
+                    selectionColor={COLORS.textPrimary}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -137,7 +140,7 @@ export function SignupScreen() {
                 activeOpacity={0.8}
               >
                 <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                  <Ionicons name="logo-google" size={20} color="#fff" />
+                  <Ionicons name="logo-google" size={20} color={COLORS.textPrimary} />
                   <Text style={styles.socialButtonText}>Continue with Google</Text>
                 </BlurView>
               </TouchableOpacity>
@@ -151,7 +154,7 @@ export function SignupScreen() {
                   activeOpacity={0.8}
                 >
                   <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                    <Ionicons name="logo-apple" size={22} color="#fff" />
+                    <Ionicons name="logo-apple" size={22} color={COLORS.textPrimary} />
                     <Text style={styles.socialButtonText}>Continue with Apple</Text>
                   </BlurView>
                 </TouchableOpacity>
@@ -177,7 +180,12 @@ export function SignupScreen() {
   );
 }
 
-function getErrorMessage(error: any): string {
+interface AuthError {
+  code?: string;
+  message?: string;
+}
+
+function getErrorMessage(error: AuthError): string {
   if (error.code === 'auth/email-already-in-use') {
     return 'An account with this email already exists';
   } else if (error.code === 'auth/invalid-email') {

@@ -111,7 +111,7 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
 export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const sectionListRef = useRef<SectionList<any>>(null);
+  const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
@@ -173,10 +173,12 @@ export function HomeScreen() {
   // Scroll to top when filters or search query changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      const scrollResponder = sectionListRef.current?.getScrollResponder();
-      if (scrollResponder && 'scrollTo' in scrollResponder) {
-        (scrollResponder as any).scrollTo({ x: 0, y: 0, animated: false });
-      }
+      sectionListRef.current?.scrollToLocation({
+        sectionIndex: 0,
+        itemIndex: 0,
+        animated: false,
+        viewOffset: 0,
+      });
     }, 100);
     return () => clearTimeout(timer);
   }, [appliedFilters, debouncedSearchQuery]);

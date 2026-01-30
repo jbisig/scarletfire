@@ -648,7 +648,7 @@ export function FavoritesScreen() {
                       onChangeText={setShowSearchQuery}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      selectionColor="#FFFFFF"
+                      selectionColor={COLORS.textPrimary}
                     />
                   </Animated.View>
                   <Animated.View style={{ opacity: showCloseButtonAnim }}>
@@ -796,7 +796,7 @@ export function FavoritesScreen() {
                       onChangeText={setSongSearchQuery}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      selectionColor="#FFFFFF"
+                      selectionColor={COLORS.textPrimary}
                     />
                   </Animated.View>
                   <Animated.View style={{ opacity: songCloseButtonAnim }}>
@@ -1229,7 +1229,7 @@ const styles = StyleSheet.create({
     top: SPACING.xs,
     left: SPACING.xs,
     bottom: SPACING.xs,
-    backgroundColor: '#484848',
+    backgroundColor: COLORS.tabSliderActive,
     borderRadius: RADIUS.xl,
   },
   tab: {

@@ -52,6 +52,12 @@ export const COLORS = {
   // Overlay/Backdrop
   backdrop: 'rgba(0, 0, 0, 0.5)',
   backdropDark: 'rgba(0, 0, 0, 0.7)',
+
+  // Semantic colors
+  error: '#FF4444',
+
+  // Interactive element colors
+  tabSliderActive: '#484848',
 } as const;
 
 // =============================================================================

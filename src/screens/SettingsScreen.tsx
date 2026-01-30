@@ -223,7 +223,7 @@ export function SettingsScreen() {
           onPress={handleDeleteAccount}
           disabled={isDeleting}
         >
-          <Ionicons name="trash-outline" size={22} color="#FF4444" />
+          <Ionicons name="trash-outline" size={22} color={COLORS.error} />
           <Text style={styles.deleteText}>
             {isDeleting ? 'Deleting...' : 'Delete Account'}
           </Text>
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     ...TYPOGRAPHY.labelLarge,
-    color: '#FF4444',
+    color: COLORS.error,
   },
   deleteWarning: {
     ...TYPOGRAPHY.labelSmall,

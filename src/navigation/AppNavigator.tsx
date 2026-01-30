@@ -51,7 +51,7 @@ function ShowsStack() {
         headerStyle: {
           backgroundColor: COLORS.background,
         },
-        headerTintColor: '#fff',
+        headerTintColor: COLORS.textPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontFamily: FONTS.primary,
@@ -88,7 +88,7 @@ function SongsStack() {
         headerStyle: {
           backgroundColor: COLORS.background,
         },
-        headerTintColor: '#fff',
+        headerTintColor: COLORS.textPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontFamily: FONTS.primary,
@@ -128,7 +128,7 @@ function FavoritesStack() {
         headerStyle: {
           backgroundColor: COLORS.background,
         },
-        headerTintColor: '#fff',
+        headerTintColor: COLORS.textPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontFamily: FONTS.primary,
@@ -162,7 +162,7 @@ function DiscoverStack() {
         headerStyle: {
           backgroundColor: COLORS.background,
         },
-        headerTintColor: '#fff',
+        headerTintColor: COLORS.textPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontFamily: FONTS.primary,
@@ -272,7 +272,7 @@ export function AppNavigator() {
             options={{
               headerShown: true,
               headerStyle: { backgroundColor: COLORS.background },
-              headerTintColor: '#fff',
+              headerTintColor: COLORS.textPrimary,
               headerTitle: '',
               headerBackTitleVisible: false,
             }}
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: COLORS.background,
   },
   miniPlayerContainer: {
     position: 'absolute',
