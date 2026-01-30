@@ -5,7 +5,7 @@ export default ({ config }) => {
       name: "Scarlet>fire",
       slug: "scarletfire",
       owner: "scarlet-fire",
-      version: "1.0.0",
+      version: "1.1.0",
       orientation: "portrait",
       icon: "./assets/icon.png",
       userInterfaceStyle: "dark",
@@ -25,7 +25,7 @@ export default ({ config }) => {
       ios: {
         supportsTablet: true,
         bundleIdentifier: "com.scarletfire.app",
-        buildNumber: "1",
+        buildNumber: "2",
         entitlements: {
           "com.apple.developer.applesignin": ["Default"]
         },
@@ -54,7 +54,7 @@ export default ({ config }) => {
           backgroundColor: "#1a1a1a"
         },
         package: "com.scarletfire.app",
-        versionCode: 1,
+        versionCode: 2,
         permissions: [
           "android.permission.INTERNET",
           "android.permission.MODIFY_AUDIO_SETTINGS",
