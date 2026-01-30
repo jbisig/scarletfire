@@ -9,6 +9,7 @@ import { Track, ShowDetail } from '../types/show.types';
 import { RatedSongPerformance, TIER_1_SONG_PERFORMANCES } from '../data/songPerformanceRatings';
 import { archiveApi } from './archiveApi';
 import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleNormalization';
+import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 
 export interface RadioTrack {
   track: Track;
@@ -153,7 +154,6 @@ class RadioService {
       // Find the best matching track using fuzzy matching
       let bestMatch: Track | null = null;
       let bestScore = 0;
-      const SIMILARITY_THRESHOLD = 0.6; // Lower threshold since HeadyVersion titles may differ
 
       for (const track of showDetail.tracks) {
         const normalizedTitle = normalizeTrackTitle(track.title);
@@ -173,7 +173,7 @@ class RadioService {
         }
       }
 
-      if (bestMatch && bestScore >= SIMILARITY_THRESHOLD) {
+      if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.RADIO_TRACK_MATCH) {
         return {
           track: bestMatch,
           show: showDetail,

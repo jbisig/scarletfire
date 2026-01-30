@@ -26,6 +26,9 @@ export default ({ config }) => {
         supportsTablet: true,
         bundleIdentifier: "com.scarletfire.app",
         buildNumber: "1",
+        entitlements: {
+          "com.apple.developer.applesignin": ["Default"]
+        },
         infoPlist: {
           NSAppleMusicUsageDescription: "This app streams audio from the Internet Archive.",
           NSPhotoLibraryUsageDescription: "This app needs access to your photo library to set your profile picture.",
@@ -67,6 +70,7 @@ export default ({ config }) => {
       plugins: [
         "expo-font",
         "expo-video",
+        "expo-apple-authentication",
         [
           "expo-image-picker",
           {
