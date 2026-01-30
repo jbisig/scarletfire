@@ -8,6 +8,8 @@ export interface FavoriteSong {
   showDate: string;
   venue?: string;
   streamUrl: string;
+  savedAt?: number; // Unix timestamp when saved
+  deletedAt?: number; // Unix timestamp when soft-deleted (for sync conflict resolution)
 }
 
 class FavoritesCloudService {

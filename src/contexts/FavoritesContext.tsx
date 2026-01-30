@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
@@ -14,6 +14,22 @@ export interface FavoriteSong {
   venue?: string;
   streamUrl: string;
   savedAt?: number; // Unix timestamp when the song was saved
+  deletedAt?: number; // Unix timestamp when soft-deleted (for sync conflict resolution)
+}
+
+/**
+ * Tracks deleted favorites for sync conflict resolution.
+ * When a favorite is removed locally, we record the deletion time.
+ * During merge, if the deletion happened after the cloud save, honor the deletion.
+ */
+interface DeletionRecord {
+  identifier: string; // show.primaryIdentifier or `${trackId}:${showIdentifier}` for songs
+  deletedAt: number;
+}
+
+interface DeletionLog {
+  shows: DeletionRecord[];
+  songs: DeletionRecord[];
 }
 
 interface FavoritesContextType {
@@ -30,11 +46,17 @@ interface FavoritesContextType {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
+// Keep deletion records for 30 days to handle sync conflicts
+const DELETION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favoriteShows, setFavoriteShows] = useState<GratefulDeadShow[]>([]);
   const [favoriteSongs, setFavoriteSongs] = useState<FavoriteSong[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
+
+  // Track deletions for sync conflict resolution (doesn't need to trigger re-renders)
+  const deletionLogRef = useRef<DeletionLog>({ shows: [], songs: [] });
 
   // Helper function to enrich shows with classic tier data
   const enrichShowsWithTier = (shows: GratefulDeadShow[]): GratefulDeadShow[] => {
@@ -44,9 +66,75 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Load favorites from AsyncStorage on mount
+  // Helper to check if a show was deleted locally after a given timestamp
+  const wasShowDeletedAfter = (identifier: string, timestamp: number): boolean => {
+    const record = deletionLogRef.current.shows.find(r => r.identifier === identifier);
+    return record ? record.deletedAt > timestamp : false;
+  };
+
+  // Helper to check if a song was deleted locally after a given timestamp
+  const wasSongDeletedAfter = (trackId: string, showIdentifier: string, timestamp: number): boolean => {
+    const key = `${trackId}:${showIdentifier}`;
+    const record = deletionLogRef.current.songs.find(r => r.identifier === key);
+    return record ? record.deletedAt > timestamp : false;
+  };
+
+  // Record a show deletion
+  const recordShowDeletion = async (identifier: string): Promise<void> => {
+    const now = Date.now();
+    // Remove old records first
+    deletionLogRef.current.shows = deletionLogRef.current.shows
+      .filter(r => now - r.deletedAt < DELETION_RETENTION_MS);
+    // Add new record
+    deletionLogRef.current.shows.push({ identifier, deletedAt: now });
+    await saveDeletionLog();
+  };
+
+  // Record a song deletion
+  const recordSongDeletion = async (trackId: string, showIdentifier: string): Promise<void> => {
+    const now = Date.now();
+    const key = `${trackId}:${showIdentifier}`;
+    // Remove old records first
+    deletionLogRef.current.songs = deletionLogRef.current.songs
+      .filter(r => now - r.deletedAt < DELETION_RETENTION_MS);
+    // Add new record
+    deletionLogRef.current.songs.push({ identifier: key, deletedAt: now });
+    await saveDeletionLog();
+  };
+
+  // Persist deletion log
+  const saveDeletionLog = async (): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.FAVORITES_DELETIONS,
+        JSON.stringify(deletionLogRef.current)
+      );
+    } catch (error) {
+      console.error('Error saving deletion log:', error);
+    }
+  };
+
+  // Load deletion log
+  const loadDeletionLog = async (): Promise<void> => {
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEYS.FAVORITES_DELETIONS);
+      if (stored) {
+        const parsed: DeletionLog = JSON.parse(stored);
+        const now = Date.now();
+        // Clean up old records on load
+        deletionLogRef.current = {
+          shows: parsed.shows.filter(r => now - r.deletedAt < DELETION_RETENTION_MS),
+          songs: parsed.songs.filter(r => now - r.deletedAt < DELETION_RETENTION_MS),
+        };
+      }
+    } catch (error) {
+      console.error('Error loading deletion log:', error);
+    }
+  };
+
+  // Load favorites and deletion log from AsyncStorage on mount
   useEffect(() => {
-    loadFavorites();
+    loadDeletionLog().then(() => loadFavorites());
   }, []);
 
   // Sync favorites from cloud when user logs in
@@ -123,24 +211,44 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       const cloudFavorites = await favoritesCloudService.loadFavorites(userId);
 
       // Merge cloud + local shows (deduplicate by identifier)
+      // Also check if cloud items were deleted locally after they were saved
       const mergedShows = [
         ...favoriteShows,
-        ...cloudFavorites.shows.filter(
-          (cloudShow) => !favoriteShows.some((localShow) => localShow.primaryIdentifier === cloudShow.primaryIdentifier)
-        ),
+        ...cloudFavorites.shows.filter((cloudShow) => {
+          // Skip if already exists locally
+          if (favoriteShows.some((localShow) => localShow.primaryIdentifier === cloudShow.primaryIdentifier)) {
+            return false;
+          }
+          // Skip if was deleted locally after the cloud save
+          const cloudSavedAt = (cloudShow as any).savedAt || 0;
+          if (wasShowDeletedAfter(cloudShow.primaryIdentifier, cloudSavedAt)) {
+            return false;
+          }
+          return true;
+        }),
       ].sort((a, b) => a.date.localeCompare(b.date));
 
       // Enrich merged shows with classic tier data
       const enrichedShows = enrichShowsWithTier(mergedShows);
 
       // Merge cloud + local songs (deduplicate by trackId + showIdentifier)
+      // Also check if cloud items were deleted locally after they were saved
       const mergedSongs = [
         ...favoriteSongs,
-        ...cloudFavorites.songs.filter(
-          (cloudSong) => !favoriteSongs.some(
+        ...cloudFavorites.songs.filter((cloudSong) => {
+          // Skip if already exists locally
+          if (favoriteSongs.some(
             (localSong) => localSong.trackId === cloudSong.trackId && localSong.showIdentifier === cloudSong.showIdentifier
-          )
-        ),
+          )) {
+            return false;
+          }
+          // Skip if was deleted locally after the cloud save
+          const cloudSavedAt = cloudSong.savedAt || 0;
+          if (wasSongDeletedAfter(cloudSong.trackId, cloudSong.showIdentifier, cloudSavedAt)) {
+            return false;
+          }
+          return true;
+        }),
       ].sort((a, b) => {
         const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
         if (titleCompare !== 0) return titleCompare;
@@ -190,6 +298,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFavoriteShow = async (identifier: string) => {
+    // Record deletion for sync conflict resolution
+    await recordShowDeletion(identifier);
+
     const newFavorites = favoriteShows.filter(fav => fav.primaryIdentifier !== identifier);
     setFavoriteShows(newFavorites);
     await saveFavoriteShows(newFavorites);
@@ -224,6 +335,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFavoriteSong = async (trackId: string, showIdentifier: string) => {
+    // Record deletion for sync conflict resolution
+    await recordSongDeletion(trackId, showIdentifier);
+
     const newFavorites = favoriteSongs.filter(
       fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
     );

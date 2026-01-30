@@ -428,15 +428,16 @@ windowSize={10}
 
 ---
 
-### 2.8 FavoritesContext Sync Improvements ⏳ PARTIAL
+### 2.8 FavoritesContext Sync Improvements ✅ COMPLETED
 **Issue:** 3.3 - FavoritesContext Sync Conflicts
-**Files:** `src/contexts/FavoritesContext.tsx`
+**Files:** `src/contexts/FavoritesContext.tsx`, `src/services/favoritesCloudService.ts`
 
 **Tasks:**
 - [x] Add `savedAt` timestamp to favorites (already implemented)
-- [ ] Add optional `deletedAt` for soft deletes
-- [ ] Implement timestamp-based merge in `mergeFavorites`
-- [ ] Honor deletions that occurred after cloud save
+- [x] Add optional `deletedAt` for soft deletes
+- [x] Track deletions in separate log with 30-day retention
+- [x] Check deletion timestamps during cloud sync merge
+- [x] Honor deletions that occurred after cloud save
 
 ---
 

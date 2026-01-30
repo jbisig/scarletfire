@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   FAVORITES_SONGS: '@grateful_dead_favorites_songs',
   /** Legacy favorites (pre-split, for migration) */
   FAVORITES_LEGACY: '@grateful_dead_favorites',
+  /** Deletion log for favorites sync conflict resolution */
+  FAVORITES_DELETIONS: '@grateful_dead_favorites_deletions',
   /** Whether user skipped auth/login */
   AUTH_SKIPPED: '@auth_skipped',
 } as const;
