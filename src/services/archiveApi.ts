@@ -60,6 +60,47 @@ class ArchiveApiService {
   }
 
   /**
+   * Fetch with retry logic and exponential backoff
+   * Automatically retries on timeout or server errors (5xx)
+   */
+  private async fetchWithRetry(
+    url: string,
+    maxRetries: number = ARCHIVE_CONFIG.MAX_RETRIES,
+    baseDelayMs: number = 1000
+  ): Promise<Response> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await this.fetchWithTimeout(url);
+
+        // Retry on server errors (5xx)
+        if (response.status >= 500) {
+          throw new Error(`Server error: HTTP ${response.status}`);
+        }
+
+        return response;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Don't retry on client errors (4xx) except for rate limiting (429)
+        if (error instanceof Error && error.message.includes('HTTP 4') && !error.message.includes('429')) {
+          throw error;
+        }
+
+        // Don't retry on the last attempt
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelayMs * Math.pow(2, attempt);
+          console.log(`[ArchiveAPI] Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${lastError.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Max retries exceeded');
+  }
+
+  /**
    * Search for Grateful Dead shows
    * @param page Page number (0-indexed)
    * @param rows Number of results per page
@@ -449,7 +490,7 @@ class ArchiveApiService {
     }
 
     try {
-      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
+      const response = await this.fetchWithRetry(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

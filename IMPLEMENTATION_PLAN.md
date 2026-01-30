@@ -566,10 +566,10 @@ To be addressed before production deployment.
 - [ ] 2.1.5 Optimize PlayCountsContext Calculations
 
 ### Week 3-4: Error Handling & Code Quality
-- [ ] 2.2.1 Fix Silent Error Catches
-- [ ] 2.2.2 Implement API Retry Logic
+- [x] 2.2.1 Fix Silent Error Catches ✓
+- [x] 2.2.2 Implement API Retry Logic ✓
 - [ ] 2.2.3 Add Radio Replenish Error Recovery
-- [ ] 2.3.1 Extract Common Player Hooks
+- [x] 2.3.1 Extract Common Player Hooks ✓
 - [ ] 2.3.2 Consolidate Title Normalization
 - [ ] 2.3.3 Fix Context Value Recreation
 

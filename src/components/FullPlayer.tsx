@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useShows } from '../contexts/ShowsContext';
 import { formatDate, formatTime, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -149,21 +149,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     return () => clearInterval(interval);
   }, [visible, progressRef, isDragging]);
 
-  // Memoize performance rating lookup
-  const performanceRating = useMemo(() => {
-    // For radio mode, use the rating from the current radio track
-    if (isRadioMode && currentRadioTrack) {
-      return currentRadioTrack.performance.tier;
-    }
-
-    if (!state.currentTrack || !state.currentShow) return null;
-    const song = GRATEFUL_DEAD_SONGS.find(s =>
-      s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
-    );
-    if (!song) return null;
-    const performance = song.performances.find(p => p.date === state.currentShow!.date);
-    return performance?.rating || null;
-  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack]);
+  // Get performance rating from shared hook
+  const performanceRating = usePerformanceRating();
 
   const isFavorite = state.currentTrack && state.currentShow
     ? isSongFavorite(state.currentTrack.id, state.currentShow.identifier)

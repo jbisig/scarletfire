@@ -185,7 +185,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch(() => {});
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch((error) => {
+        console.error('Failed to sync favorite show to cloud:', error);
+        // Data is saved locally, cloud sync will retry on next change or app restart
+      });
     }
   };
 
@@ -196,7 +199,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch(() => {});
+      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongs).catch((error) => {
+        console.error('Failed to sync favorite show removal to cloud:', error);
+      });
     }
   };
 
@@ -215,7 +220,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch(() => {});
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch((error) => {
+        console.error('Failed to sync favorite song to cloud:', error);
+      });
     }
   };
 
@@ -228,7 +235,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to cloud if authenticated - pass the already-updated list directly
     if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch(() => {});
+      favoritesCloudService.syncFavorites(authState.user.id, favoriteShows, newFavorites).catch((error) => {
+        console.error('Failed to sync favorite song removal to cloud:', error);
+      });
     }
   };
 

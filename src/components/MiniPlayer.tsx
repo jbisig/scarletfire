@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
@@ -8,7 +8,7 @@ import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useShows } from '../contexts/ShowsContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { COLORS, FONTS } from '../constants/theme';
 
@@ -40,25 +40,8 @@ export function MiniPlayer({ onPress }: MiniPlayerProps) {
     }
   }, [state.currentShow?.identifier, getShowDetail]);
 
-  // Memoize performance rating lookup using pre-computed data
-  const performanceRating = useMemo(() => {
-    // For radio mode, use the rating from the current radio track
-    if (isRadioMode && currentRadioTrack) {
-      return currentRadioTrack.performance.tier;
-    }
-
-    if (!state.currentTrack || !state.currentShow) return null;
-
-    const song = GRATEFUL_DEAD_SONGS.find(s =>
-      s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
-    );
-
-    if (!song) return null;
-
-    const performance = song.performances.find(p => p.date === state.currentShow!.date);
-
-    return performance?.rating || null;
-  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack]);
+  // Get performance rating from shared hook
+  const performanceRating = usePerformanceRating();
 
   // Memoize play count lookup
   const playCount = useMemo(() => {
