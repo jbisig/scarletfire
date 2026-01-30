@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import { haptics } from '../../services/hapticService';
 
 interface FilterPillProps {
   label: string;
@@ -18,6 +19,11 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
   showCheckmark = false,
   onPress,
 }) {
+  const handlePress = () => {
+    haptics.light();
+    onPress();
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -25,7 +31,7 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
         isSelected && styles.pillSelected,
         isDisabled && styles.pillDisabled,
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
       activeOpacity={0.7}
     >

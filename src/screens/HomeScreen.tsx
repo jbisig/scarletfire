@@ -18,6 +18,7 @@ import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFil
 import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
 import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery } from '../utils/formatters';
@@ -188,7 +189,12 @@ export function HomeScreen() {
   }, []);
 
   if (isLoading) {
-    return <LoadingState message="Loading shows..." />;
+    return (
+      <View style={styles.container}>
+        <PageHeader title="Shows" />
+        <SkeletonLoader variant="showCard" count={10} />
+      </View>
+    );
   }
 
   if (error) {

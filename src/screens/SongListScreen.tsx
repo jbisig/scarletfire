@@ -16,6 +16,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
 import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
@@ -132,7 +133,12 @@ export function SongListScreen() {
   );
 
   if (isLoading) {
-    return <LoadingState message="Loading songs... This may take a minute" />;
+    return (
+      <View style={styles.container}>
+        <PageHeader title="Songs" />
+        <SkeletonLoader variant="songItem" count={15} />
+      </View>
+    );
   }
 
   if (error) {

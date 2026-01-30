@@ -17,6 +17,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { ShowCard } from '../components/ShowCard';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 type GratefulDead101ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GratefulDead101'>;
 
@@ -61,9 +62,21 @@ export function GratefulDead101Screen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Loading essential shows...</Text>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Grateful Dead 101</Text>
+          <Text style={styles.subtitle}>
+            New to the Grateful Dead? Start your journey with these 10 essential shows.
+          </Text>
+        </View>
+        <SkeletonLoader variant="showCard" count={10} />
       </View>
     );
   }

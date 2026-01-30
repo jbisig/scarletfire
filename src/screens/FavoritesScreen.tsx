@@ -12,6 +12,7 @@ import {
   Pressable,
   Animated,
   LayoutChangeEvent,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -30,6 +31,7 @@ import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { StarRating } from '../components/StarRating';
 import { PlayCountBadge } from '../components/PlayCountBadge';
 import { LoadingState } from '../components/StateViews';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { PageHeader } from '../components/PageHeader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
@@ -107,7 +109,7 @@ type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOlde
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
-  const { favoriteShows, favoriteSongs, isLoading } = useFavorites();
+  const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
@@ -129,6 +131,9 @@ export function FavoritesScreen() {
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
 
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
   // Tab sliding animation
   const [tabWidth, setTabWidth] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -140,6 +145,12 @@ export function FavoritesScreen() {
       useNativeDriver: true,
     }).start();
   }, [activeTab, slideAnim]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshFavorites();
+    setRefreshing(false);
+  }, [refreshFavorites]);
 
   const handleTabContainerLayout = (event: LayoutChangeEvent) => {
     const { width } = event.nativeEvent.layout;
@@ -358,7 +369,12 @@ export function FavoritesScreen() {
   }, [loadTrack]);
 
   if (isLoading) {
-    return <LoadingState message="Loading favorites..." />;
+    return (
+      <View style={styles.container}>
+        <PageHeader title="Favorites" />
+        <SkeletonLoader variant="showCard" count={10} />
+      </View>
+    );
   }
 
   const renderShowsTab = () => {
@@ -439,6 +455,13 @@ export function FavoritesScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={COLORS.accent}
+              />
+            }
             // Performance optimizations
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
@@ -534,6 +557,13 @@ export function FavoritesScreen() {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={COLORS.accent}
+              />
+            }
             // Performance optimizations
             removeClippedSubviews={true}
             maxToRenderPerBatch={15}

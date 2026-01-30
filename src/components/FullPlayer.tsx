@@ -28,6 +28,7 @@ import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
+import { haptics } from '../services/hapticService';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -178,6 +179,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   const handleToggleFavoriteSong = (): void => {
     if (!state.currentTrack || !state.currentShow) return;
+    haptics.medium();
     const trackId = state.currentTrack.id;
     const showIdentifier = state.currentShow.identifier;
     if (isSongFavorite(trackId, showIdentifier)) {
@@ -225,6 +227,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
+        haptics.light();
         progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
           const durationMs = getDurationMs();
@@ -478,12 +481,12 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
         {/* Playback Controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity onPress={handleRewind} style={styles.controlButton}>
-            <Ionicons name="play-skip-back" size={36} color="#fff" />
+          <TouchableOpacity onPress={() => { haptics.medium(); handleRewind(); }} style={styles.controlButton}>
+            <Ionicons name="play-skip-back" size={36} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => state.isPlaying ? pause() : play()}
+            onPress={() => { haptics.heavy(); state.isPlaying ? pause() : play(); }}
             style={styles.playButton}
             activeOpacity={0.8}
           >
@@ -495,14 +498,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={nextTrack}
+            onPress={() => { haptics.medium(); nextTrack(); }}
             style={styles.controlButton}
             disabled={!isRadioMode && (!state.playlist || state.playlist.length === 0)}
           >
             <Ionicons
               name="play-skip-forward"
               size={36}
-              color={(isRadioMode || (state.playlist && state.playlist.length > 0)) ? "#fff" : "#666"}
+              color={(isRadioMode || (state.playlist && state.playlist.length > 0)) ? COLORS.textPrimary : COLORS.textMuted}
             />
           </TouchableOpacity>
         </View>

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import { haptics } from '../../services/hapticService';
 
 interface FilterActionBarProps {
   matchingCount: number;
@@ -17,10 +18,20 @@ export const FilterActionBar = React.memo<FilterActionBarProps>(function FilterA
 }) {
   const insets = useSafeAreaInsets();
 
+  const handleReset = () => {
+    haptics.light();
+    onReset();
+  };
+
+  const handleApply = () => {
+    haptics.medium();
+    onApply();
+  };
+
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {/* Reset Button */}
-      <TouchableOpacity style={styles.resetButton} onPress={onReset} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.resetButton} onPress={handleReset} activeOpacity={0.7}>
         <Ionicons name="refresh" size={16} color={COLORS.textPrimary} />
         <Text style={styles.resetText}>Reset</Text>
       </TouchableOpacity>
@@ -29,7 +40,7 @@ export const FilterActionBar = React.memo<FilterActionBarProps>(function FilterA
       <Text style={styles.matchingText}>{matchingCount} shows</Text>
 
       {/* Apply Button */}
-      <TouchableOpacity style={styles.applyButton} onPress={onApply} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.applyButton} onPress={handleApply} activeOpacity={0.7}>
         <Text style={styles.applyText}>Apply</Text>
       </TouchableOpacity>
     </View>

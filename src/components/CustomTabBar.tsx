@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { haptics } from '../services/hapticService';
 
 const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   ShowsTab: { active: 'albums', inactive: 'albums-outline' },
@@ -45,6 +46,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
 
             if (!isFocused && !event.defaultPrevented) {
+              haptics.selection();
               navigation.navigate(route.name, route.params);
             }
           };

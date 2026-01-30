@@ -41,6 +41,7 @@ interface FavoritesContextType {
   removeFavoriteShow: (identifier: string) => Promise<void>;
   addFavoriteSong: (song: FavoriteSong) => Promise<void>;
   removeFavoriteSong: (trackId: string, showIdentifier: string) => Promise<void>;
+  refreshFavorites: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -352,6 +353,16 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshFavorites = async () => {
+    // Re-sync from cloud if authenticated
+    if (authState.isAuthenticated && authState.user) {
+      await syncFavoritesFromCloud(authState.user.id);
+    } else {
+      // Just reload from local storage
+      await loadFavorites();
+    }
+  };
+
   return (
     <FavoritesContext.Provider
       value={{
@@ -363,6 +374,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         removeFavoriteShow,
         addFavoriteSong,
         removeFavoriteSong,
+        refreshFavorites,
         isLoading,
       }}
     >
