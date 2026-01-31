@@ -69,6 +69,7 @@ export type PlayerAction =
   // Shuffle mode actions
   | { type: 'START_SHUFFLE'; shuffleType: ShuffleType; queue: ShuffleSongItem[] | GratefulDeadShow[] }
   | { type: 'STOP_SHUFFLE' }
+  | { type: 'EXIT_SHUFFLE' }
   | { type: 'SET_SHUFFLE_LOADING'; isLoading: boolean }
   | { type: 'SHUFFLE_NEXT' }
   | { type: 'SHUFFLE_PREVIOUS' }

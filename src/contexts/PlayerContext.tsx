@@ -265,6 +265,17 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         shuffleQueueIndex: 0,
       };
 
+    case 'EXIT_SHUFFLE':
+      // Exit shuffle mode without stopping audio - used when transitioning to normal playback
+      return {
+        ...state,
+        playbackMode: 'show',
+        shuffleQueue: [],
+        shuffleQueueIndex: -1,
+        shuffleType: null,
+        isShuffleLoading: false,
+      };
+
     default:
       return state;
   }
@@ -657,6 +668,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (state.playbackMode === 'radio') {
       dispatch({ type: 'STOP_RADIO' });
       radioService.resetSession();
+    }
+    // If in shuffle mode, exit shuffle and return to normal show mode
+    if (state.playbackMode === 'shuffle') {
+      dispatch({ type: 'EXIT_SHUFFLE' });
     }
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
   }, [state.playbackMode]);
