@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
-    height: 48,
+    height: 40,
   },
   searchIcon: {
     marginRight: 10,

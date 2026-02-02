@@ -12,6 +12,8 @@ import {
   Dimensions,
   Image,
   TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +31,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 // Default profile image for logged out users
 const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
@@ -131,7 +133,7 @@ export function HomeScreen() {
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
-  const { state: authState } = useAuth();
+  const { state: authState, logout, showLogin } = useAuth();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const [searchQuery, setSearchQuery] = useState('');
@@ -141,7 +143,34 @@ export function HomeScreen() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchAnim = useRef(new Animated.Value(0)).current; // 0 = collapsed, 1 = expanded
 
+  // Profile dropdown state
+  const profileButtonRef = useRef<View>(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [profileButtonPosition, setProfileButtonPosition] = useState({ top: 0, left: 0 });
+
   const avatarUrl = profileService.getAvatarUrl(authState.user);
+
+  const handleProfilePress = useCallback(() => {
+    profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setProfileButtonPosition({ top: pageY + height + 8, left: pageX });
+      setShowProfileDropdown(true);
+    });
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    setShowProfileDropdown(false);
+    await logout();
+  }, [logout]);
+
+  const handleLogin = useCallback(async () => {
+    setShowProfileDropdown(false);
+    await showLogin();
+  }, [showLogin]);
+
+  const handleSettings = useCallback(() => {
+    setShowProfileDropdown(false);
+    navigation.navigate('Settings');
+  }, [navigation]);
 
   // Animated interpolations
   const searchBarWidth = searchAnim.interpolate({
@@ -280,13 +309,19 @@ export function HomeScreen() {
         <View style={styles.header}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
           <View style={styles.headerLeft}>
-            <Image
-              source={authState.isAuthenticated && avatarUrl
-                ? { uri: avatarUrl }
-                : LOGGED_OUT_PROFILE
-              }
-              style={styles.avatar}
-            />
+            <TouchableOpacity
+              ref={profileButtonRef}
+              onPress={handleProfilePress}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={authState.isAuthenticated && avatarUrl
+                  ? { uri: avatarUrl }
+                  : LOGGED_OUT_PROFILE
+                }
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Shows</Text>
           </View>
 
@@ -349,7 +384,7 @@ export function HomeScreen() {
 
         {/* Gradient fade overlay */}
         <LinearGradient
-          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
+          colors={[COLORS.background, 'transparent']}
           locations={[0, 0.3, 0.7, 1]}
           style={styles.headerGradient}
           pointerEvents="none"
@@ -364,6 +399,54 @@ export function HomeScreen() {
         onApply={handleApplyFilters}
         showsByYear={showsByYear}
       />
+
+      {/* Profile Dropdown */}
+      <Modal
+        visible={showProfileDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowProfileDropdown(false)}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => setShowProfileDropdown(false)}
+        >
+          <View
+            style={[
+              styles.dropdownContainer,
+              { top: profileButtonPosition.top, left: 16 }
+            ]}
+          >
+            {authState.isAuthenticated ? (
+              <>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={handleSettings}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.dropdownItemText}>Settings</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.dropdownItemTextRed}>Log Out</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={handleLogin}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dropdownItemText}>Log In</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* Shows List */}
       {sections.length === 0 && debouncedSearchQuery.trim() ? (
@@ -506,5 +589,33 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
+    minWidth: 150,
+    ...SHADOWS.lg,
+  },
+  dropdownItem: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  dropdownItemText: {
+    ...TYPOGRAPHY.body,
+  },
+  dropdownItemTextRed: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.lg,
   },
 });

@@ -16,6 +16,8 @@ export interface ArchiveDoc {
   year?: string;
   collection?: string[];
   downloads?: number; // All-time download count
+  taper?: string; // Who recorded it
+  transferer?: string; // Who did the digital transfer (Archive.org spelling)
 }
 
 export interface ArchiveMetadataResponse {

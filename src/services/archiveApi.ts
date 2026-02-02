@@ -321,7 +321,7 @@ class ArchiveApiService {
       const query = `collection:GratefulDead AND mediatype:etree AND date:${date}`;
       const params = {
         q: query,
-        'fl[]': ['identifier', 'title', 'downloads'],
+        'fl[]': ['identifier', 'title', 'downloads', 'taper', 'transferer'],
         rows: SEARCH_LIMITS.MAX_SHOW_VERSIONS,
         output: 'json'
       };
@@ -342,6 +342,8 @@ class ArchiveApiService {
           title: doc.title,
           source: this.extractSource(doc.identifier),
           downloads: doc.downloads || 0,
+          taper: doc.taper,
+          transferrer: doc.transferer, // Note: Archive.org uses "transferer"
         }))
         .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
         .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);

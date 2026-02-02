@@ -3,6 +3,8 @@ export interface RecordingVersion {
   title: string;
   source?: string; // e.g., "sbd" (soundboard), "aud" (audience), "matrix"
   downloads?: number; // All-time download count
+  taper?: string; // Who recorded it
+  transferrer?: string; // Who did the digital transfer
 }
 
 export interface GratefulDeadShow {
