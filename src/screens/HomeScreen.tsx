@@ -385,7 +385,7 @@ export function HomeScreen() {
         {/* Gradient fade overlay */}
         <LinearGradient
           colors={[COLORS.background, 'transparent']}
-          locations={[0, 0.3, 0.7, 1]}
+          locations={[0, 1]}
           style={styles.headerGradient}
           pointerEvents="none"
         />

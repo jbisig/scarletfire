@@ -387,11 +387,11 @@ const styles = StyleSheet.create({
   },
   date: {
     ...TYPOGRAPHY.body,
-    color: COLORS.accent,
+    color: COLORS.textSecondary,
   },
   sourceName: {
     ...TYPOGRAPHY.body,
-    color: COLORS.accent,
+    color: COLORS.textSecondary,
   },
   badgesRow: {
     flexDirection: 'row',

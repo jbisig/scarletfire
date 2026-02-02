@@ -1,4 +1,14 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
+
+// Simple hash function to determine gradient direction
+function shouldFlipGradient(seed: string): boolean {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash & 1) === 1; // Check if odd
+}
 import {
   View,
   Text,
@@ -6,7 +16,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  ImageBackground,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,11 +33,12 @@ import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel } from '../components/ShowCarousel';
+import { GradientCardBackground } from '../components/GradientCardBackground';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
-const SOTD_BACKGROUND = require('../../assets/images/carousel-bg-1.png');
+const SOTD_CARD_WIDTH = 350; // Approximate width for gradient
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -143,6 +153,12 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const hasSavedContent = favoriteSongs.length > 0 || favoriteShows.length > 0;
   const savedButtonLabel = favoriteSongs.length > 0 ? 'Saved Songs' : 'Shuffle Shows';
 
+  // Determine if SOTD gradient should be flipped
+  const flipSotdGradient = useMemo(() =>
+    show ? shouldFlipGradient(show.primaryIdentifier) : false,
+    [show]
+  );
+
   return (
     <View style={styles.container}>
       <PageHeader title="Discover" />
@@ -172,16 +188,12 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             accessibilityHint="Double tap to view this show"
             accessibilityState={{ disabled: isLoading || !show }}
           >
-            <ImageBackground
-              source={SOTD_BACKGROUND}
-              style={styles.sotdCard}
-              imageStyle={styles.sotdImage}
-              resizeMode="stretch"
-            >
+            <View style={styles.sotdCard}>
+              <GradientCardBackground width={SOTD_CARD_WIDTH} height={100} seed={show?.primaryIdentifier || 'sotd'} />
               <LinearGradient
-                colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
+                colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
+                start={{ x: flipSotdGradient ? 1 : 0, y: 0.5 }}
+                end={{ x: flipSotdGradient ? 0 : 1, y: 0.5 }}
                 style={styles.sotdGradient}
               >
                 {isLoading ? (
@@ -205,7 +217,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                   </View>
                 ) : null}
               </LinearGradient>
-            </ImageBackground>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -267,6 +279,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingTop: SPACING.md,
     paddingBottom: 184,
   },
   section: {
@@ -286,9 +299,6 @@ const styles = StyleSheet.create({
   sotdCard: {
     borderRadius: RADIUS.md,
     overflow: 'hidden',
-  },
-  sotdImage: {
-    borderRadius: RADIUS.md,
   },
   sotdGradient: {
     padding: SPACING.lg,
