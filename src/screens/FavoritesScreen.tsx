@@ -20,8 +20,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
-import { useAuth } from '../contexts/AuthContext';
-import { profileService } from '../services/profileService';
+import { useProfileDropdown } from '../hooks/useProfileDropdown';
+import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
@@ -131,7 +131,6 @@ type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'pe
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { state: authState, logout, showLogin } = useAuth();
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
@@ -160,34 +159,18 @@ export function FavoritesScreen() {
   // Header search bar animation (0 = collapsed, 1 = expanded)
   const searchAnim = useRef(new Animated.Value(0)).current;
 
-  // Profile dropdown state
-  const profileButtonRef = useRef<View>(null);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [profileButtonPosition, setProfileButtonPosition] = useState({ top: 0, left: 0 });
-
-  const avatarUrl = profileService.getAvatarUrl(authState.user);
-
-  const handleProfilePress = useCallback(() => {
-    profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setProfileButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowProfileDropdown(true);
-    });
-  }, []);
-
-  const handleLogout = useCallback(async () => {
-    setShowProfileDropdown(false);
-    await logout();
-  }, [logout]);
-
-  const handleLogin = useCallback(async () => {
-    setShowProfileDropdown(false);
-    await showLogin();
-  }, [showLogin]);
-
-  const handleSettings = useCallback(() => {
-    setShowProfileDropdown(false);
-    navigation.navigate('Settings');
-  }, [navigation]);
+  // Profile dropdown
+  const {
+    profileButtonRef,
+    avatarUrl,
+    isAuthenticated,
+    dropdownState,
+    handleProfilePress,
+    handleLogout,
+    handleLogin,
+    handleSettings,
+    closeDropdown,
+  } = useProfileDropdown();
 
   // Animated interpolations for header search
   const searchBarWidth = searchAnim.interpolate({
@@ -588,7 +571,7 @@ export function FavoritesScreen() {
           {/* Gradient fade overlay */}
           <LinearGradient
             colors={[COLORS.background, 'transparent']}
-            locations={[0, 0.3, 0.7, 1]}
+            locations={[0, 1]}
             style={styles.actionBarGradient}
             pointerEvents="none"
           />
@@ -677,7 +660,7 @@ export function FavoritesScreen() {
           {/* Gradient fade overlay */}
           <LinearGradient
             colors={[COLORS.background, 'transparent']}
-            locations={[0, 0.3, 0.7, 1]}
+            locations={[0, 1]}
             style={styles.actionBarGradient}
             pointerEvents="none"
           />
@@ -739,7 +722,7 @@ export function FavoritesScreen() {
               activeOpacity={0.8}
             >
               <Image
-                source={authState.isAuthenticated && avatarUrl
+                source={isAuthenticated && avatarUrl
                   ? { uri: avatarUrl }
                   : LOGGED_OUT_PROFILE
                 }
@@ -837,52 +820,14 @@ export function FavoritesScreen() {
       />
 
       {/* Profile Dropdown */}
-      <Modal
-        visible={showProfileDropdown}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowProfileDropdown(false)}
-      >
-        <Pressable
-          style={styles.profileDropdownOverlay}
-          onPress={() => setShowProfileDropdown(false)}
-        >
-          <View
-            style={[
-              styles.profileDropdownContainer,
-              { top: profileButtonPosition.top, left: 16 }
-            ]}
-          >
-            {authState.isAuthenticated ? (
-              <>
-                <TouchableOpacity
-                  style={styles.profileDropdownItem}
-                  onPress={handleSettings}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.profileDropdownItemText}>Settings</Text>
-                </TouchableOpacity>
-                <View style={styles.profileDropdownDivider} />
-                <TouchableOpacity
-                  style={styles.profileDropdownItem}
-                  onPress={handleLogout}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.profileDropdownItemTextRed}>Log Out</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={styles.profileDropdownItem}
-                onPress={handleLogin}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.profileDropdownItemText}>Log In</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </Pressable>
-      </Modal>
+      <ProfileDropdown
+        state={dropdownState}
+        isAuthenticated={isAuthenticated}
+        onClose={closeDropdown}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        onSettings={handleSettings}
+      />
 
       {/* Tab Content */}
       {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
@@ -1162,14 +1107,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     overflow: 'hidden',
   },
-  searchButton: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   filterButton: {
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
@@ -1305,7 +1242,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   listContent: {
-    paddingVertical: SPACING.sm,
+    paddingTop: SPACING.sm + 8,
     paddingBottom: 180,
   },
   songItem: {
@@ -1380,34 +1317,6 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
   },
   dropdownDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.lg,
-  },
-  profileDropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  profileDropdownContainer: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACING.sm,
-    minWidth: 150,
-    ...SHADOWS.lg,
-  },
-  profileDropdownItem: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  profileDropdownItemText: {
-    ...TYPOGRAPHY.body,
-  },
-  profileDropdownItemTextRed: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-  },
-  profileDropdownDivider: {
     height: 1,
     backgroundColor: COLORS.border,
     marginHorizontal: SPACING.lg,

@@ -39,9 +39,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   badgeSmall: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
   },
   text: {
     ...TYPOGRAPHY.labelSmall,
@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   textSmall: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.captionSmall,
+    fontWeight: '600',
   },
 });

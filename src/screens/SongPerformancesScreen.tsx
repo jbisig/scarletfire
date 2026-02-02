@@ -588,14 +588,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     overflow: 'hidden',
   },
-  searchButton: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   searchInputWrapper: {
     flex: 1,
     flexDirection: 'row',
