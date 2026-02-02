@@ -9,6 +9,7 @@ interface ShowCarouselProps {
   shows: GratefulDeadShow[];
   onShowPress: (show: GratefulDeadShow) => void;
   extraData?: unknown;
+  color?: 'blue' | 'red';
 }
 
 export const ShowCarousel = React.memo<ShowCarouselProps>(function ShowCarousel({
@@ -16,15 +17,18 @@ export const ShowCarousel = React.memo<ShowCarouselProps>(function ShowCarousel(
   shows,
   onShowPress,
   extraData,
+  color,
 }) {
   if (shows.length === 0) {
     return null;
   }
 
-  const renderItem = ({ item }: { item: GratefulDeadShow }) => (
+  const renderItem = ({ item, index }: { item: GratefulDeadShow; index: number }) => (
     <HorizontalShowCard
       show={item}
       onPress={onShowPress}
+      index={index}
+      color={color}
     />
   );
 

@@ -42,7 +42,6 @@ export const ActionPillButton = React.memo<ActionPillButtonProps>(function Actio
 
 const styles = StyleSheet.create({
   button: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -50,10 +49,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md + 2,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md,
-    minHeight: 48,
+    height: 48,
   },
   fullWidth: {
-    flex: 0,
     width: '100%',
   },
   content: {

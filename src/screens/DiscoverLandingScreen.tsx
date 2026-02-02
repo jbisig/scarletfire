@@ -1,14 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
-
-// Simple hash function to determine gradient direction
-function shouldFlipGradient(seed: string): boolean {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  return (hash & 1) === 1; // Check if odd
-}
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -16,8 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Video, ResizeMode } from 'expo-av';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -29,16 +23,17 @@ import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel } from '../components/ShowCarousel';
-import { GradientCardBackground } from '../components/GradientCardBackground';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
-const SOTD_CARD_WIDTH = 350; // Approximate width for gradient
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SOTD_CARD_WIDTH = SCREEN_WIDTH - (SPACING.xl * 2); // Full width minus horizontal padding
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -49,6 +44,15 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { show, isLoading, refreshShow } = useShowOfTheDay();
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
   const { favoriteShows, favoriteSongs } = useFavorites();
+  const { videoSource, videoId } = useVideoBackground();
+
+  // Track app state to pause video when in background (saves battery)
+  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', setAppState);
+    return () => subscription.remove();
+  }, []);
 
   // Prefetch radio tracks in the background for instant start
   useEffect(() => {
@@ -114,11 +118,14 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   }, [playCounts, showsByYear]);
 
   // Classic Shows: Filter shows with classicTier, sorted by rating (tier 1 = best)
+  // Excludes shows already in GD 101 to avoid duplicates
   const classicShows = useMemo(() => {
+    const gd101DateSet = new Set(GRATEFUL_DEAD_101_DATES);
     const allClassics: GratefulDeadShow[] = [];
     for (const yearShows of Object.values(showsByYear)) {
       for (const s of yearShows) {
-        if (s.classicTier) {
+        // Only include if it has a classic tier AND is not in GD 101
+        if (s.classicTier && !gd101DateSet.has(s.date.substring(0, 10))) {
           allClassics.push(s);
         }
       }
@@ -153,12 +160,6 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const hasSavedContent = favoriteSongs.length > 0 || favoriteShows.length > 0;
   const savedButtonLabel = favoriteSongs.length > 0 ? 'Saved Songs' : 'Shuffle Shows';
 
-  // Determine if SOTD gradient should be flipped
-  const flipSotdGradient = useMemo(() =>
-    show ? shouldFlipGradient(show.primaryIdentifier) : false,
-    [show]
-  );
-
   return (
     <View style={styles.container}>
       <PageHeader title="Discover" />
@@ -189,13 +190,16 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             accessibilityState={{ disabled: isLoading || !show }}
           >
             <View style={styles.sotdCard}>
-              <GradientCardBackground width={SOTD_CARD_WIDTH} height={100} seed={show?.primaryIdentifier || 'sotd'} />
-              <LinearGradient
-                colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
-                start={{ x: flipSotdGradient ? 1 : 0, y: 0.5 }}
-                end={{ x: flipSotdGradient ? 0 : 1, y: 0.5 }}
-                style={styles.sotdGradient}
-              >
+              <Video
+                key={`sotd-video-${videoId}`}
+                source={videoSource}
+                style={styles.sotdVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={appState === 'active'}
+                isLooping
+                isMuted
+              />
+              <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.sotdBlurOverlay}>
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
                     <ActivityIndicator size="large" color={COLORS.accent} />
@@ -216,7 +220,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                     )}
                   </View>
                 ) : null}
-              </LinearGradient>
+              </BlurView>
             </View>
           </TouchableOpacity>
         </View>
@@ -224,20 +228,24 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         {/* Action Buttons */}
         <View style={styles.actionsSection}>
           <View style={[styles.actionsRow, !hasSavedContent && styles.actionsRowSingle]}>
-            <ActionPillButton
-              icon="radio"
-              label="Start Radio"
-              onPress={handleRadioPress}
-              loading={playerState.isRadioLoading}
-              fullWidth={!hasSavedContent}
-            />
-            {hasSavedContent && (
+            <View style={hasSavedContent ? styles.buttonWrapper : styles.buttonWrapperFull}>
               <ActionPillButton
-                icon="shuffle"
-                label={savedButtonLabel}
-                onPress={handleSavedPress}
-                loading={playerState.isShuffleLoading}
+                icon="radio"
+                label="Start Radio"
+                onPress={handleRadioPress}
+                loading={playerState.isRadioLoading}
+                fullWidth={!hasSavedContent}
               />
+            </View>
+            {hasSavedContent && (
+              <View style={styles.buttonWrapper}>
+                <ActionPillButton
+                  icon="shuffle"
+                  label={savedButtonLabel}
+                  onPress={handleSavedPress}
+                  loading={playerState.isShuffleLoading}
+                />
+              </View>
             )}
           </View>
         </View>
@@ -249,6 +257,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             shows={recentlyPlayedShows}
             onShowPress={handleShowPress}
             extraData={playCounts}
+            color="blue"
           />
         )}
 
@@ -257,6 +266,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
           title="Classic Shows"
           shows={classicShows}
           onShowPress={handleShowPress}
+          color="blue"
         />
 
         {/* Grateful Dead 101 Carousel */}
@@ -264,6 +274,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
           title="Grateful Dead 101"
           shows={gd101Shows}
           onShowPress={handleShowPress}
+          color="blue"
         />
       </ScrollView>
     </View>
@@ -299,9 +310,15 @@ const styles = StyleSheet.create({
   sotdCard: {
     borderRadius: RADIUS.md,
     overflow: 'hidden',
+    height: 100,
   },
-  sotdGradient: {
+  sotdVideo: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sotdBlurOverlay: {
+    ...StyleSheet.absoluteFillObject,
     padding: SPACING.lg,
+    justifyContent: 'center',
   },
   sotdLoading: {
     paddingVertical: SPACING.xxl,
@@ -335,9 +352,16 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.md,
   },
   actionsRowSingle: {
     justifyContent: 'center',
+  },
+  buttonWrapper: {
+    flex: 1,
+  },
+  buttonWrapperFull: {
+    width: '100%',
   },
 });

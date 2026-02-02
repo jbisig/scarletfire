@@ -26,11 +26,15 @@ const CARD_HEIGHT = 100;
 interface HorizontalShowCardProps {
   show: GratefulDeadShow;
   onPress: (show: GratefulDeadShow) => void;
+  index?: number;
+  color?: 'blue' | 'red';
 }
 
 export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function HorizontalShowCard({
   show,
   onPress,
+  index,
+  color,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -62,7 +66,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details"
       >
-        <GradientCardBackground width={CARD_WIDTH} height={CARD_HEIGHT} seed={show.primaryIdentifier} />
+        <GradientCardBackground width={CARD_WIDTH} height={CARD_HEIGHT} seed={show.primaryIdentifier} index={index} color={color} />
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
           start={{ x: flipGradient ? 1 : 0, y: 0.5 }}
