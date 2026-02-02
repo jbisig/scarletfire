@@ -43,7 +43,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { showsByYear } = useShows();
   const { show, isLoading, refreshShow } = useShowOfTheDay();
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
-  const { favoriteShows, favoriteSongs } = useFavorites();
+  const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();
   const { videoSource, videoId } = useVideoBackground();
 
   // Track app state to pause video when in background (saves battery)
@@ -157,7 +157,8 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   }, [showsByYear]);
 
   // Determine which button label to use and whether to show it
-  const hasSavedContent = favoriteSongs.length > 0 || favoriteShows.length > 0;
+  // While favorites are loading, assume there might be saved content to prevent layout shift
+  const hasSavedContent = favoritesLoading || favoriteSongs.length > 0 || favoriteShows.length > 0;
   const savedButtonLabel = favoriteSongs.length > 0 ? 'Saved Songs' : 'Shuffle Shows';
 
   return (
@@ -241,9 +242,10 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
               <View style={styles.buttonWrapper}>
                 <ActionPillButton
                   icon="shuffle"
-                  label={savedButtonLabel}
+                  label={favoritesLoading ? 'Loading...' : savedButtonLabel}
                   onPress={handleSavedPress}
                   loading={playerState.isShuffleLoading}
+                  disabled={favoritesLoading}
                 />
               </View>
             )}
@@ -311,9 +313,16 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     overflow: 'hidden',
     height: 100,
+    backgroundColor: COLORS.cardBackground,
   },
   sotdVideo: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   sotdBlurOverlay: {
     ...StyleSheet.absoluteFillObject,

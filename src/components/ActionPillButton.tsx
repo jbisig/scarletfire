@@ -8,6 +8,7 @@ interface ActionPillButtonProps {
   label: string;
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
   fullWidth?: boolean;
 }
 
@@ -16,17 +17,20 @@ export const ActionPillButton = React.memo<ActionPillButtonProps>(function Actio
   label,
   onPress,
   loading = false,
+  disabled = false,
   fullWidth = false,
 }) {
+  const isDisabled = loading || disabled;
+
   return (
     <TouchableOpacity
-      style={[styles.button, fullWidth && styles.fullWidth]}
+      style={[styles.button, fullWidth && styles.fullWidth, isDisabled && styles.disabled]}
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
       activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: loading }}
+      accessibilityState={{ disabled: isDisabled }}
     >
       {loading ? (
         <ActivityIndicator size="small" color={COLORS.textPrimary} />
@@ -53,6 +57,9 @@ const styles = StyleSheet.create({
   },
   fullWidth: {
     width: '100%',
+  },
+  disabled: {
+    opacity: 0.5,
   },
   content: {
     flexDirection: 'row',
