@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,37 @@ import {
   TouchableOpacity,
   Keyboard,
   TouchableWithoutFeedback,
+  Animated,
+  Easing,
+  Dimensions,
+  Image,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
 import { useDebounce } from '../hooks/useDebounce';
-import { PageHeader } from '../components/PageHeader';
-import { SearchBar } from '../components/SearchBar';
-import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
+import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+
+// Default profile image for logged out users
+const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
+
+// Animation constants
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const BUTTON_SIZE = 40;
+const BUTTON_GAP = 10;
+const HORIZONTAL_PADDING = SPACING.xl;
+// Full width = screen - padding on both sides (no filter button)
+const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
+const ANIMATION_DURATION = 300;
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -30,11 +49,61 @@ interface SongItem {
 
 export function SongListScreen() {
   const navigation = useNavigation<SongListNavigationProp>();
+  const insets = useSafeAreaInsets();
+  const { state: authState } = useAuth();
+  const searchInputRef = useRef<TextInput>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Search bar animation state
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchAnim = useRef(new Animated.Value(0)).current;
+
+  const avatarUrl = profileService.getAvatarUrl(authState.user);
+
+  // Animated interpolations
+  const searchBarWidth = searchAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [BUTTON_SIZE, SEARCH_BAR_FULL_WIDTH],
+    extrapolate: 'clamp',
+  });
+
+  // Expand search bar
+  const handleSearchPress = useCallback(() => {
+    setIsSearchExpanded(true);
+    Animated.timing(searchAnim, {
+      toValue: 1,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Collapse search bar
+  const handleCloseSearch = useCallback(() => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setIsSearchExpanded(false);
+    Animated.timing(searchAnim, {
+      toValue: 0,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Close search bar when navigating away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (isSearchExpanded) {
+        handleCloseSearch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, isSearchExpanded, handleCloseSearch]);
 
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -136,7 +205,14 @@ export function SongListScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <PageHeader title="Songs" />
+        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+              <Text style={styles.headerTitle}>Songs</Text>
+            </View>
+          </View>
+        </View>
         <SkeletonLoader variant="songItem" count={15} />
       </View>
     );
@@ -150,16 +226,59 @@ export function SongListScreen() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
         {/* Header Section with Gradient Fade */}
-        <View style={styles.headerSection}>
-          <PageHeader title="Songs" />
+        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.header}>
+            {/* Left side: Avatar and Title (gets covered by search bar) */}
+            <View style={styles.headerLeft}>
+              <Image
+                source={authState.isAuthenticated && avatarUrl
+                  ? { uri: avatarUrl }
+                  : LOGGED_OUT_PROFILE
+                }
+                style={styles.avatar}
+              />
+              <Text style={styles.headerTitle}>Songs</Text>
+            </View>
 
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search Songs"
-            />
+            {/* Right side: Search button */}
+            <View style={styles.headerRight}>
+              {/* Animated Search Bar / Button */}
+              <TouchableOpacity
+                activeOpacity={isSearchExpanded ? 1 : 0.7}
+                onPress={isSearchExpanded ? undefined : handleSearchPress}
+                disabled={isSearchExpanded}
+              >
+                <Animated.View style={[styles.searchBarContainer, { width: searchBarWidth }]}>
+                  <View style={styles.searchInputWrapper}>
+                    <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
+                    {isSearchExpanded && (
+                      <View style={styles.searchExpandedContent}>
+                        <View style={styles.searchIconSpacer} />
+                        <TextInput
+                          ref={searchInputRef}
+                          style={styles.searchInput}
+                          placeholder="Search songs"
+                          placeholderTextColor={COLORS.textHint}
+                          value={searchQuery}
+                          onChangeText={setSearchQuery}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoFocus
+                          selectionColor={COLORS.textPrimary}
+                        />
+                        <TouchableOpacity
+                          style={styles.closeSearchButton}
+                          onPress={handleCloseSearch}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </Animated.View>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Gradient fade overlay */}
@@ -210,16 +329,95 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: COLORS.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingBottom: SPACING.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    position: 'absolute',
+    left: HORIZONTAL_PADDING,
+    top: 0,
+    bottom: SPACING.lg,
+  },
+  avatar: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.heading2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: BUTTON_GAP,
+    marginLeft: 'auto',
+    zIndex: 10,
+  },
+  searchBarContainer: {
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+  },
+  searchButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    height: BUTTON_SIZE,
+    overflow: 'hidden',
+  },
+  searchIconCentered: {
+    position: 'absolute',
+    left: 10,
+  },
+  searchExpandedContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: SPACING.sm,
+    paddingRight: SPACING.xs,
+    gap: 10,
+  },
+  searchIconSpacer: {
+    width: 20,
+  },
+  searchButtonCollapsed: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    gap: 0,
+  },
+  searchInput: {
+    flex: 1,
+    ...TYPOGRAPHY.body,
+  },
+  closeSearchButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
   headerGradient: {
     position: 'absolute',
     bottom: -30,
     left: 0,
     right: 0,
     height: 30,
-  },
-  searchContainer: {
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.md,
   },
   listContent: {
     paddingBottom: 180,
@@ -237,7 +435,7 @@ const styles = StyleSheet.create({
   },
   songItem: {
     flexDirection: 'row',
-    paddingVertical: SPACING.md,
+    paddingVertical: 8,
     paddingHorizontal: SPACING.xl,
     alignItems: 'center',
   },

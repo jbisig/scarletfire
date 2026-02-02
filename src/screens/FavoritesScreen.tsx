@@ -12,21 +12,18 @@ import {
   Pressable,
   Animated,
   Easing,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  LayoutChangeEvent,
   RefreshControl,
+  Dimensions,
+  Image,
 } from 'react-native';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
 import { ShowCard } from '../components/ShowCard';
+import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -39,15 +36,26 @@ import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
 import { archiveApi } from '../services/archiveApi';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
 import { StarRating } from '../components/StarRating';
 import { PlayCountBadge } from '../components/PlayCountBadge';
-import { LoadingState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
-import { PageHeader } from '../components/PageHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { logger } from '../utils/logger';
+
+// Default profile image for logged out users
+const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
+
+// Animation constants
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const BUTTON_SIZE = 40;
+const BUTTON_GAP = 10;
+const HORIZONTAL_PADDING = SPACING.xl;
+// Full width for header search = screen - padding on both sides - filter button - gap
+const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - BUTTON_SIZE - BUTTON_GAP;
+const ANIMATION_DURATION = 300;
 
 const allShowsByYear = showsData as ShowsByYear;
 
@@ -122,6 +130,8 @@ type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'pe
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
+  const { state: authState } = useAuth();
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
@@ -131,16 +141,14 @@ export function FavoritesScreen() {
   const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDateOldest');
   const [showSongSortModal, setShowSongSortModal] = useState(false);
   const [showShowSortModal, setShowShowSortModal] = useState(false);
-  const [showSearchQuery, setShowSearchQuery] = useState('');
-  const [songSearchQuery, setSongSearchQuery] = useState('');
-  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, right: 0 });
-  const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, right: 0 });
-  const [isShowSearchExpanded, setIsShowSearchExpanded] = useState(false);
-  const [isSongSearchExpanded, setIsSongSearchExpanded] = useState(false);
-  const debouncedShowSearchQuery = useDebounce(showSearchQuery, 400);
-  const debouncedSongSearchQuery = useDebounce(songSearchQuery, 400);
-  const showSearchInputRef = useRef<TextInput>(null);
-  const songSearchInputRef = useRef<TextInput>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
+  const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, left: 0 });
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [filterTrayOpen, setFilterTrayOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const searchInputRef = useRef<TextInput>(null);
   const showSortButtonRef = useRef<View>(null);
   const songSortButtonRef = useRef<View>(null);
   const showsListRef = useRef<FlatList>(null);
@@ -149,27 +157,30 @@ export function FavoritesScreen() {
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
 
-  // Tab sliding animation
-  const [tabWidth, setTabWidth] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  // Header search bar animation (0 = collapsed, 1 = expanded)
+  const searchAnim = useRef(new Animated.Value(0)).current;
 
-  // Search expansion animations (for other buttons fading out)
-  const showSearchAnim = useRef(new Animated.Value(0)).current;
-  const songSearchAnim = useRef(new Animated.Value(0)).current;
-  // Input fade-in animations
-  const showInputAnim = useRef(new Animated.Value(0)).current;
-  const songInputAnim = useRef(new Animated.Value(0)).current;
-  // Close button fade-in animations
-  const showCloseButtonAnim = useRef(new Animated.Value(0)).current;
-  const songCloseButtonAnim = useRef(new Animated.Value(0)).current;
+  const avatarUrl = profileService.getAvatarUrl(authState.user);
 
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: activeTab === 'shows' ? 0 : 1,
-      duration: 150,
-      useNativeDriver: true,
-    }).start();
-  }, [activeTab, slideAnim]);
+  // Animated interpolations for header search
+  const searchBarWidth = searchAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [BUTTON_SIZE, SEARCH_BAR_FULL_WIDTH],
+    extrapolate: 'clamp',
+  });
+
+  // Create showsByYear structure from favoriteShows for the filter tray
+  const favoriteShowsByYear = useMemo(() => {
+    const byYear: ShowsByYear = {};
+    favoriteShows.forEach(show => {
+      const year = show.date.substring(0, 4);
+      if (!byYear[year]) {
+        byYear[year] = [];
+      }
+      byYear[year].push(show);
+    });
+    return byYear;
+  }, [favoriteShows]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -177,22 +188,50 @@ export function FavoritesScreen() {
     setRefreshing(false);
   }, [refreshFavorites]);
 
-  const handleTabContainerLayout = (event: LayoutChangeEvent) => {
-    const { width } = event.nativeEvent.layout;
-    // Account for padding (4px on each side)
-    setTabWidth((width - 8) / 2);
-  };
+  // Expand search bar
+  const handleSearchPress = useCallback(() => {
+    setIsSearchExpanded(true);
+    Animated.timing(searchAnim, {
+      toValue: 1,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Collapse search bar
+  const handleCloseSearch = useCallback(() => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setIsSearchExpanded(false);
+    Animated.timing(searchAnim, {
+      toValue: 0,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Close search bar when navigating away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (isSearchExpanded) {
+        handleCloseSearch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, isSearchExpanded, handleCloseSearch]);
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setShowSortButtonPosition({ top: pageY + height + 8, right: 20 });
+      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
       setShowShowSortModal(true);
     });
   };
 
   const handleSongSortPress = () => {
     songSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSongSortButtonPosition({ top: pageY + height + 8, right: 20 });
+      setSongSortButtonPosition({ top: pageY + height + 8, left: pageX });
       setShowSongSortModal(true);
     });
   };
@@ -215,13 +254,30 @@ export function FavoritesScreen() {
     }
   }, [activeTab]);
 
-  // Filter and sort songs based on search query and sort type
+  // Filter and sort songs based on search query, filters, and sort type
   const sortedAndFilteredSongs = useMemo(() => {
     let songs = [...favoriteSongs];
 
+    // Filter by selected years
+    if (appliedFilters.selectedYears.length > 0) {
+      songs = songs.filter(song => {
+        const songYear = song.showDate.substring(0, 4);
+        return appliedFilters.selectedYears.includes(songYear);
+      });
+    }
+
+    // Filter by selected series (official releases)
+    if (appliedFilters.selectedSeries.length > 0) {
+      const expandedSeries = expandDisplaySeries(appliedFilters.selectedSeries);
+      songs = songs.filter(song => {
+        const releases = getOfficialReleasesForDate(song.showDate);
+        return releases.some(r => expandedSeries.includes(r.series));
+      });
+    }
+
     // Filter by search query
-    if (debouncedSongSearchQuery.trim()) {
-      const lowerQuery = debouncedSongSearchQuery.toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const lowerQuery = debouncedSearchQuery.toLowerCase();
       songs = songs.filter(song => {
         // Search in track title
         if (song.trackTitle.toLowerCase().includes(lowerQuery)) return true;
@@ -266,15 +322,32 @@ export function FavoritesScreen() {
       default:
         return songs;
     }
-  }, [favoriteSongs, songSortType, debouncedSongSearchQuery]);
+  }, [favoriteSongs, songSortType, debouncedSearchQuery, appliedFilters]);
 
-  // Filter and sort shows based on search query and sort type
+  // Filter and sort shows based on search query, filters, and sort type
   const sortedAndFilteredShows = useMemo(() => {
     let shows = [...favoriteShows];
 
+    // Filter by selected years
+    if (appliedFilters.selectedYears.length > 0) {
+      shows = shows.filter(show => {
+        const showYear = show.date.substring(0, 4);
+        return appliedFilters.selectedYears.includes(showYear);
+      });
+    }
+
+    // Filter by selected series (official releases)
+    if (appliedFilters.selectedSeries.length > 0) {
+      const expandedSeries = expandDisplaySeries(appliedFilters.selectedSeries);
+      shows = shows.filter(show => {
+        const releases = getOfficialReleasesForDate(show.date);
+        return releases.some(r => expandedSeries.includes(r.series));
+      });
+    }
+
     // Filter by search query
-    if (debouncedShowSearchQuery.trim()) {
-      const lowerQuery = debouncedShowSearchQuery.toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const lowerQuery = debouncedSearchQuery.toLowerCase();
       shows = shows.filter(show => {
         // Search in title
         if (show.title?.toLowerCase().includes(lowerQuery)) return true;
@@ -326,7 +399,7 @@ export function FavoritesScreen() {
       default:
         return shows;
     }
-  }, [favoriteShows, showSortType, debouncedShowSearchQuery]);
+  }, [favoriteShows, showSortType, debouncedSearchQuery, appliedFilters]);
 
   const getSongSortLabel = (sortType: SongSortType): string => {
     switch (sortType) {
@@ -426,173 +499,18 @@ export function FavoritesScreen() {
     startShuffleSongs(shuffleSongs);
   }, [favoriteSongs, startShuffleSongs]);
 
-  // Search expand/collapse handlers
-  const handleShowSearchExpand = useCallback(() => {
-    // Reset animations
-    showInputAnim.setValue(0);
-    showCloseButtonAnim.setValue(0);
-
-    // Configure smooth layout animation for icon sliding
-    LayoutAnimation.configureNext({
-      duration: 300,
-      update: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.scaleXY,
-      },
-    });
-    setIsShowSearchExpanded(true);
-
-    // Fade out other buttons with easing
-    Animated.timing(showSearchAnim, {
-      toValue: 1,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-
-    // Fade in input after short delay
-    Animated.sequence([
-      Animated.delay(80),
-      Animated.timing(showInputAnim, {
-        toValue: 1,
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Fade in close button after expansion completes
-    Animated.sequence([
-      Animated.delay(250),
-      Animated.timing(showCloseButtonAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => showSearchInputRef.current?.focus(), 150);
-  }, [showSearchAnim, showInputAnim, showCloseButtonAnim]);
-
-  const handleShowSearchCollapse = useCallback(() => {
-    showSearchInputRef.current?.blur();
-
-    // Hide input and close button immediately
-    showInputAnim.setValue(0);
-    showCloseButtonAnim.setValue(0);
-
-    // Reset animation value first so buttons fade in from 0
-    showSearchAnim.setValue(1);
-
-    // Configure smooth layout animation for icon sliding back
-    LayoutAnimation.configureNext({
-      duration: 300,
-      update: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.scaleXY,
-      },
-    });
-    setIsShowSearchExpanded(false);
-    setShowSearchQuery('');
-
-    // Fade in other buttons after collapse animation progresses
-    Animated.sequence([
-      Animated.delay(200),
-      Animated.timing(showSearchAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [showSearchAnim, showInputAnim, showCloseButtonAnim]);
-
-  const handleSongSearchExpand = useCallback(() => {
-    // Reset animations
-    songInputAnim.setValue(0);
-    songCloseButtonAnim.setValue(0);
-
-    // Configure smooth layout animation for icon sliding
-    LayoutAnimation.configureNext({
-      duration: 300,
-      update: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.scaleXY,
-      },
-    });
-    setIsSongSearchExpanded(true);
-
-    // Fade out other buttons with easing
-    Animated.timing(songSearchAnim, {
-      toValue: 1,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-
-    // Fade in input after short delay
-    Animated.sequence([
-      Animated.delay(80),
-      Animated.timing(songInputAnim, {
-        toValue: 1,
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Fade in close button after expansion completes
-    Animated.sequence([
-      Animated.delay(250),
-      Animated.timing(songCloseButtonAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => songSearchInputRef.current?.focus(), 150);
-  }, [songSearchAnim, songInputAnim, songCloseButtonAnim]);
-
-  const handleSongSearchCollapse = useCallback(() => {
-    songSearchInputRef.current?.blur();
-
-    // Hide input and close button immediately
-    songInputAnim.setValue(0);
-    songCloseButtonAnim.setValue(0);
-
-    // Reset animation value first so buttons fade in from 0
-    songSearchAnim.setValue(1);
-
-    // Configure smooth layout animation for icon sliding back
-    LayoutAnimation.configureNext({
-      duration: 300,
-      update: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.scaleXY,
-      },
-    });
-    setIsSongSearchExpanded(false);
-    setSongSearchQuery('');
-
-    // Fade in other buttons after collapse animation progresses
-    Animated.sequence([
-      Animated.delay(200),
-      Animated.timing(songSearchAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [songSearchAnim, songInputAnim, songCloseButtonAnim]);
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <PageHeader title="Favorites" />
+        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+              <Text style={styles.headerTitle}>Favorites</Text>
+            </View>
+          </View>
+        </View>
         <SkeletonLoader variant="showCard" count={10} />
       </View>
     );
@@ -610,94 +528,34 @@ export function FavoritesScreen() {
       );
     }
 
-    // Animated styles for shows search
-    const showShuffleOpacity = showSearchAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-
     return (
       <View style={styles.tabContentContainer}>
         {/* Action Bar Section with Gradient */}
         <View style={styles.actionBarSection}>
-          <View style={styles.searchRow}>
-            {/* Search input - expands to take full row */}
+          <View style={styles.actionRow}>
+            {/* Sort label with arrow */}
+            <View ref={showSortButtonRef} collapsable={false}>
+              <TouchableOpacity
+                style={styles.sortLabelButton}
+                onPress={handleShowSortPress}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={getShowSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getShowSortLabel(showSortType)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Play button */}
             <TouchableOpacity
-              style={[
-                styles.searchPillButton,
-                isShowSearchExpanded && styles.searchInputContainerExpanded,
-              ]}
-              onPress={!isShowSearchExpanded ? handleShowSearchExpand : undefined}
-              activeOpacity={1}
+              style={styles.shuffleButton}
+              onPress={handleShuffleShows}
+              accessibilityRole="button"
+              accessibilityLabel="Shuffle all favorite shows"
+              accessibilityHint="Double tap to play your favorite shows in random order"
             >
-              <Ionicons
-                name="search"
-                size={20}
-                color={COLORS.textHint}
-                style={isShowSearchExpanded ? styles.searchIconExpanded : undefined}
-              />
-              {isShowSearchExpanded && (
-                <>
-                  <Animated.View style={{ opacity: showInputAnim, flex: 1 }}>
-                    <TextInput
-                      ref={showSearchInputRef}
-                      style={styles.searchInput}
-                      placeholder="Date, venue, location"
-                      placeholderTextColor={COLORS.textHint}
-                      value={showSearchQuery}
-                      onChangeText={setShowSearchQuery}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      selectionColor={COLORS.textPrimary}
-                    />
-                  </Animated.View>
-                  <Animated.View style={{ opacity: showCloseButtonAnim }}>
-                    <TouchableOpacity
-                      style={styles.closeSearchButtonInline}
-                      onPress={handleShowSearchCollapse}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-                    </TouchableOpacity>
-                  </Animated.View>
-                </>
-              )}
+              <Ionicons name="shuffle" size={16} color={COLORS.accent} />
+              <Text style={styles.shuffleButtonText}>Play</Text>
             </TouchableOpacity>
-
-            {/* Sort button - fades out */}
-            {!isShowSearchExpanded && (
-              <Animated.View style={{ opacity: showShuffleOpacity, flex: 1 }}>
-                <View ref={showSortButtonRef} collapsable={false} style={{ flex: 1 }}>
-                  <TouchableOpacity
-                    style={styles.sortPillButton}
-                    onPress={handleShowSortPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.sortPillButtonText}>
-                      {getShowSortLabel(showSortType)}
-                    </Text>
-                    <Ionicons name={getShowSortIcon(showSortType)} size={18} color={COLORS.accent} />
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            )}
-
-            {/* Shuffle button - fades out */}
-            {!isShowSearchExpanded && (
-              <Animated.View style={{ opacity: showShuffleOpacity }}>
-                <TouchableOpacity
-                  style={styles.shuffleButton}
-                  onPress={handleShuffleShows}
-                  accessibilityRole="button"
-                  accessibilityLabel="Shuffle all favorite shows"
-                  accessibilityHint="Double tap to play your favorite shows in random order"
-                >
-                  <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
-                  <Text style={styles.shuffleButtonText}>Shuffle</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
           </View>
 
           {/* Gradient fade overlay */}
@@ -709,10 +567,10 @@ export function FavoritesScreen() {
           />
         </View>
 
-        {sortedAndFilteredShows.length === 0 && debouncedShowSearchQuery.trim() ? (
+        {sortedAndFilteredShows.length === 0 && debouncedSearchQuery.trim() ? (
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No shows found matching "{debouncedShowSearchQuery}"</Text>
+              <Text style={styles.emptyText}>No shows found matching "{debouncedSearchQuery}"</Text>
             </View>
           </TouchableWithoutFeedback>
         ) : (
@@ -758,95 +616,35 @@ export function FavoritesScreen() {
       );
     }
 
-    // Animated styles for songs search
-    const songShuffleOpacity = songSearchAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 0],
-      extrapolate: 'clamp',
-    });
-
     return (
       <View style={styles.tabContentContainer}>
         {/* Action Bar Section with Gradient */}
         <View style={styles.actionBarSection}>
-          <View style={styles.searchRow}>
-            {/* Search input - expands to take full row */}
+          <View style={styles.actionRow}>
+            {/* Sort label with arrow */}
+            <View ref={songSortButtonRef} collapsable={false}>
+              <TouchableOpacity
+                style={styles.sortLabelButton}
+                onPress={handleSongSortPress}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={getSongSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getSongSortLabel(songSortType)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Play button */}
             <TouchableOpacity
-              style={[
-                styles.searchPillButton,
-                isSongSearchExpanded && styles.searchInputContainerExpanded,
-              ]}
-              onPress={!isSongSearchExpanded ? handleSongSearchExpand : undefined}
-              activeOpacity={1}
+              style={styles.shuffleButton}
+              onPress={handleShuffleSongs}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Shuffle all favorite songs"
+              accessibilityHint="Double tap to play your favorite songs in random order"
             >
-              <Ionicons
-                name="search"
-                size={20}
-                color={COLORS.textHint}
-                style={isSongSearchExpanded ? styles.searchIconExpanded : undefined}
-              />
-              {isSongSearchExpanded && (
-                <>
-                  <Animated.View style={{ opacity: songInputAnim, flex: 1 }}>
-                    <TextInput
-                      ref={songSearchInputRef}
-                      style={styles.searchInput}
-                      placeholder="Song, date, venue"
-                      placeholderTextColor={COLORS.textHint}
-                      value={songSearchQuery}
-                      onChangeText={setSongSearchQuery}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      selectionColor={COLORS.textPrimary}
-                    />
-                  </Animated.View>
-                  <Animated.View style={{ opacity: songCloseButtonAnim }}>
-                    <TouchableOpacity
-                      style={styles.closeSearchButtonInline}
-                      onPress={handleSongSearchCollapse}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-                    </TouchableOpacity>
-                  </Animated.View>
-                </>
-              )}
+              <Ionicons name="shuffle" size={16} color={COLORS.accent} />
+              <Text style={styles.shuffleButtonText}>Play</Text>
             </TouchableOpacity>
-
-            {/* Sort button - fades out */}
-            {!isSongSearchExpanded && (
-              <Animated.View style={{ opacity: songShuffleOpacity, flex: 1 }}>
-                <View ref={songSortButtonRef} collapsable={false} style={{ flex: 1 }}>
-                  <TouchableOpacity
-                    style={styles.sortPillButton}
-                    onPress={handleSongSortPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.sortPillButtonText}>
-                      {getSongSortLabel(songSortType)}
-                    </Text>
-                    <Ionicons name={getSongSortIcon(songSortType)} size={18} color={COLORS.accent} />
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            )}
-
-            {/* Shuffle button - fades out */}
-            {!isSongSearchExpanded && (
-              <Animated.View style={{ opacity: songShuffleOpacity }}>
-                <TouchableOpacity
-                  style={styles.shuffleButton}
-                  onPress={handleShuffleSongs}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Shuffle all favorite songs"
-                  accessibilityHint="Double tap to play your favorite songs in random order"
-                >
-                  <Ionicons name="shuffle" size={20} color={COLORS.textPrimary} />
-                  <Text style={styles.shuffleButtonText}>Shuffle</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
           </View>
 
           {/* Gradient fade overlay */}
@@ -858,10 +656,10 @@ export function FavoritesScreen() {
           />
         </View>
 
-        {sortedAndFilteredSongs.length === 0 && debouncedSongSearchQuery.trim() ? (
+        {sortedAndFilteredSongs.length === 0 && debouncedSearchQuery.trim() ? (
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No songs found matching "{debouncedSongSearchQuery}"</Text>
+              <Text style={styles.emptyText}>No songs found matching "{debouncedSearchQuery}"</Text>
             </View>
           </TouchableWithoutFeedback>
         ) : (
@@ -903,57 +701,107 @@ export function FavoritesScreen() {
   return (
     <View style={styles.container}>
       {/* Header Section with Gradient Fade */}
-      <View style={styles.headerSection}>
-        {/* Page Header */}
-        <PageHeader title="Favorites" />
+      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+        {/* Custom Header: Avatar + Title + Search + Filter */}
+        <View style={styles.header}>
+          {/* Left side: Avatar and Title (gets covered by search bar) */}
+          <View style={styles.headerLeft}>
+            <Image
+              source={authState.isAuthenticated && avatarUrl
+                ? { uri: avatarUrl }
+                : LOGGED_OUT_PROFILE
+              }
+              style={styles.avatar}
+            />
+            <Text style={styles.headerTitle}>Favorites</Text>
+          </View>
+
+          {/* Right side: Search and Filter buttons */}
+          <View style={styles.headerRight}>
+            {/* Animated Search Bar / Button */}
+            <TouchableOpacity
+              activeOpacity={isSearchExpanded ? 1 : 0.7}
+              onPress={isSearchExpanded ? undefined : handleSearchPress}
+              disabled={isSearchExpanded}
+            >
+              <Animated.View style={[styles.searchContainer, { width: searchBarWidth }]}>
+                <View style={styles.searchInputWrapper}>
+                  <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
+                  {isSearchExpanded && (
+                    <View style={styles.searchExpandedContent}>
+                      <View style={styles.searchIconSpacer} />
+                      <TextInput
+                        ref={searchInputRef}
+                        style={styles.searchInput}
+                        placeholder="Search favorites"
+                        placeholderTextColor={COLORS.textHint}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoFocus
+                        selectionColor={COLORS.textPrimary}
+                      />
+                      <TouchableOpacity
+                        style={styles.closeSearchButton}
+                        onPress={handleCloseSearch}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Filter button - always visible */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                hasActiveFilters(appliedFilters) && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterTrayOpen(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Tab Navigation */}
-        <View style={styles.tabContainer} onLayout={handleTabContainerLayout} accessibilityRole="tablist">
-          {/* Sliding active indicator */}
-          <Animated.View
-            style={[
-              styles.tabSlider,
-              {
-                width: tabWidth,
-                transform: [
-                  {
-                    translateX: slideAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, tabWidth],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => setActiveTab('shows')}
-            activeOpacity={0.7}
-            accessibilityRole="tab"
-            accessibilityLabel="Shows tab"
-            accessibilityState={{ selected: activeTab === 'shows' }}
-            accessibilityHint="Double tap to view favorite shows"
-          >
-            <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-              Shows
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => setActiveTab('songs')}
-            activeOpacity={0.7}
-            accessibilityRole="tab"
-            accessibilityLabel="Songs tab"
-            accessibilityState={{ selected: activeTab === 'songs' }}
-            accessibilityHint="Double tap to view favorite songs"
-          >
-            <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
-              Songs
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.tabContainer} accessibilityRole="tablist">
+          {(['shows', 'songs'] as const).map((tab) => (
+            <TouchableOpacity
+              key={`${tab}-${activeTab}`}
+              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityLabel={`${tab === 'shows' ? 'Shows' : 'Songs'} tab`}
+              accessibilityState={{ selected: activeTab === tab }}
+              accessibilityHint={`Double tap to view favorite ${tab}`}
+            >
+              <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
+                {tab === 'shows' ? 'Shows' : 'Songs'}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
+
+      {/* Filter Tray Modal */}
+      <ShowsFilterTray
+        isOpen={filterTrayOpen}
+        onClose={() => setFilterTrayOpen(false)}
+        appliedFilters={appliedFilters}
+        onApply={setAppliedFilters}
+        showsByYear={favoriteShowsByYear}
+      />
 
       {/* Tab Content */}
       {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
@@ -972,7 +820,7 @@ export function FavoritesScreen() {
           <View
             style={[
               styles.dropdownContainer,
-              { top: songSortButtonPosition.top, right: songSortButtonPosition.right }
+              { top: songSortButtonPosition.top, left: songSortButtonPosition.left }
             ]}
           >
             <TouchableOpacity
@@ -1085,7 +933,7 @@ export function FavoritesScreen() {
           <View
             style={[
               styles.dropdownContainer,
-              { top: showSortButtonPosition.top, right: showSortButtonPosition.right }
+              { top: showSortButtonPosition.top, left: showSortButtonPosition.left }
             ]}
           >
             <TouchableOpacity
@@ -1196,6 +1044,95 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: COLORS.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingBottom: SPACING.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    position: 'absolute',
+    left: HORIZONTAL_PADDING,
+    top: 0,
+    bottom: SPACING.lg,
+  },
+  avatar: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.heading2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: BUTTON_GAP,
+    marginLeft: 'auto',
+    zIndex: 10,
+  },
+  searchContainer: {
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+  },
+  searchButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    height: BUTTON_SIZE,
+    overflow: 'hidden',
+  },
+  searchIconCentered: {
+    position: 'absolute',
+    left: 10,
+  },
+  searchExpandedContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: SPACING.sm,
+    paddingRight: SPACING.xs,
+    gap: 10,
+  },
+  searchIconSpacer: {
+    width: 20,
+  },
+  searchInput: {
+    flex: 1,
+    ...TYPOGRAPHY.body,
+  },
+  closeSearchButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
   headerGradient: {
     position: 'absolute',
     bottom: -30,
@@ -1215,39 +1152,52 @@ const styles = StyleSheet.create({
     right: 0,
     height: 30,
   },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.md,
+  },
+  sortLabelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  sortLabelText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+  },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: SPACING.xl,
-    marginTop: 0,
-    marginBottom: 0,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xxl,
-    padding: SPACING.xs,
-    height: 56,
-  },
-  tabSlider: {
-    position: 'absolute',
-    top: SPACING.xs,
-    left: SPACING.xs,
-    bottom: SPACING.xs,
-    backgroundColor: COLORS.tabSliderActive,
-    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
   },
   tab: {
     flex: 1,
-    height: 48,
+    paddingTop: 6,
+    paddingBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: RADIUS.xl,
-    zIndex: 1,
   },
-  tabText: {
-    ...TYPOGRAPHY.heading4,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+  activeTab: {
+    backgroundColor: COLORS.accent,
+  },
+  inactiveTab: {
+    backgroundColor: COLORS.cardBackground,
   },
   activeTabText: {
+    fontSize: 20,
+    fontFamily: 'FamiljenGrotesk-SemiBold',
     color: COLORS.textPrimary,
+  },
+  inactiveTabText: {
+    fontSize: 20,
+    fontFamily: 'FamiljenGrotesk-SemiBold',
+    color: COLORS.textSecondary,
   },
   centerContainer: {
     flex: 1,
@@ -1278,7 +1228,7 @@ const styles = StyleSheet.create({
     paddingBottom: 180,
   },
   songItem: {
-    paddingVertical: SPACING.md,
+    paddingVertical: 8,
     paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
   },
@@ -1312,110 +1262,16 @@ const styles = StyleSheet.create({
   tabContentContainer: {
     flex: 1,
   },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
-    gap: SPACING.sm,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
-    height: 48,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchIconExpanded: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    ...TYPOGRAPHY.body,
-  },
-  clearButton: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.sm,
-  },
-  sortPillButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
-    height: 48,
-  },
-  sortPillButtonText: {
-    ...TYPOGRAPHY.labelLarge,
-    fontWeight: '500',
-    color: COLORS.textHint,
-  },
   shuffleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
-    height: 48,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   shuffleButtonText: {
-    ...TYPOGRAPHY.labelLarge,
+    ...TYPOGRAPHY.bodySmall,
     fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  searchPillButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.full,
-    width: 48,
-    height: 48,
-  },
-  searchInputContainerExpanded: {
-    flex: 1,
-    width: 'auto',
-    borderRadius: RADIUS.xl,
-    paddingLeft: 14, // Match icon position from collapsed state (48/2 - 20/2 = 14)
-    paddingRight: SPACING.lg,
-  },
-  closeSearchButton: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeSearchButtonInline: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.xs,
-  },
-  songsTabContainer: {
-    flex: 1,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    backgroundColor: COLORS.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    gap: SPACING.sm,
-  },
-  sortButtonText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
-    flex: 1,
+    color: COLORS.accent,
   },
   dropdownOverlay: {
     flex: 1,

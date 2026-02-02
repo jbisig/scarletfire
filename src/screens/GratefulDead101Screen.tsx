@@ -65,7 +65,7 @@ export function GratefulDead101Screen() {
     return (
       <View style={styles.container}>
         <View style={styles.headerSection}>
-          <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
@@ -94,7 +94,7 @@ export function GratefulDead101Screen() {
     <View style={styles.container}>
       {/* Header Section with Gradient Fade */}
       <View style={styles.headerSection}>
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}

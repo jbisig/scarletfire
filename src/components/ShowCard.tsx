@@ -136,7 +136,7 @@ ShowCard.displayName = 'ShowCard';
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: SPACING.md,
+    paddingVertical: 8,
     paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
   },

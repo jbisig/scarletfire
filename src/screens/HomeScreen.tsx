@@ -7,17 +7,22 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
+  Animated,
+  Easing,
+  Dimensions,
+  Image,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '../services/profileService';
 import { ShowCard } from '../components/ShowCard';
-import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters, getFilterCount } from '../components/ShowsFilterTray';
-import { PageHeader } from '../components/PageHeader';
-import { SearchBar } from '../components/SearchBar';
-import { LoadingState, ErrorState, NoResultsState } from '../components/StateViews';
+import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
+import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -25,6 +30,18 @@ import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+
+// Default profile image for logged out users
+const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
+
+// Animation constants
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const BUTTON_SIZE = 40;
+const BUTTON_GAP = 10;
+const HORIZONTAL_PADDING = SPACING.xl;
+// Full width = screen - padding on both sides - filter button - gap
+const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - BUTTON_SIZE - BUTTON_GAP;
+const ANIMATION_DURATION = 300;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -112,11 +129,60 @@ export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
+  const searchInputRef = useRef<TextInput>(null);
   const { showsByYear, isLoading, error } = useShows();
+  const { state: authState } = useAuth();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
+  // Search bar animation state
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchAnim = useRef(new Animated.Value(0)).current; // 0 = collapsed, 1 = expanded
+
+  const avatarUrl = profileService.getAvatarUrl(authState.user);
+
+  // Animated interpolations
+  const searchBarWidth = searchAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [BUTTON_SIZE, SEARCH_BAR_FULL_WIDTH],
+    extrapolate: 'clamp',
+  });
+
+  // Expand search bar
+  const handleSearchPress = useCallback(() => {
+    setIsSearchExpanded(true);
+    Animated.timing(searchAnim, {
+      toValue: 1,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Collapse search bar
+  const handleCloseSearch = useCallback(() => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setIsSearchExpanded(false);
+    Animated.timing(searchAnim, {
+      toValue: 0,
+      duration: ANIMATION_DURATION,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [searchAnim]);
+
+  // Close search bar when navigating away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (isSearchExpanded) {
+        handleCloseSearch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, isSearchExpanded, handleCloseSearch]);
 
   // Memoize available years - only recalculate when showsByYear changes
   const availableYears = useMemo(() => {
@@ -194,7 +260,10 @@ export function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <PageHeader title="Shows" />
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+          <Text style={styles.headerTitle}>Shows</Text>
+        </View>
         <SkeletonLoader variant="showCard" count={10} />
       </View>
     );
@@ -207,41 +276,75 @@ export function HomeScreen() {
   return (
     <View style={styles.container}>
       {/* Header Section with Gradient Fade */}
-      <View style={styles.headerSection}>
-        {/* Page Header with Profile */}
-        <PageHeader title="Shows" />
-
-        {/* Search and Filter Row */}
-        <View style={styles.searchFilterRow}>
-          <View style={styles.searchBarWrapper}>
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Date, venue, location"
+      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.header}>
+          {/* Left side: Avatar and Title (gets covered by search bar) */}
+          <View style={styles.headerLeft}>
+            <Image
+              source={authState.isAuthenticated && avatarUrl
+                ? { uri: avatarUrl }
+                : LOGGED_OUT_PROFILE
+              }
+              style={styles.avatar}
             />
+            <Text style={styles.headerTitle}>Shows</Text>
           </View>
 
-          {/* Filter Button */}
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              hasActiveFilters(appliedFilters) && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterTrayOpen(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="options-outline"
-              size={18}
-              color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
-            />
-            <Text style={[
-              styles.filterButtonText,
-              hasActiveFilters(appliedFilters) && styles.filterButtonTextActive,
-            ]}>
-              {hasActiveFilters(appliedFilters) ? `${getFilterCount(appliedFilters)}` : 'Filter'}
-            </Text>
-          </TouchableOpacity>
+          {/* Right side: Search and Filter buttons */}
+          <View style={styles.headerRight}>
+            {/* Animated Search Bar / Button */}
+            <TouchableOpacity
+              activeOpacity={isSearchExpanded ? 1 : 0.7}
+              onPress={isSearchExpanded ? undefined : handleSearchPress}
+              disabled={isSearchExpanded}
+            >
+              <Animated.View style={[styles.searchContainer, { width: searchBarWidth }]}>
+                <View style={styles.searchInputWrapper}>
+                  <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
+                  {isSearchExpanded && (
+                    <View style={styles.searchExpandedContent}>
+                      <View style={styles.searchIconSpacer} />
+                      <TextInput
+                        ref={searchInputRef}
+                        style={styles.searchInput}
+                        placeholder="Date, venue, location, release"
+                        placeholderTextColor={COLORS.textHint}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoFocus
+                        selectionColor={COLORS.textPrimary}
+                      />
+                      <TouchableOpacity
+                        style={styles.closeSearchButton}
+                        onPress={handleCloseSearch}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Filter Button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                hasActiveFilters(appliedFilters) && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterTrayOpen(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Gradient fade overlay */}
@@ -304,6 +407,84 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: COLORS.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingBottom: SPACING.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    position: 'absolute',
+    left: HORIZONTAL_PADDING,
+    top: 0,
+    bottom: SPACING.lg,
+  },
+  avatar: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.heading2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: BUTTON_GAP,
+    marginLeft: 'auto',
+    zIndex: 10,
+  },
+  searchContainer: {
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+  },
+  searchButton: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+    height: BUTTON_SIZE,
+    overflow: 'hidden',
+  },
+  searchIconCentered: {
+    position: 'absolute',
+    left: 10,
+  },
+  searchExpandedContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: SPACING.sm,
+    paddingRight: SPACING.xs,
+    gap: 10,
+  },
+  searchIconSpacer: {
+    width: 20,
+  },
+  searchInput: {
+    flex: 1,
+    ...TYPOGRAPHY.body,
+  },
+  closeSearchButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
   headerGradient: {
     position: 'absolute',
     bottom: -30,
@@ -311,38 +492,19 @@ const styles = StyleSheet.create({
     right: 0,
     height: 30,
   },
-  searchFilterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.md,
-    gap: 10,
-  },
-  searchBarWrapper: {
-    flex: 1,
-  },
   listContent: {
     paddingVertical: SPACING.sm,
     paddingBottom: 180,
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 14,
-    gap: SPACING.sm - 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
-  },
-  filterButtonText: {
-    ...TYPOGRAPHY.labelLarge,
-    fontWeight: '500',
-    color: COLORS.textHint,
-  },
-  filterButtonTextActive: {
-    color: COLORS.textPrimary,
   },
 });

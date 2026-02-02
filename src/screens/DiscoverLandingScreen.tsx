@@ -184,7 +184,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                     )}
                   </View>
                   <Text style={styles.cardDescription}>
-                    {playerState.isRadioLoading ? 'Loading...' : 'Non-stop legendary performances.'}
+                    {playerState.isRadioLoading ? 'Loading...' : 'The music never stops.'}
                   </Text>
                 </LinearGradient>
               </ImageBackground>
@@ -283,13 +283,15 @@ const styles = StyleSheet.create({
   },
   cardGradient: {
     flex: 1,
-    padding: SPACING.xxxl,
+    padding: SPACING.xxl,
     justifyContent: 'center',
     minHeight: 180,
   },
   smallCardGradient: {
     flex: 1,
-    padding: SPACING.xxxl,
+    paddingTop: 20,
+    paddingBottom: SPACING.xxl,
+    paddingHorizontal: SPACING.xxl,
     justifyContent: 'center',
     minHeight: 120,
   },
@@ -341,7 +343,6 @@ const styles = StyleSheet.create({
   radioTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
   },
   radioIcon: {
     marginRight: SPACING.sm,
