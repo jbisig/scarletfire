@@ -7,8 +7,6 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
-import { ClassicsScreen } from '../screens/ClassicsScreen';
-import { GratefulDead101Screen } from '../screens/GratefulDead101Screen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -27,8 +25,6 @@ export type RootStackParamList = {
   ShowDetail: { identifier: string };
   Favorites: undefined;
   DiscoverLanding: undefined;
-  Classics: undefined;
-  GratefulDead101: undefined;
   SongList: undefined;
   SongPerformances: {
     songTitle: string;
@@ -171,16 +167,6 @@ function DiscoverStack() {
       <Stack.Screen
         name="DiscoverLanding"
         component={DiscoverLandingScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Classics"
-        component={ClassicsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="GratefulDead101"
-        component={GratefulDead101Screen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
