@@ -570,7 +570,7 @@ export function FavoritesScreen() {
 
           {/* Gradient fade overlay */}
           <LinearGradient
-            colors={[COLORS.background, 'transparent']}
+            colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
             style={styles.actionBarGradient}
             pointerEvents="none"
@@ -659,7 +659,7 @@ export function FavoritesScreen() {
 
           {/* Gradient fade overlay */}
           <LinearGradient
-            colors={[COLORS.background, 'transparent']}
+            colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
             style={styles.actionBarGradient}
             pointerEvents="none"
