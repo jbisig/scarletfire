@@ -59,7 +59,7 @@ TrackItem.displayName = 'TrackItem';
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingVertical: SPACING.lg,
+    paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
     alignItems: 'baseline',
   },

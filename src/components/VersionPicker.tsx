@@ -12,6 +12,14 @@ interface VersionPickerProps {
   onVersionChange: (identifier: string) => void;
 }
 
+// Format taper/transferrer attribution line
+const formatAttribution = (version: RecordingVersion): string | null => {
+  const parts: string[] = [];
+  if (version.taper) parts.push(`Taper: ${version.taper}`);
+  if (version.transferrer) parts.push(`Transfer: ${version.transferrer}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+};
+
 export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -25,19 +33,28 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
 
   if (!currentVersion) return null;
 
+  const currentAttribution = formatAttribution(currentVersion);
+
   return (
     <View style={styles.container}>
       {/* Current Selection - Pill Style */}
       <TouchableOpacity
-        style={styles.selector}
+        style={[styles.selector, currentAttribution && styles.selectorWithAttribution]}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.sourceName}>{currentVersion.source}</Text>
-        <Text style={styles.downloads}>
-          {formatDownloads(currentVersion.downloads)} downloads
-        </Text>
-        <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+        <View style={styles.selectorTopRow}>
+          <Text style={styles.sourceName}>{currentVersion.source}</Text>
+          <Text style={styles.downloads}>
+            {formatDownloads(currentVersion.downloads)} downloads
+          </Text>
+          <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+        </View>
+        {currentAttribution && (
+          <Text style={styles.attribution} numberOfLines={1}>
+            {currentAttribution}
+          </Text>
+        )}
       </TouchableOpacity>
 
       {/* Fullscreen Modal */}
@@ -66,6 +83,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           >
             {versions.map((version, index) => {
               const isSelected = version.identifier === selectedVersion;
+              const attribution = formatAttribution(version);
               return (
                 <TouchableOpacity
                   key={version.identifier}
@@ -83,6 +101,11 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                     <Text style={styles.optionDownloads}>
                       {formatDownloads(version.downloads)} downloads
                     </Text>
+                    {attribution && (
+                      <Text style={styles.optionAttribution} numberOfLines={2}>
+                        {attribution}
+                      </Text>
+                    )}
                   </View>
                   {isSelected && (
                     <Ionicons name="checkmark" size={24} color={COLORS.accent} />
@@ -102,12 +125,17 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   selector: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.lg,
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
+  },
+  selectorWithAttribution: {
+    paddingVertical: 12,
+  },
+  selectorTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.md,
   },
   sourceName: {
@@ -120,6 +148,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
     color: COLORS.textSecondary,
+  },
+  attribution: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   // Fullscreen modal styles
   modalContainer: {
@@ -167,5 +200,10 @@ const styles = StyleSheet.create({
   optionDownloads: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
+  },
+  optionAttribution: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+    marginTop: 4,
   },
 });

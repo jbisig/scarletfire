@@ -105,7 +105,7 @@ export const TYPOGRAPHY = {
     color: COLORS.textPrimary,
   },
   heading2: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700' as const,
     fontFamily: FONTS.primary,
     color: COLORS.textPrimary,
@@ -125,13 +125,13 @@ export const TYPOGRAPHY = {
 
   // Body text
   bodyLarge: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '400' as const,
     fontFamily: FONTS.secondary,
     color: COLORS.textPrimary,
   },
   body: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '400' as const,
     fontFamily: FONTS.secondary,
     color: COLORS.textPrimary,
