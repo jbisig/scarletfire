@@ -29,7 +29,7 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="disc" size={12} color={COLORS.accent} />
+        <Ionicons name="disc" size={10} color={COLORS.textPrimary} />
         <Text style={styles.compactText} numberOfLines={1}>{displayText}</Text>
       </TouchableOpacity>
     );
@@ -41,7 +41,7 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Ionicons name="disc" size={14} color={COLORS.accent} />
+      <Ionicons name="disc" size={12} color={COLORS.textPrimary} />
       <Text style={styles.text} numberOfLines={1}>{displayText}</Text>
     </TouchableOpacity>
   );
@@ -51,33 +51,32 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accentTransparent,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs + 1,
     borderRadius: RADIUS.full,
-    gap: SPACING.sm - 2,
+    gap: SPACING.xs,
   },
   text: {
-    ...TYPOGRAPHY.labelSmall,
-    fontSize: 13,
+    ...TYPOGRAPHY.captionSmall,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.textPrimary,
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accentTransparent,
-    paddingHorizontal: 10,
-    paddingVertical: SPACING.sm - 2,
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: RADIUS.full,
-    gap: SPACING.xs,
+    gap: 3,
     flexShrink: 1,
     minWidth: 0,
   },
   compactText: {
-    ...TYPOGRAPHY.labelSmall,
+    ...TYPOGRAPHY.captionSmall,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.textPrimary,
     flexShrink: 1,
   },
 });

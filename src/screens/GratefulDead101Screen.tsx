@@ -79,8 +79,8 @@ export function GratefulDead101Screen() {
             </Text>
           </View>
           <LinearGradient
-            colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
-            locations={[0, 0.3, 0.7, 1]}
+            colors={[COLORS.background, 'transparent']}
+            locations={[0, 1]}
             style={styles.headerGradient}
             pointerEvents="none"
           />
@@ -115,8 +115,8 @@ export function GratefulDead101Screen() {
 
         {/* Gradient fade overlay */}
         <LinearGradient
-          colors={[COLORS.background, `${COLORS.background}B3`, `${COLORS.background}4D`, 'transparent']}
-          locations={[0, 0.3, 0.7, 1]}
+          colors={[COLORS.background, 'transparent']}
+          locations={[0, 1]}
           style={styles.headerGradient}
           pointerEvents="none"
         />

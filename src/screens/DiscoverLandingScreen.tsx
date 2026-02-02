@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,69 +13,49 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
+import { ActionPillButton } from '../components/ActionPillButton';
+import { ShowCarousel } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
+import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
-import { logger } from '../utils/logger';
+
+const SOTD_BACKGROUND = require('../../assets/images/carousel-bg-1.png');
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
-// Background images for the cards
-const SHOW_OF_THE_DAY_IMAGE = require('../../assets/images/from-stage.jpg');
-const CLASSIC_SHOWS_IMAGE = require('../../assets/images/red-rocks.jpg');
-const GD_101_IMAGE = require('../../assets/images/wall-of-sound.jpg');
-const RADIO_IMAGE = require('../../assets/images/radio.webp');
-
 export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen() {
   const navigation = useNavigation<DiscoverLandingNavigationProp>();
-  const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
-  const { getShowDetail, showDetailsCache } = useShows();
+  const { playCounts } = usePlayCounts();
+  const { showsByYear } = useShows();
   const { show, isLoading, refreshShow } = useShowOfTheDay();
-  const { startRadio, isRadioMode, state: playerState } = usePlayer();
-  const [showPlayCount, setShowPlayCount] = useState<number>(0);
-
-  const handleRadioPress = async () => {
-    await startRadio();
-  };
+  const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
+  const { favoriteShows, favoriteSongs } = useFavorites();
 
   // Prefetch radio tracks in the background for instant start
   useEffect(() => {
     radioService.prefetch(10);
   }, []);
 
-  // Calculate play count when show changes
-  useEffect(() => {
-    if (!show || !hasShowBeenPlayed(show.primaryIdentifier)) {
-      setShowPlayCount(0);
-      return;
+  const handleRadioPress = async () => {
+    await startRadio();
+  };
+
+  const handleSavedPress = async () => {
+    if (favoriteSongs.length > 0) {
+      await startShuffleSongs(favoriteSongs);
+    } else if (favoriteShows.length > 0) {
+      await startShuffleShows(favoriteShows);
     }
-
-    const cachedDetails = showDetailsCache.get(show.primaryIdentifier);
-    if (cachedDetails) {
-      const count = getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
-      setShowPlayCount(count);
-      return;
-    }
-
-    const fetchPlayCount = async () => {
-      try {
-        const details = await getShowDetail(show.primaryIdentifier);
-        const count = getShowPlayCount(show.primaryIdentifier, details.tracks.length);
-        setShowPlayCount(count);
-      } catch (error) {
-        logger.api.error('Failed to fetch show details for play count:', error);
-        setShowPlayCount(0);
-      }
-    };
-
-    fetchPlayCount();
-  }, [show, hasShowBeenPlayed, showDetailsCache, getShowDetail, getShowPlayCount]);
+  };
 
   const handleViewShow = () => {
     if (show) {
@@ -87,164 +67,192 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
     refreshShow();
   };
 
+  const handleShowPress = useCallback((selectedShow: GratefulDeadShow) => {
+    navigation.navigate('ShowDetail', { identifier: selectedShow.primaryIdentifier });
+  }, [navigation]);
+
+  // Jump Back In: Recently played shows sorted by most recent
+  const recentlyPlayedShows = useMemo(() => {
+    // Get unique show identifiers with most recent lastPlayedAt
+    const showTimestamps = new Map<string, number>();
+    playCounts.forEach(pc => {
+      const existing = showTimestamps.get(pc.showIdentifier);
+      if (!existing || pc.lastPlayedAt > existing) {
+        showTimestamps.set(pc.showIdentifier, pc.lastPlayedAt);
+      }
+    });
+
+    // Sort by most recent and take top 10
+    const sortedIdentifiers = Array.from(showTimestamps.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([identifier]) => identifier);
+
+    // Look up full show objects from showsByYear
+    const shows: GratefulDeadShow[] = [];
+    for (const identifier of sortedIdentifiers) {
+      for (const yearShows of Object.values(showsByYear)) {
+        const found = yearShows.find(s => s.primaryIdentifier === identifier);
+        if (found) {
+          shows.push(found);
+          break;
+        }
+      }
+    }
+
+    return shows;
+  }, [playCounts, showsByYear]);
+
+  // Classic Shows: Filter shows with classicTier, sorted by rating (tier 1 = best)
+  const classicShows = useMemo(() => {
+    const allClassics: GratefulDeadShow[] = [];
+    for (const yearShows of Object.values(showsByYear)) {
+      for (const s of yearShows) {
+        if (s.classicTier) {
+          allClassics.push(s);
+        }
+      }
+    }
+    // Sort by tier (1 is best), then by date
+    return allClassics
+      .sort((a, b) => {
+        const tierDiff = (a.classicTier || 4) - (b.classicTier || 4);
+        if (tierDiff !== 0) return tierDiff;
+        return a.date.localeCompare(b.date);
+      })
+      .slice(0, 15);
+  }, [showsByYear]);
+
+  // GD 101: Shows from the curated beginner list
+  const gd101Shows = useMemo(() => {
+    const shows: GratefulDeadShow[] = [];
+    for (const date of GRATEFUL_DEAD_101_DATES) {
+      for (const yearShows of Object.values(showsByYear)) {
+        // Compare just the date portion (handles ISO format with timestamp)
+        const found = yearShows.find(s => s.date.substring(0, 10) === date);
+        if (found) {
+          shows.push(found);
+          break;
+        }
+      }
+    }
+    return shows;
+  }, [showsByYear]);
+
+  // Determine which button label to use and whether to show it
+  const hasSavedContent = favoriteSongs.length > 0 || favoriteShows.length > 0;
+  const savedButtonLabel = favoriteSongs.length > 0 ? 'Saved Songs' : 'Shuffle Shows';
+
   return (
     <View style={styles.container}>
       <PageHeader title="Discover" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
-          <View style={styles.cardsContainer}>
-            {/* Show of the Day Card */}
+        {/* Show of the Day Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Show of the Day</Text>
             <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleViewShow}
-              disabled={isLoading || !show}
+              onPress={handlePickAnother}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
-              accessibilityLabel={show ? `Show of the Day: ${getVenueFromShow(show)}, ${formatDate(show.date)}` : 'Show of the Day: Loading'}
-              accessibilityHint="Double tap to view this show"
-              accessibilityState={{ disabled: isLoading || !show }}
+              accessibilityLabel="Pick another show"
+              accessibilityHint="Double tap to get a different random show"
             >
-              <ImageBackground
-                source={SHOW_OF_THE_DAY_IMAGE}
-                style={styles.imageCard}
-                imageStyle={styles.imageCardBackground}
-              >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.cardGradient}
-                >
-                  {/* Header row with title and refresh button */}
-                  <View style={styles.sotdHeaderRow}>
-                    <Text style={styles.cardTitle}>Show of the Day</Text>
-                    <TouchableOpacity
-                      onPress={handlePickAnother}
-                      activeOpacity={0.7}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      accessibilityRole="button"
-                      accessibilityLabel="Pick another show"
-                      accessibilityHint="Double tap to get a different random show"
-                    >
-                      <Ionicons name="refresh" size={28} color={COLORS.accent} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {isLoading ? (
-                    <View style={styles.sotdLoading}>
-                      <ActivityIndicator size="large" color={COLORS.accent} />
-                    </View>
-                  ) : show ? (
-                    <View style={styles.showInfo}>
-                      <Text style={styles.showVenue} numberOfLines={1}>
-                        {getVenueFromShow(show)}
-                      </Text>
-                      <View style={styles.dateStarsRow}>
-                        <Text style={styles.showDate}>{formatDate(show.date)}</Text>
-                        {show.classicTier && (
-                          <StarRating tier={show.classicTier} size={16} />
-                        )}
-                      </View>
-                      {show.location && (
-                        <Text style={styles.showLocation}>{show.location}</Text>
-                      )}
-                    </View>
-                  ) : null}
-                </LinearGradient>
-              </ImageBackground>
-            </TouchableOpacity>
-
-            {/* Radio Card */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleRadioPress}
-              disabled={playerState.isRadioLoading}
-              accessibilityRole="button"
-              accessibilityLabel={isRadioMode ? 'Radio: Now Playing' : 'Radio: Non-stop legendary performances'}
-              accessibilityHint="Double tap to start radio mode"
-              accessibilityState={{ disabled: playerState.isRadioLoading }}
-            >
-              <ImageBackground
-                source={RADIO_IMAGE}
-                style={styles.smallImageCard}
-                imageStyle={styles.imageCardBackground}
-              >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.smallCardGradient}
-                >
-                  <View style={styles.radioTitleRow}>
-                    <Ionicons name="radio" size={24} color={COLORS.textPrimary} style={styles.radioIcon} />
-                    <Text style={styles.cardTitle}>Radio</Text>
-                    {isRadioMode && (
-                      <View style={styles.nowPlayingBadge}>
-                        <Text style={styles.nowPlayingText}>Now Playing</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.cardDescription}>
-                    {playerState.isRadioLoading ? 'Loading...' : 'The music never stops.'}
-                  </Text>
-                </LinearGradient>
-              </ImageBackground>
-            </TouchableOpacity>
-
-            {/* Classic Shows Card */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('Classics')}
-              accessibilityRole="button"
-              accessibilityLabel="Classic Shows: Legendary shows from different eras"
-              accessibilityHint="Double tap to browse classic shows"
-            >
-              <ImageBackground
-                source={CLASSIC_SHOWS_IMAGE}
-                style={styles.smallImageCard}
-                imageStyle={styles.imageCardBackground}
-              >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.smallCardGradient}
-                >
-                  <Text style={styles.cardTitle}>Classic Shows</Text>
-                  <Text style={styles.cardDescription}>
-                    Legendary shows from different eras.
-                  </Text>
-                </LinearGradient>
-              </ImageBackground>
-            </TouchableOpacity>
-
-            {/* Grateful Dead 101 Card */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('GratefulDead101')}
-              accessibilityRole="button"
-              accessibilityLabel="Grateful Dead 101: Get on the bus with 10 essential shows"
-              accessibilityHint="Double tap to view essential shows for beginners"
-            >
-              <ImageBackground
-                source={GD_101_IMAGE}
-                style={styles.smallImageCard}
-                imageStyle={styles.imageCardBackground}
-              >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.smallCardGradient}
-                >
-                  <Text style={styles.cardTitle}>Grateful Dead 101</Text>
-                  <Text style={styles.cardDescription}>
-                    Get on the bus with 10 essential shows.
-                  </Text>
-                </LinearGradient>
-              </ImageBackground>
+              <Ionicons name="refresh" size={24} color={COLORS.accent} />
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleViewShow}
+            disabled={isLoading || !show}
+            accessibilityRole="button"
+            accessibilityLabel={show ? `Show of the Day: ${getVenueFromShow(show)}, ${formatDate(show.date)}` : 'Show of the Day: Loading'}
+            accessibilityHint="Double tap to view this show"
+            accessibilityState={{ disabled: isLoading || !show }}
+          >
+            <ImageBackground
+              source={SOTD_BACKGROUND}
+              style={styles.sotdCard}
+              imageStyle={styles.sotdImage}
+              resizeMode="stretch"
+            >
+              <LinearGradient
+                colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.sotdGradient}
+              >
+                {isLoading ? (
+                  <View style={styles.sotdLoading}>
+                    <ActivityIndicator size="large" color={COLORS.accent} />
+                  </View>
+                ) : show ? (
+                  <View style={styles.sotdContent}>
+                    <Text style={styles.sotdVenue} numberOfLines={1}>
+                      {getVenueFromShow(show)}
+                    </Text>
+                    <View style={styles.sotdDateRow}>
+                      <Text style={styles.sotdDate}>{formatDate(show.date)}</Text>
+                      {show.classicTier && (
+                        <StarRating tier={show.classicTier} size={12} />
+                      )}
+                    </View>
+                    {show.location && (
+                      <Text style={styles.sotdLocation}>{show.location}</Text>
+                    )}
+                  </View>
+                ) : null}
+              </LinearGradient>
+            </ImageBackground>
+          </TouchableOpacity>
         </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsSection}>
+          <View style={[styles.actionsRow, !hasSavedContent && styles.actionsRowSingle]}>
+            <ActionPillButton
+              icon="radio"
+              label="Start Radio"
+              onPress={handleRadioPress}
+              loading={playerState.isRadioLoading}
+              fullWidth={!hasSavedContent}
+            />
+            {hasSavedContent && (
+              <ActionPillButton
+                icon="shuffle"
+                label={savedButtonLabel}
+                onPress={handleSavedPress}
+                loading={playerState.isShuffleLoading}
+              />
+            )}
+          </View>
+        </View>
+
+        {/* Jump Back In Carousel */}
+        {recentlyPlayedShows.length > 0 && (
+          <ShowCarousel
+            title="Jump Back In"
+            shows={recentlyPlayedShows}
+            onShowPress={handleShowPress}
+            extraData={playCounts}
+          />
+        )}
+
+        {/* Classic Shows Carousel */}
+        <ShowCarousel
+          title="Classic Shows"
+          shows={classicShows}
+          onShowPress={handleShowPress}
+        />
+
+        {/* Grateful Dead 101 Carousel */}
+        <ShowCarousel
+          title="Grateful Dead 101"
+          shows={gd101Shows}
+          onShowPress={handleShowPress}
+        />
       </ScrollView>
     </View>
   );
@@ -261,101 +269,65 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 184,
   },
-  content: {
-    padding: SPACING.xl,
+  section: {
+    paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.sm,
+    marginBottom: SPACING.xl,
   },
-  cardsContainer: {
-    gap: SPACING.xl,
-  },
-  imageCard: {
-    borderRadius: RADIUS.md,
-    overflow: 'hidden',
-    minHeight: 180,
-  },
-  smallImageCard: {
-    borderRadius: RADIUS.md,
-    overflow: 'hidden',
-    minHeight: 120,
-  },
-  imageCardBackground: {
-    borderRadius: RADIUS.md,
-  },
-  cardGradient: {
-    flex: 1,
-    padding: SPACING.xxl,
-    justifyContent: 'center',
-    minHeight: 180,
-  },
-  smallCardGradient: {
-    flex: 1,
-    paddingTop: 20,
-    paddingBottom: SPACING.xxl,
-    paddingHorizontal: SPACING.xxl,
-    justifyContent: 'center',
-    minHeight: 120,
-  },
-  cardTitle: {
-    ...TYPOGRAPHY.heading3,
-    fontWeight: '500',
-    fontSize: 26,
-    marginBottom: SPACING.sm,
-  },
-  cardDescription: {
-    ...TYPOGRAPHY.body,
-    opacity: 0.8,
-    lineHeight: 22,
-  },
-  sotdHeaderRow: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderMedium,
-    paddingBottom: SPACING.sm - 2,
     marginBottom: SPACING.md,
   },
-  sotdLoading: {
-    paddingVertical: 30,
-    alignItems: 'flex-start',
+  sectionTitle: {
+    ...TYPOGRAPHY.heading4,
   },
-  showInfo: {
-    gap: SPACING.xs,
-  },
-  showVenue: {
-    ...TYPOGRAPHY.heading3,
-    fontWeight: '500',
-    fontSize: 22,
-  },
-  dateStarsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  showDate: {
-    ...TYPOGRAPHY.body,
-    opacity: 0.7,
-  },
-  showLocation: {
-    ...TYPOGRAPHY.body,
-    opacity: 0.7,
-  },
-  radioTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radioIcon: {
-    marginRight: SPACING.sm,
-  },
-  nowPlayingBadge: {
-    backgroundColor: COLORS.accent,
-    paddingHorizontal: 10,
-    paddingVertical: SPACING.xs,
+  sotdCard: {
     borderRadius: RADIUS.md,
-    marginLeft: SPACING.md,
+    overflow: 'hidden',
   },
-  nowPlayingText: {
-    ...TYPOGRAPHY.labelSmall,
+  sotdImage: {
+    borderRadius: RADIUS.md,
+  },
+  sotdGradient: {
+    padding: SPACING.lg,
+  },
+  sotdLoading: {
+    paddingVertical: SPACING.xxl,
+    alignItems: 'center',
+  },
+  sotdContent: {
+    gap: 2,
+  },
+  sotdVenue: {
+    ...TYPOGRAPHY.label,
     fontWeight: '600',
+    marginBottom: 2,
+  },
+  sotdDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 1,
+  },
+  sotdDate: {
+    ...TYPOGRAPHY.caption,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  sotdLocation: {
+    ...TYPOGRAPHY.caption,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  actionsSection: {
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xxl,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  actionsRowSingle: {
+    justifyContent: 'center',
   },
 });

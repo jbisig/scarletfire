@@ -208,6 +208,11 @@ function MainTabsWithPlayer() {
         }}
       >
         <Tab.Screen
+          name="DiscoverTab"
+          component={DiscoverStack}
+          options={{ tabBarLabel: 'Discover' }}
+        />
+        <Tab.Screen
           name="ShowsTab"
           component={ShowsStack}
           options={{ tabBarLabel: 'Shows' }}
@@ -216,11 +221,6 @@ function MainTabsWithPlayer() {
           name="SongsTab"
           component={SongsStack}
           options={{ tabBarLabel: 'Songs' }}
-        />
-        <Tab.Screen
-          name="DiscoverTab"
-          component={DiscoverStack}
-          options={{ tabBarLabel: 'Discover' }}
         />
         <Tab.Screen
           name="FavoritesTab"
