@@ -42,6 +42,9 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         style={[styles.selector, currentAttribution && styles.selectorWithAttribution]}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Recording source: ${currentVersion.source}`}
+        accessibilityHint="Double tap to select a different recording"
       >
         <View style={styles.selectorTopRow}>
           <Text style={styles.sourceName}>{currentVersion.source}</Text>

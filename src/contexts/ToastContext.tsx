@@ -85,8 +85,8 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
 
   const getIconColor = () => {
     switch (toast.type) {
-      case 'error': return '#FF6B6B';
-      case 'success': return '#4CAF50';
+      case 'error': return COLORS.error;
+      case 'success': return COLORS.success;
       case 'info': return COLORS.accent;
     }
   };

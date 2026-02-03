@@ -524,6 +524,9 @@ export function FavoritesScreen() {
                 style={styles.sortLabelButton}
                 onPress={handleShowSortPress}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Sort shows by ${getShowSortLabel(showSortType)}`}
+                accessibilityHint="Double tap to change sort order"
               >
                 <Ionicons name={getShowSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
                 <Text style={styles.sortLabelText}>{getShowSortLabel(showSortType)}</Text>
@@ -612,6 +615,9 @@ export function FavoritesScreen() {
                 style={styles.sortLabelButton}
                 onPress={handleSongSortPress}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Sort songs by ${getSongSortLabel(songSortType)}`}
+                accessibilityHint="Double tap to change sort order"
               >
                 <Ionicons name={getSongSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
                 <Text style={styles.sortLabelText}>{getSongSortLabel(songSortType)}</Text>
@@ -728,6 +734,9 @@ export function FavoritesScreen() {
               ]}
               onPress={() => setFilterTrayOpen(true)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={hasActiveFilters(appliedFilters) ? 'Filters active' : 'Filters'}
+              accessibilityHint="Double tap to open filter options"
             >
               <Ionicons
                 name="options-outline"

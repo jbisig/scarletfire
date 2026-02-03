@@ -29,6 +29,9 @@ export const YearPicker = React.memo<YearPickerProps>(function YearPicker({ year
         style={compact ? styles.compactSelector : styles.selector}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Year filter: ${displayText}`}
+        accessibilityHint="Double tap to select a different year"
       >
         {compact ? (
           <>

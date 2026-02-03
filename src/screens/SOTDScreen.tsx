@@ -86,7 +86,7 @@ export function SOTDScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.viewButtonText}>View Show</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Ionicons name="arrow-forward" size={20} color={COLORS.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
   },
   venue: {
     ...TYPOGRAPHY.display,
-    fontSize: 36,
     marginBottom: SPACING.sm,
   },
   location: {

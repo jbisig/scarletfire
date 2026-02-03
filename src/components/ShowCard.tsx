@@ -136,7 +136,7 @@ ShowCard.displayName = 'ShowCard';
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
   },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SPACING.sm + 2,
     marginBottom: 2,
   },
   date: {

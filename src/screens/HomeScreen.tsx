@@ -289,6 +289,9 @@ export function HomeScreen() {
               ]}
               onPress={() => setFilterTrayOpen(true)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={hasActiveFilters(appliedFilters) ? 'Filters active' : 'Filters'}
+              accessibilityHint="Double tap to open filter options"
             >
               <Ionicons
                 name="options-outline"

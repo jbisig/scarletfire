@@ -29,6 +29,9 @@ export const EraPicker = React.memo(function EraPicker({ eras, selectedEra, onEr
         style={styles.selector}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Era filter: ${displayText}`}
+        accessibilityHint="Double tap to select a different era"
       >
         <Text style={styles.eraText}>{displayText}</Text>
         <Ionicons name="chevron-down" size={18} color={COLORS.accent} />

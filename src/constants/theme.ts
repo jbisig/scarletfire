@@ -54,7 +54,8 @@ export const COLORS = {
   backdropDark: 'rgba(0, 0, 0, 0.7)',
 
   // Semantic colors
-  error: '#FF4444',
+  error: '#FF6B6B',
+  success: '#4CAF50',
 
   // Interactive element colors
   tabSliderActive: '#484848',
