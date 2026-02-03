@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   Modal,
-  TextInput,
   TouchableWithoutFeedback,
   Keyboard,
   Pressable,
-  Animated,
-  Easing,
   RefreshControl,
   Dimensions,
   Image,
@@ -22,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
@@ -144,7 +142,6 @@ export function FavoritesScreen() {
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const searchInputRef = useRef<TextInput>(null);
   const showSortButtonRef = useRef<View>(null);
   const songSortButtonRef = useRef<View>(null);
   const showsListRef = useRef<FlatList>(null);
@@ -152,9 +149,6 @@ export function FavoritesScreen() {
 
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
-
-  // Header search bar animation (0 = collapsed, 1 = expanded)
-  const searchAnim = useRef(new Animated.Value(0)).current;
 
   // Profile dropdown
   const {
@@ -168,13 +162,6 @@ export function FavoritesScreen() {
     handleSettings,
     closeDropdown,
   } = useProfileDropdown();
-
-  // Animated interpolations for header search
-  const searchBarWidth = searchAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [LAYOUT.headerButtonSize + 4, SEARCH_BAR_FULL_WIDTH],
-    extrapolate: 'clamp',
-  });
 
   // Create showsByYear structure from favoriteShows for the filter tray
   const favoriteShowsByYear = useMemo(() => {
@@ -195,39 +182,15 @@ export function FavoritesScreen() {
     setRefreshing(false);
   }, [refreshFavorites]);
 
-  // Expand search bar
-  const handleSearchPress = useCallback(() => {
+  // Search bar handlers
+  const handleSearchExpand = useCallback(() => {
     setIsSearchExpanded(true);
-    Animated.timing(searchAnim, {
-      toValue: 1,
-      duration: LAYOUT.animationDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [searchAnim]);
+  }, []);
 
-  // Collapse search bar
-  const handleCloseSearch = useCallback(() => {
-    Keyboard.dismiss();
+  const handleSearchClose = useCallback(() => {
     setSearchQuery('');
     setIsSearchExpanded(false);
-    Animated.timing(searchAnim, {
-      toValue: 0,
-      duration: LAYOUT.animationDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [searchAnim]);
-
-  // Close search bar when navigating away
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      if (isSearchExpanded) {
-        handleCloseSearch();
-      }
-    });
-    return unsubscribe;
-  }, [navigation, isSearchExpanded, handleCloseSearch]);
+  }, []);
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -731,42 +694,16 @@ export function FavoritesScreen() {
 
           {/* Right side: Search and Filter buttons */}
           <View style={styles.headerRight}>
-            {/* Animated Search Bar / Button */}
-            <TouchableOpacity
-              activeOpacity={isSearchExpanded ? 1 : 0.7}
-              onPress={isSearchExpanded ? undefined : handleSearchPress}
-              disabled={isSearchExpanded}
-            >
-              <Animated.View style={[styles.searchContainer, { width: searchBarWidth }]}>
-                <View style={styles.searchInputWrapper}>
-                  <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
-                  {isSearchExpanded && (
-                    <View style={styles.searchExpandedContent}>
-                      <View style={styles.searchIconSpacer} />
-                      <TextInput
-                        ref={searchInputRef}
-                        style={styles.searchInput}
-                        placeholder="Search favorites"
-                        placeholderTextColor={COLORS.textHint}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        autoFocus
-                        selectionColor={COLORS.textPrimary}
-                      />
-                      <TouchableOpacity
-                        style={styles.closeSearchButton}
-                        onPress={handleCloseSearch}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </Animated.View>
-            </TouchableOpacity>
+            {/* Animated Search Bar */}
+            <AnimatedSearchBar
+              isExpanded={isSearchExpanded}
+              onExpand={handleSearchExpand}
+              onClose={handleSearchClose}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search favorites"
+              expandedWidth={SEARCH_BAR_FULL_WIDTH}
+            />
 
             {/* Filter button - always visible */}
             <TouchableOpacity
@@ -1099,13 +1036,6 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     zIndex: 10,
   },
-  searchContainer: {
-    height: LAYOUT.headerButtonSize + 4,
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-    backgroundColor: COLORS.background,
-    padding: 2,
-  },
   filterButton: {
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
@@ -1116,39 +1046,6 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
-  },
-  searchInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-    height: LAYOUT.headerButtonSize,
-    overflow: 'hidden',
-  },
-  searchIconCentered: {
-    position: 'absolute',
-    left: 10,
-  },
-  searchExpandedContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: SPACING.sm,
-    paddingRight: SPACING.xs,
-    gap: 10,
-  },
-  searchIconSpacer: {
-    width: 20,
-  },
-  searchInput: {
-    flex: 1,
-    ...TYPOGRAPHY.body,
-  },
-  closeSearchButton: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.xs,
   },
   headerGradient: {
     position: 'absolute',

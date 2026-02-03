@@ -7,11 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  TextInput,
-  Animated,
-  Easing,
   Dimensions,
-  Keyboard,
   Modal,
   Pressable,
 } from 'react-native';
@@ -26,6 +22,7 @@ import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
@@ -101,62 +98,22 @@ export function SongPerformancesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
-  const searchInputRef = useRef<TextInput>(null);
   const sortButtonRef = useRef<View>(null);
 
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
   const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
-  const searchAnim = useRef(new Animated.Value(0)).current;
 
-  // Animated interpolations
-  const searchBarWidth = searchAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [LAYOUT.headerButtonSize + 4, SEARCH_BAR_FULL_WIDTH],
-    extrapolate: 'clamp',
-  });
-  // Expand search bar
-  const handleSearchPress = useCallback(() => {
+  // Search bar handlers
+  const handleSearchExpand = useCallback(() => {
     setIsSearchExpanded(true);
-    Animated.timing(searchAnim, {
-      toValue: 1,
-      duration: LAYOUT.animationDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [searchAnim]);
+  }, []);
 
-  // Collapse search bar
-  const handleCloseSearch = useCallback(() => {
-    Keyboard.dismiss();
+  const handleSearchClose = useCallback(() => {
     setSearchQuery('');
     setIsSearchExpanded(false);
-    Animated.timing(searchAnim, {
-      toValue: 0,
-      duration: LAYOUT.animationDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [searchAnim]);
-
-  // Close search bar when navigating away
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      if (isSearchExpanded) {
-        handleCloseSearch();
-      }
-    });
-    return unsubscribe;
-  }, [navigation, isSearchExpanded, handleCloseSearch]);
-
-  // Handle search text change - close if cleared via X button
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-    if (text === '' && isSearchExpanded) {
-      handleCloseSearch();
-    }
-  }, [isSearchExpanded, handleCloseSearch]);
+  }, []);
 
   // Handle sort button press
   const handleSortPress = useCallback(() => {
@@ -353,41 +310,16 @@ export function SongPerformancesScreen() {
 
           {/* Right side: Search button */}
           <View style={styles.titleRight}>
-            <TouchableOpacity
-              activeOpacity={isSearchExpanded ? 1 : 0.7}
-              onPress={isSearchExpanded ? undefined : handleSearchPress}
-              disabled={isSearchExpanded}
-            >
-              <Animated.View style={[styles.searchContainer, { width: searchBarWidth }]}>
-                <View style={styles.searchInputWrapper}>
-                  <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
-                  {isSearchExpanded && (
-                    <View style={styles.searchExpandedContent}>
-                      <View style={styles.searchIconSpacer} />
-                      <TextInput
-                        ref={searchInputRef}
-                        style={styles.searchInput}
-                        placeholder="Date, venue, location"
-                        placeholderTextColor={COLORS.textHint}
-                        value={searchQuery}
-                        onChangeText={handleSearchChange}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        autoFocus
-                        selectionColor={COLORS.textPrimary}
-                      />
-                      <TouchableOpacity
-                        style={styles.closeSearchButton}
-                        onPress={handleCloseSearch}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </Animated.View>
-            </TouchableOpacity>
+            <AnimatedSearchBar
+              isExpanded={isSearchExpanded}
+              onExpand={handleSearchExpand}
+              onClose={handleSearchClose}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Date, venue, location"
+              expandedWidth={SEARCH_BAR_FULL_WIDTH}
+              closeOnClear
+            />
           </View>
         </View>
 
@@ -579,46 +511,6 @@ const styles = StyleSheet.create({
   sortLabelText: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
-  },
-  searchContainer: {
-    height: LAYOUT.headerButtonSize + 4,
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-    backgroundColor: COLORS.background,
-    padding: 2,
-  },
-  searchInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-    height: LAYOUT.headerButtonSize,
-    overflow: 'hidden',
-  },
-  searchIconCentered: {
-    position: 'absolute',
-    left: 10,
-  },
-  searchExpandedContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: SPACING.sm,
-    paddingRight: SPACING.xs,
-    gap: 10,
-  },
-  searchIconSpacer: {
-    width: 20,
-  },
-  searchInput: {
-    flex: 1,
-    ...TYPOGRAPHY.body,
-  },
-  closeSearchButton: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.xs,
   },
   listContent: {
     paddingBottom: LAYOUT.listBottomPadding,
