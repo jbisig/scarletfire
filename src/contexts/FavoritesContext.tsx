@@ -2,12 +2,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { favoritesCloudService } from '../services/favoritesCloudService';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { STORAGE_KEYS } from '../constants/registry';
 import { logger } from '../utils/logger';
 
 const favoritesLogger = logger.create('Favorites');
+
+// Rate limit sync error toasts to avoid spamming user
+const SYNC_ERROR_TOAST_COOLDOWN = 30000; // 30 seconds
 
 export interface FavoriteSong {
   trackId: string;
@@ -58,9 +62,20 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favoriteSongs, setFavoriteSongs] = useState<FavoriteSong[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
+  const { showToast } = useToast();
 
   // Track deletions for sync conflict resolution (doesn't need to trigger re-renders)
   const deletionLogRef = useRef<DeletionLog>({ shows: [], songs: [] });
+  const lastSyncErrorToastRef = useRef<number>(0);
+
+  // Show sync error toast with rate limiting
+  const showSyncErrorToast = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSyncErrorToastRef.current > SYNC_ERROR_TOAST_COOLDOWN) {
+      lastSyncErrorToastRef.current = now;
+      showToast('Failed to sync favorites to cloud. Changes saved locally.', 'error');
+    }
+  }, [showToast]);
 
   // Refs to always have latest values for cloud sync (avoids race conditions)
   const favoriteShowsRef = useRef<GratefulDeadShow[]>(favoriteShows);
@@ -310,7 +325,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
         favoritesLogger.error('Failed to sync favorite show to cloud:', error);
-        // Data is saved locally, cloud sync will retry on next change or app restart
+        showSyncErrorToast();
       });
     }
   };
@@ -327,6 +342,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
         favoritesLogger.error('Failed to sync favorite show removal to cloud:', error);
+        showSyncErrorToast();
       });
     }
   };
@@ -348,6 +364,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
         favoritesLogger.error('Failed to sync favorite song to cloud:', error);
+        showSyncErrorToast();
       });
     }
   };
@@ -366,6 +383,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (authState.isAuthenticated && authState.user) {
       favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
         favoritesLogger.error('Failed to sync favorite song removal to cloud:', error);
+        showSyncErrorToast();
       });
     }
   };

@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    paddingBottom: 180,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   centerContainer: {
     flex: 1,

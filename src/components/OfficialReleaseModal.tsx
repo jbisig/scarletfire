@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfficialRelease } from '../data/officialReleases';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, BRAND_COLORS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { logger } from '../utils/logger';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1DB954',
+    backgroundColor: BRAND_COLORS.spotify,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.full,
     gap: SPACING.sm,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FC3C44',
+    backgroundColor: BRAND_COLORS.appleMusic,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.full,
     gap: SPACING.sm,

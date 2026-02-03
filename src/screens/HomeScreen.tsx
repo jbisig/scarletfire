@@ -29,19 +29,16 @@ import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 // Default profile image for logged out users
 const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
-// Animation constants
+// Layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const BUTTON_SIZE = 40;
-const BUTTON_GAP = 10;
 const HORIZONTAL_PADDING = SPACING.xl;
 // Full width = screen - padding on both sides - filter button - gap
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - BUTTON_SIZE - BUTTON_GAP;
-const ANIMATION_DURATION = 300;
+const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -156,7 +153,7 @@ export function HomeScreen() {
   // Animated interpolations
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [BUTTON_SIZE + 4, SEARCH_BAR_FULL_WIDTH],
+    outputRange: [LAYOUT.headerButtonSize + 4, SEARCH_BAR_FULL_WIDTH],
     extrapolate: 'clamp',
   });
 
@@ -165,7 +162,7 @@ export function HomeScreen() {
     setIsSearchExpanded(true);
     Animated.timing(searchAnim, {
       toValue: 1,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -178,7 +175,7 @@ export function HomeScreen() {
     setIsSearchExpanded(false);
     Animated.timing(searchAnim, {
       toValue: 0,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -461,12 +458,12 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: BUTTON_GAP,
+    gap: LAYOUT.headerButtonGap,
     marginLeft: 'auto',
     zIndex: 10,
   },
   searchContainer: {
-    height: BUTTON_SIZE + 4,
+    height: LAYOUT.headerButtonSize + 4,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
     backgroundColor: COLORS.background,
@@ -479,7 +476,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.xl,
-    height: BUTTON_SIZE,
+    height: LAYOUT.headerButtonSize,
     overflow: 'hidden',
   },
   searchIconCentered: {
@@ -514,11 +511,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: SPACING.sm + 8,
-    paddingBottom: 180,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   filterButton: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
     alignItems: 'center',

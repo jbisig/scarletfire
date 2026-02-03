@@ -10,6 +10,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
+import { ToastProvider } from './src/contexts/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { validateConfig } from './src/constants/config';
@@ -51,24 +52,26 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <AuthProvider>
-          <ShowsProvider>
-            <ShowOfTheDayProvider>
-              <FavoritesProvider>
-                <PlayCountsProvider>
-                  <PlayerProvider>
-                    <VideoBackgroundProvider>
-                      <ErrorBoundary>
-                        <AppNavigator />
-                      </ErrorBoundary>
-                      <StatusBar style="light" />
-                    </VideoBackgroundProvider>
-                  </PlayerProvider>
-                </PlayCountsProvider>
-              </FavoritesProvider>
-            </ShowOfTheDayProvider>
-          </ShowsProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ShowsProvider>
+              <ShowOfTheDayProvider>
+                <FavoritesProvider>
+                  <PlayCountsProvider>
+                    <PlayerProvider>
+                      <VideoBackgroundProvider>
+                        <ErrorBoundary>
+                          <AppNavigator />
+                        </ErrorBoundary>
+                        <StatusBar style="light" />
+                      </VideoBackgroundProvider>
+                    </PlayerProvider>
+                  </PlayCountsProvider>
+                </FavoritesProvider>
+              </ShowOfTheDayProvider>
+            </ShowsProvider>
+          </AuthProvider>
+        </ToastProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
   );

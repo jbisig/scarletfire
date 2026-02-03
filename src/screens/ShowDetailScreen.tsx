@@ -22,7 +22,7 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
   },
   scrollContent: {
-    paddingBottom: 180,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   headerContainer: {
     padding: SPACING.xl,

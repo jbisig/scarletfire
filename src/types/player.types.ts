@@ -14,6 +14,15 @@ export interface ShuffleSongItem {
   streamUrl: string;
 }
 
+// Type guards for shuffle queue items
+export function isShuffleSongItem(item: ShuffleSongItem | GratefulDeadShow): item is ShuffleSongItem {
+  return 'trackId' in item && 'streamUrl' in item;
+}
+
+export function isGratefulDeadShow(item: ShuffleSongItem | GratefulDeadShow): item is GratefulDeadShow {
+  return 'primaryIdentifier' in item && 'versions' in item;
+}
+
 export interface RadioTrack {
   track: Track;
   show: ShowDetail;

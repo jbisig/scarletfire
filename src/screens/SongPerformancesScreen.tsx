@@ -28,16 +28,13 @@ import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
 
-// Animation constants
+// Layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const BUTTON_SIZE = 40;
-const BUTTON_GAP = 10;
 const HORIZONTAL_PADDING = SPACING.xl;
 // Full width = screen - padding on both sides (no filter button)
 const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
-const ANIMATION_DURATION = 300;
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
@@ -116,7 +113,7 @@ export function SongPerformancesScreen() {
   // Animated interpolations
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [BUTTON_SIZE + 4, SEARCH_BAR_FULL_WIDTH],
+    outputRange: [LAYOUT.headerButtonSize + 4, SEARCH_BAR_FULL_WIDTH],
     extrapolate: 'clamp',
   });
   // Expand search bar
@@ -124,7 +121,7 @@ export function SongPerformancesScreen() {
     setIsSearchExpanded(true);
     Animated.timing(searchAnim, {
       toValue: 1,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -137,7 +134,7 @@ export function SongPerformancesScreen() {
     setIsSearchExpanded(false);
     Animated.timing(searchAnim, {
       toValue: 0,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -536,7 +533,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   backButton: {
-    width: BUTTON_SIZE,
+    width: LAYOUT.headerButtonSize,
     height: 28,
     justifyContent: 'center',
     alignItems: 'flex-start',
@@ -545,7 +542,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: BUTTON_SIZE,
+    height: LAYOUT.headerButtonSize,
   },
   titleContent: {
     flexDirection: 'row',
@@ -553,7 +550,7 @@ const styles = StyleSheet.create({
     gap: 10,
     position: 'absolute',
     left: 0,
-    right: BUTTON_SIZE + BUTTON_GAP,
+    right: LAYOUT.headerButtonSize + LAYOUT.headerButtonGap,
     top: 0,
     bottom: 0,
   },
@@ -584,7 +581,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   searchContainer: {
-    height: BUTTON_SIZE + 4,
+    height: LAYOUT.headerButtonSize + 4,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
     backgroundColor: COLORS.background,
@@ -597,7 +594,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.xl,
-    height: BUTTON_SIZE,
+    height: LAYOUT.headerButtonSize,
     overflow: 'hidden',
   },
   searchIconCentered: {
@@ -624,7 +621,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.xs,
   },
   listContent: {
-    paddingBottom: 180,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   performanceItemWrapper: {
     position: 'relative',

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     marginHorizontal: SPACING.xxxl,
     backgroundColor: COLORS.accent,
-    borderRadius: 40,
+    borderRadius: RADIUS.full,
     width: 80,
     height: 80,
     justifyContent: 'center',

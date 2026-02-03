@@ -18,7 +18,7 @@ import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-nat
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
-import { COLORS, FONTS, TYPOGRAPHY } from '../constants/theme';
+import { COLORS, FONTS } from '../constants/theme';
 
 export type RootStackParamList = {
   Home: undefined;

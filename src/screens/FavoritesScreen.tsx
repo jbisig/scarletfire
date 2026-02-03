@@ -42,20 +42,17 @@ import { PlayCountBadge } from '../components/PlayCountBadge';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
 
 // Default profile image for logged out users
 const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
-// Animation constants
+// Layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const BUTTON_SIZE = 40;
-const BUTTON_GAP = 10;
 const HORIZONTAL_PADDING = SPACING.xl;
 // Full width for header search = screen - padding on both sides - filter button - gap
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - BUTTON_SIZE - BUTTON_GAP;
-const ANIMATION_DURATION = 300;
+const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
 
 const allShowsByYear = showsData as ShowsByYear;
 
@@ -175,7 +172,7 @@ export function FavoritesScreen() {
   // Animated interpolations for header search
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [BUTTON_SIZE + 4, SEARCH_BAR_FULL_WIDTH],
+    outputRange: [LAYOUT.headerButtonSize + 4, SEARCH_BAR_FULL_WIDTH],
     extrapolate: 'clamp',
   });
 
@@ -203,7 +200,7 @@ export function FavoritesScreen() {
     setIsSearchExpanded(true);
     Animated.timing(searchAnim, {
       toValue: 1,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -216,7 +213,7 @@ export function FavoritesScreen() {
     setIsSearchExpanded(false);
     Animated.timing(searchAnim, {
       toValue: 0,
-      duration: ANIMATION_DURATION,
+      duration: LAYOUT.animationDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -1098,20 +1095,20 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: BUTTON_GAP,
+    gap: LAYOUT.headerButtonGap,
     marginLeft: 'auto',
     zIndex: 10,
   },
   searchContainer: {
-    height: BUTTON_SIZE + 4,
+    height: LAYOUT.headerButtonSize + 4,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
     backgroundColor: COLORS.background,
     padding: 2,
   },
   filterButton: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
     alignItems: 'center',
@@ -1127,7 +1124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.xl,
-    height: BUTTON_SIZE,
+    height: LAYOUT.headerButtonSize,
     overflow: 'hidden',
   },
   searchIconCentered: {
@@ -1246,7 +1243,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: SPACING.sm + 8,
-    paddingBottom: 180,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   songItem: {
     paddingVertical: 8,

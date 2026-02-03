@@ -1,11 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { playCountsCloudService } from '../services/playCountsCloudService';
 import { STORAGE_KEYS } from '../constants/registry';
 import { logger } from '../utils/logger';
 
 const playCountsLogger = logger.create('PlayCounts');
+
+// Rate limit sync error toasts to avoid spamming user
+const SYNC_ERROR_TOAST_COOLDOWN = 30000; // 30 seconds
 
 export interface PlayCount {
   trackTitle: string;      // Song name
@@ -32,6 +36,17 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
   const [playCountsMap, setPlayCountsMap] = useState<Map<string, PlayCount>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
+  const { showToast } = useToast();
+  const lastSyncErrorToastRef = useRef<number>(0);
+
+  // Show sync error toast with rate limiting
+  const showSyncErrorToast = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSyncErrorToastRef.current > SYNC_ERROR_TOAST_COOLDOWN) {
+      lastSyncErrorToastRef.current = now;
+      showToast('Failed to sync play history to cloud. Data saved locally.', 'error');
+    }
+  }, [showToast]);
 
   // Load play counts from AsyncStorage on mount
   useEffect(() => {
@@ -180,6 +195,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       const playCounts = Array.from(newMap.values());
       playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch((error) => {
         playCountsLogger.error('Failed to sync play counts to cloud:', error);
+        showSyncErrorToast();
       });
     }
   };

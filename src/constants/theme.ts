@@ -265,3 +265,47 @@ export const SHADOWS = {
     elevation: 8,
   },
 } as const;
+
+// =============================================================================
+// LAYOUT CONSTANTS
+// =============================================================================
+
+/**
+ * Layout constants for common UI elements
+ * Used for headers, buttons, animations, and list layouts
+ */
+export const LAYOUT = {
+  /** Standard header button size (search, filter icons) */
+  headerButtonSize: 40,
+  /** Gap between header buttons */
+  headerButtonGap: 10,
+  /** Standard animation duration in ms */
+  animationDuration: 300,
+  /** Bottom padding for lists to account for mini player + tab bar */
+  listBottomPadding: 180,
+  /** Horizontal show card dimensions */
+  horizontalCardWidth: 224,
+  horizontalCardHeight: 112,
+} as const;
+
+// =============================================================================
+// BRAND COLORS (External services, gradients)
+// =============================================================================
+
+/**
+ * Brand colors for external services and decorative elements
+ */
+export const BRAND_COLORS = {
+  // Streaming services
+  spotify: '#1DB954',
+  appleMusic: '#FC3C44',
+  // Gradient card colors
+  gradientBlue: '#0F5BA8',
+  gradientBlueLight: '#2A7FD0',
+  gradientRed: '#ED1F27',
+  gradientRedLight: '#F54049',
+  // Tab bar with blur
+  tabBarBackground: 'rgba(18, 18, 18, 0.76)',
+  // Text with opacity
+  textSoft: 'rgba(255, 255, 255, 0.85)',
+} as const;

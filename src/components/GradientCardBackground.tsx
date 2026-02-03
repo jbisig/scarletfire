@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { RADIUS } from '../constants/theme';
+import { RADIUS, BRAND_COLORS } from '../constants/theme';
 
 interface GradientCardBackgroundProps {
   width: number;
@@ -21,11 +21,6 @@ function hashString(str: string): number {
   return hash;
 }
 
-const BLUE = '#0F5BA8';
-const BLUE_LIGHT = '#2A7FD0';
-const RED = '#ED1F27';
-const RED_LIGHT = '#F54049';
-
 /**
  * A gradient background component for cards.
  */
@@ -33,14 +28,18 @@ export const GradientCardBackground = React.memo<GradientCardBackgroundProps>(
   function GradientCardBackground({ width, height, seed = 'default', index, color }) {
     const colors = useMemo(() => {
       // Use explicit color if provided
-      if (color === 'blue') return [BLUE, BLUE_LIGHT] as const;
-      if (color === 'red') return [RED, RED_LIGHT] as const;
+      if (color === 'blue') return [BRAND_COLORS.gradientBlue, BRAND_COLORS.gradientBlueLight] as const;
+      if (color === 'red') return [BRAND_COLORS.gradientRed, BRAND_COLORS.gradientRedLight] as const;
 
       // Otherwise alternate based on index or seed
       if (index !== undefined) {
-        return index % 2 === 0 ? [BLUE, BLUE_LIGHT] as const : [RED, RED_LIGHT] as const;
+        return index % 2 === 0
+          ? [BRAND_COLORS.gradientBlue, BRAND_COLORS.gradientBlueLight] as const
+          : [BRAND_COLORS.gradientRed, BRAND_COLORS.gradientRedLight] as const;
       }
-      return (hashString(seed) & 1) === 0 ? [BLUE, BLUE_LIGHT] as const : [RED, RED_LIGHT] as const;
+      return (hashString(seed) & 1) === 0
+        ? [BRAND_COLORS.gradientBlue, BRAND_COLORS.gradientBlueLight] as const
+        : [BRAND_COLORS.gradientRed, BRAND_COLORS.gradientRedLight] as const;
     }, [seed, index, color]);
 
     return (

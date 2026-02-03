@@ -10,10 +10,7 @@ import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { GradientCardBackground } from './GradientCardBackground';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
-
-const CARD_WIDTH = 224;
-const CARD_HEIGHT = 112;
+import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
 interface HorizontalShowCardProps {
   show: GratefulDeadShow;
@@ -56,7 +53,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details"
       >
-        <GradientCardBackground width={CARD_WIDTH} height={CARD_HEIGHT} seed={show.primaryIdentifier} index={index} color={color} />
+        <GradientCardBackground width={LAYOUT.horizontalCardWidth} height={LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
         <Image source={FLOWER_IMAGE} style={styles.flowerImage} />
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
@@ -107,8 +104,8 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
 
 const styles = StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    width: LAYOUT.horizontalCardWidth,
+    height: LAYOUT.horizontalCardHeight,
     borderRadius: RADIUS.md,
     overflow: 'hidden',
   },
@@ -143,12 +140,12 @@ const styles = StyleSheet.create({
   date: {
     ...TYPOGRAPHY.caption,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: BRAND_COLORS.textSoft,
   },
   location: {
     ...TYPOGRAPHY.caption,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: BRAND_COLORS.textSoft,
   },
   badgesRow: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
-import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem } from '../types/player.types';
+import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { audioService } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
@@ -970,26 +970,36 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (state.shuffleType === 'songs') {
       const nextIndex = state.shuffleQueueIndex + 1;
       if (nextIndex < state.shuffleQueue.length) {
-        dispatch({ type: 'SHUFFLE_NEXT' });
-        const nextSong = state.shuffleQueue[nextIndex] as ShuffleSongItem;
-        await loadShuffleSong(nextSong);
+        const nextItem = state.shuffleQueue[nextIndex];
+        if (isShuffleSongItem(nextItem)) {
+          dispatch({ type: 'SHUFFLE_NEXT' });
+          await loadShuffleSong(nextItem);
+        }
       } else {
         // Queue exhausted - reshuffle and continue
-        const reshuffled = shuffleArray(state.shuffleQueue as ShuffleSongItem[]);
+        const songsQueue = state.shuffleQueue.filter(isShuffleSongItem);
+        const reshuffled = shuffleArray(songsQueue);
         dispatch({ type: 'SET_SHUFFLE_QUEUE', queue: reshuffled });
-        await loadShuffleSong(reshuffled[0]);
+        if (reshuffled.length > 0) {
+          await loadShuffleSong(reshuffled[0]);
+        }
       }
     } else if (state.shuffleType === 'shows') {
       const nextIndex = state.shuffleQueueIndex + 1;
       if (nextIndex < state.shuffleQueue.length) {
-        dispatch({ type: 'SHUFFLE_NEXT' });
-        const nextShow = state.shuffleQueue[nextIndex] as GratefulDeadShow;
-        await loadShuffleShow(nextShow);
+        const nextItem = state.shuffleQueue[nextIndex];
+        if (isGratefulDeadShow(nextItem)) {
+          dispatch({ type: 'SHUFFLE_NEXT' });
+          await loadShuffleShow(nextItem);
+        }
       } else {
         // Queue exhausted - reshuffle and continue
-        const reshuffled = shuffleArray(state.shuffleQueue as GratefulDeadShow[]);
+        const showsQueue = state.shuffleQueue.filter(isGratefulDeadShow);
+        const reshuffled = shuffleArray(showsQueue);
         dispatch({ type: 'SET_SHUFFLE_QUEUE', queue: reshuffled });
-        await loadShuffleShow(reshuffled[0]);
+        if (reshuffled.length > 0) {
+          await loadShuffleShow(reshuffled[0]);
+        }
       }
     }
   }, [state.shuffleType, state.shuffleQueueIndex, state.shuffleQueue, loadShuffleSong, loadShuffleShow]);
@@ -999,14 +1009,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (state.shuffleType === 'songs') {
       const prevIndex = state.shuffleQueueIndex - 1;
       if (prevIndex >= 0) {
-        dispatch({ type: 'SHUFFLE_PREVIOUS' });
-        const prevSong = state.shuffleQueue[prevIndex] as ShuffleSongItem;
-        await loadShuffleSong(prevSong);
+        const prevItem = state.shuffleQueue[prevIndex];
+        if (isShuffleSongItem(prevItem)) {
+          dispatch({ type: 'SHUFFLE_PREVIOUS' });
+          await loadShuffleSong(prevItem);
+        }
       }
       // If at the beginning, just restart the current song
       else if (state.shuffleQueueIndex >= 0 && state.shuffleQueueIndex < state.shuffleQueue.length) {
-        const currentSong = state.shuffleQueue[state.shuffleQueueIndex] as ShuffleSongItem;
-        await loadShuffleSong(currentSong);
+        const currentItem = state.shuffleQueue[state.shuffleQueueIndex];
+        if (isShuffleSongItem(currentItem)) {
+          await loadShuffleSong(currentItem);
+        }
       }
     }
   }, [state.shuffleType, state.shuffleQueueIndex, state.shuffleQueue, loadShuffleSong]);

@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   selector: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: SPACING.sm,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',

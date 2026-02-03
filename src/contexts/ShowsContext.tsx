@@ -34,6 +34,8 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
   const [error] = useState<string | null>(null);
   // Use ref for cache - stable reference, mutated directly, no re-renders needed
   const showDetailsCacheRef = useRef(new Map<string, ShowDetail>());
+  // Track in-flight requests to prevent duplicate concurrent API calls
+  const inFlightRequestsRef = useRef(new Map<string, Promise<ShowDetail>>());
 
   const getShowDetail = useCallback(async (identifier: string): Promise<ShowDetail> => {
     // Check cache first
@@ -41,10 +43,23 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
       return showDetailsCacheRef.current.get(identifier)!;
     }
 
-    // Fetch from API
-    const detail = await archiveApi.getShowDetail(identifier);
-    showDetailsCacheRef.current.set(identifier, detail);
-    return detail;
+    // Check if request is already in-flight
+    if (inFlightRequestsRef.current.has(identifier)) {
+      return inFlightRequestsRef.current.get(identifier)!;
+    }
+
+    // Create new request and track it
+    const requestPromise = archiveApi.getShowDetail(identifier)
+      .then(detail => {
+        showDetailsCacheRef.current.set(identifier, detail);
+        return detail;
+      })
+      .finally(() => {
+        inFlightRequestsRef.current.delete(identifier);
+      });
+
+    inFlightRequestsRef.current.set(identifier, requestPromise);
+    return requestPromise;
   }, []); // Empty deps - ref is stable
 
   return (

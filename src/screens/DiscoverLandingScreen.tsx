@@ -30,7 +30,7 @@ import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SOTD_CARD_WIDTH = SCREEN_WIDTH - (SPACING.xl * 2); // Full width minus horizontal padding
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: SPACING.md,
-    paddingBottom: 184,
+    paddingBottom: LAYOUT.listBottomPadding,
   },
   section: {
     paddingHorizontal: SPACING.xl,
@@ -366,12 +366,12 @@ const styles = StyleSheet.create({
   sotdDate: {
     ...TYPOGRAPHY.caption,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: BRAND_COLORS.textSoft,
   },
   sotdLocation: {
     ...TYPOGRAPHY.caption,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: BRAND_COLORS.textSoft,
   },
   actionsSection: {
     paddingHorizontal: SPACING.xl,
