@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
@@ -11,6 +11,7 @@ import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { logger } from '../utils/logger';
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -19,7 +20,7 @@ interface MiniPlayerProps {
 export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayerProps) {
   const { state, play, pause, isRadioMode, isShuffleMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource, videoId } = useVideoBackground();
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
 
   // Track app state to pause video when in background (saves battery)
@@ -29,6 +30,11 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
+
+  const handleVideoError = useCallback((error: string) => {
+    logger.player.error('MiniPlayer video failed to load:', error);
+    resetToFallback();
+  }, [resetToFallback]);
 
   // Prefetch show details in background so navigation is instant when user taps show
   useEffect(() => {
@@ -78,6 +84,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
           shouldPlay={appState === 'active'}
           isLooping
           isMuted
+          onError={handleVideoError}
         />
 
         {/* Blur overlay */}

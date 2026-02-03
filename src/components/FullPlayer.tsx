@@ -29,7 +29,6 @@ import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { haptics } from '../services/hapticService';
-import { BUNDLED_VIDEO } from '../constants/videoSources';
 import { logger } from '../utils/logger';
 
 interface FullPlayerProps {
@@ -49,7 +48,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { state, play, pause, nextTrack, previousTrack, seekTo, isRadioMode, isShuffleMode, currentRadioTrack, progressRef, progressAnim } = usePlayer();
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
-  const { videoSource, videoId } = useVideoBackground();
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
   const progressBarRef = useRef<View>(null);
 
@@ -63,19 +62,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
-  // Fallback to bundled video if current video fails to load
-  const [useVideoFallback, setUseVideoFallback] = useState(false);
-  const currentVideoSource = useVideoFallback ? BUNDLED_VIDEO : videoSource;
-
-  // Reset fallback when video changes
-  useEffect(() => {
-    setUseVideoFallback(false);
-  }, [videoId]);
-
   const handleVideoError = useCallback(() => {
-    logger.video.warn('Video failed to load, falling back to bundled video');
-    setUseVideoFallback(true);
-  }, []);
+    logger.video.warn('FullPlayer video failed to load, falling back to bundled video');
+    resetToFallback();
+  }, [resetToFallback]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', setAppState);
@@ -393,8 +383,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         <Video
-          key={`video-${videoId}-${useVideoFallback ? 'fallback' : 'primary'}`}
-          source={currentVideoSource}
+          key={`video-${videoId}`}
+          source={videoSource}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
           shouldPlay={visible && appState === 'active'}
