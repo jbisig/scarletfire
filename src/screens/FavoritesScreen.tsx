@@ -175,7 +175,7 @@ export function FavoritesScreen() {
   // Animated interpolations for header search
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [BUTTON_SIZE, SEARCH_BAR_FULL_WIDTH],
+    outputRange: [BUTTON_SIZE + 4, SEARCH_BAR_FULL_WIDTH],
     extrapolate: 'clamp',
   });
 
@@ -564,7 +564,7 @@ export function FavoritesScreen() {
               accessibilityHint="Double tap to play your favorite shows in random order"
             >
               <Ionicons name="shuffle" size={16} color={COLORS.accent} />
-              <Text style={styles.shuffleButtonText}>Play</Text>
+              <Text style={styles.shuffleButtonText}>Play Shows</Text>
             </TouchableOpacity>
           </View>
 
@@ -653,7 +653,7 @@ export function FavoritesScreen() {
               accessibilityHint="Double tap to play your favorite songs in random order"
             >
               <Ionicons name="shuffle" size={16} color={COLORS.accent} />
-              <Text style={styles.shuffleButtonText}>Play</Text>
+              <Text style={styles.shuffleButtonText}>Play Songs</Text>
             </TouchableOpacity>
           </View>
 
@@ -1087,8 +1087,8 @@ const styles = StyleSheet.create({
     bottom: SPACING.lg,
   },
   avatar: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
+    width: 39,
+    height: 39,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
   },
@@ -1103,9 +1103,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   searchContainer: {
-    height: BUTTON_SIZE,
+    height: BUTTON_SIZE + 4,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
+    backgroundColor: COLORS.background,
+    padding: 2,
   },
   filterButton: {
     width: BUTTON_SIZE,
@@ -1175,7 +1177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.sm + 4,
     paddingBottom: SPACING.md,
   },
   sortLabelButton: {

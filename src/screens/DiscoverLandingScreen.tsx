@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback, useState } from 'react';
+import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GratefulDeadShow } from '../types/show.types';
@@ -27,7 +27,7 @@ import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { ActionPillButton } from '../components/ActionPillButton';
-import { ShowCarousel } from '../components/ShowCarousel';
+import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -53,6 +53,20 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
+
+  // Refs for carousel scroll reset
+  const jumpBackInRef = useRef<ShowCarouselRef>(null);
+  const classicsRef = useRef<ShowCarouselRef>(null);
+  const gd101Ref = useRef<ShowCarouselRef>(null);
+
+  // Reset all carousels to the beginning when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      jumpBackInRef.current?.scrollToStart();
+      classicsRef.current?.scrollToStart();
+      gd101Ref.current?.scrollToStart();
+    }, [])
+  );
 
   // Prefetch radio tracks in the background for instant start
   useEffect(() => {
@@ -255,6 +269,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         {/* Jump Back In Carousel */}
         {recentlyPlayedShows.length > 0 && (
           <ShowCarousel
+            ref={jumpBackInRef}
             title="Jump Back In"
             shows={recentlyPlayedShows}
             onShowPress={handleShowPress}
@@ -265,6 +280,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
         {/* Classic Shows Carousel */}
         <ShowCarousel
+          ref={classicsRef}
           title="Classic Shows"
           shows={classicShows}
           onShowPress={handleShowPress}
@@ -273,6 +289,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
         {/* Grateful Dead 101 Carousel */}
         <ShowCarousel
+          ref={gd101Ref}
           title="Grateful Dead 101"
           shows={gd101Shows}
           onShowPress={handleShowPress}
@@ -312,7 +329,6 @@ const styles = StyleSheet.create({
   sotdCard: {
     borderRadius: RADIUS.md,
     overflow: 'hidden',
-    height: 100,
     backgroundColor: COLORS.cardBackground,
   },
   sotdVideo: {
@@ -325,9 +341,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   sotdBlurOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    padding: SPACING.lg,
-    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   sotdLoading: {
     paddingVertical: SPACING.xxl,
@@ -338,6 +353,7 @@ const styles = StyleSheet.create({
   },
   sotdVenue: {
     ...TYPOGRAPHY.label,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 2,
   },
@@ -349,10 +365,12 @@ const styles = StyleSheet.create({
   },
   sotdDate: {
     ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   sotdLocation: {
     ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   actionsSection: {

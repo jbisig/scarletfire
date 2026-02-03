@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     height: 30,
   },
   profileImage: {
-    width: 40,
-    height: 40,
+    width: 39,
+    height: 39,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.cardBackground,
   },

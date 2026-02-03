@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+
+const FLOWER_IMAGE = require('../../assets/images/flower.png');
 import { LinearGradient } from 'expo-linear-gradient';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
@@ -10,17 +12,7 @@ import { GradientCardBackground } from './GradientCardBackground';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
-// Simple hash function to determine gradient direction
-function shouldFlipGradient(seed: string): boolean {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  return (hash & 1) === 1; // Check if odd
-}
-
-const CARD_WIDTH = 200;
+const CARD_WIDTH = 224;
 const CARD_HEIGHT = 112;
 
 interface HorizontalShowCardProps {
@@ -41,8 +33,6 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
   const officialReleases = useMemo(() => {
     return getOfficialReleasesForDate(show.date);
   }, [show.date]);
-
-  const flipGradient = useMemo(() => shouldFlipGradient(show.primaryIdentifier), [show.primaryIdentifier]);
 
   const handleBadgePress = () => {
     setModalVisible(true);
@@ -67,10 +57,11 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
         accessibilityHint="Double tap to view show details"
       >
         <GradientCardBackground width={CARD_WIDTH} height={CARD_HEIGHT} seed={show.primaryIdentifier} index={index} color={color} />
+        <Image source={FLOWER_IMAGE} style={styles.flowerImage} />
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
-          start={{ x: flipGradient ? 1 : 0, y: 0.5 }}
-          end={{ x: flipGradient ? 0 : 1, y: 0.5 }}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
           style={styles.gradient}
         >
           <View style={styles.topContent}>
@@ -121,6 +112,14 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     overflow: 'hidden',
   },
+  flowerImage: {
+    position: 'absolute',
+    bottom: -10,
+    right: -10,
+    width: 80,
+    height: 80,
+    opacity: 1,
+  },
   gradient: {
     flex: 1,
     padding: SPACING.md,
@@ -131,6 +130,7 @@ const styles = StyleSheet.create({
   },
   venue: {
     ...TYPOGRAPHY.label,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 2,
   },
@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
   },
   location: {
     ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   badgesRow: {

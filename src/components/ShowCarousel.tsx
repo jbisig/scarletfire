@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { HorizontalShowCard } from './HorizontalShowCard';
@@ -12,13 +12,25 @@ interface ShowCarouselProps {
   color?: 'blue' | 'red';
 }
 
-export const ShowCarousel = React.memo<ShowCarouselProps>(function ShowCarousel({
+export interface ShowCarouselRef {
+  scrollToStart: () => void;
+}
+
+export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselProps>(function ShowCarousel({
   title,
   shows,
   onShowPress,
   extraData,
   color,
-}) {
+}, ref) {
+  const flatListRef = useRef<FlatList>(null);
+
+  useImperativeHandle(ref, () => ({
+    scrollToStart: () => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    },
+  }));
+
   if (shows.length === 0) {
     return null;
   }
@@ -36,6 +48,7 @@ export const ShowCarousel = React.memo<ShowCarouselProps>(function ShowCarousel(
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       <FlatList
+        ref={flatListRef}
         data={shows}
         keyExtractor={(item) => item.primaryIdentifier}
         renderItem={renderItem}
@@ -47,7 +60,7 @@ export const ShowCarousel = React.memo<ShowCarouselProps>(function ShowCarousel(
       />
     </View>
   );
-});
+}));
 
 const styles = StyleSheet.create({
   container: {

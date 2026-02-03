@@ -353,6 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
+    paddingBottom: 100,
   },
   errorText: {
     ...TYPOGRAPHY.body,

@@ -116,7 +116,7 @@ export function SongPerformancesScreen() {
   // Animated interpolations
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [BUTTON_SIZE, SEARCH_BAR_FULL_WIDTH],
+    outputRange: [BUTTON_SIZE + 4, SEARCH_BAR_FULL_WIDTH],
     extrapolate: 'clamp',
   });
   // Expand search bar
@@ -584,9 +584,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   searchContainer: {
-    height: BUTTON_SIZE,
+    height: BUTTON_SIZE + 4,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
+    backgroundColor: COLORS.background,
+    padding: 2,
   },
   searchInputWrapper: {
     flex: 1,

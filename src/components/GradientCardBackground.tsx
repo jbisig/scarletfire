@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RADIUS } from '../constants/theme';
 
 interface GradientCardBackgroundProps {
@@ -21,30 +22,35 @@ function hashString(str: string): number {
 }
 
 const BLUE = '#0F5BA8';
+const BLUE_LIGHT = '#2A7FD0';
 const RED = '#ED1F27';
+const RED_LIGHT = '#F54049';
 
 /**
- * A solid color background component that alternates between blue and red.
+ * A gradient background component for cards.
  */
 export const GradientCardBackground = React.memo<GradientCardBackgroundProps>(
   function GradientCardBackground({ width, height, seed = 'default', index, color }) {
-    const backgroundColor = useMemo(() => {
+    const colors = useMemo(() => {
       // Use explicit color if provided
-      if (color === 'blue') return BLUE;
-      if (color === 'red') return RED;
+      if (color === 'blue') return [BLUE, BLUE_LIGHT] as const;
+      if (color === 'red') return [RED, RED_LIGHT] as const;
 
       // Otherwise alternate based on index or seed
       if (index !== undefined) {
-        return index % 2 === 0 ? BLUE : RED;
+        return index % 2 === 0 ? [BLUE, BLUE_LIGHT] as const : [RED, RED_LIGHT] as const;
       }
-      return (hashString(seed) & 1) === 0 ? BLUE : RED;
+      return (hashString(seed) & 1) === 0 ? [BLUE, BLUE_LIGHT] as const : [RED, RED_LIGHT] as const;
     }, [seed, index, color]);
 
     return (
-      <View
+      <LinearGradient
+        colors={colors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={[
           styles.container,
-          { width, height, backgroundColor },
+          { width, height },
         ]}
       />
     );
