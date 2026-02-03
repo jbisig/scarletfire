@@ -5,10 +5,8 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Modal,
   TouchableWithoutFeedback,
   Keyboard,
-  Pressable,
   RefreshControl,
   Dimensions,
   Image,
@@ -20,6 +18,7 @@ import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
+import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
@@ -40,7 +39,7 @@ import { PlayCountBadge } from '../components/PlayCountBadge';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
 
 // Default profile image for logged out users
@@ -122,6 +121,22 @@ type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Fa
 type TabType = 'shows' | 'songs';
 type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
+
+const SONG_SORT_OPTIONS: SortOption<SongSortType>[] = [
+  { value: 'alphabetical', label: 'Alphabetical' },
+  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
+  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
+  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
+  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
+];
+
+const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
+  { value: 'alphabetical', label: 'Alphabetical' },
+  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
+  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
+  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+];
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -767,230 +782,24 @@ export function FavoritesScreen() {
       {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
 
       {/* Song Sort Dropdown */}
-      <Modal
+      <SortDropdown
         visible={showSongSortModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSongSortModal(false)}
-      >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setShowSongSortModal(false)}
-        >
-          <View
-            style={[
-              styles.dropdownContainer,
-              { top: songSortButtonPosition.top, left: songSortButtonPosition.left }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSongSortType('alphabetical');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'alphabetical' && styles.dropdownItemTextSelected
-              ]}>Alphabetical</Text>
-              {songSortType === 'alphabetical' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSongSortType('dateSavedOldest');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Oldest First)</Text>
-              {songSortType === 'dateSavedOldest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSongSortType('dateSavedNewest');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Newest First)</Text>
-              {songSortType === 'dateSavedNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSongSortType('performanceDateOldest');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'performanceDateOldest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Oldest First)</Text>
-              {songSortType === 'performanceDateOldest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSongSortType('performanceDateNewest');
-                setShowSongSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                songSortType === 'performanceDateNewest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Newest First)</Text>
-              {songSortType === 'performanceDateNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setShowSongSortModal(false)}
+        position={songSortButtonPosition}
+        options={SONG_SORT_OPTIONS}
+        selectedValue={songSortType}
+        onSelect={setSongSortType}
+      />
 
       {/* Show Sort Dropdown */}
-      <Modal
+      <SortDropdown
         visible={showShowSortModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowShowSortModal(false)}
-      >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setShowShowSortModal(false)}
-        >
-          <View
-            style={[
-              styles.dropdownContainer,
-              { top: showSortButtonPosition.top, left: showSortButtonPosition.left }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowSortType('alphabetical');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'alphabetical' && styles.dropdownItemTextSelected
-              ]}>Alphabetical</Text>
-              {showSortType === 'alphabetical' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowSortType('dateSavedOldest');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'dateSavedOldest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Oldest First)</Text>
-              {showSortType === 'dateSavedOldest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowSortType('dateSavedNewest');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'dateSavedNewest' && styles.dropdownItemTextSelected
-              ]}>Date Saved (Newest First)</Text>
-              {showSortType === 'dateSavedNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowSortType('performanceDateOldest');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'performanceDateOldest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Oldest First)</Text>
-              {showSortType === 'performanceDateOldest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowSortType('performanceDateNewest');
-                setShowShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                showSortType === 'performanceDateNewest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Newest First)</Text>
-              {showSortType === 'performanceDateNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setShowShowSortModal(false)}
+        position={showSortButtonPosition}
+        options={SHOW_SORT_OPTIONS}
+        selectedValue={showSortType}
+        onSelect={setShowSortType}
+      />
     </View>
   );
 }
@@ -1188,35 +997,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.accent,
-  },
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACING.sm,
-    minWidth: 180,
-    ...SHADOWS.lg,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  dropdownItemText: {
-    ...TYPOGRAPHY.body,
-  },
-  dropdownItemTextSelected: {
-    color: COLORS.accent,
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.lg,
   },
 });

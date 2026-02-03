@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -23,9 +21,10 @@ import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
+import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
 
 // Layout constants
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -38,6 +37,13 @@ import { logger } from '../utils/logger';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SortType = 'alphabetical' | 'performanceDateOldest' | 'performanceDateNewest' | 'ratingHighest';
+
+const SORT_OPTIONS: SortOption<SortType>[] = [
+  { value: 'alphabetical', label: 'Alphabetical' },
+  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
+  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
+  { value: 'ratingHighest', label: 'Rating (Highest First)' },
+];
 
 interface Performance {
   date: string;
@@ -338,99 +344,15 @@ export function SongPerformancesScreen() {
         </View>
       </View>
 
-      {/* Sort Modal */}
-      <Modal
+      {/* Sort Dropdown */}
+      <SortDropdown
         visible={showSortModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortModal(false)}
-      >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setShowSortModal(false)}
-        >
-          <View
-            style={[
-              styles.dropdownContainer,
-              { top: sortButtonPosition.top, left: sortButtonPosition.left }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('alphabetical');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'alphabetical' && styles.dropdownItemTextSelected
-              ]}>Alphabetical</Text>
-              {sortType === 'alphabetical' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('performanceDateOldest');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'performanceDateOldest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Oldest First)</Text>
-              {sortType === 'performanceDateOldest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('performanceDateNewest');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'performanceDateNewest' && styles.dropdownItemTextSelected
-              ]}>Performance Date (Newest First)</Text>
-              {sortType === 'performanceDateNewest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dropdownDivider} />
-
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setSortType('ratingHighest');
-                setShowSortModal(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.dropdownItemText,
-                sortType === 'ratingHighest' && styles.dropdownItemTextSelected
-              ]}>Rating (Highest First)</Text>
-              {sortType === 'ratingHighest' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setShowSortModal(false)}
+        position={sortButtonPosition}
+        options={SORT_OPTIONS}
+        selectedValue={sortType}
+        onSelect={setSortType}
+      />
 
       <FlatList
         ref={flatListRef}
@@ -535,36 +457,5 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     justifyContent: 'center',
-  },
-  // Dropdown styles
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACING.sm,
-    minWidth: 150,
-    ...SHADOWS.lg,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  dropdownItemText: {
-    ...TYPOGRAPHY.body,
-  },
-  dropdownItemTextSelected: {
-    color: COLORS.accent,
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.lg,
   },
 });
