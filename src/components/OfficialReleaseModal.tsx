@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   buttonText: {
     ...TYPOGRAPHY.label,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
   },
   noStreamingText: {
     ...TYPOGRAPHY.labelSmall,

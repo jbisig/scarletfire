@@ -28,9 +28,14 @@ export const StarRating = React.memo<StarRatingProps>(function StarRating({
   style
 }) {
   const starCount = 4 - tier; // Tier 1 → 3 stars, Tier 2 → 2 stars, Tier 3 → 1 star
+  const ratingLabel = starCount === 1 ? '1 star rating' : `${starCount} star rating`;
 
   return (
-    <View style={[styles.starsContainer, style]}>
+    <View
+      style={[styles.starsContainer, style]}
+      accessibilityRole="text"
+      accessibilityLabel={ratingLabel}
+    >
       {Array.from({ length: starCount }, (_, i) => (
         <Ionicons
           key={i}

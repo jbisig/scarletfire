@@ -47,6 +47,9 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
                 style={styles.item}
                 onPress={onSettings}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+                accessibilityHint="Double tap to open settings"
               >
                 <Text style={styles.itemText}>Settings</Text>
               </TouchableOpacity>
@@ -55,6 +58,9 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
                 style={styles.item}
                 onPress={onLogout}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Log Out"
+                accessibilityHint="Double tap to log out of your account"
               >
                 <Text style={styles.itemTextRed}>Log Out</Text>
               </TouchableOpacity>
@@ -64,6 +70,9 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
               style={styles.item}
               onPress={onLogin}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Log In"
+              accessibilityHint="Double tap to log in to your account"
             >
               <Text style={styles.itemText}>Log In</Text>
             </TouchableOpacity>

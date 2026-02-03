@@ -28,6 +28,9 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
         onPress={onPress}
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={`Official release: ${fullText}`}
+        accessibilityHint="Double tap to view release details"
       >
         <Ionicons name="disc" size={10} color={COLORS.textPrimary} />
         <Text style={styles.compactText} numberOfLines={1}>{displayText}</Text>
@@ -40,6 +43,9 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
       style={styles.container}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Official release: ${fullText}`}
+      accessibilityHint="Double tap to view release details"
     >
       <Ionicons name="disc" size={12} color={COLORS.textPrimary} />
       <Text style={styles.text} numberOfLines={1}>{displayText}</Text>
