@@ -578,18 +578,6 @@ export const OFFICIAL_RELEASES: OfficialRelease[] = [
     },
     artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a5/ff/6c/a5ff6cca-559d-126c-cf3a-7c88bb2e4d1d/603497977512.jpg/600x600bb.jpg',
   },
-  {
-    name: 'Without a Net',
-    series: 'Studio Album',
-    showDates: ['1989-10-08', '1989-10-09', '1989-10-16', '1990-03-14', '1990-03-19',
-                '1990-03-25', '1990-03-26', '1990-03-28', '1990-03-29'],
-    streaming: {
-      spotify: 'https://open.spotify.com/album/6HyLzcuUZALOpAGnArJB8G',
-      appleMusic: 'https://music.apple.com/us/album/without-a-net/307796208',
-    },
-    artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/00/5b/41/005b41fe-2bdf-640c-ebc1-21a7ff8dae75/603497970483.jpg/600x600bb.jpg',
-  },
-
   // ============================================
   // EUROPE '72 COMPLETE RECORDINGS (22 volumes)
   // ============================================
