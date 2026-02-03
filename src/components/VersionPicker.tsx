@@ -48,8 +48,8 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
       >
         <View style={styles.selectorTopRow}>
           <Text style={styles.sourceName}>{currentVersion.source}</Text>
-          <Text style={styles.downloads}>
-            {formatDownloads(currentVersion.downloads)} downloads
+          <Text style={styles.views}>
+            {formatDownloads(currentVersion.downloads)} views
           </Text>
           <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
         </View>
@@ -102,7 +102,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                       {version.source}
                     </Text>
                     <Text style={styles.optionDownloads}>
-                      {formatDownloads(version.downloads)} downloads
+                      {formatDownloads(version.downloads)} views
                     </Text>
                     {attribution && (
                       <Text style={styles.optionAttribution} numberOfLines={2}>
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 15,
   },
-  downloads: {
+  views: {
     flex: 1,
     ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
