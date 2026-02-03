@@ -200,6 +200,7 @@ let matchCount = 0;
 let totalPerformances = 0;
 let inPerformance = false;
 let currentDate = null;
+let performanceHasRating = false;
 
 for (let i = 0; i < lines.length; i++) {
   const line = lines[i];
@@ -216,15 +217,21 @@ for (let i = 0; i < lines.length; i++) {
   if (dateMatch) {
     currentDate = dateMatch[1];
     inPerformance = true;
+    performanceHasRating = false;
     totalPerformances++;
     outputLines.push(line);
     continue;
   }
 
+  // Track if performance already has a rating
+  if (inPerformance && line.match(/^\s*rating:\s*\d/)) {
+    performanceHasRating = true;
+  }
+
   // If we see a closing brace and we're in a performance, check if we need to add rating
   if (inPerformance && line.match(/^\s*\},?\s*$/)) {
-    // Check if this performance has a rating
-    if (currentDate && normalizedCurrentSong) {
+    // Check if this performance has a rating (only add if not already present)
+    if (currentDate && normalizedCurrentSong && !performanceHasRating) {
       const lookupKey = `${normalizedCurrentSong}:${currentDate}`;
       const rating = ratingsMap.get(lookupKey);
 
@@ -237,6 +244,7 @@ for (let i = 0; i < lines.length; i++) {
     }
     inPerformance = false;
     currentDate = null;
+    performanceHasRating = false;
   }
 
   outputLines.push(line);
