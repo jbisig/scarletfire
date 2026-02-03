@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
@@ -25,6 +25,20 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  // Force video remount when source changes by briefly unmounting
+  const [videoMounted, setVideoMounted] = useState(true);
+  const prevVideoIdRef = useRef(videoId);
+
+  useEffect(() => {
+    if (videoId !== prevVideoIdRef.current) {
+      prevVideoIdRef.current = videoId;
+      // Briefly unmount video to force clean reload
+      setVideoMounted(false);
+      const timer = setTimeout(() => setVideoMounted(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [videoId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', setAppState);
@@ -76,16 +90,18 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
         accessibilityHint="Opens the full screen player"
       >
         {/* Video Background - only play when app is active to save battery */}
-        <Video
-          key={`video-${videoId}`}
-          source={videoSource}
-          style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay={appState === 'active'}
-          isLooping
-          isMuted
-          onError={handleVideoError}
-        />
+        {videoMounted && (
+          <Video
+            key={`video-${videoId}`}
+            source={videoSource}
+            style={styles.video}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={appState === 'active'}
+            isLooping
+            isMuted
+            onError={handleVideoError}
+          />
+        )}
 
         {/* Blur overlay */}
         <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.blurOverlay}>

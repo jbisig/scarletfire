@@ -62,6 +62,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
+  // Force video remount when source changes by briefly unmounting
+  const [videoMounted, setVideoMounted] = useState(true);
+  const prevVideoIdRef = useRef(videoId);
+
+  useEffect(() => {
+    if (videoId !== prevVideoIdRef.current) {
+      prevVideoIdRef.current = videoId;
+      // Briefly unmount video to force clean reload
+      setVideoMounted(false);
+      const timer = setTimeout(() => setVideoMounted(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [videoId]);
+
   const handleVideoError = useCallback(() => {
     logger.video.warn('FullPlayer video failed to load, falling back to bundled video');
     resetToFallback();
@@ -382,16 +396,18 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     >
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
-        <Video
-          key={`video-${videoId}`}
-          source={videoSource}
-          style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay={visible && appState === 'active'}
-          isLooping
-          isMuted
-          onError={handleVideoError}
-        />
+        {videoMounted && (
+          <Video
+            key={`video-${videoId}`}
+            source={videoSource}
+            style={styles.video}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={visible && appState === 'active'}
+            isLooping
+            isMuted
+            onError={handleVideoError}
+          />
+        )}
 
         {/* Gradient overlay for text readability */}
         <LinearGradient
