@@ -35,8 +35,8 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
 
   return (
     <>
-      <View style={styles.headerSection}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.header}>
           <TouchableOpacity
             ref={profileButtonRef}
             onPress={handleProfilePress}
