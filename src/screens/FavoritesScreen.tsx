@@ -1185,6 +1185,7 @@ const styles = StyleSheet.create({
   },
   sortLabelText: {
     ...TYPOGRAPHY.bodySmall,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   tabContainer: {
@@ -1288,6 +1289,7 @@ const styles = StyleSheet.create({
   },
   shuffleButtonText: {
     ...TYPOGRAPHY.bodySmall,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.accent,
   },

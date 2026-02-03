@@ -124,8 +124,6 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>By Year or Era</Text>
-
       {FILTER_ERAS.map(era => {
         const eraFullySelected = isEraFullySelected(era);
         const hasEnabledYears = era.years.some(y => !disabledYears.has(y));

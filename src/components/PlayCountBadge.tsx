@@ -50,6 +50,7 @@ const styles = StyleSheet.create({
   },
   textSmall: {
     ...TYPOGRAPHY.captionSmall,
+    fontSize: 11,
     fontWeight: '600',
   },
 });

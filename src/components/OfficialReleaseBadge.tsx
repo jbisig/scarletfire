@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
   },
   text: {
     ...TYPOGRAPHY.captionSmall,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
   },
   compactText: {
     ...TYPOGRAPHY.captionSmall,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textPrimary,
     flexShrink: 1,

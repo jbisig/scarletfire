@@ -20,7 +20,7 @@ export const SeriesSection = React.memo<SeriesSectionProps>(function SeriesSecti
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionLabel}>By Official Release Series</Text>
+        <Text style={styles.sectionLabel}>Official Releases</Text>
         <TouchableOpacity onPress={onSelectAll} activeOpacity={0.7}>
           <Text style={styles.selectAllText}>
             {allSelected ? 'Clear all' : 'Select all'}

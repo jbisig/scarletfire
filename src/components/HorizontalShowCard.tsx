@@ -21,7 +21,7 @@ function shouldFlipGradient(seed: string): boolean {
 }
 
 const CARD_WIDTH = 200;
-const CARD_HEIGHT = 100;
+const CARD_HEIGHT = 112;
 
 interface HorizontalShowCardProps {
   show: GratefulDeadShow;
@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
   },
   date: {
     ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   location: {
