@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING.lg,
-    gap: SPACING.lg,
+    gap: SPACING.md,
   },
   headerGradient: {
     position: 'absolute',
