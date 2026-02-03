@@ -10,7 +10,7 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { logger } from '../utils/logger';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,26 +50,8 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
-  // Track video loading state
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
-
-  // Reset video state when video source changes
-  useEffect(() => {
-    setVideoLoaded(false);
-    setVideoError(false);
-  }, [videoId]);
-
-  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      setVideoLoaded(true);
-      setVideoError(false);
-    }
-  }, []);
-
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('Video background failed to load:', error);
-    setVideoError(true);
     // Reset to bundled fallback video if a downloaded video fails
     resetToFallback();
   }, [resetToFallback]);
@@ -230,17 +212,18 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             accessibilityState={{ disabled: isLoading || !show }}
           >
             <View style={styles.sotdCard}>
+              {/* Video background - absolute fill */}
               <Video
                 key={`sotd-video-${videoId}`}
                 source={videoSource}
-                style={[styles.sotdVideo, !videoLoaded && styles.sotdVideoHidden]}
+                style={StyleSheet.absoluteFillObject}
                 resizeMode={ResizeMode.COVER}
-                shouldPlay={appState === 'active' && !videoError}
+                shouldPlay={appState === 'active'}
                 isLooping
                 isMuted
-                onPlaybackStatusUpdate={handleVideoLoad}
                 onError={handleVideoError}
               />
+              {/* Blur overlay with content - provides card height */}
               <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.sotdBlurOverlay}>
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
@@ -357,18 +340,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     overflow: 'hidden',
     backgroundColor: COLORS.cardBackground,
-  },
-  sotdVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-  },
-  sotdVideoHidden: {
-    opacity: 0,
+    minHeight: 80, // Ensure video has space to render
   },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,
