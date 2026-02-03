@@ -10,7 +10,8 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { logger } from '../utils/logger';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -44,10 +45,34 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { show, isLoading, refreshShow } = useShowOfTheDay();
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
   const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();
-  const { videoSource, videoId } = useVideoBackground();
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  // Track video loading state
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  // Reset video state when video source changes
+  useEffect(() => {
+    setVideoLoaded(false);
+    setVideoError(false);
+  }, [videoId]);
+
+  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      setVideoLoaded(true);
+      setVideoError(false);
+    }
+  }, []);
+
+  const handleVideoError = useCallback((error: string) => {
+    logger.player.error('Video background failed to load:', error);
+    setVideoError(true);
+    // Reset to bundled fallback video if a downloaded video fails
+    resetToFallback();
+  }, [resetToFallback]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', setAppState);
@@ -208,11 +233,13 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
               <Video
                 key={`sotd-video-${videoId}`}
                 source={videoSource}
-                style={styles.sotdVideo}
+                style={[styles.sotdVideo, !videoLoaded && styles.sotdVideoHidden]}
                 resizeMode={ResizeMode.COVER}
-                shouldPlay={appState === 'active'}
+                shouldPlay={appState === 'active' && !videoError}
                 isLooping
                 isMuted
+                onPlaybackStatusUpdate={handleVideoLoad}
+                onError={handleVideoError}
               />
               <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.sotdBlurOverlay}>
                 {isLoading ? (
@@ -339,6 +366,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+  },
+  sotdVideoHidden: {
+    opacity: 0,
   },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,

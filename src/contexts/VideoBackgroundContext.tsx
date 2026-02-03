@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useCallback,
   ReactNode,
 } from 'react';
 import { InteractionManager } from 'react-native';
@@ -14,6 +15,7 @@ import { BUNDLED_VIDEO, BUNDLED_VIDEO_ID } from '../constants/videoSources';
 interface VideoBackgroundContextType {
   videoSource: number | { uri: string }; // Asset ID or URI object
   videoId: string; // Video identifier for key prop
+  resetToFallback: () => void; // Reset to bundled video on error
 }
 
 const VideoBackgroundContext = createContext<VideoBackgroundContextType | null>(null);
@@ -70,12 +72,20 @@ export function VideoBackgroundProvider({ children }: { children: ReactNode }) {
     }
   }, [state.currentTrack?.id, currentVideo.id]);
 
+  // Reset to bundled fallback video (used when downloaded video fails to load)
+  const resetToFallback = useCallback(() => {
+    if (currentVideo.id !== BUNDLED_VIDEO_ID) {
+      setCurrentVideo({ id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO });
+    }
+  }, [currentVideo.id]);
+
   const value = useMemo(
     () => ({
       videoSource: currentVideo.source,
       videoId: currentVideo.id,
+      resetToFallback,
     }),
-    [currentVideo]
+    [currentVideo, resetToFallback]
   );
 
   return (
