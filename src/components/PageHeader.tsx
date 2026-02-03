@@ -10,15 +10,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from './ProfileDropdown';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 // Default profile image for logged out users
 const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
+
+// Match HomeScreen's horizontal padding
+const HORIZONTAL_PADDING = SPACING.xl;
 
 interface PageHeaderProps {
   title: string;
 }
 
+/**
+ * Reusable page header component that matches the Shows screen header layout.
+ * Uses the same structure as HomeScreen but without search/filter buttons.
+ */
 export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderProps) {
   const insets = useSafeAreaInsets();
   const {
@@ -37,20 +44,26 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
     <>
       <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
         <View style={styles.header}>
-          <TouchableOpacity
-            ref={profileButtonRef}
-            onPress={handleProfilePress}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={isAuthenticated && avatarUrl
-                ? { uri: avatarUrl }
-                : LOGGED_OUT_PROFILE
-              }
-              style={styles.profileImage}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{title}</Text>
+          {/* Left side: Avatar and Title - matches HomeScreen headerLeft */}
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              ref={profileButtonRef}
+              onPress={handleProfilePress}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={isAuthenticated && avatarUrl
+                  ? { uri: avatarUrl }
+                  : LOGGED_OUT_PROFILE
+                }
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{title}</Text>
+          </View>
+
+          {/* Spacer to maintain header height (matches headerRight button height) */}
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Gradient fade overlay */}
@@ -82,18 +95,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.md,
-  },
-  headerGradient: {
     position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 30,
+    left: HORIZONTAL_PADDING,
+    top: 0,
+    bottom: SPACING.lg,
   },
-  profileImage: {
+  avatar: {
     width: 39,
     height: 39,
     borderRadius: RADIUS.full,
@@ -101,5 +116,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.heading2,
+  },
+  headerSpacer: {
+    // Match the height of headerRight buttons to maintain consistent header height
+    height: LAYOUT.headerButtonSize,
+    marginLeft: 'auto',
+  },
+  headerGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
   },
 });
