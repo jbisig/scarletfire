@@ -722,11 +722,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       }
+      // In show mode, check if we're on the last track and should start next show
+      if (state.playbackMode === 'show') {
+        const isLastTrack = state.playlist.length > 0 &&
+                            state.currentTrackIndex === state.playlist.length - 1;
+        if (isLastTrack) {
+          // On last track of show, play next chronological show
+          playNextShowRef.current();
+          return;
+        }
+      }
       await audioService.skipToNext();
     } catch (error) {
       logger.player.error('Skip to next failed:', error instanceof Error ? error.message : 'Unknown error');
     }
-  }, [state.playbackMode, state.shuffleType]);
+  }, [state.playbackMode, state.shuffleType, state.playlist.length, state.currentTrackIndex]);
 
   const previousTrack = useCallback(async () => {
     try {
