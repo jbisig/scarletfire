@@ -308,6 +308,57 @@ export const COMMUNITY_RATINGS: CommunityRatedPerformance[] = [
   communityRating('Deal', '1978-12-16', 1, "Smokin - Dick's Picks 18 - Nashville"),
   communityRating('Deal', '1978-01-07', 1, "Extended solo 2-3 verses longer - Dick's Picks 25 - New Haven"),
   communityRating('Deal', '1989-07-19', 2, 'Great late 80s version, recommended starter - Alpine Valley'),
+
+  // ===== DEADCAST PODCAST SOURCED RATINGS =====
+  // From Good Ol' Grateful Deadcast transcripts - David Lemieux and expert analysis
+
+  // RFK Stadium 6/10/73 - "best overall show" post-1970 per Deadcast
+  communityRating('Dark Star', '1973-06-10', 1, 'Deadcast: phenomenal Dark Star, Phil\'s bass solo "oh fuck" moment - RFK'),
+  communityRating('Bird Song', '1973-06-10', 1, 'Deadcast: spectacular, just spectacular - RFK'),
+  communityRating('Playing In The Band', '1973-06-10', 1, 'Deadcast: just beyond belief - RFK'),
+  communityRating("Playin' In The Band", '1973-06-10', 1, 'Deadcast: just beyond belief - RFK'),
+  communityRating('Morning Dew', '1973-06-10', 1, 'Deadcast: show opener Day 2, way beyond Day 1 - RFK'),
+  communityRating('Eyes Of The World', '1973-06-10', 1, 'Deadcast: dramatic as any the Dead created, 7/8 jam - RFK'),
+  communityRating('Stella Blue', '1973-06-10', 2, 'Deadcast: magical with fireworks, memorable - RFK'),
+  communityRating('Wharf Rat', '1973-06-10', 2, 'Deadcast: out of Dark Star, powerful - RFK'),
+  communityRating("Truckin'", '1973-06-10', 2, 'Deadcast: closing the second set strong - RFK'),
+  communityRating('Truckin', '1973-06-10', 2, 'Deadcast: closing the second set strong - RFK'),
+  communityRating('Row Jimmy', '1973-06-10', 2, 'Deadcast: beautiful version - RFK'),
+  communityRating('Jack Straw', '1973-06-10', 2, 'Deadcast: Buddy story, powerful version - RFK'),
+
+  // Kezar Stadium 5/26/73 - legendary show, "can't get more home than that"
+  communityRating('Here Comes Sunshine', '1973-05-26', 1, 'Deadcast: legendary Kezar show, Lemieux top tape list - Kezar Stadium'),
+  communityRating('The Other One', '1973-05-26', 1, 'Deadcast: famous version with Phil bass solo and The Tiger - Kezar'),
+  communityRating('They Love Each Other', '1973-05-26', 2, 'Deadcast: Here Comes Sunshine box set highlight - Kezar'),
+  communityRating('Box Of Rain', '1973-05-26', 2, 'Deadcast: featured on Here Comes Sunshine box - Kezar'),
+
+  // Santa Barbara 5/20/73 - "something very special"
+  communityRating('Here Comes Sunshine', '1973-05-20', 2, 'Deadcast: something very special, Southern California vibe - Santa Barbara'),
+  communityRating('They Love Each Other', '1973-05-20', 2, 'Deadcast: everything clicked that day - Santa Barbara'),
+
+  // Des Moines 5/13/73 - "laying it on thick" start to finish
+  communityRating('Here Comes Sunshine', '1973-05-13', 2, 'Deadcast: laying it on thick start to finish - Des Moines'),
+  communityRating('Eyes Of The World', '1973-05-13', 2, 'Deadcast: Here Comes Sunshine box highlight - Des Moines'),
+  communityRating('The Other One', '1973-05-13', 2, 'Deadcast: 30+ song show, band at peak - Des Moines'),
+
+  // Duke University 4/12/78 - "one of the best shows they ever did"
+  communityRating('It Must Have Been The Roses', '1978-04-12', 1, 'Deadcast: David Lemieux calls entire show one of best ever - Duke'),
+  communityRating('Estimated Prophet', '1978-04-12', 2, 'Deadcast: Jerry is happy, engaged - Duke'),
+  communityRating('Scarlet Begonias', '1978-04-12', 2, 'Deadcast: head and shoulders above everything - Duke'),
+  communityRating('Fire On The Mountain', '1978-04-12', 2, 'Deadcast: peak spring 78 tour - Duke'),
+
+  // Fox Theatre Atlanta 4/78 - "I love both these shows"
+  communityRating('Estimated Prophet', '1978-04-21', 2, 'Deadcast: beautifully recorded Betty Board, love this show - Fox Atlanta'),
+  communityRating('Estimated Prophet', '1978-04-22', 2, 'Deadcast: Betty Board, theater built for music - Fox Atlanta'),
+
+  // Watkins Glen 7/28/73 - biggest concert of their career
+  communityRating('Here Comes Sunshine', '1973-07-28', 2, 'Deadcast: Watkins Glen Summer Jam, biggest show ever - Watkins Glen'),
+
+  // Eyes of the World 3/29/90 - Branford Marsalis version featured in Wake of the Flood 50 episode
+  communityRating('Eyes Of The World', '1990-03-29', 1, 'Deadcast: Without A Net version with Branford Marsalis on saxophone - Nassau'),
+
+  // December 19, 1973 - Dick Latvala chose for Dick's Picks Volume 1
+  communityRating('Here Comes Sunshine', '1973-12-19', 1, 'Deadcast: Dick Latvala chose this for Dick\'s Picks 1 - Tampa'),
 ];
 
 /**

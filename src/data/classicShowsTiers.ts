@@ -31,6 +31,11 @@ export const TIER_1_SHOWS: ClassicShowEntry[] = [
   { date: '1974-06-18', tier: 1, notes: 'Freedom Hall - Dicks Picks Vol. 12' },
   { date: '1971-04-29', tier: 1, notes: 'Fillmore East - Closing Night' },
   { date: '1977-09-03', tier: 1, notes: 'Englishtown - Dicks Picks Vol. 15' },
+
+  // Deadcast-sourced Tier 1 classics
+  { date: '1978-04-12', tier: 1, notes: 'Deadcast: Duke University - "one of the best shows they ever did" per David Lemieux' },
+  { date: '1973-05-26', tier: 1, notes: 'Deadcast: Kezar Stadium - legendary, at top of tape trading list, "can\'t get more home than that"' },
+  { date: '1973-06-10', tier: 1, notes: 'Deadcast: RFK Stadium Day 2 - "best overall show" post-1970, "way beyond" Day 1' },
 ];
 
 // Tier 2: Excellent - highly regarded shows
@@ -56,7 +61,7 @@ export const TIER_2_SHOWS: ClassicShowEntry[] = [
   { date: '1973-02-09', tier: 2, notes: 'Maples Pavilion' },
   { date: '1973-02-15', tier: 2, notes: 'Danish Radio Concert Hall' },
   { date: '1973-03-24', tier: 2, notes: 'Philadelphia Spectrum' },
-  { date: '1973-06-10', tier: 2, notes: 'RFK Stadium' },
+  { date: '1973-06-09', tier: 2, notes: 'RFK Stadium Day 1 - tight show with cool jams' },
   { date: '1973-06-26', tier: 2, notes: 'Seattle Center Arena' },
   { date: '1973-09-08', tier: 2, notes: 'Nassau Coliseum' },
   { date: '1973-12-06', tier: 2, notes: 'Cleveland Public Hall - 44min Dark Star' },
@@ -98,8 +103,12 @@ export const TIER_2_SHOWS: ClassicShowEntry[] = [
   // 1990s with Vince/Bruce
   { date: '1991-09-10', tier: 2, notes: 'MSG - Branford Marsalis sits in' },
 
-  // Additional classics
-  { date: '1973-05-08', tier: 2, notes: 'Kezar Stadium' },
+  // Deadcast-sourced Tier 2 classics
+  { date: '1973-05-20', tier: 2, notes: 'Deadcast: Santa Barbara - "something very special", Southern California vibe' },
+  { date: '1973-05-13', tier: 2, notes: 'Deadcast: Des Moines - "laying it on thick" start to finish' },
+  { date: '1978-04-21', tier: 2, notes: 'Deadcast: Fox Theatre Atlanta - "I love both these shows", Betty Board' },
+  { date: '1978-04-22', tier: 2, notes: 'Deadcast: Fox Theatre Atlanta - theater built for music, Betty Board' },
+  { date: '1973-07-28', tier: 2, notes: 'Deadcast: Watkins Glen Summer Jam - biggest concert of their career' },
 ];
 
 // Tier 3: Notable - solid shows worth exploring
@@ -116,7 +125,6 @@ export const TIER_3_SHOWS: ClassicShowEntry[] = [
   { date: '1970-06-24', tier: 3, notes: 'Capitol Theatre, Port Chester' },
   { date: '1970-11-08', tier: 3, notes: 'Capitol Theatre, Port Chester' },
   { date: '1971-02-18', tier: 3, notes: 'Capitol Theatre, Port Chester' },
-  { date: '1973-07-28', tier: 3, notes: 'Watkins Glen Summer Jam soundcheck' },
 
   // More 1977
   { date: '1977-04-22', tier: 3, notes: 'The Spectrum, Philadelphia' },
