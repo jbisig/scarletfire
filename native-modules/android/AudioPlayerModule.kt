@@ -581,10 +581,9 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     fun showCastDialog(promise: Promise) {
         UiThreadUtil.runOnUiThread {
             try {
-                val activity = currentActivity
+                val activity = reactApplicationContext.currentActivity
                 if (activity != null && castContext != null) {
                     // Use MediaRouteChooserDialog via MediaRouter
-                    val mediaRouter = androidx.mediarouter.media.MediaRouter.getInstance(reactApplicationContext)
                     val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
                         .addControlCategory(com.google.android.gms.cast.CastMediaControlIntent.categoryForCast(
                             com.google.android.gms.cast.CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
