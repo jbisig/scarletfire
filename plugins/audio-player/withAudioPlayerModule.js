@@ -1,4 +1,4 @@
-const { withXcodeProject, IOSConfig } = require('@expo/config-plugins');
+const { withXcodeProject, withMainApplication, withAppBuildGradle } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -6,7 +6,7 @@ const path = require('path');
  * Expo config plugin to add the custom AudioPlayerModule native files
  * This ensures the native audio player module persists across prebuild --clean
  */
-function withAudioPlayerModule(config) {
+function withAudioPlayerModuleIOS(config) {
   return withXcodeProject(config, async (config) => {
     const xcodeProject = config.modResults;
     const projectRoot = config.modRequest.projectRoot;
@@ -68,6 +68,119 @@ function withAudioPlayerModule(config) {
 
     return config;
   });
+}
+
+/**
+ * Copy Android native module files to the Android project
+ */
+function withAudioPlayerModuleAndroidFiles(config) {
+  return withMainApplication(config, async (config) => {
+    const projectRoot = config.modRequest.projectRoot;
+
+    // Source files location
+    const sourceDir = path.join(projectRoot, 'native-modules', 'android');
+
+    // Target location in Android project
+    const targetDir = path.join(
+      projectRoot,
+      'android',
+      'app',
+      'src',
+      'main',
+      'java',
+      'com',
+      'scarletfire',
+      'app'
+    );
+
+    const filesToCopy = ['AudioPlayerModule.kt', 'AudioPlayerPackage.kt'];
+
+    for (const fileName of filesToCopy) {
+      const sourcePath = path.join(sourceDir, fileName);
+      const targetPath = path.join(targetDir, fileName);
+
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, targetPath);
+        console.log(`[AudioPlayerModule] Copied ${fileName} to Android project`);
+      } else {
+        console.error(`[AudioPlayerModule] ERROR: Source file not found: ${sourcePath}`);
+      }
+    }
+
+    // Register the package in MainApplication.kt
+    const mainAppPath = path.join(targetDir, 'MainApplication.kt');
+    let mainAppContent = config.modResults.contents;
+
+    // Check if AudioPlayerPackage is already added
+    if (!mainAppContent.includes('AudioPlayerPackage')) {
+      // Add the import (should already be in same package, so no import needed)
+      // Add to getPackages()
+      mainAppContent = mainAppContent.replace(
+        /PackageList\(this\)\.packages\.apply \{/,
+        `PackageList(this).packages.apply {
+              add(AudioPlayerPackage())`
+      );
+      config.modResults.contents = mainAppContent;
+      console.log('[AudioPlayerModule] Registered AudioPlayerPackage in MainApplication.kt');
+    } else {
+      console.log('[AudioPlayerModule] AudioPlayerPackage already registered');
+    }
+
+    return config;
+  });
+}
+
+/**
+ * Add Media3 ExoPlayer dependencies to Android build.gradle
+ */
+function withAudioPlayerModuleAndroidDependencies(config) {
+  return withAppBuildGradle(config, async (config) => {
+    let buildGradle = config.modResults.contents;
+
+    // Check if Media3 dependencies are already added
+    if (!buildGradle.includes('androidx.media3')) {
+      // Find the dependencies block and add Media3
+      const media3Dependencies = `
+    // Media3 ExoPlayer for AudioPlayerModule
+    implementation("androidx.media3:media3-exoplayer:1.2.1")
+    implementation("androidx.media3:media3-session:1.2.1")
+    implementation("androidx.media3:media3-ui:1.2.1")
+    implementation("androidx.media:media:1.7.0")`;
+
+      // Insert before the closing brace of dependencies block
+      buildGradle = buildGradle.replace(
+        /(dependencies\s*\{[\s\S]*?)(^\})/m,
+        (match, p1, p2) => {
+          // Find last line before closing brace
+          const lines = p1.split('\n');
+          const lastIndex = lines.length - 1;
+          lines.splice(lastIndex, 0, media3Dependencies);
+          return lines.join('\n') + p2;
+        }
+      );
+
+      config.modResults.contents = buildGradle;
+      console.log('[AudioPlayerModule] Added Media3 dependencies to build.gradle');
+    } else {
+      console.log('[AudioPlayerModule] Media3 dependencies already present');
+    }
+
+    return config;
+  });
+}
+
+/**
+ * Main plugin that combines iOS and Android setup
+ */
+function withAudioPlayerModule(config) {
+  // Apply iOS configuration
+  config = withAudioPlayerModuleIOS(config);
+
+  // Apply Android configuration
+  config = withAudioPlayerModuleAndroidFiles(config);
+  config = withAudioPlayerModuleAndroidDependencies(config);
+
+  return config;
 }
 
 module.exports = withAudioPlayerModule;
