@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -944,6 +945,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.xxxxl,
+    ...(Platform.OS === 'android' && {
+      marginBottom: 80,
+    }),
   },
   emptyTitle: {
     ...TYPOGRAPHY.heading3,

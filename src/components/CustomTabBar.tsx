@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,8 +26,10 @@ export const CustomTabBar = React.memo(function CustomTabBar({ state, descriptor
 
   return (
     <View style={styles.container}>
-      {/* Blur background */}
-      <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
+      {/* Blur background (iOS only) */}
+      {Platform.OS === 'ios' && (
+        <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
+      )}
 
       {/* Semi-transparent overlay */}
       <View style={styles.overlay} />
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: BRAND_COLORS.tabBarBackground,
+    backgroundColor: Platform.OS === 'ios' ? BRAND_COLORS.tabBarBackground : 'rgba(18, 18, 18, 0.92)',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -109,5 +111,8 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...TYPOGRAPHY.captionSmall,
+    ...(Platform.OS === 'android' && {
+      includeFontPadding: false,
+    }),
   },
 });

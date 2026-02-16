@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,8 +103,13 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
           />
         )}
 
-        {/* Blur overlay */}
-        <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.blurOverlay}>
+        {/* Overlay - BlurView on iOS, semi-transparent View on Android */}
+        <View style={styles.blurOverlay}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={30} tint="systemThinMaterialDark" style={StyleSheet.absoluteFill} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.androidOverlay]} />
+          )}
           <View style={styles.contentOverlay}>
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
@@ -151,7 +156,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
               <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
             </View>
           </View>
-        </BlurView>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -175,6 +180,9 @@ const styles = StyleSheet.create({
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
+  },
+  androidOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   contentOverlay: {
     flex: 1,

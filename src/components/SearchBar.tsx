@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInputProps,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -108,6 +109,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...TYPOGRAPHY.body,
+    ...(Platform.OS === 'android' && {
+      textAlignVertical: 'center',
+      includeFontPadding: false,
+    }),
   },
   clearButton: {
     padding: SPACING.xs,

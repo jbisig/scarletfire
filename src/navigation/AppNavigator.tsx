@@ -14,7 +14,7 @@ import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: 87,
+    bottom: Platform.OS === 'ios' ? 87 : 77,
     left: 0,
     right: 0,
     zIndex: 998,

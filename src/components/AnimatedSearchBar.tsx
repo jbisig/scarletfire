@@ -7,6 +7,7 @@ import {
   Animated,
   Easing,
   Keyboard,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -173,6 +174,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...TYPOGRAPHY.body,
+    ...(Platform.OS === 'android' && {
+      textAlignVertical: 'center',
+      includeFontPadding: false,
+    }),
   },
   closeSearchButton: {
     padding: SPACING.xs,

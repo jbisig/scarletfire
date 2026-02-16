@@ -9,6 +9,7 @@ import {
   Dimensions,
   AppState,
   AppStateStatus,
+  Platform,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { logger } from '../utils/logger';
@@ -223,8 +224,13 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                 isMuted
                 onError={handleVideoError}
               />
-              {/* Blur overlay with content - provides card height */}
-              <BlurView intensity={30} tint="systemThinMaterialDark" style={styles.sotdBlurOverlay}>
+              {/* Overlay - BlurView on iOS, semi-transparent View on Android */}
+              <View style={styles.sotdBlurOverlay}>
+                {Platform.OS === 'ios' ? (
+                  <BlurView intensity={30} tint="systemThinMaterialDark" style={StyleSheet.absoluteFill} />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, styles.androidOverlay]} />
+                )}
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
                     <ActivityIndicator size="large" color={COLORS.accent} />
@@ -245,7 +251,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                     )}
                   </View>
                 ) : null}
-              </BlurView>
+              </View>
             </View>
           </TouchableOpacity>
         </View>
@@ -345,6 +351,9 @@ const styles = StyleSheet.create({
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
+  },
+  androidOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sotdLoading: {
     paddingVertical: SPACING.xxl,
