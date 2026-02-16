@@ -38,7 +38,12 @@ export enum Event {
   PlaybackProgress = 'playback-progress',
   PlaybackError = 'playback-error',
   PlaybackQueueEnded = 'playback-queue-ended',
+  CastStateChanged = 'cast-state-changed',
+  CastDeviceConnected = 'cast-device-connected',
+  CastDeviceDisconnected = 'cast-device-disconnected',
 }
+
+export type CastState = 'NO_DEVICES' | 'NOT_CONNECTED' | 'CONNECTING' | 'CONNECTED';
 
 // Event data types for type-safe event handling
 export interface PlaybackStateEventData {
@@ -61,13 +66,27 @@ export interface PlaybackErrorEventData {
 // Empty for queue ended event
 export interface PlaybackQueueEndedEventData {}
 
+// Cast event data types
+export interface CastStateChangedEventData {
+  state: CastState;
+}
+
+export interface CastDeviceConnectedEventData {
+  deviceName: string;
+}
+
+export interface CastDeviceDisconnectedEventData {}
+
 // Union type for all event data
 export type EventData =
   | PlaybackStateEventData
   | PlaybackTrackChangedEventData
   | PlaybackProgressEventData
   | PlaybackErrorEventData
-  | PlaybackQueueEndedEventData;
+  | PlaybackQueueEndedEventData
+  | CastStateChangedEventData
+  | CastDeviceConnectedEventData
+  | CastDeviceDisconnectedEventData;
 
 class NativeAudioPlayer {
   async setupPlayer(): Promise<void> {
@@ -123,12 +142,30 @@ class NativeAudioPlayer {
     return AudioPlayerModule.refreshAudioSession();
   }
 
+  // Cast methods (Android only)
+  async getCastState(): Promise<CastState> {
+    if (Platform.OS !== 'android') {
+      return 'NO_DEVICES';
+    }
+    return AudioPlayerModule.getCastState();
+  }
+
+  async showCastDialog(): Promise<void> {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    return AudioPlayerModule.showCastDialog();
+  }
+
   // Overloaded addEventListener for type-safe event handling
   addEventListener(event: Event.PlaybackState, handler: (data: PlaybackStateEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackTrackChanged, handler: (data: PlaybackTrackChangedEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackProgress, handler: (data: PlaybackProgressEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackError, handler: (data: PlaybackErrorEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackQueueEnded, handler: (data: PlaybackQueueEndedEventData) => void): { remove: () => void };
+  addEventListener(event: Event.CastStateChanged, handler: (data: CastStateChangedEventData) => void): { remove: () => void };
+  addEventListener(event: Event.CastDeviceConnected, handler: (data: CastDeviceConnectedEventData) => void): { remove: () => void };
+  addEventListener(event: Event.CastDeviceDisconnected, handler: (data: CastDeviceDisconnectedEventData) => void): { remove: () => void };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addEventListener(event: Event, handler: (data: any) => void): { remove: () => void } {
     const subscription = eventEmitter.addListener(event, handler);

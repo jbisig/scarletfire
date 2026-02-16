@@ -14,12 +14,19 @@ import androidx.media3.common.Player
 import androidx.media3.common.PlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
+import androidx.media3.cast.CastPlayer
+import androidx.media3.cast.SessionAvailabilityListener
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastState
+import com.google.android.gms.cast.framework.CastStateListener
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private var player: ExoPlayer? = null
+    private var castPlayer: CastPlayer? = null
+    private var castContext: CastContext? = null
     private var mediaSession: MediaSession? = null
     private var mediaSessionCompat: MediaSessionCompat? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -27,8 +34,18 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
 
     private var originalTracks: MutableList<ReadableMap> = mutableListOf()
     private var currentTrackIndex: Int = 0
+    private var isCasting: Boolean = false
 
     override fun getName(): String = "AudioPlayerModule"
+
+    // Get the active player (CastPlayer when casting, ExoPlayer otherwise)
+    private fun getCurrentPlayer(): Player? {
+        return if (isCasting && castPlayer?.isCastSessionAvailable == true) {
+            castPlayer
+        } else {
+            player
+        }
+    }
 
     private fun sendEvent(eventName: String, params: WritableMap?) {
         reactApplicationContext
@@ -41,7 +58,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
 
         progressRunnable = object : Runnable {
             override fun run() {
-                player?.let { p ->
+                getCurrentPlayer()?.let { p ->
                     if (p.playbackState == Player.STATE_READY || p.playbackState == Player.STATE_BUFFERING) {
                         val position = p.currentPosition / 1000.0
                         val duration = p.duration / 1000.0
@@ -181,15 +198,16 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     }
 
     private fun updateMediaSessionPlaybackState() {
+        val currentPlayer = getCurrentPlayer()
         val state = when {
-            player?.isPlaying == true -> PlaybackStateCompat.STATE_PLAYING
-            player?.playbackState == Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
-            player?.playbackState == Player.STATE_READY -> PlaybackStateCompat.STATE_PAUSED
+            currentPlayer?.isPlaying == true -> PlaybackStateCompat.STATE_PLAYING
+            currentPlayer?.playbackState == Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
+            currentPlayer?.playbackState == Player.STATE_READY -> PlaybackStateCompat.STATE_PAUSED
             else -> PlaybackStateCompat.STATE_STOPPED
         }
 
-        val position = player?.currentPosition ?: 0L
-        val playbackSpeed = if (player?.isPlaying == true) 1.0f else 0f
+        val position = currentPlayer?.currentPosition ?: 0L
+        val playbackSpeed = if (currentPlayer?.isPlaying == true) 1.0f else 0f
 
         mediaSessionCompat?.setPlaybackState(
             PlaybackStateCompat.Builder()
@@ -218,6 +236,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
                     setupPlayerListener()
                     setupMediaSession()
                     setupProgressObserver()
+                    setupCast()
                 }
                 promise.resolve(null)
             } catch (e: Exception) {
@@ -226,10 +245,104 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
         }
     }
 
+    private fun setupCast() {
+        try {
+            castContext = CastContext.getSharedInstance(reactApplicationContext)
+            castPlayer = CastPlayer(castContext!!)
+
+            // Listen for cast session availability
+            castPlayer?.setSessionAvailabilityListener(object : SessionAvailabilityListener {
+                override fun onCastSessionAvailable() {
+                    isCasting = true
+                    // Transfer playback to Cast
+                    transferPlaybackToCast()
+                    val params = Arguments.createMap().apply {
+                        putString("deviceName", castContext?.sessionManager?.currentCastSession?.castDevice?.friendlyName ?: "Chromecast")
+                    }
+                    sendEvent("cast-device-connected", params)
+                }
+
+                override fun onCastSessionUnavailable() {
+                    isCasting = false
+                    // Transfer playback back to local
+                    transferPlaybackToLocal()
+                    sendEvent("cast-device-disconnected", Arguments.createMap())
+                }
+            })
+
+            // Listen for cast state changes
+            castContext?.addCastStateListener(object : CastStateListener {
+                override fun onCastStateChanged(state: Int) {
+                    val stateString = when (state) {
+                        CastState.NO_DEVICES_AVAILABLE -> "NO_DEVICES"
+                        CastState.NOT_CONNECTED -> "NOT_CONNECTED"
+                        CastState.CONNECTING -> "CONNECTING"
+                        CastState.CONNECTED -> "CONNECTED"
+                        else -> "NOT_CONNECTED"
+                    }
+                    val params = Arguments.createMap().apply {
+                        putString("state", stateString)
+                    }
+                    sendEvent("cast-state-changed", params)
+                }
+            })
+        } catch (e: Exception) {
+            // Cast not available on this device - continue without it
+            android.util.Log.w("AudioPlayerModule", "Cast not available: ${e.message}")
+        }
+    }
+
+    private fun transferPlaybackToCast() {
+        player?.let { localPlayer ->
+            castPlayer?.let { remote ->
+                // Get current playback state
+                val wasPlaying = localPlayer.isPlaying
+                val position = localPlayer.currentPosition
+                val mediaItems = mutableListOf<MediaItem>()
+
+                // Build media items for CastPlayer
+                for (i in 0 until localPlayer.mediaItemCount) {
+                    mediaItems.add(localPlayer.getMediaItemAt(i))
+                }
+
+                if (mediaItems.isNotEmpty()) {
+                    remote.setMediaItems(mediaItems, currentTrackIndex, position)
+                    remote.prepare()
+                    if (wasPlaying) {
+                        remote.play()
+                    }
+                }
+
+                // Pause local playback
+                localPlayer.pause()
+            }
+        }
+    }
+
+    private fun transferPlaybackToLocal() {
+        castPlayer?.let { remote ->
+            player?.let { localPlayer ->
+                // Get current playback state from Cast
+                val wasPlaying = remote.isPlaying
+                val position = remote.currentPosition
+                val currentIndex = remote.currentMediaItemIndex
+
+                if (currentIndex >= 0 && currentIndex < localPlayer.mediaItemCount) {
+                    currentTrackIndex = currentIndex
+                    localPlayer.seekTo(currentIndex, position)
+                    localPlayer.prepare()
+                    if (wasPlaying) {
+                        localPlayer.play()
+                    }
+                }
+            }
+        }
+    }
+
     @ReactMethod
     fun play(promise: Promise) {
         UiThreadUtil.runOnUiThread {
-            player?.play()
+            getCurrentPlayer()?.play()
             promise.resolve(null)
         }
     }
@@ -237,7 +350,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     @ReactMethod
     fun pause(promise: Promise) {
         UiThreadUtil.runOnUiThread {
-            player?.pause()
+            getCurrentPlayer()?.pause()
             promise.resolve(null)
         }
     }
@@ -245,8 +358,9 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     @ReactMethod
     fun stop(promise: Promise) {
         UiThreadUtil.runOnUiThread {
-            player?.stop()
+            getCurrentPlayer()?.stop()
             player?.clearMediaItems()
+            castPlayer?.clearMediaItems()
             originalTracks.clear()
             currentTrackIndex = 0
 
@@ -261,7 +375,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     @ReactMethod
     fun seekTo(position: Double, promise: Promise) {
         UiThreadUtil.runOnUiThread {
-            player?.seekTo((position * 1000).toLong())
+            getCurrentPlayer()?.seekTo((position * 1000).toLong())
             promise.resolve(null)
         }
     }
@@ -277,7 +391,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     private fun skipToNextInternal() {
         if (currentTrackIndex < originalTracks.size - 1) {
             currentTrackIndex++
-            player?.seekToNextMediaItem()
+            getCurrentPlayer()?.seekToNextMediaItem()
             updateNowPlayingInfo()
 
             val params = Arguments.createMap().apply {
@@ -296,18 +410,19 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     }
 
     private fun skipToPreviousInternal() {
-        val currentPosition = player?.currentPosition ?: 0L
+        val currentPlayer = getCurrentPlayer()
+        val currentPosition = currentPlayer?.currentPosition ?: 0L
 
         // If we're past 3 seconds, restart current track
         if (currentPosition > 3000) {
-            player?.seekTo(0)
+            currentPlayer?.seekTo(0)
             return
         }
 
         // Otherwise go to previous track
         if (currentTrackIndex > 0) {
             currentTrackIndex--
-            player?.seekToPreviousMediaItem()
+            currentPlayer?.seekToPreviousMediaItem()
             updateNowPlayingInfo()
 
             val params = Arguments.createMap().apply {
@@ -316,7 +431,7 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
             sendEvent("playback-track-changed", params)
         } else {
             // At first track, just restart
-            player?.seekTo(0)
+            currentPlayer?.seekTo(0)
         }
     }
 
@@ -399,10 +514,11 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     @ReactMethod
     fun getState(promise: Promise) {
         UiThreadUtil.runOnUiThread {
+            val currentPlayer = getCurrentPlayer()
             val state = when {
-                player?.isPlaying == true -> "playing"
-                player?.playbackState == Player.STATE_BUFFERING -> "buffering"
-                player?.playbackState == Player.STATE_READY -> "paused"
+                currentPlayer?.isPlaying == true -> "playing"
+                currentPlayer?.playbackState == Player.STATE_BUFFERING -> "buffering"
+                currentPlayer?.playbackState == Player.STATE_READY -> "paused"
                 else -> "stopped"
             }
             promise.resolve(state)
@@ -412,8 +528,9 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     @ReactMethod
     fun getProgress(promise: Promise) {
         UiThreadUtil.runOnUiThread {
-            val position = (player?.currentPosition ?: 0L) / 1000.0
-            val duration = (player?.duration ?: 0L) / 1000.0
+            val currentPlayer = getCurrentPlayer()
+            val position = (currentPlayer?.currentPosition ?: 0L) / 1000.0
+            val duration = (currentPlayer?.duration ?: 0L) / 1000.0
 
             val result = Arguments.createMap().apply {
                 putDouble("position", if (position.isNaN() || position < 0) 0.0 else position)
@@ -442,6 +559,52 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
     }
 
     @ReactMethod
+    fun getCastState(promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                val state = castContext?.castState ?: CastState.NO_DEVICES_AVAILABLE
+                val stateString = when (state) {
+                    CastState.NO_DEVICES_AVAILABLE -> "NO_DEVICES"
+                    CastState.NOT_CONNECTED -> "NOT_CONNECTED"
+                    CastState.CONNECTING -> "CONNECTING"
+                    CastState.CONNECTED -> "CONNECTED"
+                    else -> "NOT_CONNECTED"
+                }
+                promise.resolve(stateString)
+            } catch (e: Exception) {
+                promise.resolve("NO_DEVICES")
+            }
+        }
+    }
+
+    @ReactMethod
+    fun showCastDialog(promise: Promise) {
+        UiThreadUtil.runOnUiThread {
+            try {
+                val activity = currentActivity
+                if (activity != null && castContext != null) {
+                    // Use MediaRouteChooserDialog via MediaRouter
+                    val mediaRouter = androidx.mediarouter.media.MediaRouter.getInstance(reactApplicationContext)
+                    val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
+                        .addControlCategory(com.google.android.gms.cast.CastMediaControlIntent.categoryForCast(
+                            com.google.android.gms.cast.CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
+                        ))
+                        .build()
+
+                    val dialog = androidx.mediarouter.app.MediaRouteChooserDialog(activity)
+                    dialog.routeSelector = selector
+                    dialog.show()
+                    promise.resolve(null)
+                } else {
+                    promise.reject("NO_ACTIVITY", "No activity available")
+                }
+            } catch (e: Exception) {
+                promise.reject("CAST_ERROR", e.message)
+            }
+        }
+    }
+
+    @ReactMethod
     fun addListener(eventName: String) {
         // Required for RCTEventEmitter
     }
@@ -455,6 +618,9 @@ class AudioPlayerModule(reactContext: ReactApplicationContext) : ReactContextBas
         progressRunnable?.let { handler.removeCallbacks(it) }
         mediaSession?.release()
         mediaSessionCompat?.release()
+        castPlayer?.setSessionAvailabilityListener(null)
+        castPlayer?.release()
+        castPlayer = null
         player?.release()
         player = null
     }

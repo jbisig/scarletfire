@@ -11,6 +11,7 @@ import {
   InteractionManager,
   AppState,
   AppStateStatus,
+  Platform,
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +31,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { haptics } from '../services/hapticService';
 import { logger } from '../utils/logger';
+import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlayer';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -62,6 +64,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   // Track app state to pause video when in background (saves battery)
   const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
+  // Cast state for Android
+  const [castState, setCastState] = useState<CastState>('NO_DEVICES');
+
   // Force video remount when source changes by briefly unmounting
   const [videoMounted, setVideoMounted] = useState(true);
   const prevVideoIdRef = useRef(videoId);
@@ -84,6 +89,26 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
+  }, []);
+
+  // Cast state listener (Android only)
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    // Get initial cast state
+    nativeAudioPlayer.getCastState().then(setCastState);
+
+    // Listen for cast state changes
+    const castSub = nativeAudioPlayer.addEventListener(Event.CastStateChanged, (data) => {
+      setCastState(data.state);
+    });
+
+    return () => castSub.remove();
+  }, []);
+
+  const handleCastPress = useCallback(() => {
+    haptics.medium();
+    nativeAudioPlayer.showCastDialog();
   }, []);
 
   // Time display via ref to avoid re-renders on every update
@@ -427,6 +452,23 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           <Ionicons name="chevron-down" size={32} color={COLORS.textPrimary} />
         </TouchableOpacity>
 
+        {/* Cast button - Android only */}
+        {Platform.OS === 'android' && castState !== 'NO_DEVICES' && (
+          <TouchableOpacity
+            onPress={handleCastPress}
+            style={styles.castButton}
+            accessibilityRole="button"
+            accessibilityLabel={castState === 'CONNECTED' ? 'Disconnect from Chromecast' : 'Cast to Chromecast'}
+            accessibilityHint="Double tap to open cast device selection"
+          >
+            <Ionicons
+              name={castState === 'CONNECTED' ? 'cast' : 'cast-outline'}
+              size={24}
+              color={castState === 'CONNECTED' ? COLORS.accent : COLORS.textPrimary}
+            />
+          </TouchableOpacity>
+        )}
+
         {/* Track Info */}
         <View style={styles.trackInfoContainer}>
           {/* Radio Mode Indicator */}
@@ -590,6 +632,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: SPACING.lg,
+    padding: SPACING.sm,
+    zIndex: 10,
+  },
+  castButton: {
+    position: 'absolute',
+    top: 60,
+    right: SPACING.lg,
     padding: SPACING.sm,
     zIndex: 10,
   },

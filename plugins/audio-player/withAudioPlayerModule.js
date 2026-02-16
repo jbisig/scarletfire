@@ -1,4 +1,4 @@
-const { withXcodeProject, withMainApplication, withAppBuildGradle } = require('@expo/config-plugins');
+const { withXcodeProject, withMainApplication, withAppBuildGradle, withAndroidManifest } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -93,7 +93,7 @@ function withAudioPlayerModuleAndroidFiles(config) {
       'app'
     );
 
-    const filesToCopy = ['AudioPlayerModule.kt', 'AudioPlayerPackage.kt'];
+    const filesToCopy = ['AudioPlayerModule.kt', 'AudioPlayerPackage.kt', 'CastOptionsProvider.kt'];
 
     for (const fileName of filesToCopy) {
       const sourcePath = path.join(sourceDir, fileName);
@@ -139,13 +139,17 @@ function withAudioPlayerModuleAndroidDependencies(config) {
 
     // Check if Media3 dependencies are already added
     if (!buildGradle.includes('androidx.media3')) {
-      // Find the dependencies block and add Media3
+      // Find the dependencies block and add Media3 and Cast
       const media3Dependencies = `
     // Media3 ExoPlayer for AudioPlayerModule
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media3:media3-session:1.2.1")
     implementation("androidx.media3:media3-ui:1.2.1")
-    implementation("androidx.media:media:1.7.0")`;
+    implementation("androidx.media:media:1.7.0")
+    // Cast Support
+    implementation("androidx.media3:media3-cast:1.2.1")
+    implementation("com.google.android.gms:play-services-cast-framework:22.2.0")
+    implementation("androidx.mediarouter:mediarouter:1.7.0")`;
 
       // Insert before the closing brace of dependencies block
       buildGradle = buildGradle.replace(
@@ -165,6 +169,66 @@ function withAudioPlayerModuleAndroidDependencies(config) {
       console.log('[AudioPlayerModule] Media3 dependencies already present');
     }
 
+    // Add Cast dependencies if not already present
+    buildGradle = config.modResults.contents;
+    if (!buildGradle.includes('media3-cast')) {
+      const castDependencies = `
+    // Cast Support
+    implementation("androidx.media3:media3-cast:1.2.1")
+    implementation("com.google.android.gms:play-services-cast-framework:22.2.0")
+    implementation("androidx.mediarouter:mediarouter:1.7.0")`;
+
+      buildGradle = buildGradle.replace(
+        /(dependencies\s*\{[\s\S]*?)(^\})/m,
+        (match, p1, p2) => {
+          const lines = p1.split('\n');
+          const lastIndex = lines.length - 1;
+          lines.splice(lastIndex, 0, castDependencies);
+          return lines.join('\n') + p2;
+        }
+      );
+      config.modResults.contents = buildGradle;
+      console.log('[AudioPlayerModule] Added Cast dependencies to build.gradle');
+    } else {
+      console.log('[AudioPlayerModule] Cast dependencies already present');
+    }
+
+    return config;
+  });
+}
+
+/**
+ * Add Cast options provider to AndroidManifest.xml
+ */
+function withCastManifest(config) {
+  return withAndroidManifest(config, async (config) => {
+    const manifest = config.modResults;
+    const application = manifest.manifest.application?.[0];
+
+    if (application) {
+      // Initialize meta-data array if it doesn't exist
+      if (!application['meta-data']) {
+        application['meta-data'] = [];
+      }
+
+      // Check if Cast options provider is already added
+      const hasCastProvider = application['meta-data'].some(
+        (item) => item.$?.['android:name'] === 'com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME'
+      );
+
+      if (!hasCastProvider) {
+        application['meta-data'].push({
+          $: {
+            'android:name': 'com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME',
+            'android:value': 'com.scarletfire.app.CastOptionsProvider',
+          },
+        });
+        console.log('[AudioPlayerModule] Added CastOptionsProvider to AndroidManifest.xml');
+      } else {
+        console.log('[AudioPlayerModule] CastOptionsProvider already in AndroidManifest.xml');
+      }
+    }
+
     return config;
   });
 }
@@ -179,6 +243,7 @@ function withAudioPlayerModule(config) {
   // Apply Android configuration
   config = withAudioPlayerModuleAndroidFiles(config);
   config = withAudioPlayerModuleAndroidDependencies(config);
+  config = withCastManifest(config);
 
   return config;
 }
