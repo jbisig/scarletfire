@@ -927,11 +927,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'FamiljenGrotesk-SemiBold',
     color: COLORS.textPrimary,
+    ...(Platform.OS === 'android' && {
+      paddingTop: 2,
+    }),
   },
   inactiveTabText: {
     fontSize: 20,
     fontFamily: 'FamiljenGrotesk-SemiBold',
     color: COLORS.textSecondary,
+    ...(Platform.OS === 'android' && {
+      paddingTop: 2,
+    }),
   },
   centerContainer: {
     flex: 1,

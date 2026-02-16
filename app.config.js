@@ -74,6 +74,7 @@ export default ({ config }) => {
         "expo-font",
         "expo-video",
         "expo-apple-authentication",
+        "@react-native-google-signin/google-signin",
         [
           "expo-image-picker",
           {
