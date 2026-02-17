@@ -383,6 +383,8 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    // @ts-ignore - web: prevent scroll chaining to parent/browser
+    ...(Platform.OS === 'web' ? { overscrollBehavior: 'contain' } : {}),
   },
   scrollContent: {
     paddingTop: SPACING.md,

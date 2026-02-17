@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   Keyboard,
   RefreshControl,
   Platform,
@@ -561,11 +560,9 @@ export function FavoritesScreen() {
         </View>
 
         {sortedAndFilteredShows.length === 0 && debouncedSearchQuery.trim() ? (
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No shows found matching "{debouncedSearchQuery}"</Text>
-            </View>
-          </TouchableWithoutFeedback>
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No shows found matching "{debouncedSearchQuery}"</Text>
+          </View>
         ) : (
           <FlatList
             ref={showsListRef}
@@ -653,11 +650,9 @@ export function FavoritesScreen() {
         </View>
 
         {sortedAndFilteredSongs.length === 0 && debouncedSearchQuery.trim() ? (
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No songs found matching "{debouncedSearchQuery}"</Text>
-            </View>
-          </TouchableWithoutFeedback>
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No songs found matching "{debouncedSearchQuery}"</Text>
+          </View>
         ) : (
           <FlatList
             ref={songsListRef}

@@ -33,9 +33,14 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
     html, body, #root {
       background-color: #121212 !important;
     }
+    /* Enable native touch scrolling and disable double-tap zoom delay on mobile */
+    html {
+      touch-action: manipulation;
+    }
     * {
       scrollbar-color: #444 #191919;
       scrollbar-width: thin;
+      -webkit-tap-highlight-color: transparent;
     }
     *::-webkit-scrollbar {
       width: 8px;

@@ -5,7 +5,6 @@ import {
   Text,
   SectionList,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   Keyboard,
   Platform,
   useWindowDimensions,
@@ -334,9 +333,7 @@ export function HomeScreen() {
 
       {/* Shows List */}
       {sections.length === 0 && debouncedSearchQuery.trim() ? (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <NoResultsState query={debouncedSearchQuery} entityName="shows" />
-        </TouchableWithoutFeedback>
+        <NoResultsState query={debouncedSearchQuery} entityName="shows" />
       ) : (
         <SectionList
           ref={sectionListRef}

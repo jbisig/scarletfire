@@ -79,6 +79,7 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         extraData={extraData}
+        nestedScrollEnabled
       />
     </View>
   );
