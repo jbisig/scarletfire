@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 
 const FLOWER_IMAGE = require('../../assets/images/flower.png');
 import { LinearGradient } from 'expo-linear-gradient';
@@ -53,7 +53,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details"
       >
-        <GradientCardBackground width={LAYOUT.horizontalCardWidth} height={LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
+        <GradientCardBackground width={Platform.OS === 'web' ? 300 : LAYOUT.horizontalCardWidth} height={Platform.OS === 'web' ? 150 : LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
         <Image source={FLOWER_IMAGE} style={styles.flowerImage} />
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
@@ -108,6 +108,10 @@ const styles = StyleSheet.create({
     height: LAYOUT.horizontalCardHeight,
     borderRadius: RADIUS.md,
     overflow: 'hidden',
+    ...(Platform.OS === 'web' ? {
+      width: 300,
+      height: 150,
+    } : {}),
   },
   flowerImage: {
     position: 'absolute',

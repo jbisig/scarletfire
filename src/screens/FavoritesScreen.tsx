@@ -79,13 +79,17 @@ interface SongItemProps {
 const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
   const venue = getCorrectVenue(song.showDate) || song.venue;
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <TouchableOpacity
-      style={styles.songItem}
+      style={[styles.songItem, Platform.OS === 'web' && isHovered && styles.songItemHovered]}
       onPress={() => onPress(song)}
       activeOpacity={0.7}
       disabled={isLoading}
+      // @ts-ignore - web only mouse events
+      onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
+      onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
     >
       <View style={styles.songContentRow}>
         <View style={styles.songInfo}>
@@ -492,7 +496,7 @@ export function FavoritesScreen() {
         <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+              {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
               <Text style={styles.headerTitle}>Favorites</Text>
             </View>
           </View>
@@ -698,19 +702,21 @@ export function FavoritesScreen() {
         <View style={styles.header}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              ref={profileButtonRef}
-              onPress={handleProfilePress}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={isAuthenticated && avatarUrl
-                  ? { uri: avatarUrl }
-                  : LOGGED_OUT_PROFILE
-                }
-                style={styles.avatar}
-              />
-            </TouchableOpacity>
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity
+                ref={profileButtonRef}
+                onPress={handleProfilePress}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={isAuthenticated && avatarUrl
+                    ? { uri: avatarUrl }
+                    : LOGGED_OUT_PROFILE
+                  }
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+            )}
             <Text style={styles.headerTitle}>Favorites</Text>
           </View>
 
@@ -817,11 +823,11 @@ export function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -829,6 +835,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
   },
   headerLeft: {
     flexDirection: 'row',
@@ -838,6 +845,7 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { left: 32 } : {}),
   },
   avatar: {
     width: 39,
@@ -874,7 +882,7 @@ const styles = StyleSheet.create({
     height: 30,
   },
   actionBarSection: {
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
     zIndex: 10,
     overflow: 'visible',
   },
@@ -884,6 +892,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
+    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
   },
   actionRow: {
     flexDirection: 'row',
@@ -969,11 +978,22 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: SPACING.sm + 8,
     paddingBottom: LAYOUT.listBottomPadding,
+    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
   },
   songItem: {
     paddingVertical: 8,
     paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
+    ...(Platform.OS === 'web' ? {
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      marginVertical: 2,
+    } : {}),
+  },
+  songItemHovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   songContentRow: {
     flexDirection: 'row',

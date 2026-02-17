@@ -12,8 +12,8 @@ import {
   AppState,
   AppStateStatus,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -40,7 +40,7 @@ interface FullPlayerProps {
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-const { height: screenHeight } = Dimensions.get('window');
+const { height: initialScreenHeight } = Dimensions.get('window');
 
 /**
  * Full-screen player tray that slides up from bottom
@@ -53,16 +53,19 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
   const progressBarRef = useRef<View>(null);
+  const { height: screenHeight } = useWindowDimensions();
 
   // Animation for slide up/down
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+  const slideAnim = useRef(new Animated.Value(initialScreenHeight)).current;
   const dragOffset = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(false);
   const isDismissingRef = useRef(false);
   const isInteractingRef = useRef(false);
 
-  // Track app state to pause video when in background (saves battery)
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  // Track app state to pause video when in background (saves battery) — native only
+  const [appState, setAppState] = useState<AppStateStatus>(
+    Platform.OS !== 'web' ? AppState.currentState : 'active'
+  );
 
   // Cast state for Android
   const [castState, setCastState] = useState<CastState>('NO_DEVICES');
@@ -87,6 +90,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   }, [resetToFallback]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
@@ -420,19 +424,22 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       ]}
     >
       {/* Video Background - only play when visible and app is active to save battery */}
-      <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
-        {videoMounted && (
-          <Video
-            key={`video-${videoId}`}
-            source={videoSource}
-            style={styles.video}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={visible && appState === 'active'}
-            isLooping
-            isMuted
-            onError={handleVideoError}
-          />
-        )}
+      <View style={styles.videoContainer} {...(Platform.OS !== 'web' ? swipeDownResponder.panHandlers : {})}>
+        {Platform.OS !== 'web' && videoMounted && (() => {
+          const { Video: ExpoVideo, ResizeMode: ExpoResizeMode } = require('expo-av');
+          return (
+            <ExpoVideo
+              key={`video-${videoId}`}
+              source={videoSource}
+              style={styles.video}
+              resizeMode={ExpoResizeMode.COVER}
+              shouldPlay={visible && appState === 'active'}
+              isLooping
+              isMuted
+              onError={handleVideoError}
+            />
+          );
+        })()}
 
         {/* Gradient overlay for text readability */}
         <LinearGradient

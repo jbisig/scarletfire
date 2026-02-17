@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
 import { COLORS, FONTS } from '../constants/theme';
+import { useResponsive } from '../hooks/useResponsive';
+
+// Desktop layout (web only) - lazy import to avoid bundling on native
+const DesktopLayout = Platform.OS === 'web'
+  ? require('./DesktopLayout').DesktopLayout
+  : null;
+
+// Web linking config for URL routing
+const webLinking = Platform.OS === 'web'
+  ? require('./webLinking').webLinking
+  : undefined;
 
 export type RootStackParamList = {
   Home: undefined;
@@ -181,7 +193,7 @@ function DiscoverStack() {
   );
 }
 
-// Main content with tabs and player
+// Main content with tabs and player (mobile layout)
 function MainTabsWithPlayer() {
   const { isFullPlayerVisible, setFullPlayerVisible } = usePlayer();
 
@@ -227,11 +239,12 @@ function MainTabsWithPlayer() {
 
 export function AppNavigator() {
   const { state: authState } = useAuth();
+  const { isDesktop } = useResponsive();
 
   // Show loading while checking auth
   if (authState.isLoading) {
     return (
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef} linking={webLinking}>
         <View style={[styles.container, styles.loadingContainer]}>
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
@@ -239,12 +252,24 @@ export function AppNavigator() {
     );
   }
 
-  // Show auth flow if not authenticated and hasn't skipped
-  const showAuthFlow = !authState.isAuthenticated && !authState.hasSkippedLogin;
+  // On web, skip auth by default (auto-skip login)
+  // Show auth flow only on native when not authenticated and hasn't skipped
+  const showAuthFlow = Platform.OS !== 'web' && !authState.isAuthenticated && !authState.hasSkippedLogin;
+
+  // Desktop web: use desktop layout
+  if (Platform.OS === 'web' && isDesktop && DesktopLayout) {
+    return (
+      <ErrorBoundary>
+        <NavigationContainer ref={navigationRef} linking={webLinking}>
+          <DesktopLayout />
+        </NavigationContainer>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef} linking={webLinking}>
         {showAuthFlow ? (
           <AuthNavigator />
         ) : (
@@ -287,7 +312,7 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 87 : 77,
+    bottom: Platform.OS === 'ios' ? 87 : Platform.OS === 'web' ? 77 : 77,
     left: 0,
     right: 0,
     zIndex: 998,

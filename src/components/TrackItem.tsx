@@ -1,36 +1,52 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
 import { StarRating } from './StarRating';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 interface TrackItemProps {
   track: Track;
   isPlaying: boolean;
   onPress: (track: Track) => void;
   rating?: 1 | 2 | 3 | null;
+  /** Web only: whether this song is saved as a favorite */
+  isSaved?: boolean;
+  /** Web only: callback to toggle save state */
+  onToggleSave?: (track: Track) => void;
 }
 
 /**
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
   const ratingText = rating ? `${4 - rating} star performance` : '';
   const playingText = isPlaying ? 'Now playing. ' : '';
   const accessibilityLabel = `${playingText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
 
+  const hasWebSave = Platform.OS === 'web' && onToggleSave;
+  const showSaveButton = hasWebSave && (isHovered || isSaved);
+
   return (
     <TouchableOpacity
-      style={[styles.container, isPlaying && styles.playing]}
+      style={[
+        styles.container,
+        isPlaying && styles.playing,
+        Platform.OS === 'web' && isHovered && !isPlaying && styles.hovered,
+      ]}
       onPress={() => onPress(track)}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Double tap to play this track"
       accessibilityState={{ selected: isPlaying }}
+      // @ts-ignore - web only mouse events
+      onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
+      onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
     >
       <View style={styles.infoContainer}>
         <View style={styles.titleRow}>
@@ -47,7 +63,31 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           )}
         </View>
       </View>
-      <Text style={[styles.duration, isPlaying && styles.playingText]}>
+      {/* Always reserve space for save button on web to prevent layout shift */}
+      {hasWebSave && (
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            isSaved && styles.saveButtonActive,
+            !showSaveButton && styles.saveButtonHidden,
+          ]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleSave(track);
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityState={{ selected: isSaved }}
+        >
+          <Ionicons
+            name={isSaved ? 'checkmark-sharp' : 'add'}
+            size={13}
+            color={COLORS.textPrimary}
+          />
+        </TouchableOpacity>
+      )}
+      <Text style={[styles.duration, isPlaying && styles.playingText, hasWebSave && styles.durationWeb]}>
         {duration}
       </Text>
     </TouchableOpacity>
@@ -62,9 +102,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
     alignItems: 'baseline',
+    ...(Platform.OS === 'web' ? {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginVertical: 2,
+      borderRadius: 12,
+    } : {}),
   },
   playing: {
     backgroundColor: `${COLORS.accent}20`,
+    ...(Platform.OS === 'web' ? { borderRadius: 12 } : {}),
+  },
+  hovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 12,
   },
   infoContainer: {
     flex: 1,
@@ -76,6 +127,7 @@ const styles = StyleSheet.create({
   title: {
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
+    ...(Platform.OS === 'web' ? { fontSize: 16, fontWeight: '400' as const } : {}),
   },
   ratingContainer: {
     marginLeft: SPACING.sm,
@@ -85,9 +137,35 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginLeft: SPACING.md,
     marginTop: 2,
+    ...(Platform.OS === 'web' ? {
+      fontSize: 14,
+      color: COLORS.textPrimary,
+      opacity: 0.66,
+    } : {}),
+  },
+  durationWeb: {
+    width: 48,
+    textAlign: 'right',
   },
   playingText: {
     color: COLORS.accent,
     fontWeight: '600',
+  },
+  saveButton: {
+    width: 22,
+    height: 22,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+    borderColor: COLORS.textPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: SPACING.md,
+  },
+  saveButtonActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+  },
+  saveButtonHidden: {
+    opacity: 0,
   },
 });

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { authService } from '../services/authService';
 import { User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +28,8 @@ const initialState: AuthState = {
   user: null,
   isLoading: true,
   isAuthenticated: false,
-  hasSkippedLogin: false,
+  // On web, default to skipped login so users land in the app immediately
+  hasSkippedLogin: Platform.OS === 'web',
   error: null,
 };
 

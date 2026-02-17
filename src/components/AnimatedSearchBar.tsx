@@ -99,6 +99,40 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
     onClose();
   }, [onChangeText, onClose]);
 
+  // Web: always-expanded static search bar
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.searchContainer, { width: 300 }]}>
+        <View style={styles.searchInputWrapper}>
+          <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
+          <View style={styles.searchExpandedContent}>
+            <View style={styles.searchIconSpacer} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder={placeholder}
+              placeholderTextColor={COLORS.textHint}
+              value={value}
+              onChangeText={handleChangeText}
+              autoCapitalize="none"
+              autoCorrect={false}
+              selectionColor={COLORS.textPrimary}
+            />
+            {value.length > 0 && (
+              <TouchableOpacity
+                style={styles.closeSearchButton}
+                onPress={handleClose}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <TouchableOpacity
       activeOpacity={isExpanded ? 1 : 0.7}
@@ -178,6 +212,8 @@ const styles = StyleSheet.create({
       textAlignVertical: 'center',
       includeFontPadding: false,
     }),
+    // @ts-ignore - web only
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
   },
   closeSearchButton: {
     padding: SPACING.xs,

@@ -68,7 +68,11 @@ export default ({ config }) => {
       },
       web: {
         favicon: "./assets/favicon.png",
-        bundler: "metro"
+        bundler: "metro",
+        name: "Scarlet>Fire - Grateful Dead Archive",
+        description: "Browse and stream 40+ years of Grateful Dead live shows",
+        themeColor: "#121212",
+        backgroundColor: "#121212",
       },
       plugins: [
         "expo-font",

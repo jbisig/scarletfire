@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -19,8 +20,36 @@ import { validateConfig } from './src/constants/config';
 // In dev: throws if required config missing; in prod: logs error and continues
 validateConfig();
 
-// Keep splash screen visible while loading
-SplashScreen.preventAutoHideAsync();
+// Keep splash screen visible while loading (not applicable on web)
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync();
+}
+
+// Inject global styles on web (background, scrollbar)
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    html, body, #root {
+      background-color: #121212 !important;
+    }
+    * {
+      scrollbar-color: #444 #191919;
+      scrollbar-width: thin;
+    }
+    *::-webkit-scrollbar {
+      width: 8px;
+      background-color: #191919;
+    }
+    *::-webkit-scrollbar-thumb {
+      background-color: #444;
+      border-radius: 4px;
+    }
+    *::-webkit-scrollbar-track {
+      background-color: #191919;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -39,7 +68,9 @@ export default function App() {
 
   useEffect(() => {
     if (fontsLoaded || fontError || fontTimeout) {
-      SplashScreen.hideAsync();
+      if (Platform.OS !== 'web') {
+        SplashScreen.hideAsync();
+      }
     }
   }, [fontsLoaded, fontError, fontTimeout]);
 
@@ -63,7 +94,7 @@ export default function App() {
                         <ErrorBoundary>
                           <AppNavigator />
                         </ErrorBoundary>
-                        <StatusBar style="light" />
+                        {Platform.OS !== 'web' && <StatusBar style="light" />}
                       </VideoBackgroundProvider>
                     </PlayerProvider>
                   </PlayCountsProvider>

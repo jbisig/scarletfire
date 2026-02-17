@@ -24,3 +24,6 @@ export type { SortPillButtonProps } from '../SortPillButton';
 
 export { PlayCountBadge } from '../PlayCountBadge';
 export type { PlayCountBadgeProps } from '../PlayCountBadge';
+
+export { BlurBackground } from './BlurBackground';
+export { VideoBackground } from './VideoBackground';

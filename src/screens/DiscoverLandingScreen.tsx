@@ -11,9 +11,8 @@ import {
   AppStateStatus,
   Platform,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
 import { logger } from '../utils/logger';
-import { BlurView } from 'expo-blur';
+import { BlurBackground } from '../components/shared/BlurBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -34,8 +33,8 @@ import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SOTD_CARD_WIDTH = SCREEN_WIDTH - (SPACING.xl * 2); // Full width minus horizontal padding
+// Default screen width — components should use useWindowDimensions for responsive sizing
+const SOTD_CARD_PADDING = SPACING.xl * 2;
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -48,16 +47,18 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
 
-  // Track app state to pause video when in background (saves battery)
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  // Track app state to pause video when in background (saves battery) — native only
+  const [appState, setAppState] = useState<AppStateStatus>(
+    Platform.OS !== 'web' ? AppState.currentState : 'active'
+  );
 
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('Video background failed to load:', error);
-    // Reset to bundled fallback video if a downloaded video fails
     resetToFallback();
   }, [resetToFallback]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
@@ -213,24 +214,25 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             accessibilityState={{ disabled: isLoading || !show }}
           >
             <View style={styles.sotdCard}>
-              {/* Video background - absolute fill */}
-              <Video
-                key={`sotd-video-${videoId}`}
-                source={videoSource}
-                style={StyleSheet.absoluteFillObject}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay={appState === 'active'}
-                isLooping
-                isMuted
-                onError={handleVideoError}
-              />
-              {/* Overlay - BlurView on iOS, semi-transparent View on Android */}
+              {/* Video background - absolute fill (native only) */}
+              {Platform.OS !== 'web' && (() => {
+                const { Video, ResizeMode } = require('expo-av');
+                return (
+                  <Video
+                    key={`sotd-video-${videoId}`}
+                    source={videoSource}
+                    style={StyleSheet.absoluteFillObject}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay={appState === 'active'}
+                    isLooping
+                    isMuted
+                    onError={handleVideoError}
+                  />
+                );
+              })()}
+              {/* Overlay - BlurView on iOS, CSS blur on web, semi-transparent View on Android */}
               <View style={styles.sotdBlurOverlay}>
-                {Platform.OS === 'ios' ? (
-                  <BlurView intensity={30} tint="systemThinMaterialDark" style={StyleSheet.absoluteFill} />
-                ) : (
-                  <View style={[StyleSheet.absoluteFill, styles.androidOverlay]} />
-                )}
+                <BlurBackground intensity={30} tint="dark" />
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
                     <ActivityIndicator size="large" color={COLORS.accent} />
@@ -319,7 +321,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   scrollView: {
     flex: 1,
@@ -327,6 +329,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: SPACING.md,
     paddingBottom: LAYOUT.listBottomPadding,
+    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
   },
   section: {
     paddingHorizontal: SPACING.xl,

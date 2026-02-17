@@ -2,8 +2,11 @@
  * Video Sources
  *
  * Provides video sources for background playback.
- * Bundled video is used as fallback; downloaded videos are preferred when available.
+ * Native: Bundled video as fallback; downloaded videos preferred when available.
+ * Web: All videos streamed directly from Supabase storage.
  */
+
+import { Platform } from 'react-native';
 
 // Bundled video (always available) - smallest video kept in app bundle
 export const BUNDLED_VIDEO = require('../../assets/videos/background1.mp4');
@@ -61,11 +64,26 @@ export function getVideoSource(videoId: string): number | { uri: string } | null
 /**
  * Get all available video sources (bundled + downloaded)
  * Returns array of { id, source } objects
+ * On web: streams all videos directly from Supabase (no download needed)
  */
 export function getAvailableVideoSources(): Array<{
   id: string;
   source: number | { uri: string };
 }> {
+  // On web, stream all videos directly from Supabase public URLs
+  if (Platform.OS === 'web') {
+    try {
+      const { CONFIG } = require('./config');
+      const bucket = 'background-videos';
+      return ALL_VIDEO_IDS.map(id => ({
+        id,
+        source: { uri: `${CONFIG.SUPABASE_URL}/storage/v1/object/public/${bucket}/${id}.mp4` },
+      }));
+    } catch {
+      return [{ id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO }];
+    }
+  }
+
   const sources: Array<{ id: string; source: number | { uri: string } }> = [
     { id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO },
   ];

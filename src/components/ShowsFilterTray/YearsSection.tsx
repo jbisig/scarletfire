@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FILTER_ERAS, FilterEra, ShowsByYear } from './types';
 import { expandDisplaySeries, getOfficialReleasesForDate } from '../../data/officialReleases';
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   yearButton: {
-    width: '25%',
+    width: Platform.OS === 'web' ? '16.666%' : '25%',
   },
   yearButtonDisabled: {
     opacity: 0.4,

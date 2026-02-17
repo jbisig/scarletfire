@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -379,12 +380,16 @@ export function SongPerformancesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   header: {
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
+    ...(Platform.OS === 'web' ? {
+      paddingHorizontal: 32,
+      backgroundColor: COLORS.backgroundSecondary,
+    } : {}),
   },
   backButton: {
     width: LAYOUT.headerButtonSize,
@@ -436,6 +441,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: LAYOUT.listBottomPadding,
+    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
   },
   performanceItemWrapper: {
     position: 'relative',

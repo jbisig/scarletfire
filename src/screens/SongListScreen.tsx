@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,6 +42,31 @@ interface SongItem {
   performanceCount: number;
   performances: Array<{ date: string; identifier: string; venue?: string }>;
 }
+
+const SongListItem = React.memo<{ item: SongItem; onPress: (song: SongItem) => void }>(
+  function SongListItem({ item, onPress }) {
+    const [isHovered, setIsHovered] = useState(false);
+    return (
+      <TouchableOpacity
+        style={[styles.songItem, Platform.OS === 'web' && isHovered && styles.songItemHovered]}
+        onPress={() => onPress(item)}
+        activeOpacity={0.7}
+        // @ts-ignore - web only mouse events
+        onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
+        onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+      >
+        <View style={styles.songInfo}>
+          <Text style={styles.songTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <Text style={styles.performanceCount}>
+            {item.performanceCount} performance{item.performanceCount !== 1 ? 's' : ''}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+);
 
 export function SongListScreen() {
   const navigation = useNavigation<SongListNavigationProp>();
@@ -152,20 +178,7 @@ export function SongListScreen() {
   };
 
   const renderSongItem = ({ item }: { item: SongItem }) => (
-    <TouchableOpacity
-      style={styles.songItem}
-      onPress={() => handleSongPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.songInfo}>
-        <Text style={styles.songTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={styles.performanceCount}>
-          {item.performanceCount} performance{item.performanceCount !== 1 ? 's' : ''}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <SongListItem item={item} onPress={handleSongPress} />
   );
 
   const renderSectionHeader = (letter: string) => (
@@ -180,7 +193,7 @@ export function SongListScreen() {
         <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+              {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
               <Text style={styles.headerTitle}>Songs</Text>
             </View>
           </View>
@@ -194,27 +207,31 @@ export function SongListScreen() {
     return <ErrorState message={error} onRetry={loadSongs} />;
   }
 
+  const Wrapper = Platform.OS === 'web' ? View : TouchableWithoutFeedback;
+
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <Wrapper {...(Platform.OS !== 'web' ? { onPress: Keyboard.dismiss } : {})}>
       <View style={styles.container}>
         {/* Header Section with Gradient Fade */}
         <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
           <View style={styles.header}>
             {/* Left side: Avatar and Title (gets covered by search bar) */}
             <View style={styles.headerLeft}>
-              <TouchableOpacity
-                ref={profileButtonRef}
-                onPress={handleProfilePress}
-                activeOpacity={0.8}
-              >
-                <Image
-                  source={isAuthenticated && avatarUrl
-                    ? { uri: avatarUrl }
-                    : LOGGED_OUT_PROFILE
-                  }
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  ref={profileButtonRef}
+                  onPress={handleProfilePress}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={isAuthenticated && avatarUrl
+                      ? { uri: avatarUrl }
+                      : LOGGED_OUT_PROFILE
+                    }
+                    style={styles.avatar}
+                  />
+                </TouchableOpacity>
+              )}
               <Text style={styles.headerTitle}>Songs</Text>
             </View>
 
@@ -278,18 +295,18 @@ export function SongListScreen() {
           onSettings={handleSettings}
         />
       </View>
-    </TouchableWithoutFeedback>
+    </Wrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -297,6 +314,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
   },
   headerLeft: {
     flexDirection: 'row',
@@ -306,6 +324,7 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { left: 32 } : {}),
   },
   avatar: {
     width: 39,
@@ -329,9 +348,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
+    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
   },
   listContent: {
     paddingBottom: LAYOUT.listBottomPadding,
+    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
   },
   sectionHeader: {
     paddingTop: SPACING.xxl,
@@ -349,6 +370,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: SPACING.xl,
     alignItems: 'center',
+    ...(Platform.OS === 'web' ? {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      marginVertical: 2,
+    } : {}),
+  },
+  songItemHovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   songInfo: {
     flex: 1,

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurBackground } from './shared/BlurBackground';
 import { COLORS, TYPOGRAPHY, SPACING, BRAND_COLORS } from '../constants/theme';
 import { haptics } from '../services/hapticService';
 
@@ -26,10 +26,8 @@ export const CustomTabBar = React.memo(function CustomTabBar({ state, descriptor
 
   return (
     <View style={styles.container}>
-      {/* Blur background (iOS only) */}
-      {Platform.OS === 'ios' && (
-        <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-      )}
+      {/* Blur background */}
+      <BlurBackground intensity={24} tint="dark" />
 
       {/* Semi-transparent overlay */}
       <View style={styles.overlay} />

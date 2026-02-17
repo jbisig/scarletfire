@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
@@ -10,6 +10,8 @@ interface VersionPickerProps {
   versions: RecordingVersion[];
   selectedVersion: string;
   onVersionChange: (identifier: string) => void;
+  /** Web only: use glass-morphism pill style */
+  webGlassStyle?: boolean;
 }
 
 // Format taper/transferrer attribution line
@@ -20,7 +22,7 @@ const formatAttribution = (version: RecordingVersion): string | null => {
   return parts.length > 0 ? parts.join(' · ') : null;
 };
 
-export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange }) {
+export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange, webGlassStyle }) {
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -39,7 +41,10 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
     <View style={styles.container}>
       {/* Current Selection - Pill Style */}
       <TouchableOpacity
-        style={[styles.selector, currentAttribution && styles.selectorWithAttribution]}
+        style={[
+          webGlassStyle ? styles.selectorGlass : styles.selector,
+          !webGlassStyle && currentAttribution && styles.selectorWithAttribution,
+        ]}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
         accessibilityRole="button"
@@ -47,78 +52,134 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         accessibilityHint="Double tap to select a different recording"
       >
         <View style={styles.selectorTopRow}>
-          <Text style={styles.sourceName}>{currentVersion.source}</Text>
-          <Text style={styles.views}>
+          <Text style={webGlassStyle ? styles.sourceNameGlass : styles.sourceName}>
+            {currentVersion.source}
+          </Text>
+          <Text style={webGlassStyle ? styles.viewsGlass : styles.views}>
             {formatDownloads(currentVersion.downloads)} views
           </Text>
-          <Ionicons name="chevron-down" size={18} color={COLORS.accent} />
+          <Ionicons name="chevron-down" size={18} color={webGlassStyle ? COLORS.textPrimary : COLORS.accent} />
         </View>
-        {currentAttribution && (
+        {!webGlassStyle && currentAttribution && (
           <Text style={styles.attribution} numberOfLines={1}>
             {currentAttribution}
           </Text>
         )}
       </TouchableOpacity>
 
-      {/* Fullscreen Modal */}
-      <Modal
-        visible={isOpen}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setIsOpen(false)}
-      >
-        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Source</Text>
-            <TouchableOpacity
-              onPress={() => setIsOpen(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={28} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Version List */}
-          <ScrollView
-            style={styles.optionsList}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-          >
-            {versions.map((version, index) => {
-              const isSelected = version.identifier === selectedVersion;
-              const attribution = formatAttribution(version);
-              return (
-                <TouchableOpacity
-                  key={version.identifier}
-                  style={styles.option}
-                  onPress={() => handleSelect(version.identifier)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.optionInfo}>
-                    <Text style={[
-                      styles.optionSource,
-                      isSelected && styles.selectedText
-                    ]}>
-                      {version.source}
-                    </Text>
-                    <Text style={styles.optionDownloads}>
-                      {formatDownloads(version.downloads)} views
-                    </Text>
-                    {attribution && (
-                      <Text style={styles.optionAttribution} numberOfLines={2}>
-                        {attribution}
-                      </Text>
-                    )}
+      {/* Modal */}
+      {Platform.OS === 'web' ? (
+        <Modal
+          visible={isOpen}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setIsOpen(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setIsOpen(false)}>
+            <View style={styles.webOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.webModal}>
+                  <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>Select Source</Text>
+                      <TouchableOpacity
+                        onPress={() => setIsOpen(false)}
+                        style={styles.closeButton}
+                      >
+                        <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.optionsList}>
+                      {versions.map((version) => {
+                        const isSelected = version.identifier === selectedVersion;
+                        const attribution = formatAttribution(version);
+                        return (
+                          <TouchableOpacity
+                            key={version.identifier}
+                            style={styles.option}
+                            onPress={() => handleSelect(version.identifier)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.optionInfo}>
+                              <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
+                                {version.source}
+                              </Text>
+                              <Text style={styles.optionDownloads}>
+                                {formatDownloads(version.downloads)} views
+                              </Text>
+                              {attribution && (
+                                <Text style={styles.optionAttribution} numberOfLines={2}>
+                                  {attribution}
+                                </Text>
+                              )}
+                            </View>
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
-                  {isSelected && (
-                    <Ionicons name="checkmark" size={24} color={COLORS.accent} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      ) : (
+        <Modal
+          visible={isOpen}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setIsOpen(false)}
+        >
+          <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Source</Text>
+              <TouchableOpacity
+                onPress={() => setIsOpen(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={styles.optionsList}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            >
+              {versions.map((version) => {
+                const isSelected = version.identifier === selectedVersion;
+                const attribution = formatAttribution(version);
+                return (
+                  <TouchableOpacity
+                    key={version.identifier}
+                    style={styles.option}
+                    onPress={() => handleSelect(version.identifier)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.optionInfo}>
+                      <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
+                        {version.source}
+                      </Text>
+                      <Text style={styles.optionDownloads}>
+                        {formatDownloads(version.downloads)} views
+                      </Text>
+                      {attribution && (
+                        <Text style={styles.optionAttribution} numberOfLines={2}>
+                          {attribution}
+                        </Text>
+                      )}
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 });
@@ -133,6 +194,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
   },
+  selectorGlass: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 342,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.33)',
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.lg,
+    // @ts-ignore - web only
+    backdropFilter: 'blur(34px)',
+    WebkitBackdropFilter: 'blur(34px)',
+  },
   selectorWithAttribution: {
     paddingVertical: 12,
   },
@@ -146,11 +218,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 15,
   },
+  sourceNameGlass: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
   views: {
     flex: 1,
     ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
     color: COLORS.textSecondary,
+  },
+  viewsGlass: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    opacity: 0.5,
   },
   attribution: {
     ...TYPOGRAPHY.caption,
@@ -208,5 +294,18 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textTertiary,
     marginTop: 4,
+  },
+  webOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webModal: {
+    maxWidth: 800,
+    width: '90%',
+    maxHeight: '85%',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 });

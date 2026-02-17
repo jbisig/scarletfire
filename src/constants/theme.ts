@@ -290,6 +290,33 @@ export const LAYOUT = {
 } as const;
 
 // =============================================================================
+// BREAKPOINTS (Web responsive)
+// =============================================================================
+
+export const BREAKPOINTS = {
+  mobile: 0,
+  tablet: 768,
+  desktop: 1024,
+  wide: 1440,
+} as const;
+
+// =============================================================================
+// WEB LAYOUT
+// =============================================================================
+
+export const WEB_LAYOUT = {
+  sidebarWidth: 199,
+  playerBarHeight: 80,
+  headerHeight: 64,
+  maxContentWidth: 1200,
+  outerPadding: 12,
+  panelGap: 16,
+  sidebarRadius: 16,
+  contentRadius: 16,
+  playerBarRadius: 12,
+} as const;
+
+// =============================================================================
 // BRAND COLORS (External services, gradients)
 // =============================================================================
 

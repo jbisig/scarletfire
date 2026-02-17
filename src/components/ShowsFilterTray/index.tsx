@@ -5,7 +5,9 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -163,6 +165,74 @@ export function ShowsFilterTray({
     return count;
   }, [showsByYear, pendingSeries, pendingYears]);
 
+  const isWeb = Platform.OS === 'web';
+
+  const content = (
+    <View style={[styles.container, !isWeb && { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Filter Shows</Text>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.closeText}>Close</Text>
+          <Ionicons name="close" size={18} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <SeriesSection
+          selectedSeries={pendingSeries}
+          onToggleSeries={handleToggleSeries}
+          onSelectAll={handleSelectAllSeries}
+        />
+
+        <YearsSection
+          selectedYears={pendingYears}
+          selectedSeries={pendingSeries}
+          showsByYear={showsByYear}
+          onToggleYear={handleToggleYear}
+          onSelectAllInEra={handleSelectAllInEra}
+        />
+      </ScrollView>
+
+      {/* Bottom Action Bar */}
+      <FilterActionBar
+        matchingCount={matchingShowCount}
+        onReset={handleReset}
+        onApply={handleApply}
+      />
+    </View>
+  );
+
+  if (isWeb) {
+    return (
+      <Modal
+        visible={isOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={onClose}
+      >
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.webOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.webModal}>
+                {content}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       visible={isOpen}
@@ -170,48 +240,7 @@ export function ShowsFilterTray({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Filter Shows</Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.closeText}>Close</Text>
-            <Ionicons name="close" size={18} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Scrollable Content */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <SeriesSection
-            selectedSeries={pendingSeries}
-            onToggleSeries={handleToggleSeries}
-            onSelectAll={handleSelectAllSeries}
-          />
-
-          <YearsSection
-            selectedYears={pendingYears}
-            selectedSeries={pendingSeries}
-            showsByYear={showsByYear}
-            onToggleYear={handleToggleYear}
-            onSelectAllInEra={handleSelectAllInEra}
-          />
-        </ScrollView>
-
-        {/* Bottom Action Bar */}
-        <FilterActionBar
-          matchingCount={matchingShowCount}
-          onReset={handleReset}
-          onApply={handleApply}
-        />
-      </View>
+      {content}
     </Modal>
   );
 }
@@ -247,6 +276,19 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120, // Space for action bar
+  },
+  webOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webModal: {
+    maxWidth: 800,
+    width: '90%',
+    maxHeight: '85%',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 });
 

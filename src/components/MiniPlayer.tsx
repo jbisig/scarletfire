@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -10,6 +8,7 @@ import { useShows } from '../contexts/ShowsContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
+import { BlurBackground } from './shared/BlurBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
@@ -23,8 +22,10 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
 
-  // Track app state to pause video when in background (saves battery)
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  // Track app state to pause video when in background (saves battery) — native only
+  const [appState, setAppState] = useState<AppStateStatus>(
+    Platform.OS !== 'web' ? AppState.currentState : 'active'
+  );
 
   // Force video remount when source changes by briefly unmounting
   const [videoMounted, setVideoMounted] = useState(true);
@@ -41,6 +42,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   }, [videoId]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const subscription = AppState.addEventListener('change', setAppState);
     return () => subscription.remove();
   }, []);
@@ -90,26 +92,25 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
         accessibilityHint="Opens the full screen player"
       >
         {/* Video Background - only play when app is active to save battery */}
-        {videoMounted && (
-          <Video
-            key={`video-${videoId}`}
-            source={videoSource}
-            style={styles.video}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={appState === 'active'}
-            isLooping
-            isMuted
-            onError={handleVideoError}
-          />
-        )}
+        {Platform.OS !== 'web' && videoMounted && (() => {
+          const { Video, ResizeMode } = require('expo-av');
+          return (
+            <Video
+              key={`video-${videoId}`}
+              source={videoSource}
+              style={styles.video}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={appState === 'active'}
+              isLooping
+              isMuted
+              onError={handleVideoError}
+            />
+          );
+        })()}
 
-        {/* Overlay - BlurView on iOS, semi-transparent View on Android */}
+        {/* Overlay - BlurView on iOS, CSS blur on web, semi-transparent View on Android */}
         <View style={styles.blurOverlay}>
-          {Platform.OS === 'ios' ? (
-            <BlurView intensity={30} tint="systemThinMaterialDark" style={StyleSheet.absoluteFill} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, styles.androidOverlay]} />
-          )}
+          <BlurBackground intensity={30} tint="dark" />
           <View style={styles.contentOverlay}>
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>

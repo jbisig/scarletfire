@@ -1,5 +1,5 @@
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { HorizontalShowCard } from './HorizontalShowCard';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -44,6 +44,26 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
     />
   );
 
+  // On web, render a wrapping grid instead of a horizontal scroll
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.webGrid}>
+          {shows.map((show, index) => (
+            <HorizontalShowCard
+              key={show.primaryIdentifier}
+              show={show}
+              onPress={onShowPress}
+              index={index}
+              color={color}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -76,5 +96,11 @@ const styles = StyleSheet.create({
   },
   separator: {
     width: SPACING.md,
+  },
+  webGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.xl,
   },
 });

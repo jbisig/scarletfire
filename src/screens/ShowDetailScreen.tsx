@@ -6,14 +6,17 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
+  Image,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import { useFavorites } from '../contexts/FavoritesContext';
+import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
@@ -22,10 +25,48 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { useProfileDropdown } from '../hooks/useProfileDropdown';
+
+// Default profile image for logged out users (web header)
+const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
+
+// Resolve video source to URL string for HTML5 video (web only)
+function resolveVideoUri(source: number | { uri: string } | string): string {
+  if (typeof source === 'string') return source;
+  if (typeof source === 'number') {
+    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
+  }
+  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
+  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return '';
+}
+
+// HTML5 video background for web header
+function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
+  return React.createElement('video', {
+    key: `show-header-video-${videoId}`,
+    src: uri,
+    autoPlay: true,
+    loop: true,
+    muted: true,
+    playsInline: true,
+    ref: (el: HTMLVideoElement | null) => {
+      if (el) el.playbackRate = 0.5;
+    },
+    style: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+    },
+  });
+}
 
 // Pre-compute song lookup Map for O(1) access instead of O(n) find() on each track
 const songsByTitle: Map<string, Song> = new Map(
@@ -40,7 +81,7 @@ export function ShowDetailScreen() {
   const navigation = useNavigation<ShowDetailNavigationProp>();
   const { getShowDetail, showsByYear } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
-  const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
+  const { isShowFavorite, addFavoriteShow, removeFavoriteShow, isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getShowPlayCount } = usePlayCounts();
 
   const [show, setShow] = useState<ShowDetail | null>(null);
@@ -50,6 +91,13 @@ export function ShowDetailScreen() {
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
   const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
+
+  // Video background for web header
+  const { videoSource, videoId } = useVideoBackground();
+  const videoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
+
+  // Profile avatar for web header
+  const { avatarUrl, isAuthenticated } = useProfileDropdown();
 
   // Get official releases for this show
   const officialReleases = useMemo(() => {
@@ -167,6 +215,23 @@ export function ShowDetailScreen() {
     }
   }, [show, loadTrack]);
 
+  const handleToggleSaveSong = useCallback((track: Track) => {
+    if (!show) return;
+    if (isSongFavorite(track.id, show.identifier)) {
+      removeFavoriteSong(track.id, show.identifier);
+    } else {
+      const favoriteSong: FavoriteSong = {
+        trackId: track.id,
+        trackTitle: track.title,
+        showIdentifier: show.identifier,
+        showDate: show.date,
+        venue: getVenueFromShow(show),
+        streamUrl: track.streamUrl,
+      };
+      addFavoriteSong(favoriteSong);
+    }
+  }, [show, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
+
   const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
     navigation.push('ShowDetail', { identifier: nextShow.primaryIdentifier });
   }, [navigation]);
@@ -222,85 +287,201 @@ export function ShowDetailScreen() {
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.headerContainer}>
-        {/* Venue - full width at top */}
-        <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
+      {/* Web: Header with video background + blur */}
+      {Platform.OS === 'web' ? (
+        <View style={styles.webHeaderWrapper}>
+          {/* Video background */}
+          {videoUri ? (
+            <View style={styles.webHeaderVideo}>
+              <WebVideoBackground uri={videoUri} videoId={videoId} />
+            </View>
+          ) : null}
+          {/* Blur overlay */}
+          <View style={styles.webHeaderBlur} />
 
-        {/* Date/Location info row with Save button */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoContainer}>
-            {/* Date with stars */}
-            <View style={styles.dateRow}>
-              <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
-              {classicTier && (
-                <StarRating tier={classicTier} size={16} />
-              )}
+          {/* Header content */}
+          <View style={styles.webHeaderContent}>
+            {/* Back button + Avatar row */}
+            <View style={styles.webNavRow}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                style={styles.webBackButton}
+              >
+                <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+              <Image
+                source={isAuthenticated && avatarUrl
+                  ? { uri: avatarUrl }
+                  : LOGGED_OUT_PROFILE
+                }
+                style={styles.webAvatar}
+              />
             </View>
 
-            {/* Location */}
-            <Text style={styles.sourceName}>
-              {show.location || 'Unknown location'}
-            </Text>
-          </View>
+            {/* Show info section */}
+            <View style={styles.webInfoSection}>
+              {/* Venue + Details */}
+              <View style={styles.webVenueBlock}>
+                <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
 
-          {/* Save button */}
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              isSaved && styles.saveButtonActive
-            ]}
-            onPress={handleToggleFavorite}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-            accessibilityHint={isSaved ? 'Double tap to remove this show from your favorites' : 'Double tap to save this show to your favorites'}
-            accessibilityState={{ selected: isSaved }}
-          >
-            {isSaved ? (
-              <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
-            ) : (
-              <Ionicons name="add" size={21} color={COLORS.textPrimary} />
-            )}
-          </TouchableOpacity>
-        </View>
+                {/* Details section */}
+                <View style={styles.webDetailsSection}>
+                  {/* Date with stars */}
+                  <View style={styles.webDateRow}>
+                    <Text style={styles.webDate}>{formatDateMMDDYYYY(show.date)}</Text>
+                    {classicTier && (
+                      <StarRating tier={classicTier} size={20} />
+                    )}
+                  </View>
 
-        {/* Badges row - Official Release and Play Count */}
-        {(officialReleases.length > 0 || playCount > 0) && (
-          <View style={styles.badgesRow}>
-            {officialReleases.length > 0 && (
-              <OfficialReleaseBadge
-                onPress={() => setReleaseModalVisible(true)}
-                releaseTitle={officialReleases[0].name}
-              />
-            )}
-            {playCount > 0 && (
-              <View style={styles.playCountBadge}>
-                <Text style={styles.playCountText}>
-                  {playCount} {playCount === 1 ? 'play' : 'plays'}
-                </Text>
+                  {/* Location */}
+                  <Text style={styles.webLocation}>
+                    {show.location || 'Unknown location'}
+                  </Text>
+                </View>
               </View>
-            )}
-          </View>
-        )}
 
-        {/* Version Picker / Source Info Pill */}
-        {show.allVersions && show.allVersions.length > 1 ? (
-          <VersionPicker
-            versions={show.allVersions}
-            selectedVersion={selectedVersion}
-            onVersionChange={handleVersionChange}
-          />
-        ) : (
-          <View style={styles.sourceInfoPill}>
-            <Text style={styles.sourceInfoText}>
-              {show.allVersions?.[0]?.source || 'Unknown source'}
-            </Text>
-            <Text style={styles.downloadsText}>
-              {formatDownloads(show.allVersions?.[0]?.downloads)}
-            </Text>
+              {/* Badges row */}
+              {(officialReleases.length > 0 || playCount > 0) && (
+                <View style={styles.badgesRow}>
+                  {officialReleases.length > 0 && (
+                    <OfficialReleaseBadge
+                      onPress={() => setReleaseModalVisible(true)}
+                      releaseTitle={officialReleases[0].name}
+                    />
+                  )}
+                  {playCount > 0 && (
+                    <View style={styles.playCountBadge}>
+                      <Text style={styles.playCountText}>
+                        {playCount} {playCount === 1 ? 'play' : 'plays'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+            {/* Pills row: Source + Save */}
+            <View style={styles.pillsRow}>
+              {show.allVersions && show.allVersions.length > 1 ? (
+                <VersionPicker
+                  versions={show.allVersions}
+                  selectedVersion={selectedVersion}
+                  onVersionChange={handleVersionChange}
+                  webGlassStyle
+                />
+              ) : (
+                <View style={styles.sourceInfoPillWeb}>
+                  <Text style={styles.webSourceText}>
+                    {show.allVersions?.[0]?.source || 'Unknown source'}
+                  </Text>
+                  <Text style={styles.webDownloadsText}>
+                    {formatDownloads(show.allVersions?.[0]?.downloads)}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.savePillWeb}
+                onPress={handleToggleFavorite}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                accessibilityState={{ selected: isSaved }}
+              >
+                <Ionicons
+                  name={isSaved ? 'heart' : 'heart-outline'}
+                  size={17}
+                  color={COLORS.textPrimary}
+                />
+                <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+            </View>
           </View>
-        )}
-      </View>
+        </View>
+      ) : (
+        /* Native: Original header */
+        <View style={styles.headerContainer}>
+          {/* Venue - full width at top */}
+          <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
+
+          {/* Date/Location info row with Save button */}
+          <View style={styles.infoRow}>
+            <View style={styles.infoContainer}>
+              {/* Date with stars */}
+              <View style={styles.dateRow}>
+                <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
+                {classicTier && (
+                  <StarRating tier={classicTier} size={16} />
+                )}
+              </View>
+
+              {/* Location */}
+              <Text style={styles.sourceName}>
+                {show.location || 'Unknown location'}
+              </Text>
+            </View>
+
+            {/* Save button */}
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                isSaved && styles.saveButtonActive
+              ]}
+              onPress={handleToggleFavorite}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+              accessibilityHint={isSaved ? 'Double tap to remove this show from your favorites' : 'Double tap to save this show to your favorites'}
+              accessibilityState={{ selected: isSaved }}
+            >
+              {isSaved ? (
+                <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
+              ) : (
+                <Ionicons name="add" size={21} color={COLORS.textPrimary} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Badges row - Official Release and Play Count */}
+          {(officialReleases.length > 0 || playCount > 0) && (
+            <View style={styles.badgesRow}>
+              {officialReleases.length > 0 && (
+                <OfficialReleaseBadge
+                  onPress={() => setReleaseModalVisible(true)}
+                  releaseTitle={officialReleases[0].name}
+                />
+              )}
+              {playCount > 0 && (
+                <View style={styles.playCountBadge}>
+                  <Text style={styles.playCountText}>
+                    {playCount} {playCount === 1 ? 'play' : 'plays'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Version Picker / Source Info Pill */}
+          {show.allVersions && show.allVersions.length > 1 ? (
+            <VersionPicker
+              versions={show.allVersions}
+              selectedVersion={selectedVersion}
+              onVersionChange={handleVersionChange}
+            />
+          ) : (
+            <View style={styles.sourceInfoPill}>
+              <Text style={styles.sourceInfoText}>
+                {show.allVersions?.[0]?.source || 'Unknown source'}
+              </Text>
+              <Text style={styles.downloadsText}>
+                {formatDownloads(show.allVersions?.[0]?.downloads)}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={styles.tracksContainer}>
         {show.tracks.map((track) => (
@@ -313,6 +494,10 @@ export function ShowDetailScreen() {
             }
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
+            {...(Platform.OS === 'web' && show ? {
+              isSaved: isSongFavorite(track.id, show.identifier),
+              onToggleSave: handleToggleSaveSong,
+            } : {})}
           />
         ))}
       </View>
@@ -346,13 +531,13 @@ export function ShowDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
     paddingBottom: 100,
   },
   errorText: {
@@ -426,6 +611,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
   },
+  pillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   sourceInfoPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,6 +624,39 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
     gap: SPACING.md,
+  },
+  sourceInfoPillWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 342,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.33)',
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.lg,
+    gap: 6,
+    // @ts-ignore
+    backdropFilter: 'blur(34px)',
+    WebkitBackdropFilter: 'blur(34px)',
+  },
+  savePillWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 342,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.33)',
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.lg,
+    gap: 6,
+    // @ts-ignore
+    backdropFilter: 'blur(34px)',
+    WebkitBackdropFilter: 'blur(34px)',
+  },
+  savePillText: {
+    ...TYPOGRAPHY.label,
+    fontSize: 14,
+    color: COLORS.textPrimary,
   },
   sourceInfoText: {
     ...TYPOGRAPHY.body,
@@ -444,11 +667,111 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textSecondary,
   },
+  // Web header styles
+  webHeaderWrapper: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  webHeaderVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.68,
+  },
+  webHeaderBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    // @ts-ignore - web only
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    zIndex: 1,
+  },
+  webHeaderContent: {
+    position: 'relative',
+    zIndex: 2,
+    paddingHorizontal: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 24,
+  },
+  webNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  webBackButton: {
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  webAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 60,
+    backgroundColor: COLORS.cardBackground,
+  },
+  webInfoSection: {
+    gap: 16,
+  },
+  webVenueBlock: {
+    gap: 12,
+  },
+  webVenue: {
+    fontFamily: 'FamiljenGrotesk-Bold',
+    fontWeight: '700',
+    fontSize: 28,
+    color: COLORS.textPrimary,
+  },
+  webDetailsSection: {
+    gap: 4,
+  },
+  webDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  webDate: {
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '500',
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  webLocation: {
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '500',
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  webSourceText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  webDownloadsText: {
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    opacity: 0.5,
+  },
   tracksContainer: {
     paddingVertical: SPACING.sm,
+    ...(Platform.OS === 'web' ? {
+      padding: 24,
+      paddingTop: 24,
+    } : {}),
   },
   nextTourStopsSection: {
     marginTop: SPACING.sm,
+    ...(Platform.OS === 'web' ? {
+      padding: 24,
+    } : {}),
   },
   divider: {
     height: 1,

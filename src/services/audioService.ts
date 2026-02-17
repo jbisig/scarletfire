@@ -1,11 +1,13 @@
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
 import nativeAudioPlayer, { Track as NativeTrack, State } from './nativeAudioPlayer';
 import { Track, ShowDetail } from '../types/show.types';
 import { logger } from '../utils/logger';
 
 // Resolve app icon for Now Playing artwork
 const appIcon = require('../../assets/icon.png');
-const appIconUri = Image.resolveAssetSource(appIcon).uri;
+const appIconUri = Platform.OS === 'web'
+  ? (typeof appIcon === 'string' ? appIcon : (appIcon?.uri || appIcon?.default || '/assets/icon.png'))
+  : Image.resolveAssetSource(appIcon).uri;
 
 /**
  * Convert our Track format to Native Audio Player's Track format

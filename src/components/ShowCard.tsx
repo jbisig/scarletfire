@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -28,6 +28,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { showDetailsCache } = useShows();
   const [modalVisible, setModalVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Get official releases for this show
   const officialReleases = useMemo(() => {
@@ -74,12 +75,15 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   return (
     <>
       <TouchableOpacity
-        style={styles.container}
+        style={[styles.container, Platform.OS === 'web' && isHovered && styles.hovered]}
         onPress={() => onPress(show)}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details and track list"
+        // @ts-ignore - web only mouse events
+        onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
+        onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
       >
         {/* Venue name - full width at top */}
         <Text style={styles.venue} numberOfLines={1}>
@@ -139,6 +143,16 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.xxl,
     backgroundColor: COLORS.background,
+    ...(Platform.OS === 'web' ? {
+      backgroundColor: 'transparent',
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginVertical: 2,
+    } : {}),
+  },
+  hovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   venue: {
     ...TYPOGRAPHY.heading4,

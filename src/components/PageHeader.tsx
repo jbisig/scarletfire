@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,19 +47,21 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
         <View style={styles.header}>
           {/* Left side: Avatar and Title - matches HomeScreen headerLeft */}
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              ref={profileButtonRef}
-              onPress={handleProfilePress}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={isAuthenticated && avatarUrl
-                  ? { uri: avatarUrl }
-                  : LOGGED_OUT_PROFILE
-                }
-                style={styles.avatar}
-              />
-            </TouchableOpacity>
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity
+                ref={profileButtonRef}
+                onPress={handleProfilePress}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={isAuthenticated && avatarUrl
+                    ? { uri: avatarUrl }
+                    : LOGGED_OUT_PROFILE
+                  }
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+            )}
             <Text style={styles.headerTitle}>{title}</Text>
           </View>
 
@@ -90,7 +93,7 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
 const styles = StyleSheet.create({
   headerSection: {
     zIndex: 10,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -98,6 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
   },
   headerLeft: {
     flexDirection: 'row',
@@ -107,6 +111,7 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { left: 32 } : {}),
   },
   avatar: {
     width: 39,
@@ -128,5 +133,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
+    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
   },
 });

@@ -9,6 +9,7 @@ import {
   Keyboard,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -233,7 +234,7 @@ export function HomeScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />
+          {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
           <Text style={styles.headerTitle}>Shows</Text>
         </View>
         <SkeletonLoader variant="showCard" count={10} />
@@ -252,19 +253,21 @@ export function HomeScreen() {
         <View style={styles.header}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              ref={profileButtonRef}
-              onPress={handleProfilePress}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={isAuthenticated && avatarUrl
-                  ? { uri: avatarUrl }
-                  : LOGGED_OUT_PROFILE
-                }
-                style={styles.avatar}
-              />
-            </TouchableOpacity>
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity
+                ref={profileButtonRef}
+                onPress={handleProfilePress}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={isAuthenticated && avatarUrl
+                    ? { uri: avatarUrl }
+                    : LOGGED_OUT_PROFILE
+                  }
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+            )}
             <Text style={styles.headerTitle}>Shows</Text>
           </View>
 
@@ -366,11 +369,11 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: COLORS.background,
+    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -378,6 +381,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
   },
   headerLeft: {
     flexDirection: 'row',
@@ -387,6 +391,7 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
+    ...(Platform.OS === 'web' ? { left: 32 } : {}),
   },
   avatar: {
     width: 39,
@@ -410,10 +415,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
+    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
   },
   listContent: {
     paddingTop: SPACING.sm + 8,
     paddingBottom: LAYOUT.listBottomPadding,
+    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
   },
   filterButton: {
     width: LAYOUT.headerButtonSize,
