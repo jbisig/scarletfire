@@ -40,6 +40,7 @@ import { PlayCountBadge } from '../components/PlayCountBadge';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
 
@@ -751,6 +752,8 @@ export function FavoritesScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
+
+            {Platform.OS === 'web' && <WebProfileAvatar />}
           </View>
         </View>
 

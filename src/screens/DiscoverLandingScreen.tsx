@@ -10,6 +10,7 @@ import {
   AppState,
   AppStateStatus,
   Platform,
+  Image,
 } from 'react-native';
 import { logger } from '../utils/logger';
 import { BlurBackground } from '../components/shared/BlurBackground';
@@ -36,6 +37,40 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../co
 // Default screen width — components should use useWindowDimensions for responsive sizing
 const SOTD_CARD_PADDING = SPACING.xl * 2;
 
+// Resolve video source to URL string for HTML5 video (web only)
+function resolveVideoUri(source: number | { uri: string } | string): string {
+  if (typeof source === 'string') return source;
+  if (typeof source === 'number') {
+    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
+  }
+  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
+  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return '';
+}
+
+// HTML5 video background for web SOTD card
+function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
+  return React.createElement('video', {
+    key: `sotd-video-${videoId}`,
+    src: uri,
+    autoPlay: true,
+    loop: true,
+    muted: true,
+    playsInline: true,
+    ref: (el: HTMLVideoElement | null) => {
+      if (el) el.playbackRate = 0.5;
+    },
+    style: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+    },
+  });
+}
+
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
 export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen() {
@@ -46,6 +81,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
   const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
+  const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
   const [appState, setAppState] = useState<AppStateStatus>(
@@ -214,8 +250,14 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             accessibilityState={{ disabled: isLoading || !show }}
           >
             <View style={styles.sotdCard}>
-              {/* Video background - absolute fill (native only) */}
-              {Platform.OS !== 'web' && (() => {
+              {/* Video background - absolute fill */}
+              {Platform.OS === 'web' ? (
+                webVideoUri ? (
+                  <View style={styles.sotdVideoContainer}>
+                    <WebVideoBackground uri={webVideoUri} videoId={videoId} />
+                  </View>
+                ) : null
+              ) : (() => {
                 const { Video, ResizeMode } = require('expo-av');
                 return (
                   <Video
@@ -230,9 +272,10 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                   />
                 );
               })()}
-              {/* Overlay - BlurView on iOS, CSS blur on web, semi-transparent View on Android */}
+              {/* Overlay */}
+              {Platform.OS === 'web' && <View style={styles.sotdWebBlur} />}
               <View style={styles.sotdBlurOverlay}>
-                <BlurBackground intensity={30} tint="dark" />
+                {Platform.OS !== 'web' && <BlurBackground intensity={30} tint="dark" />}
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
                     <ActivityIndicator size="large" color={COLORS.accent} />
@@ -350,10 +393,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.cardBackground,
     minHeight: 80, // Ensure video has space to render
+    // @ts-ignore - web: force clipping on rounded corners
+    ...(Platform.OS === 'web' ? { WebkitMaskImage: 'radial-gradient(white, black)' } : {}),
+  },
+  sotdVideoContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.68,
+  },
+  sotdWebBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    // @ts-ignore - web only
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    zIndex: 1,
   },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
+    position: 'relative',
+    zIndex: 2,
   },
   androidOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -400,9 +467,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonWrapper: {
-    flex: 1,
+    ...(Platform.OS === 'web' ? { width: 200 } : { flex: 1 }),
   },
   buttonWrapperFull: {
-    width: '100%',
+    ...(Platform.OS === 'web' ? { width: 200 } : { width: '100%' }),
   },
 });

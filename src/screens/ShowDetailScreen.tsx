@@ -29,10 +29,8 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../cons
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
-import { useProfileDropdown } from '../hooks/useProfileDropdown';
 
 // Default profile image for logged out users (web header)
-const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
 // Resolve video source to URL string for HTML5 video (web only)
 function resolveVideoUri(source: number | { uri: string } | string): string {
@@ -96,8 +94,6 @@ export function ShowDetailScreen() {
   const { videoSource, videoId } = useVideoBackground();
   const videoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
-  // Profile avatar for web header
-  const { avatarUrl, isAuthenticated } = useProfileDropdown();
 
   // Get official releases for this show
   const officialReleases = useMemo(() => {
@@ -310,13 +306,6 @@ export function ShowDetailScreen() {
               >
                 <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
               </TouchableOpacity>
-              <Image
-                source={isAuthenticated && avatarUrl
-                  ? { uri: avatarUrl }
-                  : LOGGED_OUT_PROFILE
-                }
-                style={styles.webAvatar}
-              />
             </View>
 
             {/* Show info section */}
@@ -709,12 +698,6 @@ const styles = StyleSheet.create({
     // @ts-ignore
     cursor: 'pointer',
   },
-  webAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 60,
-    backgroundColor: COLORS.cardBackground,
-  },
   webInfoSection: {
     gap: 16,
   },
@@ -783,5 +766,10 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading2,
     paddingHorizontal: SPACING.xxl,
     marginBottom: SPACING.xs,
+    ...(Platform.OS === 'web' ? {
+      paddingLeft: SPACING.xxl - 8,
+      paddingTop: 12,
+      paddingBottom: 8,
+    } : {}),
   },
 });

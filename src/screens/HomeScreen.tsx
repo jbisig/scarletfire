@@ -28,6 +28,7 @@ import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 // Default profile image for logged out users
@@ -302,6 +303,8 @@ export function HomeScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
+
+            {Platform.OS === 'web' && <WebProfileAvatar />}
           </View>
         </View>
 

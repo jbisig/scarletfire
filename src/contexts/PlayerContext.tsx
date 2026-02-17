@@ -740,17 +740,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const previousTrack = useCallback(async () => {
     try {
-      // In shuffle songs mode, restart current song or go to previous
-      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
-        // If we're more than 3 seconds in, restart the current song
-        if (progressRef.current.position > 3000) {
-          await audioService.seekTo(0);
-        } else {
-          // Go to previous song in shuffle queue
-          shufflePreviousRef.current();
-        }
+      // If we're more than 3 seconds in, restart the current song
+      if (progressRef.current.position > 3000) {
+        await audioService.seekTo(0);
         return;
       }
+
+      // In shuffle songs mode, go to previous song in shuffle queue
+      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
+        shufflePreviousRef.current();
+        return;
+      }
+
       await audioService.skipToPrevious();
     } catch (error) {
       logger.player.error('Skip to previous failed:', error instanceof Error ? error.message : 'Unknown error');

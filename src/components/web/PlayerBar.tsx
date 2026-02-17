@@ -100,6 +100,11 @@ export function PlayerBar() {
   const timeDisplayRef = useRef({ position: 0, duration: 0 });
   const [, forceTimeUpdate] = useState(0);
 
+  // Hover state for track info and skip buttons
+  const [isTrackInfoHovered, setIsTrackInfoHovered] = useState(false);
+  const [isSkipBackHovered, setIsSkipBackHovered] = useState(false);
+  const [isSkipForwardHovered, setIsSkipForwardHovered] = useState(false);
+
   // Drag and hover state for progress bar
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState(0);
@@ -242,12 +247,15 @@ export function PlayerBar() {
                 );
               }
             }}
+            // @ts-ignore - web mouse events
+            onMouseEnter={() => setIsTrackInfoHovered(true)}
+            onMouseLeave={() => setIsTrackInfoHovered(false)}
           >
-            <Text style={styles.trackTitle} numberOfLines={1}>
+            <Text style={[styles.trackTitle, isTrackInfoHovered && { textDecorationLine: 'underline' }]} numberOfLines={1}>
               {state.currentTrack.title}
             </Text>
             {state.currentShow && (
-              <Text style={styles.showInfo} numberOfLines={1}>
+              <Text style={[styles.showInfo, isTrackInfoHovered && { textDecorationLine: 'underline' }]} numberOfLines={1}>
                 {getVenueFromShow(state.currentShow)} on {formatDate(state.currentShow.date)}
               </Text>
             )}
@@ -268,8 +276,14 @@ export function PlayerBar() {
         {/* Center: Controls + Progress — absolutely centered in the bar */}
         <View style={styles.centerSection}>
           <View style={styles.controls}>
-            <TouchableOpacity onPress={previousTrack} style={styles.controlButton}>
-              <Ionicons name="play-skip-back" size={20} color={COLORS.textPrimary} style={{ opacity: 0.6 }} />
+            <TouchableOpacity
+              onPress={previousTrack}
+              style={styles.controlButton}
+              // @ts-ignore - web mouse events
+              onMouseEnter={() => setIsSkipBackHovered(true)}
+              onMouseLeave={() => setIsSkipBackHovered(false)}
+            >
+              <Ionicons name="play-skip-back" size={20} color={COLORS.textPrimary} style={{ opacity: isSkipBackHovered ? 1 : 0.6 }} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -289,6 +303,9 @@ export function PlayerBar() {
               onPress={nextTrack}
               style={styles.controlButton}
               disabled={!isRadioMode && !isShuffleMode && (!state.playlist || state.playlist.length === 0)}
+              // @ts-ignore - web mouse events
+              onMouseEnter={() => setIsSkipForwardHovered(true)}
+              onMouseLeave={() => setIsSkipForwardHovered(false)}
             >
               <Ionicons
                 name="play-skip-forward"
@@ -298,7 +315,11 @@ export function PlayerBar() {
                     ? COLORS.textPrimary
                     : COLORS.textMuted
                 }
-                style={{ opacity: isRadioMode || isShuffleMode || (state.playlist && state.playlist.length > 0) ? 0.6 : 0.3 }}
+                style={{
+                  opacity: isRadioMode || isShuffleMode || (state.playlist && state.playlist.length > 0)
+                    ? (isSkipForwardHovered ? 1 : 0.6)
+                    : 0.3,
+                }}
               />
             </TouchableOpacity>
           </View>
@@ -411,9 +432,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   showInfo: {
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '400',
-    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '300',
+    fontSize: 14,
     color: COLORS.textPrimary,
     opacity: 0.66,
   },

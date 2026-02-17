@@ -12,6 +12,7 @@ import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { Sidebar } from '../components/web/Sidebar';
 import { PlayerBar } from '../components/web/PlayerBar';
+import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { COLORS, FONTS, WEB_LAYOUT } from '../constants/theme';
 
 const Stack = createStackNavigator();
@@ -34,6 +35,9 @@ const TAB_ROOT_SCREENS: Record<string, string> = {
   Settings: 'Settings',
 };
 
+// Tabs where the screen header includes its own avatar
+const TABS_WITH_OWN_AVATAR = ['ShowsTab', 'SongsTab', 'FavoritesTab'];
+
 export function DesktopLayout() {
   const [activeTab, setActiveTab] = useState('DiscoverTab');
 
@@ -49,6 +53,8 @@ export function DesktopLayout() {
       );
     }
   }, []);
+
+  const showGlobalAvatar = !TABS_WITH_OWN_AVATAR.includes(activeTab);
 
   return (
     <View style={styles.outerContainer}>
@@ -70,6 +76,13 @@ export function DesktopLayout() {
             <Stack.Screen name="ShowDetail" component={ShowDetailScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </View>
+
+        {/* Global profile avatar — shown on tabs without their own header avatar */}
+        {showGlobalAvatar && (
+          <View style={styles.avatarContainer}>
+            <WebProfileAvatar />
+          </View>
+        )}
       </View>
 
       {/* Persistent bottom player bar */}
@@ -97,5 +110,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
     // @ts-ignore - web only: fix anti-aliasing artifacts at rounded corners
     WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 32,
+    zIndex: 100,
   },
 });

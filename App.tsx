@@ -14,6 +14,7 @@ import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
 import { ToastProvider } from './src/contexts/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { WebAuthModalProvider } from './src/components/web/WebAuthModal';
 import { validateConfig } from './src/constants/config';
 
 // Validate environment configuration at startup
@@ -85,22 +86,24 @@ export default function App() {
       <SafeAreaProvider>
         <ToastProvider>
           <AuthProvider>
-            <ShowsProvider>
-              <ShowOfTheDayProvider>
-                <FavoritesProvider>
-                  <PlayCountsProvider>
-                    <PlayerProvider>
-                      <VideoBackgroundProvider>
-                        <ErrorBoundary>
-                          <AppNavigator />
-                        </ErrorBoundary>
-                        {Platform.OS !== 'web' && <StatusBar style="light" />}
-                      </VideoBackgroundProvider>
-                    </PlayerProvider>
-                  </PlayCountsProvider>
-                </FavoritesProvider>
-              </ShowOfTheDayProvider>
-            </ShowsProvider>
+            <WebAuthModalProvider>
+              <ShowsProvider>
+                <ShowOfTheDayProvider>
+                  <FavoritesProvider>
+                    <PlayCountsProvider>
+                      <PlayerProvider>
+                        <VideoBackgroundProvider>
+                          <ErrorBoundary>
+                            <AppNavigator />
+                          </ErrorBoundary>
+                          {Platform.OS !== 'web' && <StatusBar style="light" />}
+                        </VideoBackgroundProvider>
+                      </PlayerProvider>
+                    </PlayCountsProvider>
+                  </FavoritesProvider>
+                </ShowOfTheDayProvider>
+              </ShowsProvider>
+            </WebAuthModalProvider>
           </AuthProvider>
         </ToastProvider>
       </SafeAreaProvider>

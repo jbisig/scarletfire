@@ -30,7 +30,13 @@ export function SettingsScreen() {
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
   const handleClose = () => {
-    navigation.goBack();
+    if (Platform.OS === 'web') {
+      // On web desktop, Settings is opened via stack reset so there's no back history.
+      // Navigate to Discover as the default landing screen.
+      navigation.reset({ index: 0, routes: [{ name: 'DiscoverLanding' as never }] });
+    } else {
+      navigation.goBack();
+    }
   };
 
   const handleChangePhoto = async () => {
@@ -77,6 +83,11 @@ export function SettingsScreen() {
   };
 
   const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      await logout();
+      navigation.reset({ index: 0, routes: [{ name: 'DiscoverLanding' as never }] });
+      return;
+    }
     Alert.alert(
       'Log Out',
       'Are you sure you want to log out?',
