@@ -2,6 +2,7 @@ import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { HorizontalShowCard } from './HorizontalShowCard';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 interface ShowCarouselProps {
@@ -24,6 +25,7 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
   color,
 }, ref) {
   const flatListRef = useRef<FlatList>(null);
+  const { isDesktop } = useResponsive();
 
   useImperativeHandle(ref, () => ({
     scrollToStart: () => {
@@ -44,8 +46,8 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
     />
   );
 
-  // On web, render a wrapping grid instead of a horizontal scroll
-  if (Platform.OS === 'web') {
+  // On desktop web, render a wrapping grid instead of a horizontal scroll
+  if (isDesktop) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>{title}</Text>

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 're
 import { Ionicons } from '@expo/vector-icons';
 import { FILTER_ERAS, FilterEra, ShowsByYear } from './types';
 import { expandDisplaySeries, getOfficialReleasesForDate } from '../../data/officialReleases';
+import { useResponsive } from '../../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface YearsSectionProps {
@@ -17,6 +18,7 @@ interface YearButtonProps {
   year: string;
   isSelected: boolean;
   isDisabled: boolean;
+  isDesktop: boolean;
   onPress: () => void;
 }
 
@@ -24,6 +26,7 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
   year,
   isSelected,
   isDisabled,
+  isDesktop,
   onPress,
 }) {
   const animatedValue = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -50,6 +53,7 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
     <TouchableOpacity
       style={[
         styles.yearButton,
+        isDesktop && styles.yearButtonDesktop,
         isDisabled && styles.yearButtonDisabled,
       ]}
       onPress={onPress}
@@ -87,6 +91,7 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
   onToggleYear,
   onSelectAllInEra,
 }) {
+  const { isDesktop } = useResponsive();
   // Compute which years should be disabled (no actual shows from selected series)
   const disabledYears = useMemo(() => {
     if (selectedSeries.length === 0 || !showsByYear) {
@@ -150,6 +155,7 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
                   year={year}
                   isSelected={selectedYears.includes(year)}
                   isDisabled={disabledYears.has(year)}
+                  isDesktop={isDesktop}
                   onPress={() => onToggleYear(year)}
                 />
               ))}
@@ -198,7 +204,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   yearButton: {
-    width: Platform.OS === 'web' ? '16.666%' : '25%',
+    width: '25%',
+  },
+  yearButtonDesktop: {
+    width: '16.666%',
   },
   yearButtonDisabled: {
     opacity: 0.4,

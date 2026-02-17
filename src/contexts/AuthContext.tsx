@@ -144,6 +144,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // On web, the session user from JWT may lack full metadata (e.g. Google avatar_url).
+  // Fetch the complete user from the API to ensure we have all fields.
+  useEffect(() => {
+    if (Platform.OS === 'web' && state.isAuthenticated && state.user) {
+      if (__DEV__) {
+        console.log('[Auth] Session user metadata:', JSON.stringify(state.user.user_metadata, null, 2));
+        console.log('[Auth] Session user identities:', JSON.stringify(state.user.identities, null, 2));
+      }
+      authService.getClient().auth.getUser().then(({ data }: { data: { user: User | null } }) => {
+        if (data.user) {
+          if (__DEV__) {
+            console.log('[Auth] getUser() metadata:', JSON.stringify(data.user.user_metadata, null, 2));
+            console.log('[Auth] getUser() identities:', JSON.stringify(data.user.identities, null, 2));
+          }
+          dispatch({ type: 'USER_UPDATED', user: data.user });
+        }
+      }).catch((err) => {
+        if (__DEV__) console.warn('[Auth] getUser() failed:', err);
+      });
+    }
+  }, [state.isAuthenticated]);
+
   // Check if user previously skipped login
   useEffect(() => {
     const checkSkipStatus = async () => {

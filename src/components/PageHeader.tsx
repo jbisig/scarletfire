@@ -4,17 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
+import { useResponsive } from '../hooks/useResponsive';
 import { ProfileDropdown } from './ProfileDropdown';
+import { ProfileImage } from './ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
-
-// Default profile image for logged out users
-const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
 // Match HomeScreen's horizontal padding
 const HORIZONTAL_PADDING = SPACING.xl;
@@ -29,6 +27,7 @@ interface PageHeaderProps {
  */
 export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
   const {
     profileButtonRef,
     avatarUrl,
@@ -43,21 +42,18 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
 
   return (
     <>
-      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.header}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           {/* Left side: Avatar and Title - matches HomeScreen headerLeft */}
-          <View style={styles.headerLeft}>
-            {Platform.OS !== 'web' && (
+          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+            {!isDesktop && (
               <TouchableOpacity
                 ref={profileButtonRef}
                 onPress={handleProfilePress}
                 activeOpacity={0.8}
               >
-                <Image
-                  source={isAuthenticated && avatarUrl
-                    ? { uri: avatarUrl }
-                    : LOGGED_OUT_PROFILE
-                  }
+                <ProfileImage
+                  uri={isAuthenticated ? avatarUrl : null}
                   style={styles.avatar}
                 />
               </TouchableOpacity>
@@ -73,7 +69,7 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
         <LinearGradient
           colors={[COLORS.background, COLORS.background + '00']}
           locations={[0, 1]}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
           pointerEvents="none"
         />
       </View>
@@ -93,7 +89,10 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
 const styles = StyleSheet.create({
   headerSection: {
     zIndex: 10,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  headerSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -101,7 +100,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
+  },
+  headerDesktop: {
+    paddingHorizontal: 32,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -111,7 +112,9 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { left: 32 } : {}),
+  },
+  headerLeftDesktop: {
+    left: 32,
   },
   avatar: {
     width: 39,
@@ -133,6 +136,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
-    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
+  },
+  headerGradientDesktop: {
+    display: 'none',
   },
 });

@@ -1,9 +1,10 @@
 import { useRef, useState, useCallback } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService } from '../services/profileService';
+import { useWebAuthModal } from '../components/web/WebAuthModal';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
@@ -28,6 +29,7 @@ export interface UseProfileDropdownReturn {
 export function useProfileDropdown(): UseProfileDropdownReturn {
   const navigation = useNavigation<NavigationProp>();
   const { state: authState, logout, showLogin } = useAuth();
+  const { openAuthModal } = useWebAuthModal();
   const profileButtonRef = useRef<View>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -52,8 +54,12 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
 
   const handleLogin = useCallback(async () => {
     setIsVisible(false);
-    await showLogin();
-  }, [showLogin]);
+    if (Platform.OS === 'web') {
+      openAuthModal('login');
+    } else {
+      await showLogin();
+    }
+  }, [showLogin, openAuthModal]);
 
   const handleSettings = useCallback(() => {
     setIsVisible(false);

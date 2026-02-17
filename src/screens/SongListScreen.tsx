@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   Keyboard,
   TouchableWithoutFeedback,
-  Dimensions,
-  Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,16 +24,12 @@ import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
+import { ProfileImage } from '../components/ProfileImage';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
-// Default profile image for logged out users
-const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
-
 // Layout constants
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const HORIZONTAL_PADDING = SPACING.xl;
-// Full width = screen - padding on both sides (no filter button)
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -72,6 +67,10 @@ const SongListItem = React.memo<{ item: SongItem; onPress: (song: SongItem) => v
 export function SongListScreen() {
   const navigation = useNavigation<SongListNavigationProp>();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
+  const { width: windowWidth } = useWindowDimensions();
+  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const searchBarFullWidth = windowWidth - (padding * 2);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,11 +189,11 @@ export function SongListScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+        <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+          <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+            <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+              {!isDesktop && <ProfileImage uri={null} style={styles.avatar} />}
               <Text style={styles.headerTitle}>Songs</Text>
             </View>
           </View>
@@ -211,24 +210,21 @@ export function SongListScreen() {
   const Wrapper = Platform.OS === 'web' ? View : TouchableWithoutFeedback;
 
   return (
-    <Wrapper {...(Platform.OS !== 'web' ? { onPress: Keyboard.dismiss } : {})}>
-      <View style={styles.container}>
+    <Wrapper {...(Platform.OS !== 'web' ? { onPress: Keyboard.dismiss } : { style: { flex: 1 } })}>
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
         {/* Header Section with Gradient Fade */}
-        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.header}>
+        <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+          <View style={[styles.header, isDesktop && styles.headerDesktop]}>
             {/* Left side: Avatar and Title (gets covered by search bar) */}
-            <View style={styles.headerLeft}>
-              {Platform.OS !== 'web' && (
+            <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+              {!isDesktop && (
                 <TouchableOpacity
                   ref={profileButtonRef}
                   onPress={handleProfilePress}
                   activeOpacity={0.8}
                 >
-                  <Image
-                    source={isAuthenticated && avatarUrl
-                      ? { uri: avatarUrl }
-                      : LOGGED_OUT_PROFILE
-                    }
+                  <ProfileImage
+                    uri={isAuthenticated ? avatarUrl : null}
                     style={styles.avatar}
                   />
                 </TouchableOpacity>
@@ -246,10 +242,10 @@ export function SongListScreen() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search songs"
-                expandedWidth={SEARCH_BAR_FULL_WIDTH}
+                expandedWidth={searchBarFullWidth}
               />
 
-              {Platform.OS === 'web' && <WebProfileAvatar />}
+              {isDesktop && <WebProfileAvatar />}
             </View>
           </View>
 
@@ -257,7 +253,7 @@ export function SongListScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={styles.headerGradient}
+            style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
             pointerEvents="none"
           />
         </View>
@@ -277,7 +273,7 @@ export function SongListScreen() {
             keyExtractor={(item, index) =>
               item.type === 'header' ? `header-${item.letter}` : `song-${item.item!.title}-${index}`
             }
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
             removeClippedSubviews={true}
@@ -305,11 +301,17 @@ export function SongListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  headerSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -317,7 +319,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
+  },
+  headerDesktop: {
+    paddingHorizontal: 32,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -327,7 +331,9 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { left: 32 } : {}),
+  },
+  headerLeftDesktop: {
+    left: 32,
   },
   avatar: {
     width: 39,
@@ -351,11 +357,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
-    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
+  },
+  headerGradientDesktop: {
+    display: 'none',
   },
   listContent: {
     paddingBottom: LAYOUT.listBottomPadding,
-    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
+  },
+  listContentDesktop: {
+    padding: 16,
   },
   sectionHeader: {
     paddingTop: SPACING.xxl,

@@ -8,9 +8,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   RefreshControl,
-  Dimensions,
-  Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -39,19 +38,15 @@ import { StarRating } from '../components/StarRating';
 import { PlayCountBadge } from '../components/PlayCountBadge';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
+import { useResponsive } from '../hooks/useResponsive';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
+import { ProfileImage } from '../components/ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
 
-// Default profile image for logged out users
-const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
-
 // Layout constants
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const HORIZONTAL_PADDING = SPACING.xl;
-// Full width for header search = screen - padding on both sides - filter button - gap
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
 
 const allShowsByYear = showsData as ShowsByYear;
 
@@ -147,6 +142,10 @@ const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
+  const { width: windowWidth } = useWindowDimensions();
+  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const searchBarFullWidth = windowWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
@@ -493,11 +492,11 @@ export function FavoritesScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+        <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+          <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+            <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+              {!isDesktop && <ProfileImage uri={null} style={styles.avatar} />}
               <Text style={styles.headerTitle}>Favorites</Text>
             </View>
           </View>
@@ -522,7 +521,7 @@ export function FavoritesScreen() {
     return (
       <View style={styles.tabContentContainer}>
         {/* Action Bar Section with Gradient */}
-        <View style={styles.actionBarSection}>
+        <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
             <View ref={showSortButtonRef} collapsable={false}>
@@ -556,7 +555,7 @@ export function FavoritesScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={styles.actionBarGradient}
+            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
             pointerEvents="none"
           />
         </View>
@@ -575,7 +574,7 @@ export function FavoritesScreen() {
             renderItem={({ item }) => (
               <ShowCard show={item} onPress={handleShowPress} />
             )}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
@@ -613,7 +612,7 @@ export function FavoritesScreen() {
     return (
       <View style={styles.tabContentContainer}>
         {/* Action Bar Section with Gradient */}
-        <View style={styles.actionBarSection}>
+        <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
             <View ref={songSortButtonRef} collapsable={false}>
@@ -648,7 +647,7 @@ export function FavoritesScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={styles.actionBarGradient}
+            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
             pointerEvents="none"
           />
         </View>
@@ -672,7 +671,7 @@ export function FavoritesScreen() {
                 onPress={handleSongPress}
               />
             )}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             onScrollBeginDrag={Keyboard.dismiss}
@@ -696,24 +695,21 @@ export function FavoritesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
         {/* Custom Header: Avatar + Title + Search + Filter */}
-        <View style={styles.header}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={styles.headerLeft}>
-            {Platform.OS !== 'web' && (
+          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+            {!isDesktop && (
               <TouchableOpacity
                 ref={profileButtonRef}
                 onPress={handleProfilePress}
                 activeOpacity={0.8}
               >
-                <Image
-                  source={isAuthenticated && avatarUrl
-                    ? { uri: avatarUrl }
-                    : LOGGED_OUT_PROFILE
-                  }
+                <ProfileImage
+                  uri={isAuthenticated ? avatarUrl : null}
                   style={styles.avatar}
                 />
               </TouchableOpacity>
@@ -731,7 +727,7 @@ export function FavoritesScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search favorites"
-              expandedWidth={SEARCH_BAR_FULL_WIDTH}
+              expandedWidth={searchBarFullWidth}
             />
 
             {/* Filter button - always visible */}
@@ -753,7 +749,7 @@ export function FavoritesScreen() {
               />
             </TouchableOpacity>
 
-            {Platform.OS === 'web' && <WebProfileAvatar />}
+            {isDesktop && <WebProfileAvatar />}
           </View>
         </View>
 
@@ -826,11 +822,17 @@ export function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  headerSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -838,7 +840,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
+  },
+  headerDesktop: {
+    paddingHorizontal: 32,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -848,7 +852,9 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { left: 32 } : {}),
+  },
+  headerLeftDesktop: {
+    left: 32,
   },
   avatar: {
     width: 39,
@@ -884,10 +890,16 @@ const styles = StyleSheet.create({
     right: 0,
     height: 30,
   },
+  headerGradientDesktop: {
+    display: 'none',
+  },
   actionBarSection: {
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
     zIndex: 10,
     overflow: 'visible',
+  },
+  actionBarSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   actionBarGradient: {
     position: 'absolute',
@@ -895,7 +907,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
-    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
+  },
+  actionBarGradientDesktop: {
+    display: 'none',
   },
   actionRow: {
     flexDirection: 'row',
@@ -981,7 +995,9 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: SPACING.sm + 8,
     paddingBottom: LAYOUT.listBottomPadding,
-    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
+  },
+  listContentDesktop: {
+    padding: 16,
   },
   songItem: {
     paddingVertical: 8,

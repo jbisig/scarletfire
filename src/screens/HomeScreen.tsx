@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Keyboard,
-  Dimensions,
-  Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,16 +28,12 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
+import { ProfileImage } from '../components/ProfileImage';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
-// Default profile image for logged out users
-const LOGGED_OUT_PROFILE = require('../../assets/images/logged-out-pfp.png');
-
 // Layout constants
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const HORIZONTAL_PADDING = SPACING.xl;
-// Full width = screen - padding on both sides - filter button - gap
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -125,6 +120,10 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
 export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
+  const { width: windowWidth } = useWindowDimensions();
+  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const searchBarFullWidth = windowWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
@@ -233,9 +232,9 @@ export function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          {Platform.OS !== 'web' && <Image source={LOGGED_OUT_PROFILE} style={styles.avatar} />}
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: insets.top + 8 }]}>
+          {!isDesktop && <ProfileImage uri={null} style={styles.avatar} />}
           <Text style={styles.headerTitle}>Shows</Text>
         </View>
         <SkeletonLoader variant="showCard" count={10} />
@@ -248,23 +247,20 @@ export function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.header}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={styles.headerLeft}>
-            {Platform.OS !== 'web' && (
+          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+            {!isDesktop && (
               <TouchableOpacity
                 ref={profileButtonRef}
                 onPress={handleProfilePress}
                 activeOpacity={0.8}
               >
-                <Image
-                  source={isAuthenticated && avatarUrl
-                    ? { uri: avatarUrl }
-                    : LOGGED_OUT_PROFILE
-                  }
+                <ProfileImage
+                  uri={isAuthenticated ? avatarUrl : null}
                   style={styles.avatar}
                 />
               </TouchableOpacity>
@@ -282,7 +278,7 @@ export function HomeScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Date, venue, location, release"
-              expandedWidth={SEARCH_BAR_FULL_WIDTH}
+              expandedWidth={searchBarFullWidth}
             />
 
             {/* Filter Button */}
@@ -304,7 +300,7 @@ export function HomeScreen() {
               />
             </TouchableOpacity>
 
-            {Platform.OS === 'web' && <WebProfileAvatar />}
+            {isDesktop && <WebProfileAvatar />}
           </View>
         </View>
 
@@ -312,7 +308,7 @@ export function HomeScreen() {
         <LinearGradient
           colors={[COLORS.background, COLORS.background + '00']}
           locations={[0, 1]}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
           pointerEvents="none"
         />
       </View>
@@ -350,7 +346,7 @@ export function HomeScreen() {
             <ShowCard show={item} onPress={handleShowPress} />
           )}
           renderSectionHeader={() => null}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
           stickySectionHeadersEnabled={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -372,11 +368,17 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   headerSection: {
     zIndex: 10,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  headerSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -384,7 +386,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { paddingHorizontal: 32 } : {}),
+  },
+  headerDesktop: {
+    paddingHorizontal: 32,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -394,7 +398,9 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
-    ...(Platform.OS === 'web' ? { left: 32 } : {}),
+  },
+  headerLeftDesktop: {
+    left: 32,
   },
   avatar: {
     width: 39,
@@ -418,12 +424,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 30,
-    ...(Platform.OS === 'web' ? { display: 'none' } : {}),
+  },
+  headerGradientDesktop: {
+    display: 'none',
   },
   listContent: {
     paddingTop: SPACING.sm + 8,
     paddingBottom: LAYOUT.listBottomPadding,
-    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
+  },
+  listContentDesktop: {
+    padding: 16,
   },
   filterButton: {
     width: LAYOUT.headerButtonSize,

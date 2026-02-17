@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Dimensions,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -25,13 +25,11 @@ import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
 
 // Layout constants
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const HORIZONTAL_PADDING = SPACING.xl;
-// Full width = screen - padding on both sides (no filter button)
-const SEARCH_BAR_FULL_WIDTH = SCREEN_WIDTH - (HORIZONTAL_PADDING * 2);
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
@@ -98,6 +96,10 @@ export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
+  const { width: windowWidth } = useWindowDimensions();
+  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const searchBarFullWidth = windowWidth - (padding * 2);
   const { loadTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
@@ -291,9 +293,9 @@ export function SongPerformancesScreen() {
   }, [loadingIdentifier, handlePerformancePress, getPlayCount, songTitle]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: insets.top + 8 }]}>
         {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
@@ -324,7 +326,7 @@ export function SongPerformancesScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Date, venue, location"
-              expandedWidth={SEARCH_BAR_FULL_WIDTH}
+              expandedWidth={searchBarFullWidth}
               closeOnClear
             />
           </View>
@@ -360,7 +362,7 @@ export function SongPerformancesScreen() {
         data={filteredPerformances}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           debouncedSearchQuery.trim() ? (
@@ -380,16 +382,19 @@ export function SongPerformancesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
-    ...(Platform.OS === 'web' ? {
-      paddingHorizontal: 32,
-      backgroundColor: COLORS.backgroundSecondary,
-    } : {}),
+  },
+  headerDesktop: {
+    paddingHorizontal: 32,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   backButton: {
     width: LAYOUT.headerButtonSize,
@@ -441,7 +446,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: LAYOUT.listBottomPadding,
-    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
+  },
+  listContentDesktop: {
+    padding: 16,
   },
   performanceItemWrapper: {
     position: 'relative',

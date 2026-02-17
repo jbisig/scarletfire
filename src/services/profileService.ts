@@ -13,7 +13,22 @@ class ProfileService {
     if (!user) return null;
 
     // Check user_metadata for custom avatar first, then fall back to OAuth avatar
-    return user.user_metadata?.avatar_url || null;
+    const meta = user.user_metadata;
+    if (meta?.avatar_url) return meta.avatar_url;
+    if (meta?.picture) return meta.picture;
+
+    // Fallback: check identity data (Google OAuth stores picture here too)
+    const identity = user.identities?.[0]?.identity_data;
+    if (identity?.avatar_url) return identity.avatar_url;
+    if (identity?.picture) return identity.picture;
+
+    // Debug: log what we have so we can diagnose missing avatars
+    if (__DEV__) {
+      console.log('[ProfileService] No avatar URL found. user_metadata:', JSON.stringify(meta, null, 2));
+      console.log('[ProfileService] identities:', JSON.stringify(user.identities, null, 2));
+    }
+
+    return null;
   }
 
   /**

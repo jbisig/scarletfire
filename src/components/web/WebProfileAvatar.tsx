@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Text, Pressable, Modal } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Pressable, Modal } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { navigationRef } from '../../navigation/navigationRef';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileService } from '../../services/profileService';
 import { useWebAuthModal } from './WebAuthModal';
+import { ProfileImage } from '../ProfileImage';
 import { COLORS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '../../constants/theme';
-
-const LOGGED_OUT_PROFILE = require('../../../assets/images/logged-out-pfp.png');
 
 export function WebProfileAvatar() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -55,8 +54,8 @@ export function WebProfileAvatar() {
   return (
     <View style={styles.container} ref={avatarRef}>
       <TouchableOpacity onPress={handleProfilePress} activeOpacity={0.8} style={styles.avatarWrapper}>
-        <Image
-          source={authState.isAuthenticated && avatarUrl ? { uri: avatarUrl } : LOGGED_OUT_PROFILE}
+        <ProfileImage
+          uri={authState.isAuthenticated ? avatarUrl : null}
           style={styles.avatarImage}
         />
       </TouchableOpacity>

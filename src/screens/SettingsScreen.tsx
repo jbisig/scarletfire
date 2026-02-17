@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   Platform,
@@ -14,13 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService } from '../services/profileService';
+import { ProfileImage } from '../components/ProfileImage';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
-
-// Default profile image
-const DEFAULT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
   const navigation = useNavigation();
   const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -30,7 +29,7 @@ export function SettingsScreen() {
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
   const handleClose = () => {
-    if (Platform.OS === 'web') {
+    if (isDesktop) {
       // On web desktop, Settings is opened via stack reset so there's no back history.
       // Navigate to Discover as the default landing screen.
       navigation.reset({ index: 0, routes: [{ name: 'DiscoverLanding' as never }] });
@@ -83,7 +82,7 @@ export function SettingsScreen() {
   };
 
   const handleLogout = async () => {
-    if (Platform.OS === 'web') {
+    if (isDesktop) {
       await logout();
       navigation.reset({ index: 0, routes: [{ name: 'DiscoverLanding' as never }] });
       return;
@@ -148,7 +147,7 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -162,9 +161,10 @@ export function SettingsScreen() {
       <View style={styles.section}>
         <View style={styles.profileContainer}>
           <View style={styles.avatarContainer}>
-            <Image
-              source={avatarUrl ? { uri: avatarUrl } : DEFAULT_PROFILE}
+            <ProfileImage
+              uri={avatarUrl}
               style={styles.avatar}
+              size={120}
             />
             {(isUploading || isRemoving) && (
               <View style={styles.avatarLoadingOverlay}>
@@ -252,7 +252,10 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',

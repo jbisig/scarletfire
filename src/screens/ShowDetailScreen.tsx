@@ -25,6 +25,7 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
@@ -89,6 +90,7 @@ export function ShowDetailScreen() {
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
   const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
+  const { isDesktop } = useResponsive();
 
   // Video background for web header
   const { videoSource, videoId } = useVideoBackground();
@@ -280,7 +282,7 @@ export function ShowDetailScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={styles.scrollContent}
     >
       {/* Web: Header with video background + blur */}
@@ -296,7 +298,7 @@ export function ShowDetailScreen() {
           <View style={styles.webHeaderBlur} />
 
           {/* Header content */}
-          <View style={styles.webHeaderContent}>
+          <View style={[styles.webHeaderContent, isDesktop && styles.webHeaderContentDesktop]}>
             {/* Back button + Avatar row */}
             <View style={styles.webNavRow}>
               <TouchableOpacity
@@ -520,13 +522,16 @@ export function ShowDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
     paddingBottom: 100,
   },
   errorText: {
@@ -684,10 +689,13 @@ const styles = StyleSheet.create({
   webHeaderContent: {
     position: 'relative',
     zIndex: 2,
-    paddingHorizontal: 40,
+    paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 24,
     gap: 24,
+  },
+  webHeaderContentDesktop: {
+    paddingHorizontal: 40,
   },
   webNavRow: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { GradientCardBackground } from './GradientCardBackground';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { useResponsive } from '../hooks/useResponsive';
 import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
 interface HorizontalShowCardProps {
@@ -25,6 +26,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
   index,
   color,
 }) {
+  const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
 
   const officialReleases = useMemo(() => {
@@ -46,14 +48,14 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
   return (
     <>
       <TouchableOpacity
-        style={styles.container}
+        style={[styles.container, isDesktop && styles.containerDesktop]}
         onPress={() => onPress(show)}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details"
       >
-        <GradientCardBackground width={Platform.OS === 'web' ? 300 : LAYOUT.horizontalCardWidth} height={Platform.OS === 'web' ? 150 : LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
+        <GradientCardBackground width={isDesktop ? 300 : LAYOUT.horizontalCardWidth} height={isDesktop ? 150 : LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
         <Image source={FLOWER_IMAGE} style={styles.flowerImage} />
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
@@ -108,10 +110,10 @@ const styles = StyleSheet.create({
     height: LAYOUT.horizontalCardHeight,
     borderRadius: RADIUS.md,
     overflow: 'hidden',
-    ...(Platform.OS === 'web' ? {
-      width: 300,
-      height: 150,
-    } : {}),
+  },
+  containerDesktop: {
+    width: 300,
+    height: 150,
   },
   flowerImage: {
     position: 'absolute',

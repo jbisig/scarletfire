@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 interface AnimatedSearchBarProps {
@@ -50,6 +51,7 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
   closeOnBlur = true,
 }) {
   const navigation = useNavigation();
+  const { isDesktop } = useResponsive();
   const searchInputRef = useRef<TextInput>(null);
   const searchAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
 
@@ -99,8 +101,8 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
     onClose();
   }, [onChangeText, onClose]);
 
-  // Web: always-expanded static search bar
-  if (Platform.OS === 'web') {
+  // Desktop web: always-expanded static search bar
+  if (isDesktop) {
     return (
       <View style={[styles.searchContainer, { width: 300 }]}>
         <View style={styles.searchInputWrapper}>

@@ -32,6 +32,7 @@ import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
 // Default screen width — components should use useWindowDimensions for responsive sizing
@@ -74,6 +75,7 @@ function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
 export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen() {
+  const { isDesktop } = useResponsive();
   const navigation = useNavigation<DiscoverLandingNavigationProp>();
   const { playCounts } = usePlayCounts();
   const { showsByYear } = useShows();
@@ -221,9 +223,9 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const savedButtonLabel = favoriteSongs.length > 0 ? 'Saved Songs' : 'Shuffle Shows';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       <PageHeader title="Discover" />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}>
         {/* Show of the Day Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -304,7 +306,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         {/* Action Buttons */}
         <View style={styles.actionsSection}>
           <View style={[styles.actionsRow, !hasSavedContent && styles.actionsRowSingle]}>
-            <View style={hasSavedContent ? styles.buttonWrapper : styles.buttonWrapperFull}>
+            <View style={hasSavedContent ? [styles.buttonWrapper, isDesktop && styles.buttonWrapperDesktop] : [styles.buttonWrapperFull, isDesktop && styles.buttonWrapperFullDesktop]}>
               <ActionPillButton
                 icon="radio"
                 label="Start Radio"
@@ -314,7 +316,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
               />
             </View>
             {hasSavedContent && (
-              <View style={styles.buttonWrapper}>
+              <View style={[styles.buttonWrapper, isDesktop && styles.buttonWrapperDesktop]}>
                 <ActionPillButton
                   icon="shuffle"
                   label={favoritesLoading ? 'Loading...' : savedButtonLabel}
@@ -324,8 +326,8 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                 />
               </View>
             )}
-            {Platform.OS === 'web' && favoriteSongs.length > 0 && favoriteShows.length > 0 && (
-              <View style={styles.buttonWrapper}>
+            {isDesktop && favoriteSongs.length > 0 && favoriteShows.length > 0 && (
+              <View style={[styles.buttonWrapper, isDesktop && styles.buttonWrapperDesktop]}>
                 <ActionPillButton
                   icon="shuffle"
                   label="Shuffle Shows"
@@ -374,7 +376,10 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? COLORS.backgroundSecondary : COLORS.background,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
   },
   scrollView: {
     flex: 1,
@@ -382,7 +387,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: SPACING.md,
     paddingBottom: LAYOUT.listBottomPadding,
-    ...(Platform.OS === 'web' ? { padding: 16 } : {}),
+  },
+  scrollContentDesktop: {
+    padding: 16,
   },
   section: {
     paddingHorizontal: SPACING.xl,
@@ -477,9 +484,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonWrapper: {
-    ...(Platform.OS === 'web' ? { width: 200 } : { flex: 1 }),
+    flex: 1,
+  },
+  buttonWrapperDesktop: {
+    flex: undefined,
+    width: 200,
   },
   buttonWrapperFull: {
-    ...(Platform.OS === 'web' ? { width: 200 } : { width: '100%' }),
+    width: '100%',
+  },
+  buttonWrapperFullDesktop: {
+    width: 200,
   },
 });
