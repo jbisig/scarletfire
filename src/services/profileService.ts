@@ -22,12 +22,6 @@ class ProfileService {
     if (identity?.avatar_url) return identity.avatar_url;
     if (identity?.picture) return identity.picture;
 
-    // Debug: log what we have so we can diagnose missing avatars
-    if (__DEV__) {
-      console.log('[ProfileService] No avatar URL found. user_metadata:', JSON.stringify(meta, null, 2));
-      console.log('[ProfileService] identities:', JSON.stringify(user.identities, null, 2));
-    }
-
     return null;
   }
 

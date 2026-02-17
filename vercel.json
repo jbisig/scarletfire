@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets|favicon|manifest|_expo).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

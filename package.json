@@ -17,7 +17,8 @@
     "build:all:production": "eas build --platform all --profile production",
     "submit:ios": "eas submit --platform ios",
     "submit:android": "eas submit --platform android",
-    "generate:videos": "node scripts/generateVideoSources.js"
+    "generate:videos": "node scripts/generateVideoSources.js",
+    "export:web": "npx expo export --platform web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
