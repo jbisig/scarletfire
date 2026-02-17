@@ -324,6 +324,16 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                 />
               </View>
             )}
+            {Platform.OS === 'web' && favoriteSongs.length > 0 && favoriteShows.length > 0 && (
+              <View style={styles.buttonWrapper}>
+                <ActionPillButton
+                  icon="shuffle"
+                  label="Shuffle Shows"
+                  onPress={() => startShuffleShows(favoriteShows)}
+                  loading={playerState.isShuffleLoading}
+                />
+              </View>
+            )}
           </View>
         </View>
 
