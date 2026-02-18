@@ -226,7 +226,7 @@ export function SongPerformancesScreen() {
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header */}
-      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 44 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
         {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
@@ -237,7 +237,7 @@ export function SongPerformancesScreen() {
         </TouchableOpacity>
 
         {/* Title Row with Search */}
-        <View style={styles.titleRow}>
+        <View style={[styles.titleRow, isDesktop && styles.titleRowDesktop]}>
           {/* Left side: Title (gets covered by search bar) */}
           <View style={styles.titleContent}>
             <Text style={styles.songTitle} numberOfLines={1}>
@@ -338,6 +338,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     height: LAYOUT.headerButtonSize,
+  },
+  titleRowDesktop: {
+    marginTop: 8,
   },
   titleContent: {
     flexDirection: 'row',

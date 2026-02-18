@@ -70,18 +70,26 @@ export function getAvailableVideoSources(): Array<{
   id: string;
   source: number | { uri: string };
 }> {
-  // On web, stream all videos directly from Supabase public URLs
+  // On web, use bundled video + stream extras from Supabase public URLs
   if (Platform.OS === 'web') {
+    const sources: Array<{ id: string; source: number | { uri: string } }> = [
+      { id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO },
+    ];
     try {
       const { CONFIG } = require('./config');
-      const bucket = 'background-videos';
-      return ALL_VIDEO_IDS.map(id => ({
-        id,
-        source: { uri: `${CONFIG.SUPABASE_URL}/storage/v1/object/public/${bucket}/${id}.mp4` },
-      }));
+      if (CONFIG.SUPABASE_URL) {
+        const bucket = 'background-videos';
+        for (const id of REMOTE_VIDEO_IDS) {
+          sources.push({
+            id,
+            source: { uri: `${CONFIG.SUPABASE_URL}/storage/v1/object/public/${bucket}/${id}.mp4` },
+          });
+        }
+      }
     } catch {
-      return [{ id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO }];
+      // Config unavailable — bundled video only
     }
+    return sources;
   }
 
   const sources: Array<{ id: string; source: number | { uri: string } }> = [
