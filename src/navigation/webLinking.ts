@@ -89,6 +89,16 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
           },
         },
       },
+      // Root-level routes for desktop layout (flat stack, no tab nesting)
+      DiscoverLanding: 'discover',
+      Home: 'shows',
+      SongList: 'songs',
+      Favorites: 'favorites',
+      SongPerformances: {
+        path: 'songs/:songTitle',
+        parse: { songTitle: parseTrackSlug },
+        stringify: { songTitle: stringifyTrackTitle },
+      },
       ShowDetail: showDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
