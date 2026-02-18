@@ -126,7 +126,6 @@ export function SongListScreen() {
     Keyboard.dismiss();
     navigation.navigate('SongPerformances', {
       songTitle: song.title,
-      performances: song.performances,
     });
   };
 

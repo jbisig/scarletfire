@@ -5,21 +5,19 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
-  Alert,
   Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
-import { archiveApi } from '../services/archiveApi';
 import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
+import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { ShowCard } from '../components/ShowCard';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
@@ -30,11 +28,13 @@ import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
-import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
-import { normalizeTrackTitle } from '../utils/titleNormalization';
-import { logger } from '../utils/logger';
+// Pre-compute song lookup Map for O(1) access
+const songsByTitle: Map<string, typeof GRATEFUL_DEAD_SONGS[number]> = new Map(
+  GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
+);
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
+type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
 type SortType = 'alphabetical' | 'performanceDateOldest' | 'performanceDateNewest' | 'ratingHighest';
 
 const SORT_OPTIONS: SortOption<SortType>[] = [
@@ -62,48 +62,17 @@ function getShowByDate(performanceDate: string) {
   return yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
 }
 
-// Calculate string similarity using Levenshtein distance
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase();
-  const s2 = str2.toLowerCase();
-
-  const costs: number[] = [];
-  for (let i = 0; i <= s1.length; i++) {
-    let lastValue = i;
-    for (let j = 0; j <= s2.length; j++) {
-      if (i === 0) {
-        costs[j] = j;
-      } else if (j > 0) {
-        let newValue = costs[j - 1];
-        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-        }
-        costs[j - 1] = lastValue;
-        lastValue = newValue;
-      }
-    }
-    if (i > 0) {
-      costs[s2.length] = lastValue;
-    }
-  }
-
-  const maxLength = Math.max(s1.length, s2.length);
-  const distance = costs[s2.length];
-  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
-}
 
 export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<SongPerformancesNavigationProp>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
-  const { loadTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
-  const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
   const [sortType, setSortType] = useState<SortType>('performanceDateOldest');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
@@ -163,7 +132,13 @@ export function SongPerformancesScreen() {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [sortType]);
 
-  const { songTitle, performances } = route.params;
+  const { songTitle } = route.params;
+
+  // Look up performances from static song data
+  const performances = useMemo(() => {
+    const song = songsByTitle.get(songTitle.toLowerCase());
+    return song?.performances ?? [];
+  }, [songTitle]);
 
   // Sort performances based on selected sort type
   const sortedPerformances = useMemo(() => {
@@ -215,66 +190,25 @@ export function SongPerformancesScreen() {
     });
   }, [sortedPerformances, debouncedSearchQuery]);
 
-  const handlePerformancePress = useCallback(async (performance: Performance) => {
-    try {
-      setLoadingIdentifier(performance.identifier);
-
-      const showDetail = await archiveApi.getShowDetail(performance.identifier, false);
-
-      let bestMatch = null;
-      let bestScore = 0;
-
-      for (const track of showDetail.tracks) {
-        const normalizedTitle = normalizeTrackTitle(track.title);
-        const similarity = calculateSimilarity(normalizedTitle, songTitle);
-
-        if (similarity > bestScore) {
-          bestScore = similarity;
-          bestMatch = track;
-        }
-      }
-
-      if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
-        await loadTrack(bestMatch, showDetail, showDetail.tracks);
-      } else {
-        Alert.alert(
-          'Song Not Found',
-          `Could not find "${songTitle}" in this recording. The setlist may not match the available tracks.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      logger.player.error('Failed to load performance:', error);
-      Alert.alert(
-        'Error Loading Show',
-        'Unable to load this performance. Please try another one.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setLoadingIdentifier(null);
-    }
-  }, [songTitle, loadTrack]);
+  const handlePerformancePress = useCallback((performance: Performance) => {
+    navigation.push('ShowDetail', {
+      identifier: performance.identifier,
+      trackTitle: songTitle,
+    });
+  }, [songTitle, navigation]);
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
-    const isLoading = loadingIdentifier === item.identifier;
     const show = getShowByDate(item.date);
     const songPlayCount = getPlayCount(songTitle, item.identifier);
 
     if (show) {
       return (
-        <View style={styles.performanceItemWrapper}>
-          <ShowCard
-            show={show}
-            onPress={() => handlePerformancePress(item)}
-            overrideRating={item.rating}
-            overridePlayCount={songPlayCount}
-          />
-          {isLoading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="small" color={COLORS.accent} />
-            </View>
-          )}
-        </View>
+        <ShowCard
+          show={show}
+          onPress={() => handlePerformancePress(item)}
+          overrideRating={item.rating}
+          overridePlayCount={songPlayCount}
+        />
       );
     }
 
@@ -283,15 +217,11 @@ export function SongPerformancesScreen() {
         style={styles.performanceItem}
         onPress={() => handlePerformancePress(item)}
         activeOpacity={0.7}
-        disabled={isLoading}
       >
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
-        {isLoading && (
-          <ActivityIndicator size="small" color={COLORS.accent} />
-        )}
       </TouchableOpacity>
     );
-  }, [loadingIdentifier, handlePerformancePress, getPlayCount, songTitle]);
+  }, [handlePerformancePress, getPlayCount, songTitle]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
