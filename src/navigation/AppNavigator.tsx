@@ -50,6 +50,15 @@ const Stack = createStackNavigator<RootStackParamList>();
 const RootStack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
+// On web, @react-navigation/stack's CardContent switches to "page" mode
+// (minHeight: '100%') when the card fills the viewport, letting the browser body
+// handle scrolling. This breaks our app's internal ScrollView/FlatList/SectionList
+// scrolling because they lose their height constraint. Override with flex: 1 so
+// each screen is constrained and handles its own scrolling.
+const webCardStyle = Platform.OS === 'web'
+  ? { flex: 1, minHeight: 0 } as const
+  : undefined;
+
 // Stack navigator for Shows tab
 function ShowsStack() {
   const { logout, showLogin, state: authState } = useAuth();
@@ -66,6 +75,7 @@ function ShowsStack() {
           fontFamily: FONTS.primary,
           fontSize: 18,
         },
+        cardStyle: webCardStyle,
       }}
     >
       <Stack.Screen
@@ -103,6 +113,7 @@ function SongsStack() {
           fontFamily: FONTS.primary,
           fontSize: 18,
         },
+        cardStyle: webCardStyle,
       }}
     >
       <Stack.Screen
@@ -143,6 +154,7 @@ function FavoritesStack() {
           fontFamily: FONTS.primary,
           fontSize: 18,
         },
+        cardStyle: webCardStyle,
       }}
     >
       <Stack.Screen
@@ -177,6 +189,7 @@ function DiscoverStack() {
           fontFamily: FONTS.primary,
           fontSize: 18,
         },
+        cardStyle: webCardStyle,
       }}
     >
       <Stack.Screen
@@ -277,7 +290,7 @@ export function AppNavigator() {
         {showAuthFlow ? (
           <AuthNavigator />
         ) : (
-          <RootStack.Navigator screenOptions={{ headerShown: false }}>
+          <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: webCardStyle }}>
             <RootStack.Screen name="MainTabs" component={MainTabsWithPlayer} />
             <RootStack.Screen
               name="ShowDetail"
@@ -316,7 +329,7 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 87 : Platform.OS === 'web' ? 77 : 77,
+    bottom: Platform.OS === 'ios' ? 87 : Platform.OS === 'web' ? 69 : 77,
     left: 0,
     right: 0,
     zIndex: 998,

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   AppState,
   AppStateStatus,
   Platform,
+  Image,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +34,17 @@ import { haptics } from '../services/hapticService';
 import { logger } from '../utils/logger';
 import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlayer';
 
+// Resolve video source to URL string for HTML5 video (web only)
+function resolveVideoUri(source: number | { uri: string } | string): string {
+  if (typeof source === 'string') return source;
+  if (typeof source === 'number') {
+    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
+  }
+  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
+  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return '';
+}
+
 interface FullPlayerProps {
   visible: boolean;
   onClose: () => void;
@@ -52,6 +64,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
+  const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
   const progressBarRef = useRef<View>(null);
   const { height: screenHeight } = useWindowDimensions();
 
@@ -425,21 +438,34 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     >
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...(Platform.OS !== 'web' ? swipeDownResponder.panHandlers : {})}>
-        {Platform.OS !== 'web' && videoMounted && (() => {
-          const { Video: ExpoVideo, ResizeMode: ExpoResizeMode } = require('expo-av');
-          return (
-            <ExpoVideo
-              key={`video-${videoId}`}
-              source={videoSource}
-              style={styles.video}
-              resizeMode={ExpoResizeMode.COVER}
-              shouldPlay={visible && appState === 'active'}
-              isLooping
-              isMuted
-              onError={handleVideoError}
-            />
-          );
-        })()}
+        {Platform.OS === 'web' ? (
+          webVideoUri ? React.createElement('video', {
+            key: `fullplayer-video-${videoId}`,
+            src: webVideoUri,
+            autoPlay: true,
+            loop: true,
+            muted: true,
+            playsInline: true,
+            ref: (el: HTMLVideoElement | null) => { if (el) el.playbackRate = 0.5; },
+            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
+          }) : null
+        ) : (
+          videoMounted && (() => {
+            const { Video: ExpoVideo, ResizeMode: ExpoResizeMode } = require('expo-av');
+            return (
+              <ExpoVideo
+                key={`video-${videoId}`}
+                source={videoSource}
+                style={styles.video}
+                resizeMode={ExpoResizeMode.COVER}
+                shouldPlay={visible && appState === 'active'}
+                isLooping
+                isMuted
+                onError={handleVideoError}
+              />
+            );
+          })()
+        )}
 
         {/* Gradient overlay for text readability */}
         <LinearGradient

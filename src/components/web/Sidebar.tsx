@@ -64,11 +64,11 @@ const styles = StyleSheet.create({
     width: WEB_LAYOUT.sidebarWidth,
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: WEB_LAYOUT.sidebarRadius,
-    paddingTop: SPACING.md,
+    paddingTop: 0,
   },
   logoContainer: {
     paddingLeft: 10,
-    paddingTop: 11,
+    paddingTop: 7,
     paddingBottom: 50,
   },
   logoIcon: {
