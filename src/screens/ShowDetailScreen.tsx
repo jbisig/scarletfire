@@ -295,8 +295,12 @@ export function ShowDetailScreen() {
     if (show) {
       setJustPressedTrackId(track.id);
       loadTrack(track, show, show.tracks);
+      // Update URL to include track title for shareable links
+      if (Platform.OS === 'web') {
+        navigation.setParams({ trackTitle: normalizeTrackTitle(track.title) });
+      }
     }
-  }, [show, loadTrack]);
+  }, [show, loadTrack, navigation]);
 
   const handleToggleSaveSong = useCallback((track: Track) => {
     if (!show) return;
