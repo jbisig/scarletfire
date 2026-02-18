@@ -1,5 +1,15 @@
 import { LinkingOptions } from '@react-navigation/native';
 
+const showDetailRoute = {
+  path: 'show/:identifier/:trackTitle?',
+  parse: {
+    trackTitle: (slug: string) => decodeURIComponent(slug).replace(/-/g, ' '),
+  },
+  stringify: {
+    trackTitle: (title: string) => encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')),
+  },
+};
+
 export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   prefixes: [typeof window !== 'undefined' ? window.location.origin : ''],
   config: {
@@ -11,14 +21,18 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
             path: 'discover',
             screens: {
               DiscoverLanding: '',
-              ShowDetail: 'show/:identifier',
+              ShowDetail: showDetailRoute,
             },
           },
           ShowsTab: {
             path: 'shows',
             screens: {
               Home: '',
-              ShowDetail: ':identifier',
+              ShowDetail: {
+                path: ':identifier/:trackTitle?',
+                parse: showDetailRoute.parse,
+                stringify: showDetailRoute.stringify,
+              },
             },
           },
           SongsTab: {
@@ -26,19 +40,19 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
             screens: {
               SongList: '',
               SongPerformances: ':songTitle',
-              ShowDetail: 'show/:identifier',
+              ShowDetail: showDetailRoute,
             },
           },
           FavoritesTab: {
             path: 'favorites',
             screens: {
               Favorites: '',
-              ShowDetail: 'show/:identifier',
+              ShowDetail: showDetailRoute,
             },
           },
         },
       },
-      ShowDetail: 'show/:identifier',
+      ShowDetail: showDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
     },

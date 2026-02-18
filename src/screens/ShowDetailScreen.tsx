@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,8 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../cons
 import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { normalizeTrackTitle } from '../utils/titleNormalization';
+import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 
 // Default profile image for logged out users (web header)
 
@@ -45,7 +47,7 @@ function resolveVideoUri(source: number | { uri: string } | string): string {
 }
 
 // HTML5 video background for web header
-function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
+function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
   return React.createElement('video', {
     key: `show-header-video-${videoId}`,
     src: uri,
@@ -54,7 +56,13 @@ function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) 
     muted: true,
     playsInline: true,
     ref: (el: HTMLVideoElement | null) => {
-      if (el) el.playbackRate = 0.5;
+      if (!el) return;
+      el.playbackRate = 0.5;
+      if (onError) {
+        el.onerror = () => onError();
+        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
+        el.onloadeddata = () => clearTimeout(t);
+      }
     },
     style: {
       position: 'absolute',
@@ -71,6 +79,36 @@ function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) 
 const songsByTitle: Map<string, Song> = new Map(
   GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
 );
+
+// Calculate string similarity using Levenshtein distance
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+
+  const costs: number[] = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) {
+      costs[s2.length] = lastValue;
+    }
+  }
+
+  const maxLength = Math.max(s1.length, s2.length);
+  const distance = costs[s2.length];
+  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
+}
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -92,8 +130,11 @@ export function ShowDetailScreen() {
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const { isDesktop } = useResponsive();
 
+  const { trackTitle } = route.params;
+  const hasAutoPlayed = useRef(false);
+
   // Video background for web header
-  const { videoSource, videoId } = useVideoBackground();
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const videoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
 
@@ -146,9 +187,23 @@ export function ShowDetailScreen() {
     return futureShows.slice(0, 3);
   }, [show?.date, showsByYear]);
 
+  // Resolve identifier: if it's a date (YYYY-MM-DD), look up the primaryIdentifier
+  const resolveIdentifier = useCallback((id: string): string => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(id) && showsByYear) {
+      const year = id.substring(0, 4);
+      const yearShows = showsByYear[year];
+      if (yearShows) {
+        const match = yearShows.find(s => s.date.substring(0, 10) === id);
+        if (match) return match.primaryIdentifier;
+      }
+    }
+    return id;
+  }, [showsByYear]);
+
   useEffect(() => {
-    loadShowDetail(route.params.identifier);
-  }, [route.params.identifier]);
+    hasAutoPlayed.current = false;
+    loadShowDetail(resolveIdentifier(route.params.identifier));
+  }, [route.params.identifier, resolveIdentifier]);
 
   useEffect(() => {
     // Clear justPressedTrackId when the track is actually loading or playing
@@ -160,6 +215,29 @@ export function ShowDetailScreen() {
       setJustPressedTrackId(null);
     }
   }, [playerState.currentTrack?.id, playerState.isLoading, playerState.isPlaying, justPressedTrackId]);
+
+  // Auto-play track from URL slug (e.g. /shows/:identifier/dark-star)
+  useEffect(() => {
+    if (!trackTitle || !show || hasAutoPlayed.current) return;
+    hasAutoPlayed.current = true;
+
+    const searchString = trackTitle.toLowerCase();
+    let bestMatch: Track | null = null;
+    let bestScore = 0;
+
+    for (const track of show.tracks) {
+      const normalized = normalizeTrackTitle(track.title).toLowerCase();
+      const score = calculateSimilarity(searchString, normalized);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = track;
+      }
+    }
+
+    if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
+      loadTrack(bestMatch, show, show.tracks);
+    }
+  }, [trackTitle, show]);
 
   const formatDateMMDDYYYY = (date: string) => {
     const [year, month, day] = date.split('-');
@@ -184,6 +262,13 @@ export function ShowDetailScreen() {
             setClassicTier(matchingShow.classicTier);
           }
         }
+      }
+
+      // Update browser tab title on web
+      if (Platform.OS === 'web' && detail.date) {
+        const [y, m, d] = detail.date.split('-');
+        const shortDate = `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
+        document.title = `${shortDate} - ${getVenueFromShow(detail)}`;
       }
 
       // Update navigation title - empty title, just show back button
@@ -291,7 +376,7 @@ export function ShowDetailScreen() {
           {/* Video background */}
           {videoUri ? (
             <View style={styles.webHeaderVideo}>
-              <WebVideoBackground uri={videoUri} videoId={videoId} />
+              <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
             </View>
           ) : null}
           {/* Blur overlay */}
@@ -474,7 +559,7 @@ export function ShowDetailScreen() {
         </View>
       )}
 
-      <View style={styles.tracksContainer}>
+      <View style={[styles.tracksContainer, isDesktop && styles.tracksContainerDesktop]}>
         {show.tracks.map((track) => (
           <TrackItem
             key={track.id}
@@ -713,7 +798,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   webVenue: {
-    fontFamily: 'FamiljenGrotesk-Bold',
+    fontFamily: 'FamiljenGrotesk',
     fontWeight: '700',
     fontSize: 28,
     color: COLORS.textPrimary,
@@ -753,10 +838,10 @@ const styles = StyleSheet.create({
   },
   tracksContainer: {
     paddingVertical: SPACING.sm,
-    ...(Platform.OS === 'web' ? {
-      padding: 24,
-      paddingTop: 24,
-    } : {}),
+  },
+  tracksContainerDesktop: {
+    padding: 24,
+    paddingTop: 24,
   },
   nextTourStopsSection: {
     marginTop: SPACING.sm,

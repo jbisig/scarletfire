@@ -35,7 +35,7 @@ const webLinking = Platform.OS === 'web'
 
 export type RootStackParamList = {
   Home: undefined;
-  ShowDetail: { identifier: string };
+  ShowDetail: { identifier: string; trackTitle?: string };
   Favorites: undefined;
   DiscoverLanding: undefined;
   SongList: undefined;
