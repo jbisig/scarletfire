@@ -437,7 +437,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       ]}
     >
       {/* Video Background - only play when visible and app is active to save battery */}
-      <View style={styles.videoContainer} {...(Platform.OS !== 'web' ? swipeDownResponder.panHandlers : {})}>
+      <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         {Platform.OS === 'web' ? (
           webVideoUri ? React.createElement('video', {
             key: `fullplayer-video-${videoId}`,
@@ -446,7 +446,13 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             loop: true,
             muted: true,
             playsInline: true,
-            ref: (el: HTMLVideoElement | null) => { if (el) el.playbackRate = 0.5; },
+            ref: (el: HTMLVideoElement | null) => {
+              if (!el) return;
+              el.playbackRate = 0.5;
+              el.onerror = () => resetToFallback();
+              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
+              el.onloadeddata = () => clearTimeout(t);
+            },
             style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
           }) : null
         ) : (

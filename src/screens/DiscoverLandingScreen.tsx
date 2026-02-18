@@ -50,7 +50,7 @@ function resolveVideoUri(source: number | { uri: string } | string): string {
 }
 
 // HTML5 video background for web SOTD card
-function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
+function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
   return React.createElement('video', {
     key: `sotd-video-${videoId}`,
     src: uri,
@@ -59,7 +59,13 @@ function WebVideoBackground({ uri, videoId }: { uri: string; videoId: string }) 
     muted: true,
     playsInline: true,
     ref: (el: HTMLVideoElement | null) => {
-      if (el) el.playbackRate = 0.5;
+      if (!el) return;
+      el.playbackRate = 0.5;
+      if (onError) {
+        el.onerror = () => onError();
+        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
+        el.onloadeddata = () => clearTimeout(t);
+      }
     },
     style: {
       position: 'absolute',
@@ -256,7 +262,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
               {Platform.OS === 'web' ? (
                 webVideoUri ? (
                   <View style={styles.sotdVideoContainer}>
-                    <WebVideoBackground uri={webVideoUri} videoId={videoId} />
+                    <WebVideoBackground uri={webVideoUri} videoId={videoId} onError={resetToFallback} />
                   </View>
                 ) : null
               ) : (() => {

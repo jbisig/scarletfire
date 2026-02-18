@@ -72,19 +72,20 @@ interface SongItemProps {
 }
 
 const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
+  const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
   const venue = getCorrectVenue(song.showDate) || song.venue;
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <TouchableOpacity
-      style={[styles.songItem, Platform.OS === 'web' && isHovered && styles.songItemHovered]}
+      style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
       onPress={() => onPress(song)}
       activeOpacity={0.7}
       disabled={isLoading}
       // @ts-ignore - web only mouse events
-      onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
-      onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
+      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
     >
       <View style={styles.songContentRow}>
         <View style={styles.songInfo}>
@@ -143,8 +144,9 @@ export function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
+  const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = windowWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
@@ -694,7 +696,7 @@ export function FavoritesScreen() {
       {/* Header Section with Gradient Fade */}
       <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
         {/* Custom Header: Avatar + Title + Search + Filter */}
-        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
           <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
             {!isDesktop && (
@@ -946,7 +948,8 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     fontSize: 20,
-    fontFamily: 'FamiljenGrotesk-SemiBold',
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
     color: COLORS.textPrimary,
     ...(Platform.OS === 'android' && {
       paddingTop: 2,
@@ -954,7 +957,8 @@ const styles = StyleSheet.create({
   },
   inactiveTabText: {
     fontSize: 20,
-    fontFamily: 'FamiljenGrotesk-SemiBold',
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
     color: COLORS.textSecondary,
     ...(Platform.OS === 'android' && {
       paddingTop: 2,

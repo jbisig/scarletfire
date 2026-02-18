@@ -32,6 +32,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
   style.textContent = `
     html, body, #root {
       background-color: #121212 !important;
+      overflow-x: hidden !important;
     }
     /* Enable native touch scrolling and disable double-tap zoom delay on mobile */
     html {

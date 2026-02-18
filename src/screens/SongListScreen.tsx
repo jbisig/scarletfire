@@ -41,15 +41,16 @@ interface SongItem {
 
 const SongListItem = React.memo<{ item: SongItem; onPress: (song: SongItem) => void }>(
   function SongListItem({ item, onPress }) {
+    const { isDesktop } = useResponsive();
     const [isHovered, setIsHovered] = useState(false);
     return (
       <TouchableOpacity
-        style={[styles.songItem, Platform.OS === 'web' && isHovered && styles.songItemHovered]}
+        style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
         onPress={() => onPress(item)}
         activeOpacity={0.7}
         // @ts-ignore - web only mouse events
-        onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
-        onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+        onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
+        onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
       >
         <View style={styles.songInfo}>
           <Text style={styles.songTitle} numberOfLines={2}>
@@ -69,8 +70,9 @@ export function SongListScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
+  const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = windowWidth - (padding * 2);
+  const searchBarFullWidth = headerWidth - (padding * 2);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -214,7 +216,7 @@ export function SongListScreen() {
       <View style={[styles.container, isDesktop && styles.containerDesktop]}>
         {/* Header Section with Gradient Fade */}
         <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-          <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+          <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
             {/* Left side: Avatar and Title (gets covered by search bar) */}
             <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
               {!isDesktop && (

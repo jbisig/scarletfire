@@ -35,7 +35,7 @@ function resolveVideoUri(source: number | { uri: string } | string): string {
 }
 
 // HTML5 video element rendered via React.createElement for React Native Web compatibility
-function VideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
+function VideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
   return React.createElement('video', {
     key: `player-bar-video-${videoId}`,
     src: uri,
@@ -43,6 +43,14 @@ function VideoBackground({ uri, videoId }: { uri: string; videoId: string }) {
     loop: true,
     muted: true,
     playsInline: true,
+    ref: (el: HTMLVideoElement | null) => {
+      if (!el) return;
+      if (onError) {
+        el.onerror = () => onError();
+        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
+        el.onloadeddata = () => clearTimeout(t);
+      }
+    },
     style: {
       position: 'absolute',
       top: 0,
@@ -68,7 +76,7 @@ export function PlayerBar() {
     progressAnim,
   } = usePlayer();
 
-  const { videoSource, videoId } = useVideoBackground();
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const videoUri = useMemo(() => resolveVideoUri(videoSource), [videoSource]);
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
 
@@ -227,7 +235,7 @@ export function PlayerBar() {
       {/* Video background */}
       {videoUri ? (
         <View style={styles.videoContainer}>
-          <VideoBackground uri={videoUri} videoId={videoId} />
+          <VideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
         </View>
       ) : null}
 
@@ -403,11 +411,11 @@ const styles = StyleSheet.create({
   trackInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 20,
     zIndex: 2,
   },
   trackInfo: {
-    maxWidth: 220,
+    maxWidth: 400,
     // @ts-ignore
     cursor: 'pointer',
   },

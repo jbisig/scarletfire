@@ -121,8 +121,9 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
+  const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = windowWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
@@ -249,7 +250,7 @@ export function HomeScreen() {
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header Section with Gradient Fade */}
       <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
           <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
             {!isDesktop && (

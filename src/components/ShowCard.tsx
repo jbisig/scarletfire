@@ -4,6 +4,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
+import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
@@ -27,6 +28,7 @@ interface ShowCardProps {
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { showDetailsCache } = useShows();
+  const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -75,15 +77,15 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   return (
     <>
       <TouchableOpacity
-        style={[styles.container, Platform.OS === 'web' && isHovered && styles.hovered]}
+        style={[styles.container, isDesktop && isHovered && styles.hovered]}
         onPress={() => onPress(show)}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view show details and track list"
         // @ts-ignore - web only mouse events
-        onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
-        onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+        onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
+        onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
       >
         {/* Venue name - full width at top */}
         <Text style={styles.venue} numberOfLines={1}>

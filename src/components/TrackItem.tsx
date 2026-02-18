@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
+import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
@@ -22,6 +23,7 @@ interface TrackItemProps {
  * Memoized to prevent unnecessary re-renders
  */
 export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave }) => {
+  const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
   const ratingText = rating ? `${4 - rating} star performance` : '';
@@ -29,14 +31,16 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
   const accessibilityLabel = `${playingText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
 
   const hasWebSave = Platform.OS === 'web' && onToggleSave;
-  const showSaveButton = hasWebSave && (isHovered || isSaved);
+  const showSaveButton = hasWebSave && ((isDesktop && isHovered) || isSaved);
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
+        isDesktop && styles.containerDesktop,
         isPlaying && styles.playing,
-        Platform.OS === 'web' && isHovered && !isPlaying && styles.hovered,
+        isPlaying && isDesktop && styles.playingDesktop,
+        isDesktop && isHovered && !isPlaying && styles.hovered,
       ]}
       onPress={() => onPress(track)}
       activeOpacity={0.7}
@@ -45,8 +49,8 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
       accessibilityHint="Double tap to play this track"
       accessibilityState={{ selected: isPlaying }}
       // @ts-ignore - web only mouse events
-      onMouseEnter={Platform.OS === 'web' ? () => setIsHovered(true) : undefined}
-      onMouseLeave={Platform.OS === 'web' ? () => setIsHovered(false) : undefined}
+      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
+      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
     >
       <View style={styles.infoContainer}>
         <View style={styles.titleRow}>
@@ -102,16 +106,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
     alignItems: 'baseline',
-    ...(Platform.OS === 'web' ? {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      marginVertical: 2,
-      borderRadius: 12,
-    } : {}),
+  },
+  containerDesktop: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginVertical: 2,
+    borderRadius: 12,
   },
   playing: {
     backgroundColor: `${COLORS.accent}20`,
-    ...(Platform.OS === 'web' ? { borderRadius: 12 } : {}),
+  },
+  playingDesktop: {
+    borderRadius: 12,
   },
   hovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',

@@ -98,8 +98,9 @@ export function SongPerformancesScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
+  const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = windowWidth - (padding * 2);
+  const searchBarFullWidth = headerWidth - (padding * 2);
   const { loadTrack } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [loadingIdentifier, setLoadingIdentifier] = useState<string | null>(null);
@@ -295,7 +296,7 @@ export function SongPerformancesScreen() {
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header */}
-      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
         {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
@@ -424,7 +425,8 @@ const styles = StyleSheet.create({
   },
   performanceCount: {
     fontSize: 26,
-    fontFamily: 'FamiljenGrotesk-Regular',
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '400',
     color: COLORS.textTertiary,
   },
   titleRight: {

@@ -112,7 +112,13 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
             loop: true,
             muted: true,
             playsInline: true,
-            ref: (el: HTMLVideoElement | null) => { if (el) el.playbackRate = 0.5; },
+            ref: (el: HTMLVideoElement | null) => {
+              if (!el) return;
+              el.playbackRate = 0.5;
+              el.onerror = () => resetToFallback();
+              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
+              el.onloadeddata = () => clearTimeout(t);
+            },
             style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
           }) : null
         ) : (
