@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useNavigationState } from '@react-navigation/native';
 import { navigationRef } from './navigationRef';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
@@ -35,11 +35,17 @@ const TAB_ROOT_SCREENS: Record<string, string> = {
   Settings: 'Settings',
 };
 
-// Tabs where the screen header includes its own avatar
-const TABS_WITH_OWN_AVATAR = ['ShowsTab', 'SongsTab', 'FavoritesTab'];
+// Screens whose headers render their own WebProfileAvatar
+const SCREENS_WITH_OWN_AVATAR = ['Home', 'SongList', 'Favorites'];
 
 export function DesktopLayout() {
   const [activeTab, setActiveTab] = useState('DiscoverTab');
+
+  // Track the current screen name to decide if the global avatar should show
+  const currentScreenName = useNavigationState(state => {
+    if (!state?.routes?.length) return '';
+    return state.routes[state.index]?.name ?? '';
+  });
 
   const handleNavigate = useCallback((tabKey: string) => {
     setActiveTab(tabKey);
@@ -54,7 +60,7 @@ export function DesktopLayout() {
     }
   }, []);
 
-  const showGlobalAvatar = !TABS_WITH_OWN_AVATAR.includes(activeTab);
+  const showGlobalAvatar = !SCREENS_WITH_OWN_AVATAR.includes(currentScreenName);
 
   return (
     <View style={styles.outerContainer}>

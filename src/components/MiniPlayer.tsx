@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -12,6 +12,17 @@ import { BlurBackground } from './shared/BlurBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
+// Resolve video source to URL string for HTML5 video (web only)
+function resolveVideoUri(source: number | { uri: string } | string): string {
+  if (typeof source === 'string') return source;
+  if (typeof source === 'number') {
+    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
+  }
+  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
+  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return '';
+}
+
 interface MiniPlayerProps {
   onPress: () => void;
 }
@@ -21,6 +32,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
+  const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
   const [appState, setAppState] = useState<AppStateStatus>(
@@ -91,22 +103,35 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
         accessibilityLabel={`Now playing: ${state.currentTrack.title}. Double tap to open full player.`}
         accessibilityHint="Opens the full screen player"
       >
-        {/* Video Background - only play when app is active to save battery */}
-        {Platform.OS !== 'web' && videoMounted && (() => {
-          const { Video, ResizeMode } = require('expo-av');
-          return (
-            <Video
-              key={`video-${videoId}`}
-              source={videoSource}
-              style={styles.video}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={appState === 'active'}
-              isLooping
-              isMuted
-              onError={handleVideoError}
-            />
-          );
-        })()}
+        {/* Video Background */}
+        {Platform.OS === 'web' ? (
+          webVideoUri ? React.createElement('video', {
+            key: `mini-video-${videoId}`,
+            src: webVideoUri,
+            autoPlay: true,
+            loop: true,
+            muted: true,
+            playsInline: true,
+            ref: (el: HTMLVideoElement | null) => { if (el) el.playbackRate = 0.5; },
+            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
+          }) : null
+        ) : (
+          videoMounted && (() => {
+            const { Video, ResizeMode } = require('expo-av');
+            return (
+              <Video
+                key={`video-${videoId}`}
+                source={videoSource}
+                style={styles.video}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={appState === 'active'}
+                isLooping
+                isMuted
+                onError={handleVideoError}
+              />
+            );
+          })()
+        )}
 
         {/* Overlay - BlurView on iOS, CSS blur on web, semi-transparent View on Android */}
         <View style={styles.blurOverlay}>
