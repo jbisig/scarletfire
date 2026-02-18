@@ -11,6 +11,7 @@ import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
@@ -43,6 +44,7 @@ export type RootStackParamList = {
     performances: Array<{ date: string; identifier: string; venue?: string; rating?: 1 | 2 | 3 | null }>;
   };
   Settings: undefined;
+  PrivacyPolicy: undefined;
   MainTabs: undefined;
 };
 
@@ -309,6 +311,10 @@ export function AppNavigator() {
                 presentation: 'modal',
                 gestureEnabled: true,
               }}
+            />
+            <RootStack.Screen
+              name="PrivacyPolicy"
+              component={PrivacyPolicyScreen}
             />
           </RootStack.Navigator>
         )}

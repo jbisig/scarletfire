@@ -40,6 +40,7 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
       },
       ShowDetail: 'show/:identifier',
       Settings: 'settings',
+      PrivacyPolicy: 'privacy-policy',
     },
   },
 };
