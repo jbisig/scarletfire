@@ -226,7 +226,7 @@ export function SongPerformancesScreen() {
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header */}
-      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 20 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 44 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
         {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
