@@ -656,6 +656,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: RADIUS.lg,
     overflow: 'hidden',
     zIndex: 1000,
+    // @ts-ignore - web only: prevent browser pull-to-refresh from conflicting with swipe-to-dismiss
+    ...(Platform.OS === 'web' ? { touchAction: 'none' } : {}),
   },
   videoContainer: {
     flex: 1,
