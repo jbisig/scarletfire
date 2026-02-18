@@ -28,9 +28,12 @@ const DesktopLayout = Platform.OS === 'web'
   ? require('./DesktopLayout').DesktopLayout
   : null;
 
-// Web linking config for URL routing
-const webLinking = Platform.OS === 'web'
-  ? require('./webLinking').webLinking
+// Web linking configs for URL routing (separate for desktop flat stack vs mobile tabs)
+const desktopWebLinking = Platform.OS === 'web'
+  ? require('./webLinking').desktopWebLinking
+  : undefined;
+const mobileWebLinking = Platform.OS === 'web'
+  ? require('./webLinking').mobileWebLinking
   : undefined;
 
 export type RootStackParamList = {
@@ -262,7 +265,7 @@ export function AppNavigator() {
   // Show loading while checking auth
   if (authState.isLoading) {
     return (
-      <NavigationContainer ref={navigationRef} linking={webLinking}>
+      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
         <View style={[styles.container, styles.loadingContainer]}>
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
@@ -278,7 +281,7 @@ export function AppNavigator() {
   if (Platform.OS === 'web' && isDesktop && DesktopLayout) {
     return (
       <ErrorBoundary>
-        <NavigationContainer ref={navigationRef} linking={webLinking}>
+        <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
           <DesktopLayout />
         </NavigationContainer>
       </ErrorBoundary>
@@ -287,7 +290,7 @@ export function AppNavigator() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer ref={navigationRef} linking={webLinking}>
+      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
         {showAuthFlow ? (
           <AuthNavigator />
         ) : (

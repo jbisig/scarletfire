@@ -15,7 +15,13 @@ Object.values(showsData).forEach((yearShows: any[]) => { // eslint-disable-line 
 const parseTrackSlug = (slug: string) => decodeURIComponent(slug).replace(/-/g, ' ');
 const stringifyTrackTitle = (title: string) => encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'));
 
-// Default route for ShowDetail: /show/{date}/{track-title}
+const songPerformancesRoute = {
+  path: 'songs/:songTitle',
+  parse: { songTitle: parseTrackSlug },
+  stringify: { songTitle: stringifyTrackTitle },
+};
+
+// ShowDetail: /show/{date}/{track-title}
 const showDetailRoute = {
   path: 'show/:identifier/:trackTitle?',
   parse: {
@@ -27,17 +33,16 @@ const showDetailRoute = {
   },
 };
 
-// ShowsTab route: /{date}/{track-title} (no "show/" prefix)
+// ShowsTab ShowDetail: /shows/{date}/{track-title} (no "show/" prefix)
 const showsTabDetailRoute = {
-  path: ':identifier/:trackTitle?',
+  path: 'shows/:identifier/:trackTitle?',
   parse: showDetailRoute.parse,
   stringify: showDetailRoute.stringify,
 };
 
-// SongsTab route: /{track-title}/{date}
-// e.g. /songs/dark-star/1977-05-08
+// SongsTab ShowDetail: /songs/{track-title}/{date}
 const songsTabDetailRoute = {
-  path: ':trackTitle/:identifier',
+  path: 'songs/:trackTitle/:identifier',
   parse: {
     trackTitle: parseTrackSlug,
   },
@@ -47,8 +52,28 @@ const songsTabDetailRoute = {
   },
 };
 
-export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
-  prefixes: [typeof window !== 'undefined' ? window.location.origin : ''],
+const prefixes = [typeof window !== 'undefined' ? window.location.origin : ''];
+
+// Desktop: flat Stack navigator (no tab nesting)
+export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+  prefixes,
+  config: {
+    screens: {
+      DiscoverLanding: 'discover',
+      Home: 'shows',
+      SongList: 'songs',
+      Favorites: 'favorites',
+      SongPerformances: songPerformancesRoute,
+      ShowDetail: showDetailRoute,
+      Settings: 'settings',
+      PrivacyPolicy: 'privacy-policy',
+    },
+  },
+};
+
+// Mobile: tab navigator with nested stacks
+export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+  prefixes,
   config: {
     screens: {
       MainTabs: {
@@ -65,7 +90,11 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
             path: 'shows',
             screens: {
               Home: '',
-              ShowDetail: showsTabDetailRoute,
+              ShowDetail: {
+                path: ':identifier/:trackTitle?',
+                parse: showDetailRoute.parse,
+                stringify: showDetailRoute.stringify,
+              },
             },
           },
           SongsTab: {
@@ -77,7 +106,11 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
                 parse: { songTitle: parseTrackSlug },
                 stringify: { songTitle: stringifyTrackTitle },
               },
-              ShowDetail: songsTabDetailRoute,
+              ShowDetail: {
+                path: ':trackTitle/:identifier',
+                parse: songsTabDetailRoute.parse,
+                stringify: songsTabDetailRoute.stringify,
+              },
             },
           },
           FavoritesTab: {
@@ -88,16 +121,6 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
             },
           },
         },
-      },
-      // Root-level routes for desktop layout (flat stack, no tab nesting)
-      DiscoverLanding: 'discover',
-      Home: 'shows',
-      SongList: 'songs',
-      Favorites: 'favorites',
-      SongPerformances: {
-        path: 'songs/:songTitle',
-        parse: { songTitle: parseTrackSlug },
-        stringify: { songTitle: stringifyTrackTitle },
       },
       ShowDetail: showDetailRoute,
       Settings: 'settings',
