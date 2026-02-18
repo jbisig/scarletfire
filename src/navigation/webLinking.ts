@@ -1,4 +1,16 @@
 import { LinkingOptions } from '@react-navigation/native';
+import showsData from '../data/shows.json';
+
+// Build static identifier → date lookup for clean URLs
+// Primary identifiers map to dates; non-primary identifiers pass through as-is
+const identifierToDate: Record<string, string> = {};
+Object.values(showsData).forEach((yearShows: any[]) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  yearShows.forEach(show => {
+    if (show.primaryIdentifier && show.date) {
+      identifierToDate[show.primaryIdentifier] = show.date.substring(0, 10);
+    }
+  });
+});
 
 const showDetailRoute = {
   path: 'show/:identifier/:trackTitle?',
@@ -6,8 +18,15 @@ const showDetailRoute = {
     trackTitle: (slug: string) => decodeURIComponent(slug).replace(/-/g, ' '),
   },
   stringify: {
+    identifier: (id: string) => identifierToDate[id] || id,
     trackTitle: (title: string) => encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')),
   },
+};
+
+const showsTabDetailRoute = {
+  path: ':identifier/:trackTitle?',
+  parse: showDetailRoute.parse,
+  stringify: showDetailRoute.stringify,
 };
 
 export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -28,11 +47,7 @@ export const webLinking: LinkingOptions<any> = { // eslint-disable-line @typescr
             path: 'shows',
             screens: {
               Home: '',
-              ShowDetail: {
-                path: ':identifier/:trackTitle?',
-                parse: showDetailRoute.parse,
-                stringify: showDetailRoute.stringify,
-              },
+              ShowDetail: showsTabDetailRoute,
             },
           },
           SongsTab: {
