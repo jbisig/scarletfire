@@ -139,6 +139,10 @@ export function SongPerformancesScreen() {
 
   const { songTitle } = route.params;
 
+  useEffect(() => {
+    if (Platform.OS === 'web') document.title = `Scarlet>Fire - ${songTitle}`;
+  }, [songTitle]);
+
   // Look up performances from static song data
   const performances = useMemo(() => {
     const song = songsByTitle.get(songTitle.toLowerCase());

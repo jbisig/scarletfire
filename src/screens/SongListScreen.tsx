@@ -106,6 +106,7 @@ export function SongListScreen() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === 'web') document.title = 'Scarlet>Fire - Songs';
     navigation.setOptions({ headerShown: false });
     loadSongs();
   }, []);

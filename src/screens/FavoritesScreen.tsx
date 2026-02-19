@@ -227,6 +227,10 @@ export function FavoritesScreen() {
     });
   };
 
+  React.useEffect(() => {
+    if (Platform.OS === 'web') document.title = 'Scarlet>Fire - Favorites';
+  }, []);
+
   // Scroll to top when sort type changes
   React.useEffect(() => {
     showsListRef.current?.scrollToOffset({ offset: 0, animated: true });
