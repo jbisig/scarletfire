@@ -12,6 +12,7 @@ import {
   Dimensions,
   PanResponder,
   Easing,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -333,6 +334,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.md,
     maxHeight: '70%',
+    ...(Platform.OS === 'web' ? {
+      // @ts-ignore
+      touchAction: 'none',
+    } : {}),
   },
   dragHandle: {
     // Draggable area for swipe-to-dismiss
