@@ -137,7 +137,7 @@ export function SongPerformancesScreen() {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [sortType]);
 
-  const { songTitle } = route.params;
+  const { songTitle, performanceDate } = route.params;
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -150,6 +150,24 @@ export function SongPerformancesScreen() {
     const song = songsByTitle.get(songTitle.toLowerCase());
     return song?.performances ?? [];
   }, [songTitle]);
+
+  // Auto-play if a performanceDate is in the URL (deep link)
+  const hasAutoPlayedRef = useRef(false);
+  useEffect(() => {
+    if (!performanceDate || hasAutoPlayedRef.current || performances.length === 0) return;
+    hasAutoPlayedRef.current = true;
+    const match = performances.find(p => p.date.substring(0, 10) === performanceDate);
+    if (match) {
+      (async () => {
+        try {
+          const showDetail = await getShowDetail(match.identifier);
+          const normalized = normalizeTrackTitle(songTitle);
+          const track = showDetail.tracks.find(t => normalizeTrackTitle(t.title) === normalized);
+          if (track) loadTrack(track, showDetail, showDetail.tracks);
+        } catch { /* ignore */ }
+      })();
+    }
+  }, [performanceDate, performances, songTitle, getShowDetail, loadTrack]);
 
   // Sort performances based on selected sort type
   const sortedPerformances = useMemo(() => {
@@ -210,6 +228,10 @@ export function SongPerformancesScreen() {
       );
       if (matchedTrack) {
         loadTrack(matchedTrack, showDetail, showDetail.tracks);
+        // Update URL with performance date for shareable links
+        if (Platform.OS === 'web') {
+          navigation.setParams({ performanceDate: performance.date.substring(0, 10) });
+        }
       }
     } catch {
       // Fallback: navigate to show if loading fails

@@ -15,10 +15,21 @@ Object.values(showsData).forEach((yearShows: any[]) => { // eslint-disable-line 
 const parseTrackSlug = (slug: string) => decodeURIComponent(slug).replace(/-/g, ' ');
 const stringifyTrackTitle = (title: string) => encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'));
 
+// Performance date: URL uses MM-DD-YY, data uses YYYY-MM-DD
+const parsePerformanceDate = (slug: string) => {
+  const [m, d, yy] = slug.split('-');
+  const year = parseInt(yy, 10) < 50 ? `20${yy}` : `19${yy}`;
+  return `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+};
+const stringifyPerformanceDate = (date: string) => {
+  const [y, m, d] = date.split('-');
+  return `${m}-${d}-${y.slice(2)}`;
+};
+
 const songPerformancesRoute = {
-  path: 'songs/:songTitle',
-  parse: { songTitle: parseTrackSlug },
-  stringify: { songTitle: stringifyTrackTitle },
+  path: 'songs/:songTitle/:performanceDate?',
+  parse: { songTitle: parseTrackSlug, performanceDate: parsePerformanceDate },
+  stringify: { songTitle: stringifyTrackTitle, performanceDate: stringifyPerformanceDate },
 };
 
 // ShowDetail: /show/{date}/{track-title}
@@ -30,25 +41,6 @@ const showDetailRoute = {
   stringify: {
     identifier: (id: string) => identifierToDate[id] || id,
     trackTitle: stringifyTrackTitle,
-  },
-};
-
-// ShowsTab ShowDetail: /shows/{date}/{track-title} (no "show/" prefix)
-const showsTabDetailRoute = {
-  path: 'shows/:identifier/:trackTitle?',
-  parse: showDetailRoute.parse,
-  stringify: showDetailRoute.stringify,
-};
-
-// SongsTab ShowDetail: /songs/{track-title}/{date}
-const songsTabDetailRoute = {
-  path: 'songs/:trackTitle/:identifier',
-  parse: {
-    trackTitle: parseTrackSlug,
-  },
-  stringify: {
-    trackTitle: stringifyTrackTitle,
-    identifier: (id: string) => identifierToDate[id] || id,
   },
 };
 
@@ -102,14 +94,9 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
             screens: {
               SongList: '',
               SongPerformances: {
-                path: ':songTitle',
-                parse: { songTitle: parseTrackSlug },
-                stringify: { songTitle: stringifyTrackTitle },
-              },
-              ShowDetail: {
-                path: ':trackTitle/:identifier',
-                parse: songsTabDetailRoute.parse,
-                stringify: songsTabDetailRoute.stringify,
+                path: ':songTitle/:performanceDate?',
+                parse: { songTitle: parseTrackSlug, performanceDate: parsePerformanceDate },
+                stringify: { songTitle: stringifyTrackTitle, performanceDate: stringifyPerformanceDate },
               },
             },
           },

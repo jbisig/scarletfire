@@ -580,7 +580,7 @@ export function ShowDetailScreen() {
 
       {/* Next Tour Stops Section */}
       {nextTourStops.length > 0 && (
-        <View style={styles.nextTourStopsSection}>
+        <View style={[styles.nextTourStopsSection, isDesktop && styles.nextTourStopsSectionDesktop]}>
           <View style={styles.divider} />
           <Text style={styles.nextTourStopsHeader}>Next Tour Stops</Text>
           {nextTourStops.map((nextShow) => (
@@ -845,15 +845,15 @@ const styles = StyleSheet.create({
   },
   nextTourStopsSection: {
     marginTop: SPACING.sm,
-    ...(Platform.OS === 'web' ? {
-      padding: 24,
-    } : {}),
+  },
+  nextTourStopsSectionDesktop: {
+    padding: 24,
   },
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
     marginHorizontal: SPACING.xl,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   nextTourStopsHeader: {
     ...TYPOGRAPHY.heading2,
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
     ...(Platform.OS === 'web' ? {
       paddingLeft: SPACING.xxl - 8,
-      paddingTop: 12,
+      paddingTop: 8,
       paddingBottom: 8,
     } : {}),
   },

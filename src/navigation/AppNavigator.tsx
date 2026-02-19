@@ -44,6 +44,7 @@ export type RootStackParamList = {
   SongList: undefined;
   SongPerformances: {
     songTitle: string;
+    performanceDate?: string;
   };
   Settings: undefined;
   PrivacyPolicy: undefined;
