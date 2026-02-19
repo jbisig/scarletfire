@@ -63,6 +63,25 @@ const webCardStyle = Platform.OS === 'web'
   ? { flex: 1, minHeight: 0 } as const
   : undefined;
 
+// Custom browser tab title formatter for web
+const SCREEN_TITLES: Record<string, string> = {
+  DiscoverLanding: 'Discover',
+  Home: 'Shows',
+  SongList: 'Songs',
+  Favorites: 'Favorites',
+  Settings: 'Settings',
+  PrivacyPolicy: 'Privacy Policy',
+};
+
+const documentTitle = Platform.OS === 'web'
+  ? {
+      formatter: (options: Record<string, any> | undefined, route: { name: string } | undefined) => {
+        const screenTitle = options?.title || (route ? SCREEN_TITLES[route.name] : undefined);
+        return screenTitle ? `Scarlet>Fire - ${screenTitle}` : 'Scarlet>Fire';
+      },
+    }
+  : undefined;
+
 // Stack navigator for Shows tab
 function ShowsStack() {
   const { logout, showLogin, state: authState } = useAuth();
@@ -265,7 +284,7 @@ export function AppNavigator() {
   // Show loading while checking auth
   if (authState.isLoading) {
     return (
-      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
+      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
         <View style={[styles.container, styles.loadingContainer]}>
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
@@ -281,7 +300,7 @@ export function AppNavigator() {
   if (Platform.OS === 'web' && isDesktop && DesktopLayout) {
     return (
       <ErrorBoundary>
-        <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
+        <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
           <DesktopLayout />
         </NavigationContainer>
       </ErrorBoundary>
@@ -290,7 +309,7 @@ export function AppNavigator() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking}>
+      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
         {showAuthFlow ? (
           <AuthNavigator />
         ) : (

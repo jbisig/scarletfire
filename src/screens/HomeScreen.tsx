@@ -147,14 +147,6 @@ export function HomeScreen() {
     closeDropdown,
   } = useProfileDropdown();
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const unsubscribe = navigation.addListener('focus', () => {
-      document.title = 'Scarlet>Fire - Shows';
-    });
-    return unsubscribe;
-  }, [navigation]);
-
   // Search bar handlers
   const handleSearchExpand = useCallback(() => {
     setIsSearchExpanded(true);

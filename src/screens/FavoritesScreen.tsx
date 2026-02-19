@@ -227,14 +227,6 @@ export function FavoritesScreen() {
     });
   };
 
-  React.useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const unsubscribe = navigation.addListener('focus', () => {
-      document.title = 'Scarlet>Fire - Favorites';
-    });
-    return unsubscribe;
-  }, [navigation]);
-
   // Scroll to top when sort type changes
   React.useEffect(() => {
     showsListRef.current?.scrollToOffset({ offset: 0, animated: true });

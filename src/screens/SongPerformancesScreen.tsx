@@ -140,11 +140,9 @@ export function SongPerformancesScreen() {
   const { songTitle } = route.params;
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const unsubscribe = navigation.addListener('focus', () => {
-      document.title = `Scarlet>Fire - ${songTitle}`;
-    });
-    return unsubscribe;
+    if (Platform.OS === 'web') {
+      navigation.setOptions({ title: songTitle });
+    }
   }, [navigation, songTitle]);
 
   // Look up performances from static song data

@@ -91,14 +91,6 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const unsubscribe = navigation.addListener('focus', () => {
-      document.title = 'Scarlet>Fire - Discover';
-    });
-    return unsubscribe;
-  }, [navigation]);
-
   // Track app state to pause video when in background (saves battery) — native only
   const [appState, setAppState] = useState<AppStateStatus>(
     Platform.OS !== 'web' ? AppState.currentState : 'active'

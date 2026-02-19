@@ -264,16 +264,12 @@ export function ShowDetailScreen() {
         }
       }
 
-      // Update browser tab title on web
-      if (Platform.OS === 'web' && detail.date) {
-        const [y, m, d] = detail.date.split('-');
-        const shortDate = `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
-        document.title = `${shortDate} - ${getVenueFromShow(detail)}`;
-      }
-
-      // Update navigation title - empty title, just show back button
+      // Update navigation title (also drives browser tab title via documentTitle formatter)
+      const webTitle = detail.date
+        ? (() => { const [y, m, d] = detail.date.split('-'); return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)} - ${getVenueFromShow(detail)}`; })()
+        : '';
       navigation.setOptions({
-        title: '',
+        title: Platform.OS === 'web' ? webTitle : '',
         headerLeftContainerStyle: {
           paddingLeft: 10,
         },
