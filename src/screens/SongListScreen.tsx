@@ -106,10 +106,17 @@ export function SongListScreen() {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web') document.title = 'Scarlet>Fire - Songs';
     navigation.setOptions({ headerShown: false });
     loadSongs();
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const unsubscribe = navigation.addListener('focus', () => {
+      document.title = 'Scarlet>Fire - Songs';
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadSongs = async () => {
     try {
