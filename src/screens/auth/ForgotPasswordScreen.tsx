@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: COLORS.accent,
     paddingVertical: 18,
+    paddingHorizontal: 48,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     marginTop: SPACING.lg,
