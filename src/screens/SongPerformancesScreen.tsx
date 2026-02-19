@@ -13,7 +13,10 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { usePlayer } from '../contexts/PlayerContext';
+import { useShows } from '../contexts/ShowsContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
+import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
@@ -72,6 +75,8 @@ export function SongPerformancesScreen() {
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
+  const { loadTrack } = usePlayer();
+  const { getShowDetail } = useShows();
   const { getPlayCount } = usePlayCounts();
   const [sortType, setSortType] = useState<SortType>('performanceDateOldest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,12 +195,24 @@ export function SongPerformancesScreen() {
     });
   }, [sortedPerformances, debouncedSearchQuery]);
 
-  const handlePerformancePress = useCallback((performance: Performance) => {
-    navigation.push('ShowDetail', {
-      identifier: performance.identifier,
-      trackTitle: songTitle,
-    });
-  }, [songTitle, navigation]);
+  const handlePerformancePress = useCallback(async (performance: Performance) => {
+    try {
+      const showDetail = await getShowDetail(performance.identifier);
+      const normalizedSongTitle = normalizeTrackTitle(songTitle);
+      const matchedTrack = showDetail.tracks.find(
+        t => normalizeTrackTitle(t.title) === normalizedSongTitle
+      );
+      if (matchedTrack) {
+        loadTrack(matchedTrack, showDetail, showDetail.tracks);
+      }
+    } catch {
+      // Fallback: navigate to show if loading fails
+      navigation.push('ShowDetail', {
+        identifier: performance.identifier,
+        trackTitle: songTitle,
+      });
+    }
+  }, [songTitle, navigation, getShowDetail, loadTrack]);
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
     const show = getShowByDate(item.date);

@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
       textAlignVertical: 'center',
       includeFontPadding: false,
     }),
-    // @ts-ignore - web only
-    ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+    // @ts-ignore - web only: remove outline and prevent iOS Safari auto-zoom on focus
+    ...(Platform.OS === 'web' && { outlineStyle: 'none', fontSize: 16 }),
   },
   closeSearchButton: {
     padding: SPACING.xs,
