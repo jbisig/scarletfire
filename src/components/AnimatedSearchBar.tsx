@@ -141,7 +141,7 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
       onPress={isExpanded ? undefined : onExpand}
       disabled={isExpanded}
     >
-      <Animated.View style={[styles.searchContainer, { width: searchBarWidth }]}>
+      <Animated.View style={[styles.searchContainer, { width: searchBarWidth, maxWidth: '100%' }]}>
         <View style={styles.searchInputWrapper}>
           <Ionicons name="search" size={20} color={COLORS.textHint} style={styles.searchIconCentered} />
           {isExpanded && (

@@ -346,10 +346,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading2,
   },
   headerRight: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: LAYOUT.headerButtonGap,
-    marginLeft: 'auto',
     zIndex: 10,
   },
   headerGradient: {

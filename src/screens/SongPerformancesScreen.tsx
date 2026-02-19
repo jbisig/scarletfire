@@ -363,7 +363,8 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   titleRight: {
-    marginLeft: 'auto',
+    flex: 1,
+    alignItems: 'flex-end',
     zIndex: 10,
   },
   sortRow: {
