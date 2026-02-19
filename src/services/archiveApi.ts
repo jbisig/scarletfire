@@ -433,7 +433,7 @@ class ArchiveApiService {
       for (let i = 0; i < topShows.length; i += batchSize) {
         const batch = topShows.slice(i, i + batchSize);
         const showPromises = batch.map(doc =>
-          this.getShowDetail(doc.identifier, false).catch(() => null)
+          this.getShowDetail(doc.identifier).catch(() => null)
         );
 
         const shows = await Promise.all(showPromises);
@@ -482,24 +482,12 @@ class ArchiveApiService {
   /**
    * Get detailed metadata for a specific show
    */
-  async getShowDetail(identifier: string, includeAllVersions: boolean = true): Promise<ShowDetail> {
-    // Always check cache first - the base show detail can be reused
+  async getShowDetail(identifier: string): Promise<ShowDetail> {
+    // Always check cache first
     const cached = this.showDetailCache.get(identifier);
     const cacheIsValid = cached && Date.now() - cached.timestamp < this.CACHE_TTL;
 
     if (cacheIsValid) {
-      // If versions not needed, return cached data immediately
-      if (!includeAllVersions) {
-        return cached.data;
-      }
-
-      // If versions needed and we have cached base data, fetch versions separately
-      if (cached.data.date) {
-        const allVersions = await this.getShowVersions(cached.data.date);
-        return { ...cached.data, allVersions };
-      }
-
-      // No date to fetch versions, return cached as-is
       return cached.data;
     }
 
@@ -530,7 +518,6 @@ class ArchiveApiService {
         })
         .sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0));
 
-      // Build base show detail (without versions) for caching
       const baseShowDetail: ShowDetail = {
         identifier,
         title: metadata.title,
@@ -544,12 +531,6 @@ class ArchiveApiService {
 
       // Cache the base show detail (without versions to keep cache entries small)
       this.showDetailCache.set(identifier, { data: baseShowDetail, timestamp: Date.now() });
-
-      // Fetch versions separately if requested
-      if (includeAllVersions && metadata.date) {
-        const allVersions = await this.getShowVersions(metadata.date);
-        return { ...baseShowDetail, allVersions };
-      }
 
       return baseShowDetail;
     } catch (error) {

@@ -147,7 +147,7 @@ class RadioService {
   private async resolvePerformance(perf: RatedSongPerformance): Promise<RadioTrack | null> {
     try {
       // Fetch show details
-      const showDetail = await archiveApi.getShowDetail(perf.showIdentifier, false);
+      const showDetail = await archiveApi.getShowDetail(perf.showIdentifier);
 
       // Clean up the song title for matching (HeadyVersion format)
       const targetTitle = normalizeHeadyVersionTitle(perf.songTitle);

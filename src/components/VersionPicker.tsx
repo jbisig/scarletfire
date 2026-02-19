@@ -55,9 +55,11 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           <Text style={webGlassStyle ? styles.sourceNameGlass : styles.sourceName}>
             {currentVersion.source}
           </Text>
-          <Text style={webGlassStyle ? styles.viewsGlass : styles.views}>
-            {formatDownloads(currentVersion.downloads)} views
-          </Text>
+          <View style={styles.viewsWrap}>
+            <Text style={webGlassStyle ? styles.viewsGlass : styles.views} numberOfLines={1}>
+              {formatDownloads(currentVersion.downloads)} views
+            </Text>
+          </View>
           <Ionicons name="chevron-down" size={18} color={webGlassStyle ? COLORS.textPrimary : COLORS.accent} />
         </View>
         {!webGlassStyle && currentAttribution && (
@@ -224,14 +226,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textPrimary,
   },
+  viewsWrap: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   views: {
-    flex: 1,
     ...TYPOGRAPHY.bodySmall,
     fontSize: 15,
     color: COLORS.textSecondary,
   },
   viewsGlass: {
-    flex: 1,
     fontFamily: 'Inter',
     fontWeight: '400',
     fontSize: 14,

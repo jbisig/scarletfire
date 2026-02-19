@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
@@ -28,6 +30,7 @@ interface ShowCardProps {
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { showDetailsCache } = useShows();
+  const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -62,9 +65,20 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   // Use override rating if provided, otherwise use show's classicTier
   const displayRating = overrideRating !== undefined ? overrideRating : show.classicTier;
 
+  const isSaved = isShowFavorite(show.primaryIdentifier);
+
   const handleBadgePress = () => {
     setModalVisible(true);
   };
+
+  const handleToggleSave = useCallback((e: any) => {
+    e.stopPropagation();
+    if (isSaved) {
+      removeFavoriteShow(show.primaryIdentifier);
+    } else {
+      addFavoriteShow(show);
+    }
+  }, [isSaved, show, addFavoriteShow, removeFavoriteShow]);
 
   const accessibilityLabel = useMemo(() => {
     const venue = getVenueFromShow(show);
@@ -73,6 +87,8 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
     const location = show.location || '';
     return `${venue}, ${date}${location ? `, ${location}` : ''}${rating ? `. ${rating}` : ''}`;
   }, [show, displayRating]);
+
+  const isWeb = Platform.OS === 'web';
 
   return (
     <>
@@ -123,6 +139,23 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </View>
             )}
             <PlayCountBadge count={playCount} size="small" />
+            {isWeb && isDesktop && (
+              <TouchableOpacity
+                style={[styles.savePill, isSaved && styles.savePillActive]}
+                onPress={handleToggleSave}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                accessibilityState={{ selected: isSaved }}
+              >
+                <Ionicons
+                  name={isSaved ? 'heart' : 'heart-outline'}
+                  size={15}
+                  color={COLORS.textPrimary}
+                />
+                <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -192,5 +225,25 @@ const styles = StyleSheet.create({
   officialReleaseBadgeWrapper: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  savePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 342,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.33)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  savePillActive: {
+    backgroundColor: `${COLORS.accent}33`,
+    borderColor: COLORS.accent,
+  },
+  savePillText: {
+    ...TYPOGRAPHY.label,
+    fontSize: 14,
+    color: COLORS.textPrimary,
   },
 });

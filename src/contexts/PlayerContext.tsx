@@ -834,7 +834,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: true });
 
       // Fetch the show details
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier, false);
+      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
 
       // Find the matching track
       const track = showDetail.tracks.find(t => t.id === song.trackId);

@@ -453,7 +453,7 @@ export function FavoritesScreen() {
       setLoadingSongId(`${song.trackId}-${song.showIdentifier}`);
 
       // Fetch the show details to get all tracks
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier, false);
+      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
 
       // Find the matching track
       const track = showDetail.tracks.find(t => t.id === song.trackId);

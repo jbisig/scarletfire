@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 export interface PlayCountBadgeProps {
@@ -42,6 +42,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: RADIUS.full,
+    ...(Platform.OS === 'web' ? {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      borderRadius: 342,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.33)',
+      paddingVertical: 8,
+      paddingHorizontal: SPACING.lg,
+    } : {}),
   },
   text: {
     ...TYPOGRAPHY.labelSmall,
@@ -52,5 +60,10 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.captionSmall,
     fontSize: 11,
     fontWeight: '600',
+    ...(Platform.OS === 'web' ? {
+      ...TYPOGRAPHY.label,
+      fontSize: 14,
+      color: COLORS.textPrimary,
+    } : {}),
   },
 });

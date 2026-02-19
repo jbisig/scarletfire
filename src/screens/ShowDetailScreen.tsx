@@ -116,7 +116,7 @@ type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDet
 export function ShowDetailScreen() {
   const route = useRoute<ShowDetailRouteProp>();
   const navigation = useNavigation<ShowDetailNavigationProp>();
-  const { getShowDetail, showsByYear } = useShows();
+  const { getShowDetail, getShowVersions, showsByYear } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow, isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getShowPlayCount } = usePlayCounts();
@@ -281,6 +281,18 @@ export function ShowDetailScreen() {
     }
   };
 
+  // Load versions in the background after the show metadata is available
+  useEffect(() => {
+    if (!show?.date || show.allVersions) return;
+    let cancelled = false;
+    getShowVersions(show.date).then(versions => {
+      if (!cancelled && versions.length > 0) {
+        setShow(prev => prev ? { ...prev, allVersions: versions } : prev);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [show?.identifier, show?.date, show?.allVersions, getShowVersions]);
+
   const handleVersionChange = async (versionIdentifier: string) => {
     if (versionIdentifier !== selectedVersion) {
       await loadShowDetail(versionIdentifier);
@@ -401,77 +413,94 @@ export function ShowDetailScreen() {
               <View style={styles.webVenueBlock}>
                 <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
 
-                {/* Details section */}
-                <View style={styles.webDetailsSection}>
-                  {/* Date with stars */}
-                  <View style={styles.webDateRow}>
-                    <Text style={styles.webDate}>{formatDateMMDDYYYY(show.date)}</Text>
-                    {classicTier && (
-                      <StarRating tier={classicTier} size={20} />
-                    )}
+                {/* Details section with play count on mobile */}
+                <View style={styles.webDetailsSectionRow}>
+                  <View style={styles.webDetailsSection}>
+                    {/* Date with stars */}
+                    <View style={styles.webDateRow}>
+                      <Text style={styles.webDate}>{formatDateMMDDYYYY(show.date)}</Text>
+                      {classicTier && (
+                        <StarRating tier={classicTier} size={20} />
+                      )}
+                    </View>
+
+                    {/* Location */}
+                    <Text style={styles.webLocation}>
+                      {show.location || 'Unknown location'}
+                    </Text>
                   </View>
 
-                  {/* Location */}
-                  <Text style={styles.webLocation}>
-                    {show.location || 'Unknown location'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Badges row */}
-              {(officialReleases.length > 0 || playCount > 0) && (
-                <View style={styles.badgesRow}>
-                  {officialReleases.length > 0 && (
-                    <OfficialReleaseBadge
-                      onPress={() => setReleaseModalVisible(true)}
-                      releaseTitle={officialReleases[0].name}
-                    />
-                  )}
-                  {playCount > 0 && (
-                    <View style={styles.playCountBadge}>
-                      <Text style={styles.playCountText}>
+                  {/* Play count badge - mobile web only */}
+                  {!isDesktop && playCount > 0 && (
+                    <View style={styles.playCountPillWeb}>
+                      <Text style={styles.playCountPillText}>
                         {playCount} {playCount === 1 ? 'play' : 'plays'}
                       </Text>
                     </View>
                   )}
                 </View>
-              )}
+              </View>
 
-            {/* Pills row: Source + Save */}
-            <View style={styles.pillsRow}>
-              {show.allVersions && show.allVersions.length > 1 ? (
-                <VersionPicker
-                  versions={show.allVersions}
-                  selectedVersion={selectedVersion}
-                  onVersionChange={handleVersionChange}
-                  webGlassStyle
-                />
-              ) : (
-                <View style={styles.sourceInfoPillWeb}>
-                  <Text style={styles.webSourceText}>
-                    {show.allVersions?.[0]?.source || 'Unknown source'}
-                  </Text>
-                  <Text style={styles.webDownloadsText}>
-                    {formatDownloads(show.allVersions?.[0]?.downloads)}
-                  </Text>
+              {/* Badges row (official releases only on web) */}
+              {officialReleases.length > 0 && (
+                <View style={styles.badgesRow}>
+                  <OfficialReleaseBadge
+                    onPress={() => setReleaseModalVisible(true)}
+                    releaseTitle={officialReleases[0].name}
+                  />
                 </View>
               )}
 
-              <TouchableOpacity
-                style={styles.savePillWeb}
-                onPress={handleToggleFavorite}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-                accessibilityState={{ selected: isSaved }}
-              >
-                <Ionicons
-                  name={isSaved ? 'heart' : 'heart-outline'}
-                  size={17}
-                  color={COLORS.textPrimary}
-                />
-                <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
-              </TouchableOpacity>
+            {/* Pills row: Source + Play Count (desktop) + Save */}
+            <View style={styles.pillsRow}>
+              <View style={[styles.pillsLeft, isDesktop && styles.pillsLeftDesktop]}>
+                {show.allVersions && show.allVersions.length > 1 ? (
+                  <VersionPicker
+                    versions={show.allVersions}
+                    selectedVersion={selectedVersion}
+                    onVersionChange={handleVersionChange}
+                    webGlassStyle
+                  />
+                ) : (
+                  <View style={styles.sourceInfoPillWeb}>
+                    <Text style={styles.webSourceText}>
+                      {show.allVersions?.[0]?.source || 'Unknown source'}
+                    </Text>
+                    <View style={styles.webDownloadsWrap}>
+                      <Text style={styles.webDownloadsText} numberOfLines={1}>
+                        {formatDownloads(show.allVersions?.[0]?.downloads)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.pillsRight}>
+                {/* Play count pill - desktop only */}
+                {isDesktop && playCount > 0 && (
+                  <View style={styles.playCountPillWeb}>
+                    <Text style={styles.playCountPillText}>
+                      {playCount} {playCount === 1 ? 'play' : 'plays'}
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={styles.savePillWeb}
+                  onPress={handleToggleFavorite}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                  accessibilityState={{ selected: isSaved }}
+                >
+                  <Ionicons
+                    name={isSaved ? 'heart' : 'heart-outline'}
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             </View>
           </View>
@@ -677,6 +706,25 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
   },
+  playCountPillWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 342,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.33)',
+    paddingHorizontal: SPACING.lg,
+    height: 35,
+    // @ts-ignore
+    backdropFilter: 'blur(34px)',
+    WebkitBackdropFilter: 'blur(34px)',
+  },
+  playCountPillText: {
+    ...TYPOGRAPHY.label,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
   saveButton: {
     width: 33,
     height: 33,
@@ -693,7 +741,14 @@ const styles = StyleSheet.create({
   pillsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  pillsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+    marginLeft: 'auto',
   },
   sourceInfoPill: {
     flexDirection: 'row',
@@ -703,6 +758,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
     gap: SPACING.md,
+  },
+  pillsLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pillsLeftDesktop: {
+    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
+    minWidth: 'auto',
   },
   sourceInfoPillWeb: {
     flexDirection: 'row',
@@ -721,12 +787,13 @@ const styles = StyleSheet.create({
   savePillWeb: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 342,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.33)',
-    paddingVertical: 8,
     paddingHorizontal: SPACING.lg,
+    height: 35,
     gap: 6,
     // @ts-ignore
     backdropFilter: 'blur(34px)',
@@ -803,8 +870,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: COLORS.textPrimary,
   },
+  webDetailsSectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   webDetailsSection: {
     gap: 4,
+    flex: 1,
   },
   webDateRow: {
     flexDirection: 'row',
@@ -828,6 +901,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  webDownloadsWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   webDownloadsText: {
     fontFamily: 'Inter',
@@ -854,13 +931,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.md,
+    ...(Platform.OS === 'web' ? {
+      marginHorizontal: 16,
+    } : {}),
   },
   nextTourStopsHeader: {
     ...TYPOGRAPHY.heading2,
     paddingHorizontal: SPACING.xxl,
     marginBottom: SPACING.xs,
     ...(Platform.OS === 'web' ? {
-      paddingLeft: SPACING.xxl - 8,
+      paddingHorizontal: 16,
       paddingTop: 8,
       paddingBottom: 8,
     } : {}),

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
-import { ShowsByYear, ShowDetail } from '../types/show.types';
+import { ShowsByYear, ShowDetail, RecordingVersion } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import showsData from '../data/shows.json';
 import { getClassicTier } from '../data/classicShowsTiers';
@@ -10,6 +10,7 @@ interface ShowsContextType {
   error: string | null;
   showDetailsCache: Map<string, ShowDetail>;
   getShowDetail: (identifier: string) => Promise<ShowDetail>;
+  getShowVersions: (date: string) => Promise<RecordingVersion[]>;
 }
 
 const ShowsContext = createContext<ShowsContextType | undefined>(undefined);
@@ -62,6 +63,10 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
     return requestPromise;
   }, []); // Empty deps - ref is stable
 
+  const getShowVersions = useCallback(async (date: string): Promise<RecordingVersion[]> => {
+    return archiveApi.getShowVersions(date);
+  }, []);
+
   return (
     <ShowsContext.Provider
       value={{
@@ -69,7 +74,8 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         error,
         showDetailsCache: showDetailsCacheRef.current,
-        getShowDetail
+        getShowDetail,
+        getShowVersions,
       }}
     >
       {children}
