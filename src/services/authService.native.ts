@@ -187,9 +187,27 @@ class AuthService {
   }
 
   /**
+   * Send a password reset email
+   */
+  async resetPasswordForEmail(email: string): Promise<void> {
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://www.scarletfire.app/reset-password',
+    });
+    if (error) throw error;
+  }
+
+  /**
+   * Update the current user's password
+   */
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await this.supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  /**
    * Listen to authentication state changes
    */
-  onAuthStateChanged(callback: (user: User | null) => void) {
+  onAuthStateChanged(callback: (user: User | null) => void, onPasswordRecovery?: () => void) {
     // Get initial session
     this.getSession().then((session) => {
       callback(session?.user ?? null);

@@ -113,6 +113,14 @@ export function LoginScreen() {
                 </BlurView>
               </View>
 
+              {/* Forgot Password Link */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotPasswordLink}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+
               {/* Log In Button */}
               <TouchableOpacity
                 style={[styles.primaryButton, state.isLoading && styles.buttonDisabled]}
@@ -305,6 +313,15 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontWeight: '600',
     color: COLORS.accent,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: -SPACING.sm,
+  },
+  forgotPasswordText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.accent,
+    fontWeight: '600',
   },
   skipButton: {
     paddingVertical: SPACING.md,

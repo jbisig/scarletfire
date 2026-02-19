@@ -89,12 +89,27 @@ class AuthService {
     return data.session;
   }
 
-  onAuthStateChanged(callback: (user: User | null) => void) {
+  async resetPasswordForEmail(email: string): Promise<void> {
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await this.supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  onAuthStateChanged(callback: (user: User | null) => void, onPasswordRecovery?: () => void) {
     this.getSession().then((session) => {
       callback(session?.user ?? null);
     });
 
-    const { data: { subscription } } = this.supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = this.supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && onPasswordRecovery) {
+        onPasswordRecovery();
+      }
       callback(session?.user ?? null);
     });
 

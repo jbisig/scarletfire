@@ -11,6 +11,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasSkippedLogin: boolean;
+  isPasswordRecovery: boolean;
   error: string | null;
 }
 
@@ -22,7 +23,9 @@ type AuthAction =
   | { type: 'SKIP_LOGIN' }
   | { type: 'UNSKIP_LOGIN' }
   | { type: 'SET_LOADING'; isLoading: boolean }
-  | { type: 'SET_ERROR'; error: string };
+  | { type: 'SET_ERROR'; error: string }
+  | { type: 'PASSWORD_RECOVERY' }
+  | { type: 'PASSWORD_RECOVERY_COMPLETE' };
 
 const initialState: AuthState = {
   user: null,
@@ -30,6 +33,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   // On web, default to skipped login so users land in the app immediately
   hasSkippedLogin: Platform.OS === 'web',
+  isPasswordRecovery: false,
   error: null,
 };
 
@@ -92,6 +96,18 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         isLoading: false,
       };
 
+    case 'PASSWORD_RECOVERY':
+      return {
+        ...state,
+        isPasswordRecovery: true,
+      };
+
+    case 'PASSWORD_RECOVERY_COMPLETE':
+      return {
+        ...state,
+        isPasswordRecovery: false,
+      };
+
     default:
       return state;
   }
@@ -108,6 +124,8 @@ interface AuthContextType {
   skipLogin: () => Promise<void>;
   showLogin: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  resetPasswordForEmail: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,13 +148,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }, 5000); // 5 second timeout
 
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      if (!hasResolved) {
-        hasResolved = true;
-        clearTimeout(timeoutId);
-        dispatch({ type: 'AUTH_STATE_CHANGED', user });
-      }
-    });
+    const unsubscribe = authService.onAuthStateChanged(
+      (user) => {
+        if (!hasResolved) {
+          hasResolved = true;
+          clearTimeout(timeoutId);
+          dispatch({ type: 'AUTH_STATE_CHANGED', user });
+        }
+      },
+      () => {
+        dispatch({ type: 'PASSWORD_RECOVERY' });
+      },
+    );
 
     return () => {
       clearTimeout(timeoutId);
@@ -258,6 +281,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'UNSKIP_LOGIN' });
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    try {
+      await authService.resetPasswordForEmail(email);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email';
+      throw new Error(errorMessage);
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      await authService.updatePassword(newPassword);
+      dispatch({ type: 'PASSWORD_RECOVERY_COMPLETE' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update password';
+      throw new Error(errorMessage);
+    }
+  };
+
   const refreshUser = async () => {
     try {
       const session = await authService.getSession();
@@ -282,6 +324,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         skipLogin,
         showLogin,
         refreshUser,
+        resetPasswordForEmail,
+        updatePassword,
       }}
     >
       {children}

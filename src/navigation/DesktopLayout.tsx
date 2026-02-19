@@ -11,6 +11,7 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { Sidebar } from '../components/web/Sidebar';
 import { PlayerBar } from '../components/web/PlayerBar';
 import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
@@ -86,6 +87,7 @@ export function DesktopLayout() {
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ShowDetail" component={ShowDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </View>
 

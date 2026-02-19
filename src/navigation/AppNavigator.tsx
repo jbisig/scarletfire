@@ -12,6 +12,7 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   };
   Settings: undefined;
   PrivacyPolicy: undefined;
+  ResetPassword: undefined;
   MainTabs: undefined;
 };
 
@@ -72,6 +74,7 @@ const SCREEN_TITLES: Record<string, string> = {
   Favorites: 'Favorites',
   Settings: 'Settings',
   PrivacyPolicy: 'Privacy Policy',
+  ResetPassword: 'Reset Password',
 };
 
 const documentTitle = Platform.OS === 'web'
@@ -338,6 +341,13 @@ export function AppNavigator() {
               name="PrivacyPolicy"
               component={PrivacyPolicyScreen}
             />
+            {Platform.OS === 'web' && (
+              <RootStack.Screen
+                name="ResetPassword"
+                component={ResetPasswordScreen}
+                options={{ headerShown: false }}
+              />
+            )}
           </RootStack.Navigator>
         )}
       </NavigationContainer>

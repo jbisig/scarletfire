@@ -59,6 +59,7 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
       ShowDetail: showDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
+      ResetPassword: 'reset-password',
     },
   },
 };
@@ -112,6 +113,7 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
       ShowDetail: showDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
+      ResetPassword: 'reset-password',
     },
   },
 };

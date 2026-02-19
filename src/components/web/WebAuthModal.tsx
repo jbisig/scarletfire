@@ -51,7 +51,7 @@ export function WebAuthModalProvider({ children }: { children: React.ReactNode }
 
 // ─── Modal Content ───────────────────────────────────────────────────────────
 
-type AuthScreen = 'login' | 'signup';
+type AuthScreen = 'login' | 'signup' | 'forgotPassword';
 
 function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boolean; onClose: () => void; initialScreen: AuthScreen }) {
   const [screen, setScreen] = useState<AuthScreen>(initialScreen);
@@ -59,7 +59,8 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { loginWithEmail, signUpWithEmail, loginWithGoogle, skipLogin, state } = useAuth();
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const { loginWithEmail, signUpWithEmail, loginWithGoogle, resetPasswordForEmail, skipLogin, state } = useAuth();
 
   // Sync screen when modal opens with a new initialScreen
   React.useEffect(() => {
@@ -71,6 +72,7 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
     setPassword('');
     setShowPassword(false);
     setError(null);
+    setForgotPasswordSent(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -116,12 +118,38 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
     }
   }, [loginWithGoogle, handleClose]);
 
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    try {
+      setError(null);
+      setForgotPasswordLoading(true);
+      await resetPasswordForEmail(email);
+      setForgotPasswordSent(true);
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  }, [email, resetPasswordForEmail]);
+
   const switchScreen = useCallback((target: AuthScreen) => {
     setError(null);
+    setForgotPasswordSent(false);
     setScreen(target);
   }, []);
 
   const isLogin = screen === 'login';
+  const isForgotPassword = screen === 'forgotPassword';
+
+  const getTitle = () => {
+    if (isForgotPassword) return 'Reset Password';
+    return isLogin ? 'Welcome Back' : 'Create Account';
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
@@ -132,90 +160,140 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
             <Ionicons name="close" size={22} color={COLORS.textSecondary} />
           </TouchableOpacity>
 
-          <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
+          <Text style={styles.title}>{getTitle()}</Text>
 
-          {/* Error message */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+          {/* Forgot password success state */}
+          {isForgotPassword && forgotPasswordSent ? (
+            <View style={styles.successContainer}>
+              <Ionicons name="checkmark-circle" size={48} color={COLORS.accent} />
+              <Text style={styles.successText}>Check your email for a reset link.</Text>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => switchScreen('login')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>Back to Log In</Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            <>
+              {/* Error message */}
+              {error && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+
+              {isForgotPassword && (
+                <Text style={styles.forgotSubtitle}>
+                  Enter your email and we'll send you a link to reset your password.
+                </Text>
+              )}
+
+              {/* Email Input */}
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={COLORS.textPlaceholder}
+                  selectionColor={COLORS.textPrimary}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                />
+              </View>
+
+              {/* Password Input (hidden on forgot password) */}
+              {!isForgotPassword && (
+                <>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      placeholderTextColor={COLORS.textPlaceholder}
+                      selectionColor={COLORS.textPrimary}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoComplete="password"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                      <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.textPlaceholder} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Forgot password link (login only) */}
+                  {isLogin && (
+                    <TouchableOpacity
+                      onPress={() => switchScreen('forgotPassword')}
+                      style={styles.forgotPasswordLink}
+                    >
+                      <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+
+              {/* Primary Button */}
+              <TouchableOpacity
+                style={[styles.primaryButton, (state.isLoading || forgotPasswordLoading) && styles.buttonDisabled]}
+                onPress={isForgotPassword ? handleForgotPassword : (isLogin ? handleLogin : handleSignup)}
+                disabled={state.isLoading || forgotPasswordLoading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {isForgotPassword
+                    ? (forgotPasswordLoading ? 'Sending...' : 'Send Reset Link')
+                    : state.isLoading
+                      ? (isLogin ? 'Logging In...' : 'Creating Account...')
+                      : (isLogin ? 'Log In' : 'Create Account')
+                  }
+                </Text>
+              </TouchableOpacity>
+
+              {/* Divider + social auth (hidden on forgot password) */}
+              {!isForgotPassword && (
+                <>
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
+                    onPress={handleGoogleSignIn}
+                    disabled={state.isLoading}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="logo-google" size={20} color={COLORS.textPrimary} />
+                    <Text style={styles.socialButtonText}>Continue with Google</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Switch screen link */}
+              <View style={styles.switchLink}>
+                {isForgotPassword ? (
+                  <TouchableOpacity onPress={() => switchScreen('login')}>
+                    <Text style={styles.switchLinkButton}>Back to Log In</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <Text style={styles.switchLinkText}>
+                      {isLogin ? "Don't have an account?   " : 'Already have an account?   '}
+                    </Text>
+                    <TouchableOpacity onPress={() => switchScreen(isLogin ? 'signup' : 'login')}>
+                      <Text style={styles.switchLinkButton}>{isLogin ? 'Sign up' : 'Log in'}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </>
           )}
-
-          {/* Email Input */}
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={COLORS.textPlaceholder}
-              selectionColor={COLORS.textPrimary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={COLORS.textPlaceholder}
-              selectionColor={COLORS.textPrimary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoComplete="password"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.textPlaceholder} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Primary Button */}
-          <TouchableOpacity
-            style={[styles.primaryButton, state.isLoading && styles.buttonDisabled]}
-            onPress={isLogin ? handleLogin : handleSignup}
-            disabled={state.isLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>
-              {state.isLoading
-                ? (isLogin ? 'Logging In...' : 'Creating Account...')
-                : (isLogin ? 'Log In' : 'Create Account')
-              }
-            </Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google Sign In */}
-          <TouchableOpacity
-            style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
-            onPress={handleGoogleSignIn}
-            disabled={state.isLoading}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="logo-google" size={20} color={COLORS.textPrimary} />
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-
-          {/* Switch screen link */}
-          <View style={styles.switchLink}>
-            <Text style={styles.switchLinkText}>
-              {isLogin ? "Don't have an account?   " : 'Already have an account?   '}
-            </Text>
-            <TouchableOpacity onPress={() => switchScreen(isLogin ? 'signup' : 'login')}>
-              <Text style={styles.switchLinkButton}>{isLogin ? 'Sign up' : 'Log in'}</Text>
-            </TouchableOpacity>
-          </View>
         </Pressable>
       </Pressable>
     </Modal>
@@ -353,6 +431,33 @@ const styles = StyleSheet.create({
   },
   socialButtonText: {
     ...TYPOGRAPHY.bodyLarge,
+    fontWeight: '600',
+  },
+  successContainer: {
+    alignItems: 'center',
+    gap: SPACING.lg,
+    paddingVertical: SPACING.xl,
+  },
+  successText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  forgotSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: -SPACING.sm,
+    marginBottom: SPACING.sm,
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  forgotPasswordText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.accent,
     fontWeight: '600',
   },
   switchLink: {
