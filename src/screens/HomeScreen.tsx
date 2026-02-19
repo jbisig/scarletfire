@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
@@ -38,8 +38,10 @@ const HORIZONTAL_PADDING = SPACING.xl;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
 
 type ShowSortType = 'default' | 'alphabetical' | 'performanceDateNewest' | 'mostPopular';
+const VALID_SORT_TYPES: ShowSortType[] = ['default', 'alphabetical', 'performanceDateNewest', 'mostPopular'];
 
 const SORT_OPTIONS: SortOption<ShowSortType>[] = [
   { value: 'default', label: 'Show Date (Oldest First)' },
@@ -158,6 +160,7 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
 
 export function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const route = useRoute<HomeScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
@@ -168,13 +171,47 @@ export function HomeScreen() {
   const flatListRef = useRef<FlatList<GratefulDeadShow>>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
-  const [sortType, setSortType] = useState<ShowSortType>('default');
+
+  // Initialize sort/filter state from URL params (if present)
+  const [sortType, setSortType] = useState<ShowSortType>(() => {
+    const urlSort = route.params?.sort;
+    return urlSort && VALID_SORT_TYPES.includes(urlSort as ShowSortType)
+      ? (urlSort as ShowSortType)
+      : 'default';
+  });
   const [showSortModal, setShowSortModal] = useState(false);
   const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
   const sortButtonRef = useRef<View>(null);
-  const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
+  const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(() => {
+    const urlYears = route.params?.years;
+    const urlSeries = route.params?.series;
+    return {
+      selectedYears: urlYears ? urlYears.split(',').filter(Boolean) : [],
+      selectedSeries: urlSeries ? urlSeries.split(',').filter(Boolean) : [],
+    };
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
+  // Sync sort/filter state to URL (web only)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const params: Record<string, string | undefined> = {
+      sort: sortType !== 'default' ? sortType : undefined,
+      years: appliedFilters.selectedYears.length > 0
+        ? appliedFilters.selectedYears.join(',')
+        : undefined,
+      series: appliedFilters.selectedSeries.length > 0
+        ? appliedFilters.selectedSeries.join(',')
+        : undefined,
+    };
+    navigation.setParams(params as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+  }, [sortType, appliedFilters, navigation]);
 
   // Search bar animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);

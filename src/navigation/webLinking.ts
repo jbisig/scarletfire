@@ -44,6 +44,18 @@ const showDetailRoute = {
   },
 };
 
+// Home (Shows) route: sort/filter state as query params
+const homeParseConfig = {
+  sort: (sort: string) => sort,
+  years: (years: string) => years,
+  series: (series: string) => decodeURIComponent(series),
+};
+const homeStringifyConfig = {
+  sort: (sort: string) => sort,
+  years: (years: string) => years,
+  series: (series: string) => encodeURIComponent(series),
+};
+
 const prefixes = [typeof window !== 'undefined' ? window.location.origin : ''];
 
 // Desktop: flat Stack navigator (no tab nesting)
@@ -52,7 +64,11 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
   config: {
     screens: {
       DiscoverLanding: 'discover',
-      Home: 'shows',
+      Home: {
+        path: 'shows',
+        parse: homeParseConfig,
+        stringify: homeStringifyConfig,
+      },
       SongList: 'songs',
       Favorites: 'favorites',
       SongPerformances: songPerformancesRoute,
@@ -82,7 +98,11 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
           ShowsTab: {
             path: 'shows',
             screens: {
-              Home: '',
+              Home: {
+                path: '',
+                parse: homeParseConfig,
+                stringify: homeStringifyConfig,
+              },
               ShowDetail: {
                 path: ':identifier/:trackTitle?',
                 parse: showDetailRoute.parse,
