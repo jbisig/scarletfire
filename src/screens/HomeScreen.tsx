@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   SectionList,
+  FlatList,
   TouchableOpacity,
   Keyboard,
   Platform,
@@ -25,6 +26,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
+import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { ProfileImage } from '../components/ProfileImage';
@@ -36,6 +38,44 @@ const HORIZONTAL_PADDING = SPACING.xl;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+
+type ShowSortType = 'default' | 'alphabetical' | 'performanceDateNewest' | 'mostPopular';
+
+const SORT_OPTIONS: SortOption<ShowSortType>[] = [
+  { value: 'default', label: 'Show Date (Oldest First)' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+  { value: 'mostPopular', label: 'Most Popular' },
+  { value: 'alphabetical', label: 'Alphabetical' },
+];
+
+function getPrimaryDownloads(show: GratefulDeadShow): number {
+  const primaryVersion = show.versions.find(v => v.identifier === show.primaryIdentifier);
+  return primaryVersion?.downloads ?? 0;
+}
+
+function getSortLabel(sortType: ShowSortType): string {
+  switch (sortType) {
+    case 'default':
+      return 'Show Date';
+    case 'performanceDateNewest':
+      return 'Show Date';
+    case 'mostPopular':
+      return 'Most Popular';
+    case 'alphabetical':
+      return 'Alphabetical';
+    default:
+      return 'Sort';
+  }
+}
+
+function getSortIcon(sortType: ShowSortType): 'arrow-up' | 'arrow-down' {
+  switch (sortType) {
+    case 'default':
+      return 'arrow-up';
+    default:
+      return 'arrow-down';
+  }
+}
 
 // State name to abbreviation mapping
 const STATE_ABBREVIATIONS: { [key: string]: string } = {
@@ -125,8 +165,13 @@ export function HomeScreen() {
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
+  const flatListRef = useRef<FlatList<GratefulDeadShow>>(null);
   const { showsByYear, isLoading, error } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
+  const [sortType, setSortType] = useState<ShowSortType>('default');
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
+  const sortButtonRef = useRef<View>(null);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
@@ -156,6 +201,13 @@ export function HomeScreen() {
     setSearchQuery('');
     setIsSearchExpanded(false);
   }, []);
+
+  const handleSortPress = () => {
+    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setSortButtonPosition({ top: pageY + height + 8, left: pageX });
+      setShowSortModal(true);
+    });
+  };
 
   // Memoize available years - only recalculate when showsByYear changes
   const availableYears = useMemo(() => {
@@ -209,18 +261,38 @@ export function HomeScreen() {
       .filter(section => section.data.length > 0);
   }, [showsByYear, appliedFilters, availableYears, debouncedSearchQuery]);
 
-  // Scroll to top when filters or search query changes
+  // Flatten and sort shows for non-default sort types
+  const sortedFlatShows = useMemo(() => {
+    if (sortType === 'default') return [];
+    const allShows = sections.flatMap(section => section.data);
+    switch (sortType) {
+      case 'mostPopular':
+        return allShows.sort((a, b) => getPrimaryDownloads(b) - getPrimaryDownloads(a));
+      case 'alphabetical':
+        return allShows.sort((a, b) => (a.venue || '').localeCompare(b.venue || ''));
+      case 'performanceDateNewest':
+        return allShows.sort((a, b) => b.date.localeCompare(a.date));
+      default:
+        return allShows;
+    }
+  }, [sections, sortType]);
+
+  // Scroll to top when filters, search query, or sort type changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      sectionListRef.current?.scrollToLocation({
-        sectionIndex: 0,
-        itemIndex: 0,
-        animated: false,
-        viewOffset: 0,
-      });
+      if (sortType === 'default') {
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex: 0,
+          itemIndex: 0,
+          animated: false,
+          viewOffset: 0,
+        });
+      } else {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      }
     }, 100);
     return () => clearTimeout(timer);
-  }, [appliedFilters, debouncedSearchQuery]);
+  }, [appliedFilters, debouncedSearchQuery, sortType]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
@@ -332,10 +404,36 @@ export function HomeScreen() {
         onSettings={handleSettings}
       />
 
+      {/* Action Bar Section with Sort */}
+      <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
+        <View style={[styles.actionRow, isDesktop && styles.actionRowDesktop]}>
+          <View ref={sortButtonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortLabelButton}
+              onPress={handleSortPress}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Sort shows by ${getSortLabel(sortType)}`}
+              accessibilityHint="Double tap to change sort order"
+            >
+              <Ionicons name={getSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Text style={styles.sortLabelText}>{getSortLabel(sortType)}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <LinearGradient
+          colors={[COLORS.background, COLORS.background + '00']}
+          locations={[0, 1]}
+          style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
+          pointerEvents="none"
+        />
+      </View>
+
       {/* Shows List */}
       {sections.length === 0 && debouncedSearchQuery.trim() ? (
         <NoResultsState query={debouncedSearchQuery} entityName="shows" />
-      ) : (
+      ) : sortType === 'default' ? (
         <SectionList
           ref={sectionListRef}
           sections={sections}
@@ -351,7 +449,24 @@ export function HomeScreen() {
           onScrollBeginDrag={Keyboard.dismiss}
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
-          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={21}
+          initialNumToRender={10}
+        />
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={sortedFlatShows}
+          keyExtractor={(item) => item.primaryIdentifier}
+          renderItem={({ item }) => (
+            <ShowCard show={item} onPress={handleShowPress} />
+          )}
+          contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={Keyboard.dismiss}
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           updateCellsBatchingPeriod={50}
@@ -359,6 +474,16 @@ export function HomeScreen() {
           initialNumToRender={10}
         />
       )}
+
+      {/* Sort Dropdown */}
+      <SortDropdown
+        visible={showSortModal}
+        onClose={() => setShowSortModal(false)}
+        position={sortButtonPosition}
+        options={SORT_OPTIONS}
+        selectedValue={sortType}
+        onSelect={setSortType}
+      />
     </View>
   );
 }
@@ -426,6 +551,45 @@ const styles = StyleSheet.create({
   },
   headerGradientDesktop: {
     display: 'none',
+  },
+  actionBarSection: {
+    backgroundColor: COLORS.background,
+    zIndex: 10,
+    overflow: 'visible',
+  },
+  actionBarSectionDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  actionBarGradient: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 30,
+  },
+  actionBarGradientDesktop: {
+    display: 'none',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingTop: SPACING.sm + 4,
+    paddingBottom: SPACING.md,
+  },
+  actionRowDesktop: {
+    paddingLeft: HORIZONTAL_PADDING + 8,
+  },
+  sortLabelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  sortLabelText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
   listContent: {
     paddingTop: SPACING.sm + 8,
