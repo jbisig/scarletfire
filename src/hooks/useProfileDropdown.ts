@@ -37,10 +37,21 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
   const handleProfilePress = useCallback(() => {
-    profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setPosition({ top: pageY + height + 8, left: pageX });
-      setIsVisible(true);
-    });
+    if (Platform.OS === 'web') {
+      // On web, use DOM API directly — .measure() often fails silently
+      const node = profileButtonRef.current as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      const domNode = node?.getNode?.() || node;
+      const rect = domNode?.getBoundingClientRect?.();
+      if (rect) {
+        setPosition({ top: rect.bottom + 8, left: rect.left });
+        setIsVisible(true);
+      }
+    } else {
+      profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+        setPosition({ top: pageY + height + 8, left: pageX });
+        setIsVisible(true);
+      });
+    }
   }, []);
 
   const closeDropdown = useCallback(() => {
