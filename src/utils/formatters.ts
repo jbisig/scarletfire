@@ -15,16 +15,19 @@ export function getVenueFromShow(show: { title?: string; venue?: string }): stri
   return show.venue || 'Unknown Venue';
 }
 
+/**
+ * Parse an ISO date string into a local Date, avoiding timezone off-by-one errors.
+ * Handles both "YYYY-MM-DD" and full ISO timestamps like "1966-01-01T00:00:00Z".
+ */
+function parseLocalDate(dateString: string): Date {
+  const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+  const [year, month, day] = datePart.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function formatDate(dateString: string): string {
   try {
-    // Handle full ISO timestamps (e.g., "1966-01-01T00:00:00Z") by extracting date portion
-    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
-
-    // Parse ISO date without timezone conversion to avoid off-by-one day errors
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Create date in local timezone (month is 0-indexed in Date constructor)
-    const date = new Date(year, month - 1, day);
-    return format(date, 'MM/dd/yyyy');
+    return format(parseLocalDate(dateString), 'MM/dd/yyyy');
   } catch {
     return dateString;
   }
@@ -32,14 +35,7 @@ export function formatDate(dateString: string): string {
 
 export function formatDateShort(dateString: string): string {
   try {
-    // Handle full ISO timestamps (e.g., "1966-01-01T00:00:00Z") by extracting date portion
-    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
-
-    // Parse ISO date without timezone conversion to avoid off-by-one day errors
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Create date in local timezone (month is 0-indexed in Date constructor)
-    const date = new Date(year, month - 1, day);
-    return format(date, 'MM/dd');
+    return format(parseLocalDate(dateString), 'MM/dd');
   } catch {
     return dateString;
   }
@@ -69,6 +65,18 @@ export function formatDownloads(downloads?: number): string {
     return `${(downloads / 1000).toFixed(1)}K`;
   }
   return downloads.toString();
+}
+
+/**
+ * Normalize a string for fuzzy matching — removes apostrophes, punctuation, and extra spaces.
+ */
+export function normalizeForSearch(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[''`'\u2018\u2019\u201B]/g, '')  // Remove all apostrophe/quote variants
+    .replace(/[^\w\s]/g, ' ')  // Replace other punctuation with spaces
+    .replace(/\s+/g, ' ')  // Collapse multiple spaces
+    .trim();
 }
 
 // Month name to number mapping

@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { logger } from '../utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -33,11 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-
-    // In production, you would send this to an error tracking service
-    // Example: Sentry.captureException(error, { extra: errorInfo });
+    logger.create('ErrorBoundary').error('Caught an error:', error, errorInfo);
   }
 
   handleReset = (): void => {
@@ -59,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={styles.container}>
           <Text style={styles.title}>Oops! Something went wrong</Text>
           <Text style={styles.message}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {__DEV__ ? (this.state.error?.message || 'An unexpected error occurred') : 'An unexpected error occurred. Please try again.'}
           </Text>
           <TouchableOpacity style={styles.button} onPress={this.handleReset}>
             <Text style={styles.buttonText}>Try Again</Text>

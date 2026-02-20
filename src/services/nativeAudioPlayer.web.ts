@@ -1,3 +1,4 @@
+import { ARCHIVE_CONFIG } from '../constants/api';
 import {
   Track,
   Progress,
@@ -13,6 +14,7 @@ import {
   CastDeviceConnectedEventData,
   CastDeviceDisconnectedEventData,
 } from './audioPlayerTypes';
+import { logger } from '../utils/logger';
 
 // Re-export all types
 export * from './audioPlayerTypes';
@@ -40,7 +42,7 @@ class SimpleEventEmitter {
       try {
         handler(data);
       } catch (e) {
-        console.error(`Error in event handler for ${event}:`, e);
+        logger.audio.error(`Error in event handler for ${event}:`, e);
       }
     });
   }
@@ -213,6 +215,11 @@ class NativeAudioPlayer {
       this.setupAudioListeners(this.audio);
     }
 
+    // Validate audio URL origin before loading
+    if (!track.url.startsWith(ARCHIVE_CONFIG.BASE_URL)) {
+      this.emitter.emit(Event.PlaybackError, { error: 'Untrusted audio source' });
+      return;
+    }
     this.audio.src = track.url;
     this.audio.load();
     this.updateMediaSession(track);

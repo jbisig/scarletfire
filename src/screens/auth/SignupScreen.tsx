@@ -7,13 +7,13 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { SocialAuthButtons } from './SocialAuthButtons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 export function SignupScreen() {
@@ -21,11 +21,15 @@ export function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signUpWithEmail, loginWithGoogle, loginWithApple, skipLogin, state } = useAuth();
+  const { signUpWithEmail, skipLogin, state } = useAuth();
 
   const handleSignup = async () => {
     if (!email || !password) {
       Alert.alert('Missing Information', 'Please enter both email and password');
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters');
       return;
     }
 
@@ -34,25 +38,6 @@ export function SignupScreen() {
     } catch (error) {
       const errorMessage = getErrorMessage(error as AuthError);
       Alert.alert('Signup Failed', errorMessage);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      const authError = error as AuthError;
-      Alert.alert('Google Sign-In Failed', authError.message || 'An error occurred');
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    try {
-      await loginWithApple();
-    } catch (error) {
-      const authError = error as AuthError;
-      if (authError.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('Apple Sign-In Failed', authError.message || 'An error occurred');
     }
   };
 
@@ -125,40 +110,7 @@ export function SignupScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Google Sign In Button */}
-              <TouchableOpacity
-                style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
-                onPress={handleGoogleSignIn}
-                disabled={state.isLoading}
-                activeOpacity={0.8}
-              >
-                <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                  <Ionicons name="logo-google" size={20} color={COLORS.textPrimary} />
-                  <Text style={styles.socialButtonText}>Continue with Google</Text>
-                </BlurView>
-              </TouchableOpacity>
-
-              {/* Apple Sign In Button (iOS only) */}
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
-                  onPress={handleAppleSignIn}
-                  disabled={state.isLoading}
-                  activeOpacity={0.8}
-                >
-                  <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                    <Ionicons name="logo-apple" size={22} color={COLORS.textPrimary} />
-                    <Text style={styles.socialButtonText}>Continue with Apple</Text>
-                  </BlurView>
-                </TouchableOpacity>
-              )}
+              <SocialAuthButtons disabled={state.isLoading} />
 
               {/* Login Link */}
               <View style={styles.loginLink}>
@@ -191,7 +143,7 @@ function getErrorMessage(error: AuthError): string {
   } else if (error.code === 'auth/invalid-email') {
     return 'Please enter a valid email address';
   } else if (error.code === 'auth/weak-password') {
-    return 'Password should be at least 6 characters';
+    return 'Password must be at least 8 characters';
   }
   return error.message || 'An error occurred. Please try again.';
 }
@@ -252,40 +204,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    ...TYPOGRAPHY.bodyLarge,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: SPACING.sm,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.surfaceFocused,
-  },
-  dividerText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textTertiary,
-    paddingHorizontal: SPACING.xl,
-  },
-  socialButton: {
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  socialButtonBlur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 28,
-    backgroundColor: COLORS.surfaceLight,
-    gap: SPACING.md,
-  },
-  socialButtonText: {
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },

@@ -21,6 +21,14 @@ export const SEARCH_LIMITS = {
   TOP_SHOWS_MULTIPLIER: 10,
   MAX_VERSIONS_PER_SHOW: 5,
   MAX_SHOW_VERSIONS: 100,
+  /** Sample size when fetching shows for song index generation */
+  SONG_INDEX_SAMPLE: 5000,
+  /** Number of top shows to process for song data */
+  SONG_INDEX_TOP_SHOWS: 500,
+  /** Batch size for parallel show detail fetches */
+  SONG_INDEX_BATCH_SIZE: 50,
+  /** Delay (ms) between batches to respect API rate limits */
+  BATCH_DELAY_MS: 1000,
 } as const;
 
 export const GRATEFUL_DEAD_YEARS = {

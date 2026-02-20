@@ -58,8 +58,7 @@ export const storage = {
   getAllKeys: () => getStorage().getAllKeys(),
 };
 
-// Cache invalidation: 7 days
-const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+import { CACHE_EXPIRY_MS } from '../constants/registry';
 
 export const mmkvStorage = {
   // Check if cache is stale

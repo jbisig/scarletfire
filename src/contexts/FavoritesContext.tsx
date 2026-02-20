@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
@@ -157,7 +157,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   // Load favorites and deletion log from AsyncStorage on mount
   useEffect(() => {
-    loadDeletionLog().then(() => loadFavorites());
+    loadDeletionLog()
+      .catch(error => favoritesLogger.error('Failed to load deletion log:', error))
+      .then(() => loadFavorites());
   }, []);
 
   // Sync favorites from cloud when user logs in
@@ -300,15 +302,23 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // O(1) lookup sets — rebuilt when favorites change
+  const favoriteShowIds = useMemo(
+    () => new Set(favoriteShows.map(fav => fav.primaryIdentifier)),
+    [favoriteShows]
+  );
+  const favoriteSongKeys = useMemo(
+    () => new Set(favoriteSongs.map(fav => `${fav.trackId}:${fav.showIdentifier}`)),
+    [favoriteSongs]
+  );
+
   const isShowFavorite = useCallback((identifier: string) => {
-    return favoriteShows.some(fav => fav.primaryIdentifier === identifier);
-  }, [favoriteShows]);
+    return favoriteShowIds.has(identifier);
+  }, [favoriteShowIds]);
 
   const isSongFavorite = useCallback((trackId: string, showIdentifier: string) => {
-    return favoriteSongs.some(
-      fav => fav.trackId === trackId && fav.showIdentifier === showIdentifier
-    );
-  }, [favoriteSongs]);
+    return favoriteSongKeys.has(`${trackId}:${showIdentifier}`);
+  }, [favoriteSongKeys]);
 
   const addFavoriteShow = async (show: GratefulDeadShow) => {
     // Add timestamp and enrich with tier data

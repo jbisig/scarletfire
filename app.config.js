@@ -58,7 +58,6 @@ export default ({ config }) => {
         permissions: [
           "android.permission.INTERNET",
           "android.permission.MODIFY_AUDIO_SETTINGS",
-          "android.permission.RECORD_AUDIO",
           "android.permission.FOREGROUND_SERVICE",
           "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
           "android.permission.WAKE_LOCK"
@@ -77,6 +76,7 @@ export default ({ config }) => {
       plugins: [
         "expo-font",
         "expo-video",
+        "expo-secure-store",
         "expo-apple-authentication",
         "@react-native-google-signin/google-signin",
         [

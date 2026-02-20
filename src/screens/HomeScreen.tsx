@@ -23,7 +23,7 @@ import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { matchesDateQuery } from '../utils/formatters';
+import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
@@ -36,6 +36,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme'
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
+import { STATE_ABBREVIATIONS } from '../constants/states';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
@@ -77,31 +78,6 @@ function getSortIcon(sortType: ShowSortType): 'arrow-up' | 'arrow-down' {
     default:
       return 'arrow-down';
   }
-}
-
-// State name to abbreviation mapping
-const STATE_ABBREVIATIONS: { [key: string]: string } = {
-  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
-  'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
-  'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
-  'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
-  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
-  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH',
-  'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC',
-  'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA',
-  'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN',
-  'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA',
-  'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
-};
-
-// Normalize string for fuzzy matching - removes apostrophes and special characters
-function normalizeForSearch(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[''`'\u2018\u2019\u201B]/g, '')  // Remove all apostrophe/quote variants
-    .replace(/[^\w\s]/g, ' ')  // Replace other punctuation with spaces
-    .replace(/\s+/g, ' ')  // Collapse multiple spaces
-    .trim();
 }
 
 // Pure filter function - moved outside component to avoid recreation on each render

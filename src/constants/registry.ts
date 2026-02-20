@@ -44,6 +44,9 @@ export const SUPABASE_TABLES = {
   PROFILES: 'profiles',
 } as const;
 
+/** Cache invalidation: 7 days */
+export const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
 // Type exports for consumers who need the key types
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
 export type CacheKey = typeof CACHE_KEYS[keyof typeof CACHE_KEYS];

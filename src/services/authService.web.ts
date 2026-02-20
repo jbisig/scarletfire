@@ -104,6 +104,8 @@ class AuthService {
   onAuthStateChanged(callback: (user: User | null) => void, onPasswordRecovery?: () => void) {
     this.getSession().then((session) => {
       callback(session?.user ?? null);
+    }).catch(() => {
+      callback(null);
     });
 
     const { data: { subscription } } = this.supabase.auth.onAuthStateChange((event, session) => {

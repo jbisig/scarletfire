@@ -1,5 +1,4 @@
-import { getClassicTier, isClassicShow, ALL_CLASSIC_SHOWS } from '../data/classicShowsTiers';
-import { GratefulDeadShow } from '../types/show.types';
+import { getClassicTier, isClassicShow } from '../data/classicShowsTiers';
 
 // Re-export for backward compatibility
 export { getClassicTier, isClassicShow };
@@ -55,22 +54,6 @@ export const ERAS: Era[] = [
     description: '1990-1995',
   },
 ];
-
-// Top Classic/Famous Grateful Dead shows - now sourced from tiered structure
-export const CLASSIC_SHOW_DATES = ALL_CLASSIC_SHOWS.map(show => show.date);
-
-export function getEraForYear(year: number): Era | null {
-  return ERAS.find(era => year >= era.startYear && year <= era.endYear) || null;
-}
-
-export function getClassicShowsByEra(era: Era, allShows: GratefulDeadShow[]): GratefulDeadShow[] {
-  return allShows.filter(show => {
-    const showYear = typeof show.year === 'number' ? show.year : parseInt(show.year, 10);
-    return showYear >= era.startYear &&
-           showYear <= era.endYear &&
-           isClassicShow(show.date);
-  });
-}
 
 // Grateful Dead 101 - Essential shows for first-time listeners
 // Curated based on community consensus from Reddit, Archive.org forums, and music publications

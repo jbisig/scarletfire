@@ -37,6 +37,37 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
 
   const currentAttribution = formatAttribution(currentVersion);
 
+  const renderVersionOptions = () =>
+    versions.map((version) => {
+      const isSelected = version.identifier === selectedVersion;
+      const attribution = formatAttribution(version);
+      return (
+        <TouchableOpacity
+          key={version.identifier}
+          style={styles.option}
+          onPress={() => handleSelect(version.identifier)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.optionInfo}>
+            <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
+              {version.source}
+            </Text>
+            <Text style={styles.optionDownloads}>
+              {formatDownloads(version.downloads)} views
+            </Text>
+            {attribution && (
+              <Text style={styles.optionAttribution} numberOfLines={2}>
+                {attribution}
+              </Text>
+            )}
+          </View>
+          {isSelected && (
+            <Ionicons name="checkmark" size={24} color={COLORS.accent} />
+          )}
+        </TouchableOpacity>
+      );
+    });
+
   return (
     <View style={styles.container}>
       {/* Current Selection - Pill Style */}
@@ -92,35 +123,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                       </TouchableOpacity>
                     </View>
                     <ScrollView style={styles.optionsList}>
-                      {versions.map((version) => {
-                        const isSelected = version.identifier === selectedVersion;
-                        const attribution = formatAttribution(version);
-                        return (
-                          <TouchableOpacity
-                            key={version.identifier}
-                            style={styles.option}
-                            onPress={() => handleSelect(version.identifier)}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.optionInfo}>
-                              <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
-                                {version.source}
-                              </Text>
-                              <Text style={styles.optionDownloads}>
-                                {formatDownloads(version.downloads)} views
-                              </Text>
-                              {attribution && (
-                                <Text style={styles.optionAttribution} numberOfLines={2}>
-                                  {attribution}
-                                </Text>
-                              )}
-                            </View>
-                            {isSelected && (
-                              <Ionicons name="checkmark" size={24} color={COLORS.accent} />
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
+                      {renderVersionOptions()}
                     </ScrollView>
                   </View>
                 </View>
@@ -149,35 +152,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
               style={styles.optionsList}
               contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             >
-              {versions.map((version) => {
-                const isSelected = version.identifier === selectedVersion;
-                const attribution = formatAttribution(version);
-                return (
-                  <TouchableOpacity
-                    key={version.identifier}
-                    style={styles.option}
-                    onPress={() => handleSelect(version.identifier)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.optionInfo}>
-                      <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
-                        {version.source}
-                      </Text>
-                      <Text style={styles.optionDownloads}>
-                        {formatDownloads(version.downloads)} views
-                      </Text>
-                      {attribution && (
-                        <Text style={styles.optionAttribution} numberOfLines={2}>
-                          {attribution}
-                        </Text>
-                      )}
-                    </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark" size={24} color={COLORS.accent} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+              {renderVersionOptions()}
             </ScrollView>
           </View>
         </Modal>
@@ -187,9 +162,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
 });
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 0,
-  },
+  container: {},
   selector: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: RADIUS.lg,

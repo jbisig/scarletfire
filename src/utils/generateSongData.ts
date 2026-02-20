@@ -1,13 +1,15 @@
 import { archiveApi } from '../services/archiveApi';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
+import { logger } from './logger';
 
 /**
  * Utility to fetch all song performance data and generate TypeScript code
  * Run this once to populate the performances array in songs.ts
  */
 export async function generateSongData() {
-  console.log('🎸 Starting to fetch all song performance data...');
-  console.log('⏰ This will take 10-15 minutes. Please be patient!');
+  const log = logger.create('SongData');
+  log.info('Starting to fetch all song performance data...');
+  log.info('This will take 10-15 minutes. Please be patient!');
 
   const startTime = Date.now();
 
@@ -15,7 +17,7 @@ export async function generateSongData() {
     // Fetch all song versions from the Archive API
     const songVersionsMap = await archiveApi.getSongVersions();
 
-    console.log(`✅ Fetched data for ${songVersionsMap.size} songs`);
+    log.info(`Fetched data for ${songVersionsMap.size} songs`);
 
     // Convert to the format we need
     const songsWithPerformances = GRATEFUL_DEAD_SONGS.map(song => {
@@ -36,15 +38,13 @@ export async function generateSongData() {
     const tsCode = generateTypeScriptCode(songsWithPerformances);
 
     const elapsed = Math.round((Date.now() - startTime) / 1000);
-    console.log(`\n⏱️  Total time: ${elapsed} seconds`);
-    console.log('\n📋 Copy the data below and replace GRATEFUL_DEAD_SONGS in src/constants/songs.ts:\n');
-    console.log('='.repeat(80));
-    console.log(tsCode);
-    console.log('='.repeat(80));
+    log.info(`Total time: ${elapsed} seconds`);
+    log.info('Copy the data below and replace GRATEFUL_DEAD_SONGS in src/constants/songs.ts:');
+    log.info(tsCode);
 
     return songsWithPerformances;
   } catch (error) {
-    console.error('❌ Error generating song data:', error);
+    log.error('Error generating song data:', error);
     throw error;
   }
 }

@@ -28,6 +28,34 @@ export function SettingsScreen() {
 
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
+  // Auth guard: show sign-in prompt for unauthenticated users
+  if (!authState.user) {
+    return (
+      <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => {
+            if (isDesktop) {
+              navigation.reset({ index: 0, routes: [{ name: 'DiscoverLanding' as never }] });
+            } else {
+              navigation.goBack();
+            }
+          }} style={styles.closeButton}>
+            <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.authGuardContainer}>
+          <Ionicons name="person-circle-outline" size={64} color={COLORS.textTertiary} />
+          <Text style={styles.authGuardTitle}>Sign in to access settings</Text>
+          <Text style={styles.authGuardSubtitle}>
+            Log in or create an account to manage your profile and preferences.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const handleClose = () => {
     if (isDesktop) {
       // On web desktop, Settings is opened via stack reset so there's no back history.
@@ -399,5 +427,21 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
+  },
+  authGuardContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xxl,
+    gap: SPACING.md,
+  },
+  authGuardTitle: {
+    ...TYPOGRAPHY.heading4,
+    marginTop: SPACING.md,
+  },
+  authGuardSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });

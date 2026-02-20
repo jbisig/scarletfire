@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { authService } from '../services/authService';
 import { User } from '@supabase/supabase-js';
@@ -167,6 +167,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Auto-expire password recovery state after 15 minutes
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout>();
+  useEffect(() => {
+    if (state.isPasswordRecovery) {
+      recoveryTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'PASSWORD_RECOVERY_COMPLETE' });
+      }, 15 * 60 * 1000);
+    }
+    return () => {
+      if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
+    };
+  }, [state.isPasswordRecovery]);
+
   // On web, the session user from JWT may lack full metadata (e.g. Google avatar_url).
   // Fetch the complete user from the API to ensure we have all fields.
   useEffect(() => {
@@ -189,7 +202,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SKIP_LOGIN' });
       }
     };
-    checkSkipStatus();
+    checkSkipStatus().catch(() => {
+      // Non-critical — app works without skip status
+    });
   }, [state.user]);
 
   const loginWithEmail = async (email: string, password: string) => {

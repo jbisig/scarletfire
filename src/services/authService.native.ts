@@ -211,10 +211,15 @@ class AuthService {
     // Get initial session
     this.getSession().then((session) => {
       callback(session?.user ?? null);
+    }).catch(() => {
+      callback(null);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = this.supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = this.supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && onPasswordRecovery) {
+        onPasswordRecovery();
+      }
       callback(session?.user ?? null);
     });
 

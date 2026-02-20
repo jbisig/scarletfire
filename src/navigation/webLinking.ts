@@ -33,9 +33,12 @@ const songPerformancesRoute = {
 };
 
 // ShowDetail: /show/{date}/{track-title}
+const sanitizeIdentifier = (id: string) => decodeURIComponent(id).replace(/[^a-zA-Z0-9._-]/g, '');
+
 const showDetailRoute = {
   path: 'show/:identifier/:trackTitle?',
   parse: {
+    identifier: sanitizeIdentifier,
     trackTitle: parseTrackSlug,
   },
   stringify: {

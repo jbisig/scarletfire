@@ -661,7 +661,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.remove();
-  }, [progressAnim, recordTrackPlay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordTrackPlay]); // progressAnim excluded — only used for setValue(), not conditional logic
 
   const loadTrack = useCallback(async (track: Track, show: ShowDetail, playlist: Track[]) => {
     // If in radio mode, stop radio first

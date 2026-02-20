@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -61,6 +61,8 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
   const [error, setError] = useState<string | null>(null);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const { loginWithEmail, signUpWithEmail, loginWithGoogle, resetPasswordForEmail, skipLogin, state } = useAuth();
+  const failedAttemptsRef = useRef(0);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
 
   // Sync screen when modal opens with a new initialScreen
   React.useEffect(() => {
@@ -81,6 +83,11 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
   }, [resetForm, onClose]);
 
   const handleLogin = useCallback(async () => {
+    if (Date.now() < cooldownUntil) {
+      const seconds = Math.ceil((cooldownUntil - Date.now()) / 1000);
+      setError(`Too many attempts. Please try again in ${seconds} seconds.`);
+      return;
+    }
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
@@ -88,15 +95,25 @@ function WebAuthModalContent({ visible, onClose, initialScreen }: { visible: boo
     try {
       setError(null);
       await loginWithEmail(email, password);
+      failedAttemptsRef.current = 0;
       handleClose();
     } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      failedAttemptsRef.current += 1;
+      if (failedAttemptsRef.current >= 3) {
+        const delay = Math.min(1000 * Math.pow(2, failedAttemptsRef.current - 3), 30000);
+        setCooldownUntil(Date.now() + delay);
+      }
       setError(getLoginErrorMessage(err));
     }
-  }, [email, password, loginWithEmail, handleClose]);
+  }, [email, password, loginWithEmail, handleClose, cooldownUntil]);
 
   const handleSignup = useCallback(async () => {
     if (!email || !password) {
       setError('Please enter both email and password');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     try {
@@ -313,7 +330,7 @@ function getLoginErrorMessage(error: { code?: string; message?: string }): strin
 function getSignupErrorMessage(error: { code?: string; message?: string }): string {
   if (error.code === 'auth/email-already-in-use') return 'An account with this email already exists';
   if (error.code === 'auth/invalid-email') return 'Please enter a valid email address';
-  if (error.code === 'auth/weak-password') return 'Password should be at least 6 characters';
+  if (error.code === 'auth/weak-password') return 'Password must be at least 8 characters';
   return error.message || 'An error occurred. Please try again.';
 }
 

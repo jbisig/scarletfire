@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,13 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { SocialAuthButtons } from './SocialAuthButtons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 export function LoginScreen() {
@@ -21,9 +21,16 @@ export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { loginWithEmail, loginWithGoogle, loginWithApple, skipLogin, state } = useAuth();
+  const { loginWithEmail, skipLogin, state } = useAuth();
+  const failedAttemptsRef = useRef(0);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
 
   const handleLogin = async () => {
+    if (Date.now() < cooldownUntil) {
+      const seconds = Math.ceil((cooldownUntil - Date.now()) / 1000);
+      Alert.alert('Please Wait', `Too many attempts. Try again in ${seconds} seconds.`);
+      return;
+    }
     if (!email || !password) {
       Alert.alert('Missing Information', 'Please enter both email and password');
       return;
@@ -31,28 +38,15 @@ export function LoginScreen() {
 
     try {
       await loginWithEmail(email, password);
+      failedAttemptsRef.current = 0;
     } catch (error) {
+      failedAttemptsRef.current += 1;
+      if (failedAttemptsRef.current >= 3) {
+        const delay = Math.min(1000 * Math.pow(2, failedAttemptsRef.current - 3), 30000);
+        setCooldownUntil(Date.now() + delay);
+      }
       const errorMessage = getErrorMessage(error as AuthError);
       Alert.alert('Login Failed', errorMessage);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      const authError = error as AuthError;
-      Alert.alert('Google Sign-In Failed', authError.message || 'An error occurred');
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    try {
-      await loginWithApple();
-    } catch (error) {
-      const authError = error as AuthError;
-      if (authError.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('Apple Sign-In Failed', authError.message || 'An error occurred');
     }
   };
 
@@ -133,40 +127,7 @@ export function LoginScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Google Sign In Button */}
-              <TouchableOpacity
-                style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
-                onPress={handleGoogleSignIn}
-                disabled={state.isLoading}
-                activeOpacity={0.8}
-              >
-                <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                  <Ionicons name="logo-google" size={20} color={COLORS.textPrimary} />
-                  <Text style={styles.socialButtonText}>Continue with Google</Text>
-                </BlurView>
-              </TouchableOpacity>
-
-              {/* Apple Sign In Button (iOS only) */}
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={[styles.socialButton, state.isLoading && styles.buttonDisabled]}
-                  onPress={handleAppleSignIn}
-                  disabled={state.isLoading}
-                  activeOpacity={0.8}
-                >
-                  <BlurView intensity={6} tint="light" style={styles.socialButtonBlur}>
-                    <Ionicons name="logo-apple" size={22} color={COLORS.textPrimary} />
-                    <Text style={styles.socialButtonText}>Continue with Apple</Text>
-                  </BlurView>
-                </TouchableOpacity>
-              )}
+              <SocialAuthButtons disabled={state.isLoading} />
 
             {/* Sign Up Link */}
             <View style={styles.signupLink}>
@@ -262,40 +223,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    ...TYPOGRAPHY.bodyLarge,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: SPACING.sm,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.surfaceFocused,
-  },
-  dividerText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textTertiary,
-    paddingHorizontal: SPACING.xl,
-  },
-  socialButton: {
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  socialButtonBlur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 28,
-    backgroundColor: COLORS.surfaceLight,
-    gap: SPACING.md,
-  },
-  socialButtonText: {
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },

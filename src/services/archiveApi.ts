@@ -142,6 +142,7 @@ class ArchiveApiService {
     try {
       let query = 'collection:GratefulDead AND mediatype:etree';
       if (year) {
+        if (!/^\d{4}$/.test(year)) throw new Error('Invalid year format');
         query += ` AND year:${year}`;
       }
 
@@ -162,6 +163,9 @@ class ArchiveApiService {
       }
 
       const data: ArchiveSearchResponse = await response.json();
+      if (!Array.isArray(data?.response?.docs)) {
+        throw new Error('Unexpected API response format');
+      }
       return data.response.docs;
     } catch (error) {
       this.handleError(error, 'Failed to fetch shows');
@@ -254,6 +258,9 @@ class ArchiveApiService {
       }
 
       const data: ArchiveSearchResponse = await response.json();
+      if (!Array.isArray(data?.response?.docs)) {
+        throw new Error('Unexpected API response format');
+      }
 
       // Group by date and get unique shows with highest downloads
       const showsByDate = new Map<string, {
@@ -318,6 +325,7 @@ class ArchiveApiService {
    */
   async getShowVersions(date: string): Promise<RecordingVersion[]> {
     try {
+      if (!/^\d{4}-\d{2}-\d{2}/.test(date)) return [];
       const query = `collection:GratefulDead AND mediatype:etree AND date:${date}`;
       const params = {
         q: query,
@@ -334,6 +342,7 @@ class ArchiveApiService {
       }
 
       const data: ArchiveSearchResponse = await response.json();
+      if (!Array.isArray(data?.response?.docs)) return [];
 
       // Sort by downloads and return top versions
       return data.response.docs
@@ -418,18 +427,17 @@ class ArchiveApiService {
   async getSongVersions(): Promise<Map<string, Array<{ date: string; identifier: string; venue?: string }>>> {
     try {
       // Fetch a large sample of shows to get diverse song list
-      const allDocs = await this.searchShows(0, 5000);
+      const allDocs = await this.searchShows(0, SEARCH_LIMITS.SONG_INDEX_SAMPLE);
 
       const songToShows = new Map<string, Array<{ date: string; identifier: string; venue?: string }>>();
 
       // Fetch details for a sample of shows to build song index
-      // We'll fetch the top 500 most popular shows for better song coverage
       const topShows = allDocs
         .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, 500);
+        .slice(0, SEARCH_LIMITS.SONG_INDEX_TOP_SHOWS);
 
       // Process shows in batches to avoid overwhelming the API
-      const batchSize = 50;
+      const batchSize = SEARCH_LIMITS.SONG_INDEX_BATCH_SIZE;
       for (let i = 0; i < topShows.length; i += batchSize) {
         const batch = topShows.slice(i, i + batchSize);
         const showPromises = batch.map(doc =>
@@ -464,7 +472,7 @@ class ArchiveApiService {
 
         // Small delay between batches to be respectful to the API
         if (i + batchSize < topShows.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, SEARCH_LIMITS.BATCH_DELAY_MS));
         }
       }
 
@@ -483,6 +491,11 @@ class ArchiveApiService {
    * Get detailed metadata for a specific show
    */
   async getShowDetail(identifier: string): Promise<ShowDetail> {
+    // Validate identifier to prevent path traversal
+    if (!/^[a-zA-Z0-9._-]+$/.test(identifier)) {
+      throw new Error('Invalid show identifier');
+    }
+
     // Always check cache first
     const cached = this.showDetailCache.get(identifier);
     const cacheIsValid = cached && Date.now() - cached.timestamp < this.CACHE_TTL;
@@ -500,6 +513,9 @@ class ArchiveApiService {
       }
 
       const data: ArchiveMetadataResponse = await response.json();
+      if (!data?.metadata || !Array.isArray(data?.files)) {
+        throw new Error('Unexpected metadata response format');
+      }
       const { metadata, files } = data;
       const audioFiles = this.selectAudioFiles(files);
 

@@ -17,7 +17,7 @@ logger.config.debug('Config sources available:', {
   hasExpoConfig: !!expoConfig,
   hasManifest: !!manifest,
   hasManifest2: !!manifest2,
-  expoConfigExtra: expoConfig?.extra,
+  extraKeys: Object.keys(expoConfig?.extra ?? {}),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

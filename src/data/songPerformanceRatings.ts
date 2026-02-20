@@ -7662,7 +7662,7 @@ export const TIER_1_SONG_PERFORMANCES: RatedSongPerformance[] = [
 ];
 
 // Tier 2: Excellent performances (2 stars) - 1773 performances
-export const TIER_2_SONG_PERFORMANCES: RatedSongPerformance[] = [
+const TIER_2_SONG_PERFORMANCES: RatedSongPerformance[] = [
   {
     songTitle: "Grateful Dead - Playing In The Band",
     showDate: "1974-08-06",
@@ -21658,7 +21658,7 @@ export const TIER_2_SONG_PERFORMANCES: RatedSongPerformance[] = [
 ];
 
 // Tier 3: Notable performances (1 star) - 47 performances
-export const TIER_3_SONG_PERFORMANCES: RatedSongPerformance[] = [
+const TIER_3_SONG_PERFORMANCES: RatedSongPerformance[] = [
   {
     songTitle: "Grateful Dead - Playing In The Band",
     showDate: "1974-06-16",
@@ -22038,7 +22038,7 @@ export const TIER_3_SONG_PERFORMANCES: RatedSongPerformance[] = [
 ];
 
 // Combined list for easy lookup (includes HeadyVersion + Community ratings)
-export const ALL_RATED_SONG_PERFORMANCES: RatedSongPerformance[] = [
+const ALL_RATED_SONG_PERFORMANCES: RatedSongPerformance[] = [
   ...TIER_1_SONG_PERFORMANCES,
   ...TIER_2_SONG_PERFORMANCES,
   ...TIER_3_SONG_PERFORMANCES,
@@ -22098,14 +22098,3 @@ function normalizeSongTitleForLookup(title: string): string {
     .trim();
 }
 
-/**
- * Get all rated performances for a specific song
- */
-export function getRatedPerformancesForSong(
-  songTitle: string
-): RatedSongPerformance[] {
-  const normalized = normalizeSongTitleForLookup(songTitle);
-  return ALL_RATED_SONG_PERFORMANCES
-    .filter(perf => normalizeSongTitleForLookup(perf.songTitle) === normalized)
-    .sort((a, b) => a.tier - b.tier);
-}
