@@ -8,7 +8,7 @@ import { useWebAuthModal } from './WebAuthModal';
 import { ProfileImage } from '../ProfileImage';
 import { COLORS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '../../constants/theme';
 
-export function WebProfileAvatar() {
+export const WebProfileAvatar = React.memo(function WebProfileAvatar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const avatarRef = useRef<View>(null);
@@ -89,7 +89,7 @@ export function WebProfileAvatar() {
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

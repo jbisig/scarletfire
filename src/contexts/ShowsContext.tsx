@@ -8,7 +8,6 @@ interface ShowsContextType {
   showsByYear: ShowsByYear;
   isLoading: boolean;
   error: string | null;
-  showDetailsCache: Map<string, ShowDetail>;
   getShowDetail: (identifier: string) => Promise<ShowDetail>;
   getShowVersions: (date: string) => Promise<RecordingVersion[]>;
 }
@@ -33,35 +32,24 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
-  // Use ref for cache - stable reference, mutated directly, no re-renders needed
-  const showDetailsCacheRef = useRef(new Map<string, ShowDetail>());
   // Track in-flight requests to prevent duplicate concurrent API calls
   const inFlightRequestsRef = useRef(new Map<string, Promise<ShowDetail>>());
 
   const getShowDetail = useCallback(async (identifier: string): Promise<ShowDetail> => {
-    // Check cache first
-    if (showDetailsCacheRef.current.has(identifier)) {
-      return showDetailsCacheRef.current.get(identifier)!;
-    }
-
-    // Check if request is already in-flight
+    // Check if request is already in-flight (archiveApi handles its own cache)
     if (inFlightRequestsRef.current.has(identifier)) {
       return inFlightRequestsRef.current.get(identifier)!;
     }
 
-    // Create new request and track it
+    // Delegate to archiveApi which has its own TTL-based cache
     const requestPromise = archiveApi.getShowDetail(identifier)
-      .then(detail => {
-        showDetailsCacheRef.current.set(identifier, detail);
-        return detail;
-      })
       .finally(() => {
         inFlightRequestsRef.current.delete(identifier);
       });
 
     inFlightRequestsRef.current.set(identifier, requestPromise);
     return requestPromise;
-  }, []); // Empty deps - ref is stable
+  }, []);
 
   const getShowVersions = useCallback(async (date: string): Promise<RecordingVersion[]> => {
     return archiveApi.getShowVersions(date);
@@ -73,7 +61,6 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
         showsByYear,
         isLoading,
         error,
-        showDetailsCache: showDetailsCacheRef.current,
         getShowDetail,
         getShowVersions,
       }}

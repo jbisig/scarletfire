@@ -17,17 +17,22 @@ function getBreakpoint(width: number): Breakpoint {
   return 'mobile';
 }
 
+// Stable constant for native — avoids creating new object on every call
+const NATIVE_RESPONSIVE = {
+  breakpoint: 'mobile' as Breakpoint,
+  isMobile: true,
+  isTablet: false,
+  isDesktop: false,
+  windowWidth: 0,
+};
+
 export function useResponsive() {
   const [windowWidth, setWindowWidth] = useState(
-    Dimensions.get('window').width
+    Platform.OS === 'web' ? Dimensions.get('window').width : 0
   );
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-
-    const handleResize = () => {
-      setWindowWidth(Dimensions.get('window').width);
-    };
 
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setWindowWidth(window.width);
@@ -38,15 +43,9 @@ export function useResponsive() {
     };
   }, []);
 
-  // On native, always return mobile
+  // On native, always return stable constant
   if (Platform.OS !== 'web') {
-    return {
-      breakpoint: 'mobile' as Breakpoint,
-      isMobile: true,
-      isTablet: false,
-      isDesktop: false,
-      windowWidth,
-    };
+    return NATIVE_RESPONSIVE;
   }
 
   const breakpoint = getBreakpoint(windowWidth);

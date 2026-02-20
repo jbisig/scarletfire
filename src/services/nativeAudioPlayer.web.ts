@@ -88,10 +88,7 @@ class NativeAudioPlayer {
 
   async stop(): Promise<void> {
     this.stopProgressLoop();
-    if (this.audio) {
-      this.audio.pause();
-      this.audio.src = '';
-    }
+    this.releaseAudio();
     this.setState(State.Stopped);
     this.clearMediaSession();
   }
@@ -158,6 +155,11 @@ class NativeAudioPlayer {
 
   async reset(): Promise<void> {
     await this.stop();
+    this.releaseAudio();
+    if (this.preloadAudio) {
+      this.preloadAudio.src = '';
+      this.preloadAudio = null;
+    }
     this.queue = [];
     this.currentIndex = -1;
     this.currentState = State.None;
@@ -197,6 +199,15 @@ class NativeAudioPlayer {
 
   // --- Private helpers ---
 
+  private releaseAudio() {
+    if (this.audio) {
+      this.audio.pause();
+      this.audio.removeAttribute('src');
+      this.audio.load(); // Forces release of network resources
+      this.audio = null;
+    }
+  }
+
   private setState(state: State) {
     this.currentState = state;
     this.emitter.emit(Event.PlaybackState, { state });
@@ -209,11 +220,10 @@ class NativeAudioPlayer {
     this.stopProgressLoop();
     this.setState(State.Buffering);
 
-    // Reuse or create audio element
-    if (!this.audio) {
-      this.audio = new Audio();
-      this.setupAudioListeners(this.audio);
-    }
+    // Release previous audio element and create fresh one
+    this.releaseAudio();
+    this.audio = new Audio();
+    this.setupAudioListeners(this.audio);
 
     // Validate audio URL origin before loading
     if (!track.url.startsWith(ARCHIVE_CONFIG.BASE_URL)) {

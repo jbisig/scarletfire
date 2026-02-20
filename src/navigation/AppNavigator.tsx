@@ -273,10 +273,12 @@ function MainTabsWithPlayer() {
       <View style={styles.miniPlayerContainer}>
         <MiniPlayer onPress={() => setFullPlayerVisible(true)} />
       </View>
-      <FullPlayer
-        visible={isFullPlayerVisible}
-        onClose={() => setFullPlayerVisible(false)}
-      />
+      {isFullPlayerVisible && (
+        <FullPlayer
+          visible={isFullPlayerVisible}
+          onClose={() => setFullPlayerVisible(false)}
+        />
+      )}
     </View>
   );
 }

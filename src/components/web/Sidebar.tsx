@@ -24,7 +24,7 @@ interface SidebarProps {
   onNavigate: (tabKey: string) => void;
 }
 
-export function Sidebar({ activeTab, onNavigate }: SidebarProps) {
+export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: SidebarProps) {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -57,7 +57,7 @@ export function Sidebar({ activeTab, onNavigate }: SidebarProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

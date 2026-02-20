@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
 import { navigationRef } from '../../navigation/navigationRef';
@@ -7,32 +7,8 @@ import { usePlayer } from '../../contexts/PlayerContext';
 import { useVideoBackground } from '../../contexts/VideoBackgroundContext';
 import { useFavorites, FavoriteSong } from '../../contexts/FavoritesContext';
 import { formatDate, formatTime, getVenueFromShow } from '../../utils/formatters';
+import { resolveVideoUri } from '../../utils/resolveVideoUri';
 import { COLORS, RADIUS, WEB_LAYOUT } from '../../constants/theme';
-
-// Resolve video source to a URL string for HTML5 video
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') {
-    // On web, require() for assets often returns a string URL directly
-    return source;
-  }
-  if (typeof source === 'number') {
-    // require() result — try Image.resolveAssetSource
-    try {
-      const resolved = Image.resolveAssetSource(source);
-      return resolved?.uri || '';
-    } catch {
-      return '';
-    }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) {
-    return source.uri;
-  }
-  // Last resort: try default export pattern from metro
-  if (source && typeof source === 'object' && 'default' in (source as any)) { // eslint-disable-line @typescript-eslint/no-explicit-any
-    return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  }
-  return '';
-}
 
 // HTML5 video element rendered via React.createElement for React Native Web compatibility
 function VideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
@@ -61,6 +37,159 @@ function VideoBackground({ uri, videoId, onError }: { uri: string; videoId: stri
     },
   });
 }
+
+/**
+ * Self-contained progress row: time display + seekable progress bar.
+ * Owns its own 1-second re-render interval so the parent PlayerBar doesn't re-render for time updates.
+ */
+const ProgressRow = React.memo(function ProgressRow({
+  progressRef,
+  progressAnim,
+  seekTo,
+  trackDurationSec,
+  trackId,
+}: {
+  progressRef: React.MutableRefObject<{ position: number; duration: number }>;
+  progressAnim: Animated.Value;
+  seekTo: (positionMs: number) => void;
+  trackDurationSec: number;
+  trackId: string;
+}) {
+  const progressBarRef = useRef<View>(null);
+  const timeDisplayRef = useRef({ position: 0, duration: 0 });
+  const [, forceTimeUpdate] = useState(0);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(0);
+  const isDraggingRef = useRef(false);
+  const [isProgressHovered, setIsProgressHovered] = useState(false);
+
+  const trackDurationMs = trackDurationSec ? trackDurationSec * 1000 : 0;
+
+  const getDurationMs = useCallback(() => {
+    const refDuration = progressRef.current.duration;
+    return refDuration > 0 ? refDuration : trackDurationMs;
+  }, [progressRef, trackDurationMs]);
+
+  useEffect(() => {
+    timeDisplayRef.current = { ...progressRef.current };
+    forceTimeUpdate(n => n + 1);
+
+    const interval = setInterval(() => {
+      if (!isDraggingRef.current) {
+        const prev = timeDisplayRef.current;
+        const next = progressRef.current;
+        if (Math.abs(next.position - prev.position) >= 1000 || prev.duration !== next.duration) {
+          timeDisplayRef.current = { ...next };
+          forceTimeUpdate(n => n + 1);
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [progressRef, trackId]);
+
+  const handleMouseDown = useCallback(
+    (e: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      const clientX = e.nativeEvent?.clientX ?? e.clientX;
+      const barNode = progressBarRef.current as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (!barNode) return;
+
+      const domNode = barNode.getNode?.() || barNode;
+      const rect = domNode.getBoundingClientRect?.();
+      if (!rect) return;
+
+      const barLeft = rect.left;
+      const barWidth = rect.width;
+      const durationMs = getDurationMs();
+
+      const calcPosition = (cx: number) => {
+        const pct = Math.max(0, Math.min(1, (cx - barLeft) / barWidth));
+        return pct * durationMs;
+      };
+
+      const position = calcPosition(clientX);
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      setDragPosition(position);
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        if (!isDraggingRef.current) return;
+        setDragPosition(calcPosition(moveEvent.clientX));
+      };
+
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        if (!isDraggingRef.current) return;
+        const pos = calcPosition(upEvent.clientX);
+        setDragPosition(pos);
+        seekTo(pos);
+        timeDisplayRef.current = { position: pos, duration: durationMs };
+        forceTimeUpdate(n => n + 1);
+        setTimeout(() => {
+          setIsDragging(false);
+          isDraggingRef.current = false;
+          setIsProgressHovered(false);
+        }, 200);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [seekTo, getDurationMs]
+  );
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const thumbLeft = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const timeDisplay = timeDisplayRef.current;
+  const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDurationMs;
+  const currentPosition = isDragging ? dragPosition : timeDisplay.position;
+  const dragProgress = duration > 0 ? Math.max(0, Math.min(1, dragPosition / duration)) : 0;
+
+  return (
+    <View style={styles.progressRow}>
+      <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
+      <View
+        ref={progressBarRef}
+        style={styles.progressBarWrapper}
+        // @ts-ignore - web mouse events
+        onMouseDown={handleMouseDown}
+        onMouseEnter={() => setIsProgressHovered(true)}
+        onMouseLeave={() => { if (!isDraggingRef.current) setIsProgressHovered(false); }}
+      >
+        <View style={styles.progressBarBackground}>
+          <Animated.View
+            style={[
+              styles.progressBarFill,
+              { width: isDragging ? `${dragProgress * 100}%` : progressWidth },
+            ]}
+          />
+        </View>
+        {(isProgressHovered || isDragging) && (
+          <Animated.View
+            style={[
+              styles.progressThumb,
+              { left: isDragging ? `${dragProgress * 100}%` : thumbLeft },
+              isDragging && styles.progressThumbActive,
+            ]}
+            pointerEvents="none"
+          />
+        )}
+      </View>
+      <Text style={styles.timeText}>{formatTime(duration)}</Text>
+    </View>
+  );
+});
 
 export function PlayerBar() {
   const {
@@ -101,104 +230,10 @@ export function PlayerBar() {
     }
   }, [state.currentTrack, state.currentShow, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
 
-  const progressBarRef = useRef<View>(null);
-
-  // Time display via ref to avoid re-renders on every update
-  // Only force re-render when position changes by >= 1 second
-  const timeDisplayRef = useRef({ position: 0, duration: 0 });
-  const [, forceTimeUpdate] = useState(0);
-
   // Hover state for track info and skip buttons
   const [isTrackInfoHovered, setIsTrackInfoHovered] = useState(false);
   const [isSkipBackHovered, setIsSkipBackHovered] = useState(false);
   const [isSkipForwardHovered, setIsSkipForwardHovered] = useState(false);
-
-  // Drag and hover state for progress bar
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPosition, setDragPosition] = useState(0);
-  const isDraggingRef = useRef(false);
-  const [isProgressHovered, setIsProgressHovered] = useState(false);
-
-  // Helper to get current duration from ref or track metadata
-  const getDurationMs = useCallback(() => {
-    const refDuration = progressRef.current.duration;
-    const trackDurationMs = state.currentTrack?.duration ? state.currentTrack.duration * 1000 : 0;
-    return refDuration > 0 ? refDuration : trackDurationMs;
-  }, [progressRef, state.currentTrack]);
-
-  useEffect(() => {
-    // Update ref immediately
-    timeDisplayRef.current = { ...progressRef.current };
-    forceTimeUpdate(n => n + 1);
-
-    // Update every second, but only re-render if changed by >= 1 second
-    const interval = setInterval(() => {
-      if (!isDraggingRef.current) {
-        const prev = timeDisplayRef.current;
-        const next = progressRef.current;
-        if (Math.abs(next.position - prev.position) >= 1000 || prev.duration !== next.duration) {
-          timeDisplayRef.current = { ...next };
-          forceTimeUpdate(n => n + 1);
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [progressRef, state.currentTrack]);
-
-  // Mouse event handlers for click-and-drag seeking
-  // Uses getBoundingClientRect directly (web-only component) to avoid async measure() issues
-  const handleMouseDown = useCallback(
-    (e: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-      const clientX = e.nativeEvent?.clientX ?? e.clientX;
-      const barNode = progressBarRef.current as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (!barNode) return;
-
-      // Get rect synchronously via DOM API
-      const domNode = barNode.getNode?.() || barNode;
-      const rect = domNode.getBoundingClientRect?.();
-      if (!rect) return;
-
-      const barLeft = rect.left;
-      const barWidth = rect.width;
-
-      const durationMs = getDurationMs();
-
-      const calcPosition = (cx: number) => {
-        const pct = Math.max(0, Math.min(1, (cx - barLeft) / barWidth));
-        return pct * durationMs;
-      };
-
-      const position = calcPosition(clientX);
-      isDraggingRef.current = true;
-      setIsDragging(true);
-      setDragPosition(position);
-
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        setDragPosition(calcPosition(moveEvent.clientX));
-      };
-
-      const handleMouseUp = (upEvent: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        const pos = calcPosition(upEvent.clientX);
-        setDragPosition(pos);
-        seekTo(pos);
-        timeDisplayRef.current = { position: pos, duration: durationMs };
-        forceTimeUpdate(n => n + 1);
-        setTimeout(() => {
-          setIsDragging(false);
-          isDraggingRef.current = false;
-          setIsProgressHovered(false);
-        }, 200);
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    },
-    [seekTo, getDurationMs]
-  );
 
   if (!state.currentTrack) {
     return (
@@ -209,26 +244,6 @@ export function PlayerBar() {
       </View>
     );
   }
-
-  // Animated width for progress bar
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  // Animated thumb position (same source as fill bar)
-  const thumbLeft = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  const timeDisplay = timeDisplayRef.current;
-  const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
-  const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDuration;
-  const currentPosition = isDragging ? dragPosition : timeDisplay.position;
-  const dragProgress = duration > 0 ? Math.max(0, Math.min(1, dragPosition / duration)) : 0;
 
   return (
     <View style={styles.container}>
@@ -332,38 +347,14 @@ export function PlayerBar() {
             </TouchableOpacity>
           </View>
 
-          {/* Progress bar with time */}
-          <View style={styles.progressRow}>
-            <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
-            <View
-              ref={progressBarRef}
-              style={styles.progressBarWrapper}
-              // @ts-ignore - web mouse events
-              onMouseDown={handleMouseDown}
-              onMouseEnter={() => setIsProgressHovered(true)}
-              onMouseLeave={() => { if (!isDraggingRef.current) setIsProgressHovered(false); }}
-            >
-              <View style={styles.progressBarBackground}>
-                <Animated.View
-                  style={[
-                    styles.progressBarFill,
-                    { width: isDragging ? `${dragProgress * 100}%` : progressWidth },
-                  ]}
-                />
-              </View>
-              {(isProgressHovered || isDragging) && (
-                <Animated.View
-                  style={[
-                    styles.progressThumb,
-                    { left: isDragging ? `${dragProgress * 100}%` : thumbLeft },
-                    isDragging && styles.progressThumbActive,
-                  ]}
-                  pointerEvents="none"
-                />
-              )}
-            </View>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
-          </View>
+          {/* Progress bar with time — isolated to avoid re-rendering controls every second */}
+          <ProgressRow
+            progressRef={progressRef}
+            progressAnim={progressAnim}
+            seekTo={seekTo}
+            trackDurationSec={state.currentTrack.duration || 0}
+            trackId={state.currentTrack.id}
+          />
         </View>
       </View>
     </View>

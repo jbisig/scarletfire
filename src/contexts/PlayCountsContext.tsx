@@ -161,54 +161,65 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     return maxPlayCount;
   }, [showPlayCountsIndex]);
 
-  const recordTrackPlay = async (trackTitle: string, showIdentifier: string, showDate: string) => {
+  // Keep auth state in a ref so recordTrackPlay doesn't need authState as a dependency
+  const authStateRef = useRef(authState);
+  useEffect(() => {
+    authStateRef.current = authState;
+  }, [authState]);
+
+  const recordTrackPlay = useCallback(async (trackTitle: string, showIdentifier: string, showDate: string) => {
     const now = Date.now();
     const key = `${trackTitle}:${showIdentifier}`;
-    const existing = playCountsMap.get(key);
 
-    const newMap = new Map(playCountsMap);
+    setPlayCountsMap(prev => {
+      const existing = prev.get(key);
+      const newMap = new Map(prev);
 
-    if (existing) {
-      // Increment existing count
-      newMap.set(key, {
-        ...existing,
-        count: existing.count + 1,
-        lastPlayedAt: now,
-      });
-    } else {
-      // Create new entry
-      newMap.set(key, {
-        trackTitle,
-        showIdentifier,
-        showDate,
-        count: 1,
-        firstPlayedAt: now,
-        lastPlayedAt: now,
-      });
-    }
+      if (existing) {
+        newMap.set(key, {
+          ...existing,
+          count: existing.count + 1,
+          lastPlayedAt: now,
+        });
+      } else {
+        newMap.set(key, {
+          trackTitle,
+          showIdentifier,
+          showDate,
+          count: 1,
+          firstPlayedAt: now,
+          lastPlayedAt: now,
+        });
+      }
 
-    setPlayCountsMap(newMap);
-    await savePlayCounts(newMap);
+      savePlayCounts(newMap);
 
-    // Sync to cloud if authenticated - pass the already-updated list directly
-    if (authState.isAuthenticated && authState.user) {
-      const playCounts = Array.from(newMap.values());
-      playCountsCloudService.syncPlayCounts(authState.user.id, playCounts).catch((error) => {
-        playCountsLogger.error('Failed to sync play counts to cloud:', error);
-        showSyncErrorToast();
-      });
-    }
-  };
+      // Sync to cloud if authenticated
+      const auth = authStateRef.current;
+      if (auth.isAuthenticated && auth.user) {
+        const playCounts = Array.from(newMap.values());
+        playCountsCloudService.syncPlayCounts(auth.user.id, playCounts).catch((error) => {
+          playCountsLogger.error('Failed to sync play counts to cloud:', error);
+          showSyncErrorToast();
+        });
+      }
+
+      return newMap;
+    });
+  }, [showSyncErrorToast]);
+
+  // Memoize array conversion so it only happens when map changes
+  const playCountsArray = useMemo(() => Array.from(playCountsMap.values()), [playCountsMap]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
-    playCounts: Array.from(playCountsMap.values()), // Convert Map to array for compatibility
+    playCounts: playCountsArray,
     getPlayCount,
     recordTrackPlay,
     isLoading,
     hasShowBeenPlayed,
     getShowPlayCount,
-  }), [playCountsMap, getPlayCount, isLoading, hasShowBeenPlayed, getShowPlayCount]);
+  }), [playCountsArray, getPlayCount, recordTrackPlay, isLoading, hasShowBeenPlayed, getShowPlayCount]);
 
   return (
     <PlayCountsContext.Provider value={contextValue}>

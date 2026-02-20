@@ -1,4 +1,4 @@
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { HorizontalShowCard } from './HorizontalShowCard';
@@ -37,14 +37,14 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
     return null;
   }
 
-  const renderItem = ({ item, index }: { item: GratefulDeadShow; index: number }) => (
+  const renderItem = useCallback(({ item, index }: { item: GratefulDeadShow; index: number }) => (
     <HorizontalShowCard
       show={item}
       onPress={onShowPress}
       index={index}
       color={color}
     />
-  );
+  ), [onShowPress, color]);
 
   // On desktop web, render a wrapping grid instead of a horizontal scroll
   if (isDesktop) {
@@ -77,13 +77,15 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={ItemSeparator}
         extraData={extraData}
         nestedScrollEnabled
       />
     </View>
   );
 }));
+
+const ItemSeparator = () => <View style={styles.separator} />;
 
 const styles = StyleSheet.create({
   container: {

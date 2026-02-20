@@ -27,6 +27,18 @@ class ArchiveApiService {
   private inFlightRequests: Map<string, Promise<Response>> = new Map();
 
   /**
+   * Synchronously get a cached show detail (returns null if not cached or expired).
+   * Used by ShowCard to avoid triggering API calls just to get track count.
+   */
+  getCachedShowDetail(identifier: string): ShowDetail | null {
+    const cached = this.showDetailCache.get(identifier);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  /**
    * Handle API errors consistently
    */
   private handleError(error: unknown, context: string): never {

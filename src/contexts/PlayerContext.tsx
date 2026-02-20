@@ -14,26 +14,28 @@ import showsData from '../data/shows.json';
 // Load shows data for finding next chronological show
 const allShowsByYear = showsData as ShowsByYear;
 
-// Helper function to find the next show after a given date
+// Pre-compute sorted show list once at module level (avoids O(n) per lookup)
+const allShowsSorted: GratefulDeadShow[] = Object.values(allShowsByYear)
+  .flat()
+  .sort((a, b) => a.date.substring(0, 10).localeCompare(b.date.substring(0, 10)));
+
+// Helper function to find the next show after a given date (binary search)
 function findNextShow(currentDate: string): GratefulDeadShow | null {
-  const allShows: GratefulDeadShow[] = [];
+  const target = currentDate.substring(0, 10);
+  let low = 0;
+  let high = allShowsSorted.length - 1;
 
-  // Collect all shows from all years
-  Object.values(allShowsByYear).forEach(yearShows => {
-    allShows.push(...yearShows);
-  });
+  while (low <= high) {
+    const mid = (low + high) >>> 1;
+    const midDate = allShowsSorted[mid].date.substring(0, 10);
+    if (midDate <= target) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
 
-  // Normalize date to YYYY-MM-DD format for comparison
-  const normalizeDate = (date: string) => date.substring(0, 10);
-  const currentDateNormalized = normalizeDate(currentDate);
-
-  // Filter shows that are STRICTLY after the current date and sort by date
-  const futureShows = allShows
-    .filter(s => normalizeDate(s.date) > currentDateNormalized)
-    .sort((a, b) => normalizeDate(a.date).localeCompare(normalizeDate(b.date)));
-
-  // Return the first one (next chronological show)
-  return futureShows.length > 0 ? futureShows[0] : null;
+  return low < allShowsSorted.length ? allShowsSorted[low] : null;
 }
 
 const initialState: PlayerState = {
@@ -146,8 +148,14 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       };
 
     case 'ADD_RADIO_TRACKS':
-      const newRadioQueue = [...state.radioQueue, ...action.tracks];
-      const newRadioIndex = state.radioQueueIndex < 0 ? 0 : state.radioQueueIndex;
+      // Trim old tracks from queue to prevent unbounded growth
+      const trimmedQueue = state.radioQueue.length > 100
+        ? state.radioQueue.slice(state.radioQueueIndex > 50 ? state.radioQueueIndex - 50 : 0)
+        : state.radioQueue;
+      const indexAdjustment = state.radioQueue.length - trimmedQueue.length;
+      const newRadioQueue = [...trimmedQueue, ...action.tracks];
+      const adjustedIndex = state.radioQueueIndex - indexAdjustment;
+      const newRadioIndex = adjustedIndex < 0 ? 0 : adjustedIndex;
       const firstNewTrack = action.tracks[0];
       return {
         ...state,
@@ -397,6 +405,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
+  // Prefetch next chronological show detail when current show starts playing
+  const prefetchedNextShowRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      state.playbackMode === 'show' &&
+      state.currentShow?.date &&
+      prefetchedNextShowRef.current !== state.currentShow.identifier
+    ) {
+      prefetchedNextShowRef.current = state.currentShow.identifier;
+      const nextShow = findNextShow(state.currentShow.date);
+      if (nextShow) {
+        // Prefetch in background — result is cached by archiveApi
+        archiveApi.getShowDetail(nextShow.primaryIdentifier).catch(() => {});
+      }
+    }
+  }, [state.currentShow?.date, state.currentShow?.identifier, state.playbackMode]);
+
   // Refs to track playback mode and shuffle type without causing listener re-subscription
   const playbackModeRef = useRef(state.playbackMode);
   const shuffleTypeRef = useRef(state.shuffleType);
@@ -566,7 +591,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []); // Empty deps - subscribe once, use refs for callbacks
 
-  // Radio auto-replenish: fetch more tracks when 15 tracks remaining
+  // Radio auto-replenish: fetch more tracks when 25 tracks remaining
   // API fetches can take 45-90 seconds, so we need a large buffer for rapid skipping
   useEffect(() => {
     if (
@@ -575,7 +600,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       state.radioQueueIndex !== lastReplenishIndexRef.current
     ) {
       const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
-      if (remainingTracks <= 15) {
+      if (remainingTracks <= 25) {
         lastReplenishIndexRef.current = state.radioQueueIndex;
         fetchMoreRadioTracks();
       }

@@ -68,28 +68,33 @@ class RadioService {
   private isPrefetching: boolean = false;
   private prefetchPromise: Promise<void> | null = null;
 
-  // Cache for similarity calculations to avoid redundant Levenshtein computations
+  // LRU cache for similarity calculations to avoid redundant Levenshtein computations
   private similarityCache: Map<string, number> = new Map();
   private readonly MAX_CACHE_SIZE = 10000;
 
   /**
-   * Get cached similarity score or calculate and cache it
+   * Get cached similarity score or calculate and cache it (LRU eviction)
    */
   private getCachedSimilarity(str1: string, str2: string): number {
     const key = `${str1}|${str2}`;
     const cached = this.similarityCache.get(key);
     if (cached !== undefined) {
+      // Move to end for LRU (Map preserves insertion order)
+      this.similarityCache.delete(key);
+      this.similarityCache.set(key, cached);
       return cached;
     }
 
     const score = calculateSimilarity(str1, str2);
 
-    // Prevent unbounded cache growth
+    // LRU eviction: remove oldest 25% when full
     if (this.similarityCache.size >= this.MAX_CACHE_SIZE) {
-      // Clear half the cache when full (simple eviction strategy)
-      const entries = Array.from(this.similarityCache.keys());
-      for (let i = 0; i < entries.length / 2; i++) {
-        this.similarityCache.delete(entries[i]);
+      const toRemove = this.MAX_CACHE_SIZE / 4;
+      const iter = this.similarityCache.keys();
+      for (let i = 0; i < toRemove; i++) {
+        const next = iter.next();
+        if (next.done) break;
+        this.similarityCache.delete(next.value);
       }
     }
 
@@ -153,6 +158,7 @@ class RadioService {
       const targetTitle = normalizeHeadyVersionTitle(perf.songTitle);
 
       // Find the best matching track using fuzzy matching
+      // Early-exit on high-confidence match (>= 0.95) to avoid unnecessary comparisons
       let bestMatch: Track | null = null;
       let bestScore = 0;
 
@@ -163,6 +169,7 @@ class RadioService {
         if (similarity > bestScore) {
           bestScore = similarity;
           bestMatch = track;
+          if (bestScore >= 0.95) break; // High confidence — skip remaining tracks
         }
 
         // Also try matching against the full title with "Grateful Dead - " prefix
@@ -171,6 +178,7 @@ class RadioService {
         if (fullSimilarity > bestScore) {
           bestScore = fullSimilarity;
           bestMatch = track;
+          if (bestScore >= 0.95) break;
         }
       }
 
@@ -241,7 +249,7 @@ class RadioService {
    */
   private async fetchTracks(count: number): Promise<RadioTrack[]> {
     const tracks: RadioTrack[] = [];
-    const BATCH_SIZE = 3; // Fetch 3 shows in parallel (more causes timeouts)
+    const BATCH_SIZE = 5; // Fetch shows in parallel
     let totalAttempts = 0;
     const maxAttempts = count * 3;
 

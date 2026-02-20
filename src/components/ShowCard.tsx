@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
-import { useShows } from '../contexts/ShowsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
@@ -29,7 +29,6 @@ interface ShowCardProps {
  */
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
-  const { showDetailsCache } = useShows();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
@@ -53,14 +52,14 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
     }
 
     // Only calculate if details are cached (no API fetch)
-    const cachedDetails = showDetailsCache.get(show.primaryIdentifier);
+    const cachedDetails = archiveApi.getCachedShowDetail(show.primaryIdentifier);
     if (cachedDetails) {
       return getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
     }
 
     // Details not cached - don't show play count yet (will appear after user opens show)
     return 0;
-  }, [show.primaryIdentifier, hasShowBeenPlayed, showDetailsCache, getShowPlayCount, overridePlayCount]);
+  }, [show.primaryIdentifier, hasShowBeenPlayed, getShowPlayCount, overridePlayCount]);
 
   // Use override rating if provided, otherwise use show's classicTier
   const displayRating = overrideRating !== undefined ? overrideRating : show.classicTier;

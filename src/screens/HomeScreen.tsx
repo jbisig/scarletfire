@@ -228,51 +228,54 @@ export function HomeScreen() {
     return Object.keys(showsByYear).sort((a, b) => parseInt(a) - parseInt(b));
   }, [showsByYear]);
 
-  // Memoize sections - only recalculate when dependencies change
-  const sections = useMemo(() => {
+  // Cascading filter computation — each stage only recomputes when its deps change
+
+  // Stage 1: Filter by year and series (recomputes only when filters change, not on search)
+  const yearAndSeriesFiltered = useMemo(() => {
     if (!showsByYear) return [];
 
     // Determine which years to show based on filters
     let yearsToShow: string[];
     if (appliedFilters.selectedYears.length > 0) {
-      // Show only selected years
       yearsToShow = appliedFilters.selectedYears.filter(y => availableYears.includes(y));
     } else if (appliedFilters.selectedSeries.length > 0) {
-      // Show years that have releases from selected series
       yearsToShow = getYearsForAnySeries(appliedFilters.selectedSeries)
         .filter(y => availableYears.includes(y));
     } else {
-      // Show all years
       yearsToShow = availableYears;
     }
 
-    // Sort years numerically
     yearsToShow = yearsToShow.sort((a, b) => parseInt(a) - parseInt(b));
 
-    // Expand selected series for filtering
     const expandedSeries = appliedFilters.selectedSeries.length > 0
       ? expandDisplaySeries(appliedFilters.selectedSeries)
       : [];
 
-    return yearsToShow
-      .map(year => {
-        let shows = showsByYear[year];
+    return yearsToShow.map(year => {
+      let shows = showsByYear[year];
 
-        // Apply search filter
-        shows = filterShows(shows, debouncedSearchQuery);
+      if (expandedSeries.length > 0) {
+        shows = shows.filter(show => {
+          const releases = getOfficialReleasesForDate(show.date);
+          return releases.some(r => expandedSeries.includes(r.series));
+        });
+      }
 
-        // Apply series filter
-        if (expandedSeries.length > 0) {
-          shows = shows.filter(show => {
-            const releases = getOfficialReleasesForDate(show.date);
-            return releases.some(r => expandedSeries.includes(r.series));
-          });
-        }
+      return { title: year, data: shows };
+    }).filter(section => section.data.length > 0);
+  }, [showsByYear, appliedFilters, availableYears]);
 
-        return { title: year, data: shows };
-      })
+  // Stage 2: Apply search filter on top of year/series results
+  const sections = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return yearAndSeriesFiltered;
+
+    return yearAndSeriesFiltered
+      .map(section => ({
+        title: section.title,
+        data: filterShows(section.data, debouncedSearchQuery),
+      }))
       .filter(section => section.data.length > 0);
-  }, [showsByYear, appliedFilters, availableYears, debouncedSearchQuery]);
+  }, [yearAndSeriesFiltered, debouncedSearchQuery]);
 
   // Flatten and sort shows for non-default sort types
   const sortedFlatShows = useMemo(() => {

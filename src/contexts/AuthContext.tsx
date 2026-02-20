@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { authService } from '../services/authService';
 import { User } from '@supabase/supabase-js';
@@ -207,7 +207,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [state.user]);
 
-  const loginWithEmail = async (email: string, password: string) => {
+  // Use a ref for state.user.id so deleteAccount doesn't need state as a dependency
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    userIdRef.current = state.user?.id ?? null;
+  }, [state.user?.id]);
+
+  const loginWithEmail = useCallback(async (email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithEmail(email, password);
@@ -218,9 +224,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const signUpWithEmail = async (email: string, password: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.signUpWithEmail(email, password);
@@ -231,9 +237,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithGoogle();
@@ -244,9 +250,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const loginWithApple = async () => {
+  const loginWithApple = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', isLoading: true });
       const user = await authService.loginWithApple();
@@ -257,9 +263,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authService.logout();
       dispatch({ type: 'LOGOUT' });
@@ -268,15 +274,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to logout';
       dispatch({ type: 'SET_ERROR', error: errorMessage });
     }
-  };
+  }, []);
 
-  const deleteAccount = async () => {
-    if (!state.user?.id) {
+  const deleteAccount = useCallback(async () => {
+    const userId = userIdRef.current;
+    if (!userId) {
       throw new Error('No user logged in');
     }
     try {
       dispatch({ type: 'SET_LOADING', isLoading: true });
-      await authService.deleteAccount(state.user.id);
+      await authService.deleteAccount(userId);
       dispatch({ type: 'LOGOUT' });
       await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     } catch (error) {
@@ -284,28 +291,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_ERROR', error: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const skipLogin = async () => {
+  const skipLogin = useCallback(async () => {
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_SKIPPED, 'true');
     dispatch({ type: 'SKIP_LOGIN' });
-  };
+  }, []);
 
-  const showLogin = async () => {
+  const showLogin = useCallback(async () => {
     await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_SKIPPED);
     dispatch({ type: 'UNSKIP_LOGIN' });
-  };
+  }, []);
 
-  const resetPasswordForEmail = async (email: string) => {
+  const resetPasswordForEmail = useCallback(async (email: string) => {
     try {
       await authService.resetPasswordForEmail(email);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email';
       throw new Error(errorMessage);
     }
-  };
+  }, []);
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = useCallback(async (newPassword: string) => {
     try {
       await authService.updatePassword(newPassword);
       dispatch({ type: 'PASSWORD_RECOVERY_COMPLETE' });
@@ -313,9 +320,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update password';
       throw new Error(errorMessage);
     }
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const session = await authService.getSession();
       if (session?.user) {
@@ -324,25 +331,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       logger.auth.error('Failed to refresh user:', error);
     }
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    state,
+    loginWithEmail,
+    signUpWithEmail,
+    loginWithGoogle,
+    loginWithApple,
+    logout,
+    deleteAccount,
+    skipLogin,
+    showLogin,
+    refreshUser,
+    resetPasswordForEmail,
+    updatePassword,
+  }), [state, loginWithEmail, signUpWithEmail, loginWithGoogle, loginWithApple, logout, deleteAccount, skipLogin, showLogin, refreshUser, resetPasswordForEmail, updatePassword]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        state,
-        loginWithEmail,
-        signUpWithEmail,
-        loginWithGoogle,
-        loginWithApple,
-        logout,
-        deleteAccount,
-        skipLogin,
-        showLogin,
-        refreshUser,
-        resetPasswordForEmail,
-        updatePassword,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

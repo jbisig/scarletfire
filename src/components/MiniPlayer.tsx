@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -12,16 +12,7 @@ import { BlurBackground } from './shared/BlurBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
+import { resolveVideoUri } from '../utils/resolveVideoUri';
 
 interface MiniPlayerProps {
   onPress: () => void;

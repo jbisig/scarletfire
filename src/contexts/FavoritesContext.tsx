@@ -320,109 +320,126 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     return favoriteSongKeys.has(`${trackId}:${showIdentifier}`);
   }, [favoriteSongKeys]);
 
-  const addFavoriteShow = async (show: GratefulDeadShow) => {
+  // Keep auth state in a ref so callbacks don't need authState as a dependency
+  const authStateRef = useRef(authState);
+  useEffect(() => {
+    authStateRef.current = authState;
+  }, [authState]);
+
+  const addFavoriteShow = useCallback(async (show: GratefulDeadShow) => {
     // Add timestamp and enrich with tier data
     const tier = getClassicTier(show.date);
     const enrichedShow = tier ? { ...show, classicTier: tier } : show;
     const showWithTimestamp = { ...enrichedShow, savedAt: Date.now() };
-    const newFavorites = [...favoriteShows, showWithTimestamp].sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-    setFavoriteShows(newFavorites);
-    await saveFavoriteShows(newFavorites);
+    setFavoriteShows(prev => {
+      const newFavorites = [...prev, showWithTimestamp].sort((a, b) =>
+        a.date.localeCompare(b.date)
+      );
+      saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated - use ref for songs to avoid race conditions
-    if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-        favoritesLogger.error('Failed to sync favorite show to cloud:', error);
-        showSyncErrorToast();
-      });
-    }
-  };
+      // Sync to cloud if authenticated
+      const auth = authStateRef.current;
+      if (auth.isAuthenticated && auth.user) {
+        favoritesCloudService.syncFavorites(auth.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
+          favoritesLogger.error('Failed to sync favorite show to cloud:', error);
+          showSyncErrorToast();
+        });
+      }
+      return newFavorites;
+    });
+  }, [showSyncErrorToast]);
 
-  const removeFavoriteShow = async (identifier: string) => {
+  const removeFavoriteShow = useCallback(async (identifier: string) => {
     // Record deletion for sync conflict resolution
     await recordShowDeletion(identifier);
 
-    const newFavorites = favoriteShows.filter(fav => fav.primaryIdentifier !== identifier);
-    setFavoriteShows(newFavorites);
-    await saveFavoriteShows(newFavorites);
+    setFavoriteShows(prev => {
+      const newFavorites = prev.filter(fav => fav.primaryIdentifier !== identifier);
+      saveFavoriteShows(newFavorites);
 
-    // Sync to cloud if authenticated - use ref for songs to avoid race conditions
-    if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-        favoritesLogger.error('Failed to sync favorite show removal to cloud:', error);
-        showSyncErrorToast();
-      });
-    }
-  };
+      // Sync to cloud if authenticated
+      const auth = authStateRef.current;
+      if (auth.isAuthenticated && auth.user) {
+        favoritesCloudService.syncFavorites(auth.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
+          favoritesLogger.error('Failed to sync favorite show removal to cloud:', error);
+          showSyncErrorToast();
+        });
+      }
+      return newFavorites;
+    });
+  }, [showSyncErrorToast]);
 
-  const addFavoriteSong = async (song: FavoriteSong) => {
+  const addFavoriteSong = useCallback(async (song: FavoriteSong) => {
     // Add timestamp when saving
     const songWithTimestamp = { ...song, savedAt: Date.now() };
-    const newFavorites = [...favoriteSongs, songWithTimestamp].sort((a, b) => {
-      // First sort by track title alphabetically
-      const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
-      if (titleCompare !== 0) return titleCompare;
-      // Then by date ascending (oldest first)
-      return a.showDate.localeCompare(b.showDate);
-    });
-    setFavoriteSongs(newFavorites);
-    await saveFavoriteSongs(newFavorites);
-
-    // Sync to cloud if authenticated - use ref for shows to avoid race conditions
-    if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-        favoritesLogger.error('Failed to sync favorite song to cloud:', error);
-        showSyncErrorToast();
+    setFavoriteSongs(prev => {
+      const newFavorites = [...prev, songWithTimestamp].sort((a, b) => {
+        const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
+        if (titleCompare !== 0) return titleCompare;
+        return a.showDate.localeCompare(b.showDate);
       });
-    }
-  };
+      saveFavoriteSongs(newFavorites);
 
-  const removeFavoriteSong = async (trackId: string, showIdentifier: string) => {
+      // Sync to cloud if authenticated
+      const auth = authStateRef.current;
+      if (auth.isAuthenticated && auth.user) {
+        favoritesCloudService.syncFavorites(auth.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
+          favoritesLogger.error('Failed to sync favorite song to cloud:', error);
+          showSyncErrorToast();
+        });
+      }
+      return newFavorites;
+    });
+  }, [showSyncErrorToast]);
+
+  const removeFavoriteSong = useCallback(async (trackId: string, showIdentifier: string) => {
     // Record deletion for sync conflict resolution
     await recordSongDeletion(trackId, showIdentifier);
 
-    const newFavorites = favoriteSongs.filter(
-      fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
-    );
-    setFavoriteSongs(newFavorites);
-    await saveFavoriteSongs(newFavorites);
+    setFavoriteSongs(prev => {
+      const newFavorites = prev.filter(
+        fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
+      );
+      saveFavoriteSongs(newFavorites);
 
-    // Sync to cloud if authenticated - use ref for shows to avoid race conditions
-    if (authState.isAuthenticated && authState.user) {
-      favoritesCloudService.syncFavorites(authState.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-        favoritesLogger.error('Failed to sync favorite song removal to cloud:', error);
-        showSyncErrorToast();
-      });
-    }
-  };
+      // Sync to cloud if authenticated
+      const auth = authStateRef.current;
+      if (auth.isAuthenticated && auth.user) {
+        favoritesCloudService.syncFavorites(auth.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
+          favoritesLogger.error('Failed to sync favorite song removal to cloud:', error);
+          showSyncErrorToast();
+        });
+      }
+      return newFavorites;
+    });
+  }, [showSyncErrorToast]);
 
-  const refreshFavorites = async () => {
+  const refreshFavorites = useCallback(async () => {
     // Re-sync from cloud if authenticated
-    if (authState.isAuthenticated && authState.user) {
-      await syncFavoritesFromCloud(authState.user.id);
+    const auth = authStateRef.current;
+    if (auth.isAuthenticated && auth.user) {
+      await syncFavoritesFromCloud(auth.user.id);
     } else {
       // Just reload from local storage
       await loadFavorites();
     }
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    favoriteShows,
+    favoriteSongs,
+    isShowFavorite,
+    isSongFavorite,
+    addFavoriteShow,
+    removeFavoriteShow,
+    addFavoriteSong,
+    removeFavoriteSong,
+    refreshFavorites,
+    isLoading,
+  }), [favoriteShows, favoriteSongs, isShowFavorite, isSongFavorite, addFavoriteShow, removeFavoriteShow, addFavoriteSong, removeFavoriteSong, refreshFavorites, isLoading]);
 
   return (
-    <FavoritesContext.Provider
-      value={{
-        favoriteShows,
-        favoriteSongs,
-        isShowFavorite,
-        isSongFavorite,
-        addFavoriteShow,
-        removeFavoriteShow,
-        addFavoriteSong,
-        removeFavoriteSong,
-        refreshFavorites,
-        isLoading,
-      }}
-    >
+    <FavoritesContext.Provider value={contextValue}>
       {children}
     </FavoritesContext.Provider>
   );
