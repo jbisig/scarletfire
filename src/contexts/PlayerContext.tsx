@@ -405,23 +405,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
-  // Prefetch next chronological show detail when current show starts playing
-  const prefetchedNextShowRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (
-      state.playbackMode === 'show' &&
-      state.currentShow?.date &&
-      prefetchedNextShowRef.current !== state.currentShow.identifier
-    ) {
-      prefetchedNextShowRef.current = state.currentShow.identifier;
-      const nextShow = findNextShow(state.currentShow.date);
-      if (nextShow) {
-        // Prefetch in background — result is cached by archiveApi
-        archiveApi.getShowDetail(nextShow.primaryIdentifier).catch(() => {});
-      }
-    }
-  }, [state.currentShow?.date, state.currentShow?.identifier, state.playbackMode]);
-
   // Refs to track playback mode and shuffle type without causing listener re-subscription
   const playbackModeRef = useRef(state.playbackMode);
   const shuffleTypeRef = useRef(state.shuffleType);
@@ -600,7 +583,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       state.radioQueueIndex !== lastReplenishIndexRef.current
     ) {
       const remainingTracks = state.radioQueue.length - state.radioQueueIndex - 1;
-      if (remainingTracks <= 25) {
+      if (remainingTracks <= 15) {
         lastReplenishIndexRef.current = state.radioQueueIndex;
         fetchMoreRadioTracks();
       }

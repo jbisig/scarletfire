@@ -140,7 +140,13 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
+      navigation.navigate('ShowDetail', {
+        identifier: show.primaryIdentifier,
+        venue: show.venue,
+        date: show.date,
+        location: show.location,
+        classicTier: show.classicTier,
+      });
     }
   };
 
@@ -149,7 +155,13 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   };
 
   const handleShowPress = useCallback((selectedShow: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', { identifier: selectedShow.primaryIdentifier });
+    navigation.navigate('ShowDetail', {
+      identifier: selectedShow.primaryIdentifier,
+      venue: selectedShow.venue,
+      date: selectedShow.date,
+      location: selectedShow.location,
+      classicTier: selectedShow.classicTier,
+    });
   }, [navigation]);
 
   // Jump Back In: Recently played shows sorted by most recent

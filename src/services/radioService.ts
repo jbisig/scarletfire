@@ -249,7 +249,7 @@ class RadioService {
    */
   private async fetchTracks(count: number): Promise<RadioTrack[]> {
     const tracks: RadioTrack[] = [];
-    const BATCH_SIZE = 5; // Fetch shows in parallel
+    const BATCH_SIZE = 3; // Fetch 3 shows in parallel (more causes timeouts)
     let totalAttempts = 0;
     const maxAttempts = count * 3;
 

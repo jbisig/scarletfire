@@ -311,7 +311,13 @@ export function HomeScreen() {
   }, [appliedFilters, debouncedSearchQuery, sortType]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
+    navigation.navigate('ShowDetail', {
+      identifier: show.primaryIdentifier,
+      venue: show.venue,
+      date: show.date,
+      location: show.location,
+      classicTier: show.classicTier,
+    });
   }, [navigation]);
 
   const handleApplyFilters = useCallback((filters: ShowsFilterState) => {

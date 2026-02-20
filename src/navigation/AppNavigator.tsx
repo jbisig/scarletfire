@@ -39,7 +39,7 @@ const mobileWebLinking = Platform.OS === 'web'
 
 export type RootStackParamList = {
   Home: { sort?: string; years?: string; series?: string } | undefined;
-  ShowDetail: { identifier: string; trackTitle?: string };
+  ShowDetail: { identifier: string; trackTitle?: string; venue?: string; date?: string; location?: string; classicTier?: 1 | 2 | 3 };
   Favorites: undefined;
   DiscoverLanding: undefined;
   SongList: undefined;

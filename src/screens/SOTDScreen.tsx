@@ -23,7 +23,13 @@ export function SOTDScreen() {
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
+      navigation.navigate('ShowDetail', {
+        identifier: show.primaryIdentifier,
+        venue: show.venue,
+        date: show.date,
+        location: show.location,
+        classicTier: show.classicTier,
+      });
     }
   };
 

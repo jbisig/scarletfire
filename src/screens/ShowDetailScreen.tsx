@@ -121,16 +121,17 @@ export function ShowDetailScreen() {
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow, isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getShowPlayCount } = usePlayCounts();
 
+  const { trackTitle, venue: previewVenue, date: previewDate, location: previewLocation, classicTier: previewTier } = route.params;
+
   const [show, setShow] = useState<ShowDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
-  const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(null);
+  const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(previewTier ?? null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const { isDesktop } = useResponsive();
 
-  const { trackTitle } = route.params;
   const hasAutoPlayed = useRef(false);
 
   // Video background for web header
@@ -328,7 +329,13 @@ export function ShowDetailScreen() {
   }, [show, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
 
   const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
-    navigation.push('ShowDetail', { identifier: nextShow.primaryIdentifier });
+    navigation.push('ShowDetail', {
+      identifier: nextShow.primaryIdentifier,
+      venue: nextShow.venue,
+      date: nextShow.date,
+      location: nextShow.location,
+      classicTier: nextShow.classicTier,
+    });
   }, [navigation]);
 
   const handleToggleFavorite = () => {
@@ -359,7 +366,7 @@ export function ShowDetailScreen() {
     return `${downloads} downloads`;
   };
 
-  if (isLoading) {
+  if (isLoading && !previewVenue) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={COLORS.accent} />
@@ -367,7 +374,7 @@ export function ShowDetailScreen() {
     );
   }
 
-  if (error || !show) {
+  if (error || (!show && !isLoading)) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error || 'Show not found'}</Text>
@@ -375,7 +382,18 @@ export function ShowDetailScreen() {
     );
   }
 
-  const isSaved = isShowFavorite(show.identifier);
+  // Use real show data if loaded, otherwise build a preview from nav params
+  const displayShow: ShowDetail = show ?? {
+    identifier: route.params.identifier,
+    date: previewDate ?? '',
+    venue: previewVenue ?? '',
+    location: previewLocation ?? '',
+    tracks: [],
+    source: '',
+    year: previewDate ? parseInt(previewDate.substring(0, 4)) : 0,
+  } as ShowDetail;
+
+  const isSaved = isShowFavorite(displayShow.identifier);
 
   return (
     <ScrollView
@@ -411,14 +429,14 @@ export function ShowDetailScreen() {
             <View style={styles.webInfoSection}>
               {/* Venue + Details */}
               <View style={styles.webVenueBlock}>
-                <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
+                <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
                 {/* Details section with play count on mobile */}
                 <View style={styles.webDetailsSectionRow}>
                   <View style={styles.webDetailsSection}>
                     {/* Date with stars */}
                     <View style={styles.webDateRow}>
-                      <Text style={styles.webDate}>{formatDateMMDDYYYY(show.date)}</Text>
+                      <Text style={styles.webDate}>{formatDateMMDDYYYY(displayShow.date)}</Text>
                       {classicTier && (
                         <StarRating tier={classicTier} size={20} />
                       )}
@@ -426,7 +444,7 @@ export function ShowDetailScreen() {
 
                     {/* Location */}
                     <Text style={styles.webLocation}>
-                      {show.location || 'Unknown location'}
+                      {displayShow.location || 'Unknown location'}
                     </Text>
                   </View>
 
@@ -454,25 +472,25 @@ export function ShowDetailScreen() {
             {/* Pills row: Source + Play Count (desktop) + Save */}
             <View style={styles.pillsRow}>
               <View style={[styles.pillsLeft, isDesktop && styles.pillsLeftDesktop]}>
-                {show.allVersions && show.allVersions.length > 1 ? (
+                {displayShow.allVersions && displayShow.allVersions.length > 1 ? (
                   <VersionPicker
-                    versions={show.allVersions}
+                    versions={displayShow.allVersions}
                     selectedVersion={selectedVersion}
                     onVersionChange={handleVersionChange}
                     webGlassStyle
                   />
-                ) : (
+                ) : show ? (
                   <View style={styles.sourceInfoPillWeb}>
                     <Text style={styles.webSourceText}>
-                      {show.allVersions?.[0]?.source || 'Unknown source'}
+                      {displayShow.allVersions?.[0]?.source || 'Unknown source'}
                     </Text>
                     <View style={styles.webDownloadsWrap}>
                       <Text style={styles.webDownloadsText} numberOfLines={1}>
-                        {formatDownloads(show.allVersions?.[0]?.downloads)}
+                        {formatDownloads(displayShow.allVersions?.[0]?.downloads)}
                       </Text>
                     </View>
                   </View>
-                )}
+                ) : null}
               </View>
 
               <View style={styles.pillsRight}>
@@ -509,14 +527,14 @@ export function ShowDetailScreen() {
         /* Native: Original header */
         <View style={styles.headerContainer}>
           {/* Venue - full width at top */}
-          <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(show)}</Text>
+          <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
           {/* Date/Location info row with Save button */}
           <View style={styles.infoRow}>
             <View style={styles.infoContainer}>
               {/* Date with stars */}
               <View style={styles.dateRow}>
-                <Text style={styles.date}>{formatDateMMDDYYYY(show.date)}</Text>
+                <Text style={styles.date}>{formatDateMMDDYYYY(displayShow.date)}</Text>
                 {classicTier && (
                   <StarRating tier={classicTier} size={16} />
                 )}
@@ -524,7 +542,7 @@ export function ShowDetailScreen() {
 
               {/* Location */}
               <Text style={styles.sourceName}>
-                {show.location || 'Unknown location'}
+                {displayShow.location || 'Unknown location'}
               </Text>
             </View>
 
@@ -569,27 +587,27 @@ export function ShowDetailScreen() {
           )}
 
           {/* Version Picker / Source Info Pill */}
-          {show.allVersions && show.allVersions.length > 1 ? (
+          {displayShow.allVersions && displayShow.allVersions.length > 1 ? (
             <VersionPicker
-              versions={show.allVersions}
+              versions={displayShow.allVersions}
               selectedVersion={selectedVersion}
               onVersionChange={handleVersionChange}
             />
-          ) : (
+          ) : show ? (
             <View style={styles.sourceInfoPill}>
               <Text style={styles.sourceInfoText}>
-                {show.allVersions?.[0]?.source || 'Unknown source'}
+                {displayShow.allVersions?.[0]?.source || 'Unknown source'}
               </Text>
               <Text style={styles.downloadsText}>
-                {formatDownloads(show.allVersions?.[0]?.downloads)}
+                {formatDownloads(displayShow.allVersions?.[0]?.downloads)}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
       )}
 
       <View style={[styles.tracksContainer, isDesktop && styles.tracksContainerDesktop]}>
-        {show.tracks.map((track) => (
+        {show ? show.tracks.map((track) => (
           <TrackItem
             key={track.id}
             track={track}
@@ -599,12 +617,16 @@ export function ShowDetailScreen() {
             }
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
-            {...(Platform.OS === 'web' && show ? {
+            {...(Platform.OS === 'web' ? {
               isSaved: isSongFavorite(track.id, show.identifier),
               onToggleSave: handleToggleSaveSong,
             } : {})}
           />
-        ))}
+        )) : (
+          <View style={styles.tracksLoading}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+          </View>
+        )}
       </View>
 
       {/* Next Tour Stops Section */}
@@ -919,6 +941,10 @@ const styles = StyleSheet.create({
   tracksContainerDesktop: {
     padding: 24,
     paddingTop: 24,
+  },
+  tracksLoading: {
+    padding: SPACING.xxxl,
+    alignItems: 'center',
   },
   nextTourStopsSection: {
     marginTop: SPACING.sm,

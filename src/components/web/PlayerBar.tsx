@@ -472,6 +472,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     opacity: 0.66,
     textAlign: 'center',
+    width: 40,
     // @ts-ignore
     whiteSpace: 'nowrap',
   },

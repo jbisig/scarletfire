@@ -445,7 +445,13 @@ export function FavoritesScreen() {
   };
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', { identifier: show.primaryIdentifier });
+    navigation.navigate('ShowDetail', {
+      identifier: show.primaryIdentifier,
+      venue: show.venue,
+      date: show.date,
+      location: show.location,
+      classicTier: show.classicTier,
+    });
   }, [navigation]);
 
   const handleSongPress = useCallback(async (song: FavoriteSong) => {
