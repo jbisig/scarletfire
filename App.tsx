@@ -26,8 +26,17 @@ if (Platform.OS !== 'web') {
   SplashScreen.preventAutoHideAsync();
 }
 
-// Inject global styles on web (background, scrollbar)
+// Inject global styles and preconnect hints on web
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  // Preconnect to archive.org — starts DNS + TLS handshake before the first API call
+  const preconnect = document.createElement('link');
+  preconnect.rel = 'preconnect';
+  preconnect.href = 'https://archive.org';
+  document.head.appendChild(preconnect);
+
+  // Warm up the connection with a lightweight request so the first show load is fast
+  fetch('https://archive.org/metadata/favicon.ico', { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
+
   const style = document.createElement('style');
   style.textContent = `
     html, body, #root {

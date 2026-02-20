@@ -12,6 +12,7 @@ import {
   AUDIO_FORMATS,
   SOURCE_TYPES,
 } from '../constants/api';
+import { Platform } from 'react-native';
 import { normalizeSongTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
 
@@ -568,3 +569,8 @@ class ArchiveApiService {
 }
 
 export const archiveApi = new ArchiveApiService();
+
+// Warm up the connection to archive.org on native (web warmup is in App.tsx via preconnect)
+if (Platform.OS !== 'web') {
+  fetch(`${ARCHIVE_CONFIG.BASE_URL}/metadata/favicon.ico`, { method: 'HEAD' }).catch(() => {});
+}
