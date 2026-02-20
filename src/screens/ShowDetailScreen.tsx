@@ -777,8 +777,8 @@ const styles = StyleSheet.create({
     borderRadius: 342,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.33)',
-    paddingVertical: 8,
     paddingHorizontal: SPACING.lg,
+    height: 35,
     gap: 6,
     // @ts-ignore
     backdropFilter: 'blur(34px)',

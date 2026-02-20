@@ -177,7 +177,7 @@ export function HomeScreen() {
     const urlSort = route.params?.sort;
     return urlSort && VALID_SORT_TYPES.includes(urlSort as ShowSortType)
       ? (urlSort as ShowSortType)
-      : 'default';
+      : 'mostPopular';
   });
   const [showSortModal, setShowSortModal] = useState(false);
   const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
@@ -202,7 +202,7 @@ export function HomeScreen() {
       return;
     }
     const params: Record<string, string | undefined> = {
-      sort: sortType !== 'default' ? sortType : undefined,
+      sort: sortType !== 'mostPopular' ? sortType : undefined,
       years: appliedFilters.selectedYears.length > 0
         ? appliedFilters.selectedYears.join(',')
         : undefined,

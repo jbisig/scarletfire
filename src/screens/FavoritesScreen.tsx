@@ -152,8 +152,8 @@ export function FavoritesScreen() {
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
-  const [songSortType, setSongSortType] = useState<SongSortType>('alphabetical');
-  const [showSortType, setShowSortType] = useState<ShowSortType>('performanceDateOldest');
+  const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
+  const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [showSongSortModal, setShowSongSortModal] = useState(false);
   const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

@@ -197,11 +197,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
   },
   selectorGlass: {
+    flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 342,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.33)',
-    paddingVertical: 8,
+    height: 35,
+    alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     // @ts-ignore - web only
     backdropFilter: 'blur(34px)',
@@ -211,6 +213,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   selectorTopRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
@@ -227,7 +230,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   viewsWrap: {
-    flexShrink: 1,
+    flex: 1,
     minWidth: 0,
   },
   views: {

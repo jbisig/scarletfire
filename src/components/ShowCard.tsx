@@ -93,7 +93,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   return (
     <>
       <TouchableOpacity
-        style={[styles.container, isDesktop && isHovered && styles.hovered]}
+        style={[styles.container, isDesktop && styles.containerDesktop, isDesktop && isHovered && styles.hovered]}
         onPress={() => onPress(show)}
         activeOpacity={0.7}
         accessibilityRole="button"
@@ -103,31 +103,52 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
         onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
         onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
       >
-        {/* Venue name - full width at top */}
-        <Text style={styles.venue} numberOfLines={1}>
-          {getVenueFromShow(show)}
-        </Text>
+        {/* Text content: on desktop wrapped for flex layout */}
+        <View style={isDesktop ? styles.cardContentDesktop : undefined}>
+          {/* Venue name - full width at top */}
+          <Text style={styles.venue} numberOfLines={1}>
+            {getVenueFromShow(show)}
+          </Text>
 
-        {/* Bottom row: info on left, badges on right */}
-        <View style={styles.bottomRow}>
-          <View style={styles.infoContainer}>
-            {/* Date with stars */}
-            <View style={styles.dateRow}>
-              <Text style={styles.date}>{formatDate(show.date)}</Text>
-              {displayRating && (
-                <StarRating tier={displayRating} size={14} />
+          {/* Info row: on mobile includes badges, on desktop just text */}
+          <View style={!isDesktop ? styles.bottomRow : undefined}>
+            <View style={styles.infoContainer}>
+              {/* Date with stars */}
+              <View style={styles.dateRow}>
+                <Text style={styles.date}>{formatDate(show.date)}</Text>
+                {displayRating && (
+                  <StarRating tier={displayRating} size={14} />
+                )}
+              </View>
+
+              {/* Location */}
+              {show.location && (
+                <Text style={styles.location} numberOfLines={1}>
+                  {show.location}
+                </Text>
               )}
             </View>
 
-            {/* Location */}
-            {show.location && (
-              <Text style={styles.location} numberOfLines={1}>
-                {show.location}
-              </Text>
+            {/* Mobile: badges in bottom row */}
+            {!isDesktop && (
+              <View style={styles.badgesContainer}>
+                {officialReleases.length > 0 && (
+                  <View style={styles.officialReleaseBadgeWrapper}>
+                    <OfficialReleaseBadge
+                      onPress={handleBadgePress}
+                      compact
+                      releaseTitle={officialReleases[0].name}
+                    />
+                  </View>
+                )}
+                <PlayCountBadge count={playCount} size="small" />
+              </View>
             )}
           </View>
+        </View>
 
-          {/* Right side badges */}
+        {/* Desktop: badges at card level, vertically centered */}
+        {isDesktop && (
           <View style={styles.badgesContainer}>
             {officialReleases.length > 0 && (
               <View style={styles.officialReleaseBadgeWrapper}>
@@ -139,9 +160,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </View>
             )}
             <PlayCountBadge count={playCount} size="small" />
-            {isWeb && isDesktop && (
+            {isWeb && (
               <TouchableOpacity
-                style={[styles.savePill, isSaved && styles.savePillActive]}
+                style={styles.savePill}
                 onPress={handleToggleSave}
                 activeOpacity={0.7}
                 accessibilityRole="button"
@@ -157,7 +178,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        )}
       </TouchableOpacity>
 
       {/* Official Release Modal */}
@@ -185,6 +206,14 @@ const styles = StyleSheet.create({
       paddingHorizontal: 16,
       marginVertical: 2,
     } : {}),
+  },
+  containerDesktop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardContentDesktop: {
+    flex: 1,
+    marginRight: SPACING.md,
   },
   hovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -236,10 +265,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     gap: 6,
-  },
-  savePillActive: {
-    backgroundColor: `${COLORS.accent}33`,
-    borderColor: COLORS.accent,
   },
   savePillText: {
     ...TYPOGRAPHY.label,
