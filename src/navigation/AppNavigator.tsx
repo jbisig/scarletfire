@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -287,10 +287,18 @@ export function AppNavigator() {
   const { state: authState } = useAuth();
   const { isDesktop } = useResponsive();
 
+  // Lock layout mode to initial value on web — switching between desktop/mobile
+  // layouts unmounts the entire navigation tree, restarting audio and losing state.
+  // Components still use live isDesktop for responsive styling.
+  const initialLayoutRef = useRef(isDesktop);
+
+  const useDesktopLayout = Platform.OS === 'web' && initialLayoutRef.current && DesktopLayout;
+  const linking = initialLayoutRef.current ? desktopWebLinking : mobileWebLinking;
+
   // Show loading while checking auth
   if (authState.isLoading) {
     return (
-      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
+      <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
         <View style={[styles.container, styles.loadingContainer]}>
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
@@ -303,10 +311,10 @@ export function AppNavigator() {
   const showAuthFlow = Platform.OS !== 'web' && !authState.isAuthenticated && !authState.hasSkippedLogin;
 
   // Desktop web: use desktop layout
-  if (Platform.OS === 'web' && isDesktop && DesktopLayout) {
+  if (useDesktopLayout) {
     return (
       <ErrorBoundary>
-        <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
+        <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
           <DesktopLayout />
         </NavigationContainer>
       </ErrorBoundary>
@@ -315,7 +323,7 @@ export function AppNavigator() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer ref={navigationRef} linking={isDesktop ? desktopWebLinking : mobileWebLinking} documentTitle={documentTitle}>
+      <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
         {showAuthFlow ? (
           <AuthNavigator />
         ) : (
