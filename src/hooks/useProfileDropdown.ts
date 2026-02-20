@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, findNodeHandle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,14 +38,28 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
 
   const handleProfilePress = useCallback(() => {
     if (Platform.OS === 'web') {
-      // On web, use DOM API directly — .measure() often fails silently
-      const node = profileButtonRef.current as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const domNode = node?.getNode?.() || node;
-      const rect = domNode?.getBoundingClientRect?.();
-      if (rect) {
-        setPosition({ top: rect.bottom + 8, left: rect.left });
-        setIsVisible(true);
+      // On web, resolve the DOM node from the ref (TouchableOpacity may not expose it directly)
+      let domNode: HTMLElement | null = null;
+      const ref = profileButtonRef.current;
+      if (ref) {
+        // Try getBoundingClientRect directly (View refs on RNW are DOM nodes)
+        if (typeof (ref as any).getBoundingClientRect === 'function') { // eslint-disable-line @typescript-eslint/no-explicit-any
+          domNode = ref as unknown as HTMLElement;
+        } else {
+          // Fallback: findNodeHandle returns DOM node on web
+          const handle = findNodeHandle(ref);
+          if (handle && typeof (handle as any).getBoundingClientRect === 'function') { // eslint-disable-line @typescript-eslint/no-explicit-any
+            domNode = handle as unknown as HTMLElement;
+          }
+        }
       }
+      const rect = domNode?.getBoundingClientRect?.();
+      // Always open the dropdown — use measured position or a sensible fallback
+      setPosition(rect
+        ? { top: rect.bottom + 8, left: rect.left }
+        : { top: 56, left: 16 }
+      );
+      setIsVisible(true);
     } else {
       profileButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
         setPosition({ top: pageY + height + 8, left: pageX });
