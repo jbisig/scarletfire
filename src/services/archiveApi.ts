@@ -21,7 +21,7 @@ import { logger } from '../utils/logger';
 class ArchiveApiService {
   // Simple in-memory cache for show details to avoid re-fetching
   private showDetailCache: Map<string, { data: ShowDetail; timestamp: number }> = new Map();
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour — show details are historical and don't change
 
   // In-flight request deduplication - prevents duplicate concurrent requests
   private inFlightRequests: Map<string, Promise<Response>> = new Map();

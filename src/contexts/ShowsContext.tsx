@@ -32,17 +32,27 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoading] = useState(false);
   const [error] = useState<string | null>(null);
+  // Session-permanent cache — show details are historical and never change
+  const sessionCacheRef = useRef(new Map<string, ShowDetail>());
   // Track in-flight requests to prevent duplicate concurrent API calls
   const inFlightRequestsRef = useRef(new Map<string, Promise<ShowDetail>>());
 
   const getShowDetail = useCallback(async (identifier: string): Promise<ShowDetail> => {
-    // Check if request is already in-flight (archiveApi handles its own cache)
+    // Check session cache first (permanent, no TTL)
+    const cached = sessionCacheRef.current.get(identifier);
+    if (cached) return cached;
+
+    // Check if request is already in-flight
     if (inFlightRequestsRef.current.has(identifier)) {
       return inFlightRequestsRef.current.get(identifier)!;
     }
 
-    // Delegate to archiveApi which has its own TTL-based cache
+    // Delegate to archiveApi (which has its own TTL-based cache as a secondary layer)
     const requestPromise = archiveApi.getShowDetail(identifier)
+      .then(detail => {
+        sessionCacheRef.current.set(identifier, detail);
+        return detail;
+      })
       .finally(() => {
         inFlightRequestsRef.current.delete(identifier);
       });
