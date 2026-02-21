@@ -356,6 +356,24 @@ export function PlayerBar() {
             trackId={state.currentTrack.id}
           />
         </View>
+
+        {/* Right: Playback mode badge */}
+        {(isRadioMode || isShuffleMode) && (
+          <View style={styles.modeBadge}>
+            <Ionicons
+              name={isRadioMode ? 'radio' : 'shuffle'}
+              size={14}
+              color={COLORS.textPrimary}
+            />
+            <Text style={styles.modeBadgeText}>
+              {isRadioMode
+                ? 'Radio'
+                : state.shuffleType === 'songs'
+                  ? 'Song Shuffle'
+                  : 'Show Shuffle'}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -395,6 +413,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 22,
     position: 'relative',
     zIndex: 2,
@@ -514,5 +533,21 @@ const styles = StyleSheet.create({
     marginTop: -7,
     // @ts-ignore - web transform
     transform: [{ scale: 1.1 }],
+  },
+  modeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.accent,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.full,
+    zIndex: 2,
+  },
+  modeBadgeText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 12,
+    color: COLORS.textPrimary,
   },
 });
