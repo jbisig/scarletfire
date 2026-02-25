@@ -3,7 +3,7 @@
  *
  * Provides video sources for background playback.
  * Native: Bundled video as fallback; downloaded videos preferred when available.
- * Web: All videos streamed directly from Supabase storage.
+ * Web: All videos streamed directly from Cloudflare R2.
  */
 
 import { Platform } from 'react-native';
@@ -24,7 +24,7 @@ export const ALL_VIDEO_IDS = [
   'background8',
 ];
 
-// Remote video IDs (downloadable from Supabase)
+// Remote video IDs (downloadable from Cloudflare R2)
 export const REMOTE_VIDEO_IDS = ALL_VIDEO_IDS.filter((id) => id !== BUNDLED_VIDEO_ID);
 
 // Type for the video download service methods we use
@@ -64,30 +64,22 @@ export function getVideoSource(videoId: string): number | { uri: string } | null
 /**
  * Get all available video sources (bundled + downloaded)
  * Returns array of { id, source } objects
- * On web: streams all videos directly from Supabase (no download needed)
+ * On web: streams all videos directly from Cloudflare R2 (no download needed)
  */
 export function getAvailableVideoSources(): Array<{
   id: string;
   source: number | { uri: string };
 }> {
-  // On web, use bundled video + stream extras from Supabase public URLs
+  // On web, use bundled video + stream extras from Cloudflare R2
   if (Platform.OS === 'web') {
     const sources: Array<{ id: string; source: number | { uri: string } }> = [
       { id: BUNDLED_VIDEO_ID, source: BUNDLED_VIDEO },
     ];
-    try {
-      const { CONFIG } = require('./config');
-      if (CONFIG.SUPABASE_URL) {
-        const bucket = 'background-videos';
-        for (const id of REMOTE_VIDEO_IDS) {
-          sources.push({
-            id,
-            source: { uri: `${CONFIG.SUPABASE_URL}/storage/v1/object/public/${bucket}/${id}.mp4` },
-          });
-        }
-      }
-    } catch {
-      // Config unavailable — bundled video only
+    for (const id of REMOTE_VIDEO_IDS) {
+      sources.push({
+        id,
+        source: { uri: `https://pub-bfec3824567343e59b371aa3f6a155d2.r2.dev/${id}.mp4` },
+      });
     }
     return sources;
   }

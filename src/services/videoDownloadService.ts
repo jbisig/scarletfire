@@ -1,40 +1,21 @@
 /**
  * Video Download Service
  *
- * Manages downloading background videos from Supabase Storage.
+ * Manages downloading background videos from Cloudflare R2.
  * Downloads are deferred until after app interactions complete to avoid
  * competing with initial render and audio playback.
  */
 import { InteractionManager } from 'react-native';
 import { logger } from '../utils/logger';
 
-// Type for the auth service methods we use
-interface AuthServiceInterface {
-  getClient(): {
-    storage: {
-      from(bucket: string): {
-        getPublicUrl(path: string): { data: { publicUrl: string } };
-      };
-    };
-  };
-}
-
-// Lazy imports to avoid loading native modules before they're ready
+// Lazy import to avoid loading native modules before they're ready
 let _FileSystem: typeof import('expo-file-system/legacy') | null = null;
-let _authService: AuthServiceInterface | null = null;
 
 function getFileSystem(): typeof import('expo-file-system/legacy') {
   if (!_FileSystem) {
     _FileSystem = require('expo-file-system/legacy');
   }
   return _FileSystem!;
-}
-
-function getAuthService(): AuthServiceInterface {
-  if (!_authService) {
-    _authService = require('./authService').authService;
-  }
-  return _authService!;
 }
 
 // Video metadata
@@ -48,7 +29,7 @@ const REMOTE_VIDEOS: Record<string, { filename: string }> = {
   background8: { filename: 'background8.mp4' },
 };
 
-const SUPABASE_BUCKET = 'background-videos';
+const R2_BASE_URL = 'https://pub-bfec3824567343e59b371aa3f6a155d2.r2.dev';
 const MAX_RETRIES = 3;
 
 export type VideoStatus = 'pending' | 'downloading' | 'completed' | 'failed';
@@ -228,11 +209,8 @@ class VideoDownloadService {
         await getFileSystem().makeDirectoryAsync(localDir, { intermediates: true });
       }
 
-      // Get public URL from Supabase
-      const supabase = getAuthService().getClient();
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(meta.filename);
+      // Get public URL from Cloudflare R2
+      const publicUrl = `${R2_BASE_URL}/${meta.filename}`;
 
       // Download with progress tracking
       const downloadResumable = getFileSystem().createDownloadResumable(
