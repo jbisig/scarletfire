@@ -15,37 +15,8 @@ class AudioPlayerModule: RCTEventEmitter {
   private var currentTrackIndex: Int = 0
   private var queueStartIndex: Int = 0  // Tracks offset between currentItems and originalTracks
   private var isRebuildingQueue: Bool = false  // Prevents race conditions during queue rebuild
-  private lazy var artworkImage: MPMediaItemArtwork? = {
-    // Try to load the app icon from the bundle
-    // Check multiple possible locations where Expo/RN might bundle the icon
-    var image: UIImage?
-
-    // Try loading from asset catalog
-    if image == nil {
-      image = UIImage(named: "AppIcon")
-    }
-
-    // Try loading the expo icon asset
-    if image == nil {
-      image = UIImage(named: "icon")
-    }
-
-    // Try loading from main bundle directly
-    if image == nil, let iconPath = Bundle.main.path(forResource: "icon", ofType: "png") {
-      image = UIImage(contentsOfFile: iconPath)
-    }
-
-    // Try loading the splash image as fallback
-    if image == nil, let splashPath = Bundle.main.path(forResource: "splash", ofType: "png") {
-      image = UIImage(contentsOfFile: splashPath)
-    }
-
-    guard let finalImage = image else {
-      return nil
-    }
-
-    return MPMediaItemArtwork(boundsSize: finalImage.size) { _ in finalImage }
-  }()
+  private var cachedArtwork: MPMediaItemArtwork?
+  private var cachedArtworkUrl: String?
 
   override init() {
     super.init()
@@ -105,8 +76,30 @@ class AudioPlayerModule: RCTEventEmitter {
       let audioSession = AVAudioSession.sharedInstance()
       try audioSession.setCategory(.playback, mode: .default, options: [])
       try audioSession.setActive(true)
+
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(handleRouteChange),
+        name: AVAudioSession.routeChangeNotification,
+        object: audioSession
+      )
     } catch {
       print("Failed to setup audio session: \(error)")
+    }
+  }
+
+  @objc private func handleRouteChange(notification: Notification) {
+    guard let userInfo = notification.userInfo,
+          let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+          let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+
+    if reason == .oldDeviceUnavailable {
+      // Audio route disconnected (CarPlay unplugged, headphones removed, etc.)
+      // AVQueuePlayer pauses automatically, but we need to sync the UI state
+      DispatchQueue.main.async { [weak self] in
+        self?.sendEvent(withName: "playback-state", body: ["state": "paused"])
+        self?.updateNowPlayingInfo()
+      }
     }
   }
 
@@ -131,14 +124,14 @@ class AudioPlayerModule: RCTEventEmitter {
       return .success
     }
 
-    // Use nextTrackCommand/previousTrackCommand for track navigation
+    // Send remote command events to JS so shuffle-aware logic can handle them
     commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-      self?.skipToNextInternal()
+      self?.sendEvent(withName: "remote-next-track", body: nil)
       return .success
     }
 
     commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-      self?.skipToPreviousInternal()
+      self?.sendEvent(withName: "remote-previous-track", body: nil)
       return .success
     }
 
@@ -188,12 +181,34 @@ class AudioPlayerModule: RCTEventEmitter {
     nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = CMTimeGetSeconds(player?.currentTime() ?? .zero)
     nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate ?? 0
 
-    // Set app icon as artwork
-    if let artwork = artworkImage {
+    // Set artwork - use cached if available, otherwise set what we have and fetch async
+    if let artwork = cachedArtwork {
       nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
     }
 
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+
+    // Load artwork from track URL if it changed
+    let artworkUrl = trackData["artwork"] as? String
+    if artworkUrl != cachedArtworkUrl {
+      cachedArtworkUrl = artworkUrl
+      cachedArtwork = nil
+      if let urlString = artworkUrl, let url = URL(string: urlString) {
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+          guard let self = self, let data = data, let image = UIImage(data: data) else { return }
+          let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+          DispatchQueue.main.async {
+            self.cachedArtwork = artwork
+            self.cachedArtworkUrl = urlString
+            // Update now playing info with the loaded artwork
+            if var info = MPNowPlayingInfoCenter.default().nowPlayingInfo {
+              info[MPMediaItemPropertyArtwork] = artwork
+              MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+            }
+          }
+        }.resume()
+      }
+    }
   }
 
   private func updateNowPlayingProgress(currentTime: Double, duration: Double) {
@@ -216,7 +231,9 @@ class AudioPlayerModule: RCTEventEmitter {
       "playback-track-changed",
       "playback-progress",
       "playback-error",
-      "playback-queue-ended"
+      "playback-queue-ended",
+      "remote-next-track",
+      "remote-previous-track"
     ]
   }
 

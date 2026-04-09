@@ -28,6 +28,8 @@ export enum Event {
   PlaybackProgress = 'playback-progress',
   PlaybackError = 'playback-error',
   PlaybackQueueEnded = 'playback-queue-ended',
+  RemoteNextTrack = 'remote-next-track',
+  RemotePreviousTrack = 'remote-previous-track',
   CastStateChanged = 'cast-state-changed',
   CastDeviceConnected = 'cast-device-connected',
   CastDeviceDisconnected = 'cast-device-disconnected',
@@ -96,6 +98,8 @@ export interface NativeAudioPlayerInterface {
   addEventListener(event: Event.PlaybackProgress, handler: (data: PlaybackProgressEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackError, handler: (data: PlaybackErrorEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackQueueEnded, handler: (data: PlaybackQueueEndedEventData) => void): { remove: () => void };
+  addEventListener(event: Event.RemoteNextTrack, handler: () => void): { remove: () => void };
+  addEventListener(event: Event.RemotePreviousTrack, handler: () => void): { remove: () => void };
   addEventListener(event: Event.CastStateChanged, handler: (data: CastStateChangedEventData) => void): { remove: () => void };
   addEventListener(event: Event.CastDeviceConnected, handler: (data: CastDeviceConnectedEventData) => void): { remove: () => void };
   addEventListener(event: Event.CastDeviceDisconnected, handler: (data: CastDeviceDisconnectedEventData) => void): { remove: () => void };

@@ -3,7 +3,7 @@ import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
-import { audioService } from '../services/audioService';
+import { audioService, appIconUri } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
@@ -446,6 +446,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []); // Empty deps - subscribe once, use ref for mode
 
+  // Listen for lock screen remote commands (skip forward/back)
+  // Routes through nextTrack/previousTrack which have shuffle-aware logic
+  useEffect(() => {
+    const nextSub = nativeAudioPlayer.addEventListener(Event.RemoteNextTrack, () => {
+      nextTrackRef.current();
+    });
+    const prevSub = nativeAudioPlayer.addEventListener(Event.RemotePreviousTrack, () => {
+      previousTrackRef.current();
+    });
+    return () => {
+      nextSub.remove();
+      prevSub.remove();
+    };
+  }, []);
+
   // Track the last index where we triggered a replenish to avoid duplicate fetches
   const lastReplenishIndexRef = useRef(-1);
   // Promise ref to allow callers to wait for ongoing replenish
@@ -477,6 +492,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
                 title: radioTrack.track.title,
                 artist: radioTrack.show.venue || 'Grateful Dead',
                 duration: radioTrack.track.duration,
+                artwork: appIconUri,
               });
             }
             dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
@@ -540,6 +556,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Ref to hold shuffleNext to avoid stale closures in event listener
   const shuffleNextRef = useRef<() => Promise<void>>(async () => {});
   const shufflePreviousRef = useRef<() => Promise<void>>(async () => {});
+  // Refs for remote command handlers (lock screen skip forward/back)
+  const nextTrackRef = useRef<() => Promise<void>>(async () => {});
+  const previousTrackRef = useRef<() => Promise<void>>(async () => {});
 
   // Refs to track the current show's playlist length and native track index for shuffle shows mode
   const shuffleShowPlaylistLengthRef = useRef(0);
@@ -810,6 +829,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         title: rt.track.title,
         artist: rt.show.venue || 'Grateful Dead',
         duration: rt.track.duration,
+        artwork: appIconUri,
       }));
 
       await nativeAudioPlayer.setQueue(nativeTracks, 0);
@@ -856,6 +876,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           title: track.title,
           artist: showDetail.venue || 'Grateful Dead',
           duration: track.duration,
+          artwork: appIconUri,
         };
 
         await nativeAudioPlayer.setQueue([nativeTrack], 0);
@@ -893,6 +914,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           title: t.title,
           artist: showDetail.venue || 'Grateful Dead',
           duration: t.duration,
+          artwork: appIconUri,
         }));
 
         await nativeAudioPlayer.setQueue(nativeTracks, 0);
@@ -1053,6 +1075,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     shufflePreviousRef.current = shufflePrevious;
   }, [shufflePrevious]);
+
+  useEffect(() => {
+    nextTrackRef.current = nextTrack;
+  }, [nextTrack]);
+
+  useEffect(() => {
+    previousTrackRef.current = previousTrack;
+  }, [previousTrack]);
 
   // Derived values
   const isRadioMode = state.playbackMode === 'radio';

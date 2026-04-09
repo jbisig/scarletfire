@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 
 // Resolve app icon for Now Playing artwork
 const appIcon = require('../../assets/icon.png');
-const appIconUri = Platform.OS === 'web'
+export const appIconUri = Platform.OS === 'web'
   ? (typeof appIcon === 'string' ? appIcon : (appIcon?.uri || appIcon?.default || '/assets/icon.png'))
   : Image.resolveAssetSource(appIcon).uri;
 
