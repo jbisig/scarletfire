@@ -195,7 +195,7 @@ export function SongPerformancesScreen() {
           if (!a.rating) return 1;
           if (!b.rating) return -1;
           if (a.rating !== b.rating) {
-            return b.rating - a.rating; // Highest first
+            return a.rating - b.rating; // Tier 1 (3 stars) first, then tier 2, then tier 3
           }
           return a.date.localeCompare(b.date);
         });

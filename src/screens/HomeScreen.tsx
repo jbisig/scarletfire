@@ -543,6 +543,7 @@ const styles = StyleSheet.create({
     left: HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
+    zIndex: 20,
   },
   headerLeftDesktop: {
     left: 32,
