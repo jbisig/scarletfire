@@ -32,6 +32,8 @@ import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
+import { getShowNotes } from '../utils/showNotes';
+import { SHOW_NOTES_CITATION } from '../data/showNotes';
 
 // Default profile image for logged out users (web header)
 
@@ -130,6 +132,7 @@ export function ShowDetailScreen() {
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
   const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(previewTier ?? null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
+  const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
 
   const hasAutoPlayed = useRef(false);
@@ -167,6 +170,12 @@ export function ShowDetailScreen() {
     return ratings;
   }, [show?.identifier, show?.date]);
 
+  // Look up show notes from Taper's Compendium
+  const showNotesText = useMemo(() => {
+    if (!show?.date) return null;
+    return getShowNotes(show.date);
+  }, [show?.date]);
+
   // Find the next 3 shows after the current show's date
   const nextTourStops = useMemo(() => {
     if (!show || !showsByYear) return [];
@@ -203,6 +212,7 @@ export function ShowDetailScreen() {
 
   useEffect(() => {
     hasAutoPlayed.current = false;
+    setShowNotesExpanded(false);
     loadShowDetail(resolveIdentifier(route.params.identifier));
   }, [route.params.identifier, resolveIdentifier]);
 
@@ -617,10 +627,8 @@ export function ShowDetailScreen() {
             }
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
-            {...(Platform.OS === 'web' ? {
-              isSaved: isSongFavorite(track.id, show.identifier),
-              onToggleSave: handleToggleSaveSong,
-            } : {})}
+            isSaved={isSongFavorite(track.id, show.identifier)}
+            onToggleSave={handleToggleSaveSong}
           />
         )) : (
           <View style={styles.tracksLoading}>
@@ -628,6 +636,30 @@ export function ShowDetailScreen() {
           </View>
         )}
       </View>
+
+      {/* Show Notes Section */}
+      {showNotesText && (
+        <View style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}>
+          <View style={styles.divider} />
+          <Text style={styles.showNotesHeader}>Show Notes</Text>
+          <Text
+            style={styles.showNotesText}
+            numberOfLines={showNotesExpanded ? undefined : 3}
+          >
+            {showNotesText}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowNotesExpanded(!showNotesExpanded)}
+            activeOpacity={0.7}
+            style={styles.showNotesToggle}
+          >
+            <Text style={styles.showNotesToggleText}>
+              {showNotesExpanded ? 'Show less' : 'Show more'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.showNotesCitation}>{SHOW_NOTES_CITATION}</Text>
+        </View>
+      )}
 
       {/* Next Tour Stops Section */}
       {nextTourStops.length > 0 && (
@@ -969,6 +1001,54 @@ const styles = StyleSheet.create({
       paddingHorizontal: 16,
       paddingTop: 8,
       paddingBottom: 8,
+    } : {}),
+  },
+  showNotesSection: {
+    marginTop: SPACING.sm,
+  },
+  showNotesSectionDesktop: {
+    padding: 24,
+  },
+  showNotesHeader: {
+    ...TYPOGRAPHY.heading2,
+    paddingHorizontal: SPACING.xxl,
+    marginBottom: SPACING.sm,
+    ...(Platform.OS === 'web' ? {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 4,
+    } : {}),
+  },
+  showNotesText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    paddingHorizontal: SPACING.xxl,
+    lineHeight: 22,
+    ...(Platform.OS === 'web' ? {
+      paddingHorizontal: 16,
+    } : {}),
+  },
+  showNotesToggle: {
+    paddingHorizontal: SPACING.xxl,
+    paddingVertical: SPACING.sm,
+    ...(Platform.OS === 'web' ? {
+      paddingHorizontal: 16,
+      // @ts-ignore
+      cursor: 'pointer',
+    } : {}),
+  },
+  showNotesToggleText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.accent,
+  },
+  showNotesCitation: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.textMuted,
+    paddingHorizontal: SPACING.xxl,
+    marginTop: SPACING.xs,
+    fontStyle: 'italic',
+    ...(Platform.OS === 'web' ? {
+      paddingHorizontal: 16,
     } : {}),
   },
 });

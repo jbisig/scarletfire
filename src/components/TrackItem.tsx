@@ -30,8 +30,8 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
   const playingText = isPlaying ? 'Now playing. ' : '';
   const accessibilityLabel = `${playingText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
 
-  const hasWebSave = Platform.OS === 'web' && onToggleSave;
-  const showSaveButton = hasWebSave && ((isDesktop && isHovered) || isSaved);
+  const hasSave = !!onToggleSave;
+  const showSaveButton = hasSave && (Platform.OS === 'web' ? ((isDesktop && isHovered) || isSaved) : isSaved);
 
   return (
     <TouchableOpacity
@@ -68,7 +68,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         </View>
       </View>
       {/* Always reserve space for save button on web to prevent layout shift */}
-      {hasWebSave && (
+      {hasSave && (
         <TouchableOpacity
           style={[
             styles.saveButton,
@@ -91,7 +91,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           />
         </TouchableOpacity>
       )}
-      <Text style={[styles.duration, isPlaying && styles.playingText, hasWebSave && styles.durationWeb]}>
+      <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && styles.durationWeb]}>
         {duration}
       </Text>
     </TouchableOpacity>
