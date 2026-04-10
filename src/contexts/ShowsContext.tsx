@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { ShowsByYear, ShowDetail, RecordingVersion } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
+import { networkPriority } from '../services/networkPriority';
 import showsData from '../data/shows.json';
 import { getClassicTier } from '../data/classicShowsTiers';
 
@@ -47,6 +48,9 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
       return inFlightRequestsRef.current.get(identifier)!;
     }
 
+    // Mark this as a user-initiated fetch so background prefetches yield to it.
+    networkPriority.beginUserFetch();
+
     // Delegate to archiveApi (which has its own TTL-based cache as a secondary layer)
     const requestPromise = archiveApi.getShowDetail(identifier)
       .then(detail => {
@@ -55,6 +59,7 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
       })
       .finally(() => {
         inFlightRequestsRef.current.delete(identifier);
+        networkPriority.endUserFetch();
       });
 
     inFlightRequestsRef.current.set(identifier, requestPromise);

@@ -121,9 +121,16 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
     }, [])
   );
 
-  // Prefetch radio tracks in the background for instant start
+  // Prefetch radio tracks in the background for instant radio start.
+  // Delayed so a user tapping a show card immediately on app launch doesn't
+  // have their getShowDetail fetch contend with the prefetch batches.
+  // networkPriority.waitForIdle() is a second line of defense if the user
+  // taps after the delay elapses.
   useEffect(() => {
-    radioService.prefetch(10);
+    const timer = setTimeout(() => {
+      radioService.prefetch(10);
+    }, 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRadioPress = async () => {

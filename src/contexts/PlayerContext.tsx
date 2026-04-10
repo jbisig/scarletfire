@@ -332,9 +332,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     audioService.initialize();
-    // Defer non-critical work until after initial render is complete
+    // Defer non-critical work until after initial render is complete.
+    // Radio prefetch is triggered lazily from DiscoverLandingScreen (with a
+    // delay) and from getRandomTracks after radio is first used — keeping it
+    // off the app-mount critical path so show-card taps aren't contended.
     InteractionManager.runAfterInteractions(() => {
-      radioService.prefetch(20);
       // Start downloading background videos in the background
       try {
         const { videoDownloadService } = require('../services/videoDownloadService');

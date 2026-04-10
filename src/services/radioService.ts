@@ -8,6 +8,7 @@
 import { Track, ShowDetail } from '../types/show.types';
 import { RatedSongPerformance, TIER_1_SONG_PERFORMANCES } from '../data/songPerformanceRatings';
 import { archiveApi } from './archiveApi';
+import { networkPriority } from './networkPriority';
 import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { logger } from '../utils/logger';
@@ -254,6 +255,11 @@ class RadioService {
     const maxAttempts = count * 3;
 
     while (tracks.length < count && totalAttempts < maxAttempts) {
+      // Yield to any in-flight user-initiated fetches so a show tap doesn't
+      // queue behind radio prefetch batches. Times out after 3s to prevent
+      // starvation if a user request gets stuck.
+      await networkPriority.waitForIdle();
+
       // Get a batch of performances to try
       const batch: RatedSongPerformance[] = [];
       for (let i = 0; i < BATCH_SIZE && totalAttempts < maxAttempts; i++) {
