@@ -26,11 +26,13 @@ if (Platform.OS !== 'web') {
   SplashScreen.preventAutoHideAsync();
 }
 
+// Warm up the archive.org connection pool so the first show tap doesn't pay
+// the full DNS + TLS + HTTP/2 handshake cost on its critical path. Fire-and-
+// forget — errors ignored. Runs on all platforms.
+fetch('https://archive.org/advancedsearch.php?q=collection:GratefulDead&rows=0&output=json').catch(() => {});
+
 // Inject global styles on web (background, scrollbar)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  // Warm up the connection with a lightweight CORS request so the first show load is fast
-  fetch('https://archive.org/advancedsearch.php?q=collection:GratefulDead&rows=0&output=json').catch(() => {});
-
   const style = document.createElement('style');
   style.textContent = `
     html, body, #root {
