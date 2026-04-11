@@ -108,11 +108,14 @@ class AudioPlayerModule: RCTEventEmitter {
   private func activateAudioSessionIfNeeded() {
     guard !audioSessionActivated else { return }
     do {
-      // Re-set the category right before activating, because expo-av (used for
-      // the background video) may have configured a mix-with-others mode on
-      // the shared session. We need an exclusive .playback category so that
-      // starting a track correctly pauses Spotify/Apple Music/podcasts.
+      // Deactivate first, then reconfigure, then reactivate. This is required
+      // because expo-av (used for the background video) has already activated
+      // the shared AVAudioSession in mix-with-others mode. Simply changing the
+      // category options doesn't take effect until the next activation, so we
+      // must deactivate and reactivate to properly interrupt other audio apps
+      // (Spotify / Apple Music / podcasts) when the user starts a track.
       let audioSession = AVAudioSession.sharedInstance()
+      try? audioSession.setActive(false, options: [])
       try audioSession.setCategory(.playback, mode: .default, options: [])
       try audioSession.setActive(true)
       audioSessionActivated = true

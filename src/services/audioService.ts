@@ -9,6 +9,30 @@ export const appIconUri = Platform.OS === 'web'
   ? (typeof appIcon === 'string' ? appIcon : (appIcon?.uri || appIcon?.default || '/assets/icon.png'))
   : Image.resolveAssetSource(appIcon).uri;
 
+// Switches expo-av's audio session from mix-with-others (the launch default,
+// set in App.tsx so the background video doesn't interrupt Spotify) to
+// DoNotMix (exclusive) at the moment the user starts music playback. Runs
+// once per session — subsequent calls are a no-op.
+let exclusiveAudioModeSet = false;
+export async function ensureExclusivePlaybackMode(): Promise<void> {
+  if (exclusiveAudioModeSet || Platform.OS === 'web') return;
+  exclusiveAudioModeSet = true;
+  try {
+    const { Audio, InterruptionModeIOS, InterruptionModeAndroid } = require('expo-av');
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      shouldDuckAndroid: false,
+      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      playThroughEarpieceAndroid: false,
+    });
+  } catch (error) {
+    exclusiveAudioModeSet = false;
+    logger.audio.warn(`Failed to switch to exclusive audio mode: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 /**
  * Convert our Track format to Native Audio Player's Track format
  */
@@ -55,6 +79,10 @@ class AudioService {
    */
   async loadTrack(track: Track, show?: ShowDetail, queue?: Track[]): Promise<void> {
     try {
+      // Switch expo-av to exclusive audio mode so loading/playing the track
+      // properly interrupts Spotify/Apple Music. Fires once per session.
+      await ensureExclusivePlaybackMode();
+
       // Ensure player is initialized
       if (!this.isSetup) {
         await this.initialize();

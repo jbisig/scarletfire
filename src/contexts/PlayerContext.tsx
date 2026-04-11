@@ -3,7 +3,7 @@ import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
-import { audioService, appIconUri } from '../services/audioService';
+import { audioService, appIconUri, ensureExclusivePlaybackMode } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
@@ -810,6 +810,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Switch expo-av to exclusive audio mode so radio playback interrupts
+      // other audio apps. loadTrack() handles this for show playback, but the
+      // radio flow bypasses audioService and calls nativeAudioPlayer directly.
+      await ensureExclusivePlaybackMode();
+
       dispatch({ type: 'START_RADIO' });
 
       // Open the full player immediately for responsiveness
@@ -949,6 +954,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Switch expo-av to exclusive audio mode so playback interrupts Spotify etc.
+      await ensureExclusivePlaybackMode();
+
       // Stop any current playback mode
       if (state.playbackMode === 'radio') {
         radioService.resetSession();
@@ -978,6 +986,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Switch expo-av to exclusive audio mode so playback interrupts Spotify etc.
+      await ensureExclusivePlaybackMode();
+
       // Stop any current playback mode
       if (state.playbackMode === 'radio') {
         radioService.resetSession();
