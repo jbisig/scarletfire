@@ -72,8 +72,12 @@ export function pickRandomBackground(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function formatDateMMDDYYYY(iso: string): string {
-  // Accept "1982-08-06" or "1982-08-06T..." — matches the formatDate helper in ShowDetailScreen.
+/**
+ * Format an ISO date ("1982-08-06" or "1982-08-06T...") as MM/DD/YYYY with slashes.
+ * Shared by shareService.buildShareText and the ShareCard preview component so
+ * the in-tray card and the chat message body always render the same string.
+ */
+export function formatDateMMDDYYYY(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-');
   return `${m}/${d}/${y}`;
 }
