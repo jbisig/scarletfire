@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
   title: {
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '500',
+    flexShrink: 1,
     ...(Platform.OS === 'web' ? { fontSize: 16, fontWeight: '400' as const } : {}),
   },
   ratingContainer: {

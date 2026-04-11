@@ -263,7 +263,7 @@ export function ShowDetailScreen() {
   }, [trackTitle, show]);
 
   const formatDateMMDDYYYY = (date: string) => {
-    const [year, month, day] = date.split('-');
+    const [year, month, day] = date.slice(0, 10).split('-');
     return `${month}/${day}/${year}`;
   };
 
