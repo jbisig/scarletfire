@@ -26,6 +26,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# git worktrees (isolated branch workspaces, must never be committed)
+.worktrees/
+
 # macOS
 .DS_Store
 *.pem
