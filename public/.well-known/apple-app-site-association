@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TODO_APPLE_TEAM_ID.com.scarletfire.app"],
+        "components": [
+          {
+            "/": "/show/*",
+            "comment": "Share links to show and song pages"
+          }
+        ]
+      }
+    ]
+  }
+}
