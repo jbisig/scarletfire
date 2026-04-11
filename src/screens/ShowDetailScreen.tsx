@@ -104,6 +104,7 @@ export function ShowDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
@@ -122,7 +123,7 @@ export function ShowDetailScreen() {
     return match?.classicTier ?? null;
   }, [previewTier, previewDate, show?.date, showsByYear, route.params.identifier]);
 
-  const hasAutoPlayed = useRef(false);
+  const hasSelectedFromUrl = useRef(false);
 
   // Video background for web header
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
@@ -197,8 +198,23 @@ export function ShowDetailScreen() {
     return id;
   }, [showsByYear]);
 
+  /**
+   * Mark a track as "selected" — used when the user arrives on this screen via
+   * a URL-driven route (share link, pasted URL, etc.). The selected track gets
+   * a sustained visual highlight in the tracklist; the user explicitly taps
+   * play to start audio. Distinct from "playing" state which is driven by the
+   * audio player.
+   *
+   * Could be extended to scroll the selected track into view — for now the
+   * tracklist is short enough that scrolling isn't necessary; the highlight
+   * alone conveys the selection.
+   */
+  const selectTrack = useCallback((track: Track) => {
+    setSelectedTrackId(track.id);
+  }, []);
+
   useEffect(() => {
-    hasAutoPlayed.current = false;
+    hasSelectedFromUrl.current = false;
     setShowNotesExpanded(false);
     loadShowDetail(resolveIdentifier(route.params.identifier));
   }, [route.params.identifier, resolveIdentifier]);
@@ -214,11 +230,24 @@ export function ShowDetailScreen() {
     }
   }, [playerState.currentTrack?.id, playerState.isLoading, playerState.isPlaying, justPressedTrackId]);
 
-  // Auto-play track from URL slug (e.g. /show/:identifier/dark-star)
-  // NOTE: This will be changed to select-only in Task 14 of the share feature plan.
+  // When the user taps play on the currently-selected track (or any other
+  // track), clear the selection so the "selected" highlight doesn't fight
+  // with the "playing" highlight on the same row.
   useEffect(() => {
-    if (!trackTitle || !show || hasAutoPlayed.current) return;
-    hasAutoPlayed.current = true;
+    if (!selectedTrackId) return;
+    if (playerState.currentTrack?.id && playerState.isPlaying) {
+      // User started playing a track — drop any URL-driven selection.
+      setSelectedTrackId(null);
+    }
+  }, [selectedTrackId, playerState.currentTrack?.id, playerState.isPlaying]);
+
+  // Select track from URL slug (e.g. /show/:identifier/dark-star) — applies to
+  // every URL-driven arrival with a trackTitle param, regardless of whether the
+  // URL came from a share link, paste, or bookmark. One behavior: select and
+  // highlight, don't auto-play. The user taps play explicitly to start audio.
+  useEffect(() => {
+    if (!trackTitle || !show || hasSelectedFromUrl.current) return;
+    hasSelectedFromUrl.current = true;
 
     const bestMatch = matchTrackBySlug(
       trackTitle,
@@ -227,9 +256,9 @@ export function ShowDetailScreen() {
     );
 
     if (bestMatch) {
-      loadTrack(bestMatch, show, show.tracks);
+      selectTrack(bestMatch);
     }
-  }, [trackTitle, show]);
+  }, [trackTitle, show, selectTrack]);
 
   const formatDateMMDDYYYY = (date: string) => {
     const [year, month, day] = date.slice(0, 10).split('-');
@@ -653,6 +682,7 @@ export function ShowDetailScreen() {
             rating={trackRatings[track.id]}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
+            isSelected={track.id === selectedTrackId}
           />
         )) : (
           <View style={styles.tracksLoading}>
