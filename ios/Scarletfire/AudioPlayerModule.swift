@@ -24,6 +24,20 @@ class AudioPlayerModule: RCTEventEmitter {
     setupAudioSession()
     setupPlayer()
     setupTrackEndObserver()
+    warmDownloadEndpoint()
+  }
+
+  // Warms the native TCP/TLS connection pool for archive.org's download hosts
+  // so the first real audio stream doesn't pay the full handshake cost. The
+  // fetch() warmup in App.tsx uses a different URLSession than AVPlayer, so
+  // this native-side warmup is needed separately. Following the redirect warms
+  // the ia***.us.archive.org host that actually serves the file.
+  private func warmDownloadEndpoint() {
+    guard let url = URL(string: "https://archive.org/download/gd1977-05-08.shure57.hicks.4982.sbeok.shnf/gd1977-05-08.shure57.hicks.4982.sbeok.shnf_files.xml") else { return }
+    var request = URLRequest(url: url)
+    request.httpMethod = "HEAD"
+    request.timeoutInterval = 10
+    URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
   }
 
   // MARK: - Track End Observer (for automatic advancement)
@@ -94,7 +108,13 @@ class AudioPlayerModule: RCTEventEmitter {
   private func activateAudioSessionIfNeeded() {
     guard !audioSessionActivated else { return }
     do {
-      try AVAudioSession.sharedInstance().setActive(true)
+      // Re-set the category right before activating, because expo-av (used for
+      // the background video) may have configured a mix-with-others mode on
+      // the shared session. We need an exclusive .playback category so that
+      // starting a track correctly pauses Spotify/Apple Music/podcasts.
+      let audioSession = AVAudioSession.sharedInstance()
+      try audioSession.setCategory(.playback, mode: .default, options: [])
+      try audioSession.setActive(true)
       audioSessionActivated = true
     } catch {
       print("Failed to activate audio session: \(error)")

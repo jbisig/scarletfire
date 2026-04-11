@@ -264,6 +264,15 @@ export function ShowDetailScreen() {
       setShow(detail);
       setSelectedVersion(identifier);
 
+      // Warm the audio CDN connection for the first track so tapping play
+      // doesn't pay the full TLS handshake + CDN cold-cache cost. Fire and
+      // forget — errors ignored. Note: RN fetch uses a different URLSession
+      // than AVPlayer, but this still warms archive.org's redirect and hits
+      // the specific ia***.us.archive.org host that serves the file.
+      if (detail.tracks.length > 0) {
+        fetch(detail.tracks[0].streamUrl, { method: 'HEAD' }).catch(() => {});
+      }
+
       // Look up classic tier from showsByYear
       if (showsByYear && detail.year) {
         const yearShows = showsByYear[detail.year.toString()];

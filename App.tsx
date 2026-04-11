@@ -31,6 +31,27 @@ if (Platform.OS !== 'web') {
 // forget — errors ignored. Runs on all platforms.
 fetch('https://archive.org/advancedsearch.php?q=collection:GratefulDead&rows=0&output=json').catch(() => {});
 
+// Configure expo-av's audio session to mix with other apps (Spotify, Apple
+// Music, podcasts). Without this, the silent background video activates an
+// exclusive audio session on launch and interrupts whatever the user was
+// listening to. When the user actually plays a track, AudioPlayerModule
+// overrides this with an exclusive .playback category to take over correctly.
+if (Platform.OS !== 'web') {
+  try {
+    const { Audio, InterruptionModeIOS, InterruptionModeAndroid } = require('expo-av');
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
+      shouldDuckAndroid: false,
+      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      playThroughEarpieceAndroid: false,
+    }).catch(() => {});
+  } catch {
+    // expo-av not available — ignore
+  }
+}
+
 // Inject global styles on web (background, scrollbar)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const style = document.createElement('style');
