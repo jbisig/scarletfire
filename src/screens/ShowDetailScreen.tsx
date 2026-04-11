@@ -23,7 +23,7 @@ import { StarRating } from '../components/StarRating';
 import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
-import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
+import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
@@ -130,10 +130,22 @@ export function ShowDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
-  const [classicTier, setClassicTier] = useState<1 | 2 | 3 | null>(previewTier ?? null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
+
+  // Resolve classicTier synchronously from preview or showsByYear so stars render
+  // in the first paint instead of popping in after loadShowDetail completes.
+  const classicTier = useMemo<1 | 2 | 3 | null>(() => {
+    if (previewTier) return previewTier;
+    const year = previewDate?.substring(0, 4) ?? show?.date?.substring(0, 4);
+    if (!year || !showsByYear?.[year]) return null;
+    const identifier = route.params.identifier;
+    const match = showsByYear[year].find(
+      s => s.primaryIdentifier === identifier || s.date === (previewDate ?? show?.date)
+    );
+    return match?.classicTier ?? null;
+  }, [previewTier, previewDate, show?.date, showsByYear, route.params.identifier]);
 
   const hasAutoPlayed = useRef(false);
 
@@ -260,8 +272,19 @@ export function ShowDetailScreen() {
     setError(null);
 
     try {
-      const detail = await getShowDetail(identifier);
-      setShow(detail);
+      // Fetch show detail and all versions in parallel so the source picker
+      // and tracklist render together in one commit — no layout shift from
+      // versions loading after the initial render. If previewDate is
+      // available (navigation from a list), we can start the versions
+      // request immediately without waiting for the detail fetch.
+      const detailPromise = getShowDetail(identifier);
+      const versionsPromise: Promise<RecordingVersion[]> = previewDate
+        ? getShowVersions(previewDate)
+        : detailPromise.then(d => (d.date ? getShowVersions(d.date) : []));
+
+      const [detail, versions] = await Promise.all([detailPromise, versionsPromise]);
+
+      setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
       setSelectedVersion(identifier);
 
       // Warm the audio CDN connection for the first track so tapping play
@@ -271,17 +294,6 @@ export function ShowDetailScreen() {
       // the specific ia***.us.archive.org host that serves the file.
       if (detail.tracks.length > 0) {
         fetch(detail.tracks[0].streamUrl, { method: 'HEAD' }).catch(() => {});
-      }
-
-      // Look up classic tier from showsByYear
-      if (showsByYear && detail.year) {
-        const yearShows = showsByYear[detail.year.toString()];
-        if (yearShows) {
-          const matchingShow = yearShows.find(s => s.primaryIdentifier === identifier || s.date === detail.date);
-          if (matchingShow?.classicTier) {
-            setClassicTier(matchingShow.classicTier);
-          }
-        }
       }
 
       // Update navigation title (also drives browser tab title via documentTitle formatter)
@@ -300,18 +312,6 @@ export function ShowDetailScreen() {
       setIsLoading(false);
     }
   };
-
-  // Load versions in the background after the show metadata is available
-  useEffect(() => {
-    if (!show?.date || show.allVersions) return;
-    let cancelled = false;
-    getShowVersions(show.date).then(versions => {
-      if (!cancelled && versions.length > 0) {
-        setShow(prev => prev ? { ...prev, allVersions: versions } : prev);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [show?.identifier, show?.date, show?.allVersions, getShowVersions]);
 
   const handleVersionChange = async (versionIdentifier: string) => {
     if (versionIdentifier !== selectedVersion) {
@@ -401,16 +401,28 @@ export function ShowDetailScreen() {
     );
   }
 
-  // Use real show data if loaded, otherwise build a preview from nav params
-  const displayShow: ShowDetail = show ?? {
-    identifier: route.params.identifier,
-    date: previewDate ?? '',
-    venue: previewVenue ?? '',
-    location: previewLocation ?? '',
-    tracks: [],
-    source: '',
-    year: previewDate ? parseInt(previewDate.substring(0, 4)) : 0,
-  } as ShowDetail;
+  // Use real show data once loaded, but prefer preview values for
+  // venue/date/location so the header doesn't visibly change when the
+  // archive.org metadata comes in with slightly different formatting.
+  // Clearing title ensures getVenueFromShow uses the stable venue field
+  // instead of extracting a (potentially different) venue from title.
+  const displayShow: ShowDetail = show
+    ? {
+        ...show,
+        title: previewVenue ? '' : show.title,
+        venue: previewVenue ?? show.venue,
+        date: previewDate ?? show.date,
+        location: previewLocation ?? show.location,
+      }
+    : ({
+        identifier: route.params.identifier,
+        date: previewDate ?? '',
+        venue: previewVenue ?? '',
+        location: previewLocation ?? '',
+        tracks: [],
+        source: '',
+        year: previewDate ? parseInt(previewDate.substring(0, 4)) : 0,
+      } as ShowDetail);
 
   const isSaved = isShowFavorite(displayShow.identifier);
 
