@@ -17,6 +17,7 @@ class AudioPlayerModule: RCTEventEmitter {
   private var isRebuildingQueue: Bool = false  // Prevents race conditions during queue rebuild
   private var cachedArtwork: MPMediaItemArtwork?
   private var cachedArtworkUrl: String?
+  private var audioSessionActivated: Bool = false  // Deferred until first play so we don't interrupt other apps at launch
 
   override init() {
     super.init()
@@ -72,10 +73,12 @@ class AudioPlayerModule: RCTEventEmitter {
   // MARK: - Setup
 
   private func setupAudioSession() {
+    // Only configure the category here — do NOT activate the session.
+    // Activating at app launch would interrupt other audio apps (Spotify, etc.).
+    // The session is activated lazily on the first play() call.
     do {
       let audioSession = AVAudioSession.sharedInstance()
       try audioSession.setCategory(.playback, mode: .default, options: [])
-      try audioSession.setActive(true)
 
       NotificationCenter.default.addObserver(
         self,
@@ -85,6 +88,16 @@ class AudioPlayerModule: RCTEventEmitter {
       )
     } catch {
       print("Failed to setup audio session: \(error)")
+    }
+  }
+
+  private func activateAudioSessionIfNeeded() {
+    guard !audioSessionActivated else { return }
+    do {
+      try AVAudioSession.sharedInstance().setActive(true)
+      audioSessionActivated = true
+    } catch {
+      print("Failed to activate audio session: \(error)")
     }
   }
 
@@ -249,6 +262,7 @@ class AudioPlayerModule: RCTEventEmitter {
   }
 
   private func playInternal() {
+    activateAudioSessionIfNeeded()
     player?.play()
     sendEvent(withName: "playback-state", body: ["state": "playing"])
     updateNowPlayingInfo()
