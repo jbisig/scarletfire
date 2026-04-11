@@ -1,13 +1,42 @@
 {
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "node scripts/copy-share-assets.js && npx expo export --platform web",
   "outputDirectory": "dist",
-  "rewrites": [
-    {
-      "source": "/((?!assets|favicon|manifest|_expo).*)",
-      "destination": "/index.html"
+  "functions": {
+    "api/og/show/[identifier].tsx": {
+      "maxDuration": 10,
+      "memory": 1024,
+      "includeFiles": "src/data/**"
+    },
+    "api/og/song/[identifier]/[trackTitle].tsx": {
+      "maxDuration": 10,
+      "memory": 1024,
+      "includeFiles": "src/data/**"
+    },
+    "api/html/show/[identifier].ts": {
+      "maxDuration": 10,
+      "memory": 512,
+      "includeFiles": "{src/data/**,dist/index.html}"
+    },
+    "api/html/song/[identifier]/[trackTitle].ts": {
+      "maxDuration": 10,
+      "memory": 512,
+      "includeFiles": "{src/data/**,dist/index.html}"
     }
+  },
+  "rewrites": [
+    { "source": "/show/:identifier/:trackTitle", "destination": "/api/html/song/:identifier/:trackTitle" },
+    { "source": "/show/:identifier", "destination": "/api/html/show/:identifier" },
+    { "source": "/((?!assets|favicon|manifest|_expo|.well-known|api|share).*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    },
     {
       "source": "/(.*)",
       "headers": [
