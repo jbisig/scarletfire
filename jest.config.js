@@ -5,6 +5,13 @@ module.exports = {
   ],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  moduleNameMapper: {
+    // Prevent haste from resolving the platform-agnostic shareService to
+    // shareService.native.ts. The .native.ts file is a separate module that
+    // only exports destination handlers; importers of plain 'shareService'
+    // always want the base (cross-platform) module.
+    '^(.*)/services/shareService$': '$1/services/shareService.ts',
+  },
   testMatch: ['**/__tests__/**/*.test.ts?(x)'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
