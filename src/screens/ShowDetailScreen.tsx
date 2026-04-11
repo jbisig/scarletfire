@@ -31,6 +31,7 @@ import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
+import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { getShowNotes } from '../utils/showNotes';
 import { SHOW_NOTES_CITATION } from '../data/showNotes';
@@ -81,36 +82,6 @@ function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: s
 const songsByTitle: Map<string, Song> = new Map(
   GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
 );
-
-// Calculate string similarity using Levenshtein distance
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase();
-  const s2 = str2.toLowerCase();
-
-  const costs: number[] = [];
-  for (let i = 0; i <= s1.length; i++) {
-    let lastValue = i;
-    for (let j = 0; j <= s2.length; j++) {
-      if (i === 0) {
-        costs[j] = j;
-      } else if (j > 0) {
-        let newValue = costs[j - 1];
-        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-        }
-        costs[j - 1] = lastValue;
-        lastValue = newValue;
-      }
-    }
-    if (i > 0) {
-      costs[s2.length] = lastValue;
-    }
-  }
-
-  const maxLength = Math.max(s1.length, s2.length);
-  const distance = costs[s2.length];
-  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
-}
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -239,25 +210,19 @@ export function ShowDetailScreen() {
     }
   }, [playerState.currentTrack?.id, playerState.isLoading, playerState.isPlaying, justPressedTrackId]);
 
-  // Auto-play track from URL slug (e.g. /shows/:identifier/dark-star)
+  // Auto-play track from URL slug (e.g. /show/:identifier/dark-star)
+  // NOTE: This will be changed to select-only in Task 14 of the share feature plan.
   useEffect(() => {
     if (!trackTitle || !show || hasAutoPlayed.current) return;
     hasAutoPlayed.current = true;
 
-    const searchString = trackTitle.toLowerCase();
-    let bestMatch: Track | null = null;
-    let bestScore = 0;
+    const bestMatch = matchTrackBySlug(
+      trackTitle,
+      show.tracks,
+      SIMILARITY_THRESHOLDS.SEARCH_MATCH
+    );
 
-    for (const track of show.tracks) {
-      const normalized = normalizeTrackTitle(track.title).toLowerCase();
-      const score = calculateSimilarity(searchString, normalized);
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = track;
-      }
-    }
-
-    if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
+    if (bestMatch) {
       loadTrack(bestMatch, show, show.tracks);
     }
   }, [trackTitle, show]);
