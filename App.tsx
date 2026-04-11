@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -12,6 +13,7 @@ import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
 import { ToastProvider } from './src/contexts/ToastContext';
+import { ShareSheetProvider } from './src/contexts/ShareSheetContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { WebAuthModalProvider } from './src/components/web/WebAuthModal';
@@ -93,31 +95,35 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <WebAuthModalProvider>
-              <ShowsProvider>
-                <ShowOfTheDayProvider>
-                  <FavoritesProvider>
-                    <PlayCountsProvider>
-                      <PlayerProvider>
-                        <VideoBackgroundProvider>
-                          <ErrorBoundary>
-                            <AppNavigator />
-                          </ErrorBoundary>
-                          {Platform.OS !== 'web' && <StatusBar style="light" />}
-                        </VideoBackgroundProvider>
-                      </PlayerProvider>
-                    </PlayCountsProvider>
-                  </FavoritesProvider>
-                </ShowOfTheDayProvider>
-              </ShowsProvider>
-            </WebAuthModalProvider>
-          </AuthProvider>
-        </ToastProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <WebAuthModalProvider>
+                <ShowsProvider>
+                  <ShowOfTheDayProvider>
+                    <FavoritesProvider>
+                      <PlayCountsProvider>
+                        <PlayerProvider>
+                          <VideoBackgroundProvider>
+                            <ShareSheetProvider>
+                              <ErrorBoundary>
+                                <AppNavigator />
+                              </ErrorBoundary>
+                              {Platform.OS !== 'web' && <StatusBar style="light" />}
+                            </ShareSheetProvider>
+                          </VideoBackgroundProvider>
+                        </PlayerProvider>
+                      </PlayCountsProvider>
+                    </FavoritesProvider>
+                  </ShowOfTheDayProvider>
+                </ShowsProvider>
+              </WebAuthModalProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
