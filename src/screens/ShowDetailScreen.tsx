@@ -35,6 +35,9 @@ import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { getShowNotes } from '../utils/showNotes';
 import { SHOW_NOTES_CITATION } from '../data/showNotes';
+import { haptics } from '../services/hapticService';
+import { useShareSheet } from '../contexts/ShareSheetContext';
+import type { ShareItem } from '../services/shareService';
 
 // Default profile image for logged out users (web header)
 
@@ -104,6 +107,7 @@ export function ShowDetailScreen() {
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
+  const { openShareTray } = useShareSheet();
 
   // Resolve classicTier synchronously from preview or showsByYear so stars render
   // in the first paint instead of popping in after loadShowDetail completes.
@@ -321,6 +325,40 @@ export function ShowDetailScreen() {
       classicTier: nextShow.classicTier,
     });
   }, [navigation]);
+
+  const handleShareShow = useCallback(() => {
+    if (!show) return;
+
+    const item: ShareItem = {
+      kind: 'show',
+      showId: show.identifier,
+      date: show.date,
+      venue: getVenueFromShow(show),
+      tier: classicTier,
+    };
+
+    haptics.light();
+    openShareTray(item);
+  }, [show, classicTier, openShareTray]);
+
+  // Register a headerRight share icon. Runs in a separate useEffect from the
+  // initial title-setting call in loadShowDetail so the callback stays fresh
+  // when `show` or `classicTier` change (e.g. when the user navigates between
+  // versions or previews).
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleShareShow}
+          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Share show"
+        >
+          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, handleShareShow]);
 
   const handleToggleFavorite = () => {
     if (show) {
