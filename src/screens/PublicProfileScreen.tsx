@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   },
   twoColumnRow: {
     flexDirection: 'row',
-    gap: SPACING.xl,
+    gap: SPACING.xxxl,
     marginBottom: SPACING.xxl,
   },
   column: {
