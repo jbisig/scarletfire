@@ -12,6 +12,7 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
@@ -55,6 +56,12 @@ const nativeLinking = Platform.OS !== 'web'
               trackTitle: (slug: string) => decodeURIComponent(slug).replace(/-/g, ' '),
             },
           },
+          PublicProfile: {
+            path: 'profile/:username',
+            parse: {
+              username: (u: string) => decodeURIComponent(u),
+            },
+          },
           MainTabs: {
             path: '',
             screens: {
@@ -94,6 +101,7 @@ export type RootStackParamList = {
   };
   Settings: undefined;
   PrivacyPolicy: undefined;
+  PublicProfile: { username: string };
   ResetPassword: undefined;
   MainTabs: undefined;
 };
@@ -119,6 +127,7 @@ const SCREEN_TITLES: Record<string, string> = {
   Favorites: 'Favorites',
   Settings: 'Settings',
   PrivacyPolicy: 'Privacy Policy',
+  PublicProfile: 'Profile',
   ResetPassword: 'Reset Password',
 };
 
@@ -392,6 +401,13 @@ export function AppNavigator() {
               options={{
                 presentation: 'modal',
                 gestureEnabled: true,
+              }}
+            />
+            <RootStack.Screen
+              name="PublicProfile"
+              component={PublicProfileScreen}
+              options={{
+                headerShown: false,
               }}
             />
             <RootStack.Screen

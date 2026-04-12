@@ -76,6 +76,10 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
       Favorites: 'favorites',
       SongPerformances: songPerformancesRoute,
       ShowDetail: showDetailRoute,
+      PublicProfile: {
+        path: 'profile/:username',
+        parse: { username: (u: string) => decodeURIComponent(u) },
+      },
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
       ResetPassword: 'reset-password',
@@ -134,6 +138,10 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
         },
       },
       ShowDetail: showDetailRoute,
+      PublicProfile: {
+        path: 'profile/:username',
+        parse: { username: (u: string) => decodeURIComponent(u) },
+      },
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
       ResetPassword: 'reset-password',
