@@ -6,6 +6,7 @@ import {
 } from '../../../_lib/showLookupEdge.js';
 import { fetchTrackList } from '../../../_lib/fetchTrackList.js';
 import { matchTrackBySlug } from '../../../_lib/trackMatching.js';
+import { WEB_ORIGIN } from '../../../_lib/constants.js';
 
 // See api/og/show/[identifier].tsx — Edge runtime is the canonical target
 // for @vercel/og; Node runtime hangs on Satori's image fetches.
@@ -37,6 +38,8 @@ const SEARCH_MATCH_THRESHOLD = 0.75;
  * If the show isn't in the bundled catalog OR the archive.org lookup fails,
  * falls back to a humanized slug — still cacheable, just less specific.
  */
+const fontUrl = `${WEB_ORIGIN}/share/FamiljenGrotesk-SemiBold.ttf`;
+
 // See show/[identifier].tsx for the req.url / query-param convention.
 export default async function handler(req: Request): Promise<Response> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,16 +50,18 @@ export default async function handler(req: Request): Promise<Response> {
   const trackSlug = decodeURIComponent(url.searchParams.get('trackTitle') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
-  const show =
-    lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier);
+  const [fontData, show] = await Promise.all([
+    fetch(fontUrl).then(r => r.arrayBuffer()),
+    Promise.resolve(lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier)),
+  ]);
 
-  // Humanize the slug as a fallback title ("franklins-tower" → "franklins tower")
+  const fonts = [{ name: 'FamiljenGrotesk', data: fontData, weight: 500 as const }];
+
   let songTitle = trackSlug.replace(/-/g, ' ');
 
   if (show) {
     const trackList = await fetchTrackList(show.primaryIdentifier);
     if (trackList) {
-      // matchTrackBySlug expects MinimalTrack { id: string; title: string }
       const match = matchTrackBySlug(
         trackSlug,
         trackList.tracks.map((t, i) => ({ id: String(i), title: t.title })),
@@ -77,6 +82,7 @@ export default async function handler(req: Request): Promise<Response> {
     {
       width: 1200,
       height: 1200,
+      fonts,
       headers: {
         'Cache-Control': show
           ? 'public, max-age=31536000, immutable'

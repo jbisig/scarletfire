@@ -4,6 +4,7 @@ import {
   lookupShowByDate,
   lookupShowByIdentifier,
 } from '../../_lib/showLookupEdge.js';
+import { WEB_ORIGIN } from '../../_lib/constants.js';
 
 // @vercel/og is designed for and best supported on Edge runtime — Node
 // runtime hangs on Satori's internal image fetches. Edge uses V8 isolates
@@ -45,6 +46,13 @@ function clampBg(bg: string | null): number {
 // absolute → base arg is ignored). Dynamic route params are also appended
 // to the query string by Vercel (note the "&identifier=..." above), so we
 // can read them directly from searchParams without parsing the path.
+const fontUrl = `${WEB_ORIGIN}/share/FamiljenGrotesk-SemiBold.ttf`;
+
+async function loadFont(): Promise<ArrayBuffer> {
+  const res = await fetch(fontUrl);
+  return res.arrayBuffer();
+}
+
 export default async function handler(req: Request): Promise<Response> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawReq = req as any;
@@ -53,40 +61,22 @@ export default async function handler(req: Request): Promise<Response> {
   const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
-  const show =
-    lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier);
+  const [fontData, show] = await Promise.all([
+    loadFont(),
+    Promise.resolve(lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier)),
+  ]);
+
+  const fonts = [{ name: 'FamiljenGrotesk', data: fontData, weight: 500 as const }];
 
   if (!show) {
     return new ImageResponse(
-      renderCard({
-        title: 'Scarlet Fire',
-        subtitle: 'Grateful Dead Archive',
-        tier: null,
-        bgIndex,
-      }),
-      {
-        width: 1200,
-        height: 1200,
-        headers: {
-          'Cache-Control': 'public, max-age=300, s-maxage=300',
-        },
-      }
+      renderCard({ title: 'Scarlet Fire', subtitle: 'Grateful Dead Archive', tier: null, bgIndex }),
+      { width: 1200, height: 1200, fonts, headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300' } }
     );
   }
 
   return new ImageResponse(
-    renderCard({
-      title: formatDate(show.date),
-      subtitle: show.venue,
-      tier: show.classicTier,
-      bgIndex,
-    }),
-    {
-      width: 1200,
-      height: 1200,
-      headers: {
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    }
+    renderCard({ title: formatDate(show.date), subtitle: show.venue, tier: show.classicTier, bgIndex }),
+    { width: 1200, height: 1200, fonts, headers: { 'Cache-Control': 'public, max-age=31536000, immutable' } }
   );
 }

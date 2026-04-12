@@ -11,6 +11,14 @@ const destDir = path.join(__dirname, '..', 'public', 'share');
 
 const files = ['bg-1.png', 'bg-2.png', 'bg-3.png', 'bg-4.png', 'bg-5.png', 'bg-6.png', 'logo.png'];
 
+// Also copy the font for the OG image endpoints (Satori needs it via URL fetch)
+const fontSrc = path.join(__dirname, '..', 'assets', 'fonts', 'FamiljenGrotesk-SemiBold.ttf');
+const fontDest = path.join(destDir, 'FamiljenGrotesk-SemiBold.ttf');
+if (fs.existsSync(fontSrc)) {
+  fs.copyFileSync(fontSrc, fontDest);
+  console.log('[copy-share-assets] copied FamiljenGrotesk-SemiBold.ttf');
+}
+
 fs.mkdirSync(destDir, { recursive: true });
 
 for (const file of files) {

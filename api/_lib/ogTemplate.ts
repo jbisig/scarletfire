@@ -72,6 +72,7 @@ export function renderCard(props: CardProps) {
         style: {
           display: 'flex',
           fontSize: 64,
+          fontFamily: 'FamiljenGrotesk',
           fontWeight: 500,
           color: TEXT_COLOR,
           lineHeight: 1.1,
@@ -87,6 +88,7 @@ export function renderCard(props: CardProps) {
         style: {
           display: 'flex',
           fontSize: 44,
+          fontFamily: 'FamiljenGrotesk',
           fontWeight: 500,
           color: SUBTLE_TEXT_COLOR,
         },
@@ -112,7 +114,8 @@ export function renderCard(props: CardProps) {
                 key: 'metaLine',
                 style: {
                   fontSize: 44,
-                  fontWeight: 500,
+                  fontFamily: 'FamiljenGrotesk',
+          fontWeight: 500,
                   color: SUBTLE_TEXT_COLOR,
                 },
               },
@@ -157,6 +160,18 @@ export function renderCard(props: CardProps) {
         top: 0,
         left: 0,
         objectFit: 'cover',
+      },
+    }),
+    // Gradient overlay — matches the in-app ShareCard's LinearGradient
+    React.createElement('div', {
+      key: 'gradient',
+      style: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.75) 100%)',
       },
     }),
     // Logo top-left
