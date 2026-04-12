@@ -1,44 +1,35 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ImageBackground } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { ShareItem } from '../../services/shareService';
 import { formatDateMMDDYYYY } from '../../services/shareService';
 import { StarRating } from '../StarRating';
+import { FONTS } from '../../constants/theme';
 import { getShareBackground, SHARE_LOGO } from './shareBackgrounds';
 
 interface ShareCardProps {
   item: ShareItem;
-  bgIndex: number;   // 1..6 (getShareBackground clamps out-of-range to bg-1)
+  bgIndex: number;
 }
 
-/**
- * Square preview card shown in the share tray. Mirrors Figma 138:287 (song)
- * and 138:324 (show):
- *   - 1:1 aspect, rounded corners, dark #121212 background under the bg image
- *   - Scarlet Fire logo top-left
- *   - Info bottom-left: title / subtitle (venue) / meta row (date + stars)
- *
- * The server-rendered OG image (via @vercel/og, plan Task 20) reproduces
- * this layout for the chat unfurl preview. This component and that template
- * should stay visually in sync.
- *
- * The card sizes depend on which ShareItem kind is passed:
- *   - show: title = formatted date, meta row = stars only
- *   - song: title = track title, meta row = date + stars
- */
 export function ShareCard({ item, bgIndex }: ShareCardProps) {
   const bgSource = getShareBackground(bgIndex);
   const formattedDate = formatDateMMDDYYYY(item.date);
   const title = item.kind === 'show' ? formattedDate : item.trackTitle;
-  // Song cards use the track rating if present, falling back to the show tier.
-  // Show cards use the show's classicTier directly.
   const tier = item.kind === 'show' ? item.tier : item.rating;
 
   return (
     <View style={styles.card}>
       <ImageBackground source={bgSource} style={styles.bg} imageStyle={styles.bgImage}>
+        {/* Dark gradient overlay — bottom half fades from transparent to
+            near-black so the white text has reliable contrast against any
+            of the 6 background images. Matches the Figma card design. */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0, 0, 0, 0.85)']}
+          locations={[0.3, 1]}
+          style={styles.gradient}
+        />
         <View style={styles.content}>
-          {/* Figma puts the logo top-left at ~15% of the card width; 56×62 is the
-              intended native-render size at the ~350px tray width. */}
           <Image source={SHARE_LOGO} style={styles.logo} resizeMode="contain" />
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={1}>
@@ -74,6 +65,15 @@ const styles = StyleSheet.create({
   bgImage: {
     borderRadius: 32,
   },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '60%',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
   content: {
     flex: 1,
     padding: 24,
@@ -89,11 +89,13 @@ const styles = StyleSheet.create({
   title: {
     color: '#fff',
     fontSize: 22,
+    fontFamily: FONTS.primary,
     fontWeight: '500',
   },
   subtitle: {
     color: '#fff',
     fontSize: 15,
+    fontFamily: FONTS.primary,
     fontWeight: '500',
     opacity: 0.9,
   },
@@ -106,6 +108,7 @@ const styles = StyleSheet.create({
   meta: {
     color: '#fff',
     fontSize: 15,
+    fontFamily: FONTS.primary,
     fontWeight: '500',
     opacity: 0.9,
   },
