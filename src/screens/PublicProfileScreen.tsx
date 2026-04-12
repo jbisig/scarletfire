@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,13 @@ import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
 import { useResponsive } from '../hooks/useResponsive';
+import { usePlayer } from '../contexts/PlayerContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { archiveApi } from '../services/archiveApi';
+import { FavoriteSong } from '../contexts/FavoritesContext';
+import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { PlayCountBadge } from '../components/PlayCountBadge';
@@ -80,11 +84,13 @@ export function PublicProfileScreen() {
   const route = useRoute<RouteProp<ProfileRouteParams, 'PublicProfile'>>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
+  const { loadTrack } = usePlayer();
 
   const username = route.params?.username ?? '';
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
@@ -283,6 +289,22 @@ export function PublicProfileScreen() {
     navigation.navigate('ShowDetail', { identifier, venue, date });
   };
 
+  const handleSongPress = useCallback(async (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
+    const songKey = `${song.trackId}-${song.showIdentifier}`;
+    try {
+      setLoadingSongId(songKey);
+      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
+      const track = showDetail.tracks.find(t => t.id === song.trackId);
+      if (track) {
+        await loadTrack(track, showDetail, showDetail.tracks);
+      }
+    } catch (error) {
+      logger.player.error('Failed to load song:', error);
+    } finally {
+      setLoadingSongId(null);
+    }
+  }, [loadTrack]);
+
   const formatRecentDate = (timestamp: number): string => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -390,12 +412,15 @@ export function PublicProfileScreen() {
   const renderSongRow = (song: typeof data.favorites.songs[0], trailingContent?: React.ReactNode) => {
     const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
     const venue = getCorrectVenue(song.showDate) || song.venue;
+    const songKey = `${song.trackId}-${song.showIdentifier}`;
+    const isSongLoading = loadingSongId === songKey;
 
     return (
       <TouchableOpacity
-        style={styles.songItem}
-        onPress={() => handleShowPress(song.showIdentifier)}
+        style={[styles.songItem, isSongLoading && styles.songItemLoading]}
+        onPress={() => handleSongPress(song)}
         activeOpacity={0.7}
+        disabled={isSongLoading}
       >
         <View style={styles.songContentRow}>
           <View style={styles.songInfo}>
@@ -725,6 +750,9 @@ const styles = StyleSheet.create({
   recentTime: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
+  },
+  songItemLoading: {
+    opacity: 0.5,
   },
   songItem: {
     paddingVertical: 8,
