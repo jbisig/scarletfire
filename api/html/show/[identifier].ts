@@ -1,11 +1,10 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { injectOgTags } from '../../_lib/injectOgTags.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
 } from '../../_lib/showLookup.js';
 import { WEB_ORIGIN } from '../../_lib/constants.js';
+import { INDEX_HTML } from '../../_lib/indexHtml.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -23,18 +22,6 @@ function clampBg(bg: string | null): number {
   return rounded;
 }
 
-// Cache dist/index.html in module scope. Vercel Fluid Compute reuses warm
-// instances, so this file read happens at most once per cold start.
-let cachedIndexHtml: string | null = null;
-async function loadIndexHtml(): Promise<string> {
-  if (cachedIndexHtml) return cachedIndexHtml;
-  // functions.includeFiles in vercel.json ships dist/index.html alongside
-  // the function bundle; process.cwd() points at the repo root at runtime.
-  const indexPath = path.resolve(process.cwd(), 'dist', 'index.html');
-  cachedIndexHtml = await fs.readFile(indexPath, 'utf-8');
-  return cachedIndexHtml;
-}
-
 /**
  * GET /show/:identifier  (rewritten from the SPA route via vercel.json)
  *
@@ -46,6 +33,11 @@ async function loadIndexHtml(): Promise<string> {
  * If the show isn't in the catalog, returns the unmodified index.html so
  * the SPA still handles the route normally (which might show a "not found"
  * state). Short TTL on misses, 1-hour SWR on hits.
+ *
+ * INDEX_HTML is the SPA's index.html inlined as a TS string constant by
+ * scripts/generate-index-html.js at build time — avoids fs.readFile and
+ * the functions.includeFiles glob, both of which proved unreliable in
+ * this runtime.
  */
 // See api/og/show/[identifier].tsx for the req.url / query-param convention.
 export default async function handler(req: Request): Promise<Response> {
@@ -58,10 +50,9 @@ export default async function handler(req: Request): Promise<Response> {
 
   const show =
     lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier);
-  const html = await loadIndexHtml();
 
   if (!show) {
-    return new Response(html, {
+    return new Response(INDEX_HTML, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=60, s-maxage=300',
@@ -74,7 +65,7 @@ export default async function handler(req: Request): Promise<Response> {
   const imageUrl = `${WEB_ORIGIN}/api/og/show/${show.date}?bg=${bgIndex}`;
   const shareUrl = `${WEB_ORIGIN}/show/${show.date}?bg=${bgIndex}`;
 
-  const injected = injectOgTags(html, { title, description, imageUrl, url: shareUrl });
+  const injected = injectOgTags(INDEX_HTML, { title, description, imageUrl, url: shareUrl });
 
   return new Response(injected, {
     headers: {

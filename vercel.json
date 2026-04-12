@@ -1,14 +1,12 @@
 {
-  "buildCommand": "node scripts/copy-share-assets.js && npx expo export --platform web",
+  "buildCommand": "node scripts/copy-share-assets.js && npx expo export --platform web && node scripts/generate-index-html.js",
   "outputDirectory": "dist",
   "functions": {
     "api/html/show/[identifier].ts": {
-      "maxDuration": 10,
-      "includeFiles": "dist/index.html"
+      "maxDuration": 10
     },
     "api/html/song/[identifier]/[trackTitle].ts": {
-      "maxDuration": 10,
-      "includeFiles": "dist/index.html"
+      "maxDuration": 10
     }
   },
   "rewrites": [

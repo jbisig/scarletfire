@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { injectOgTags } from '../../../_lib/injectOgTags.js';
 import {
   lookupShowByDate,
@@ -8,6 +6,7 @@ import {
 import { fetchTrackList } from '../../../_lib/fetchTrackList.js';
 import { matchTrackBySlug } from '../../../_lib/trackMatching.js';
 import { WEB_ORIGIN } from '../../../_lib/constants.js';
+import { INDEX_HTML } from '../../../_lib/indexHtml.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -26,14 +25,6 @@ function clampBg(bg: string | null): number {
 }
 
 const SEARCH_MATCH_THRESHOLD = 0.75;
-
-let cachedIndexHtml: string | null = null;
-async function loadIndexHtml(): Promise<string> {
-  if (cachedIndexHtml) return cachedIndexHtml;
-  const indexPath = path.resolve(process.cwd(), 'dist', 'index.html');
-  cachedIndexHtml = await fs.readFile(indexPath, 'utf-8');
-  return cachedIndexHtml;
-}
 
 /**
  * GET /show/:identifier/:trackTitle (rewritten from the SPA route).
@@ -54,10 +45,9 @@ export default async function handler(req: Request): Promise<Response> {
 
   const show =
     lookupShowByDate(identifier) ?? lookupShowByIdentifier(identifier);
-  const html = await loadIndexHtml();
 
   if (!show) {
-    return new Response(html, {
+    return new Response(INDEX_HTML, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=60',
@@ -81,7 +71,7 @@ export default async function handler(req: Request): Promise<Response> {
   const imageUrl = `${WEB_ORIGIN}/api/og/song/${show.date}/${trackSlug}?bg=${bgIndex}`;
   const shareUrl = `${WEB_ORIGIN}/show/${show.date}/${trackSlug}?bg=${bgIndex}`;
 
-  const injected = injectOgTags(html, { title, description, imageUrl, url: shareUrl });
+  const injected = injectOgTags(INDEX_HTML, { title, description, imageUrl, url: shareUrl });
 
   return new Response(injected, {
     headers: {
