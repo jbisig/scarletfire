@@ -38,7 +38,7 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
     return item ? pickRandomBackground() : 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    item?.showId,
+    item?.kind === 'profile' ? (item as any).username : item?.showId,
     item?.kind,
     item?.kind === 'song' ? item.trackId : null,
   ]);
@@ -55,7 +55,12 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
 
   if (!item) return null;
 
-  const headline = item.kind === 'song' ? 'Share this song' : 'Share this show';
+  let headline: string;
+  if (item.kind === 'profile') {
+    headline = 'Share your favorites';
+  } else {
+    headline = item.kind === 'song' ? 'Share this song' : 'Share this show';
+  }
 
   const handleDestination = (fn: DestinationFn) => () => {
     // Kick off the destination handler but don't await it here — the tray
