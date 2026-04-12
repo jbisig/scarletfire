@@ -507,8 +507,10 @@ export function PublicProfileScreen() {
                 uri={data.avatarUrl}
                 style={styles.avatar}
               />
-              <Text style={styles.displayName}>{displayName}</Text>
-              <Text style={styles.username}>@{data.profile.username}</Text>
+              <View style={styles.profileInfo}>
+                <Text style={styles.displayName}>{displayName}</Text>
+                <Text style={styles.username}>@{data.profile.username}</Text>
+              </View>
             </View>
 
             {/* Stats Bar */}
@@ -600,19 +602,22 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
   },
   profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.lg,
     marginBottom: SPACING.lg,
+  },
+  profileInfo: {
+    flex: 1,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: COLORS.cardBackground,
-    marginBottom: SPACING.md,
   },
   displayName: {
     ...TYPOGRAPHY.heading2,
-    textAlign: 'center',
   },
   username: {
     ...TYPOGRAPHY.body,
