@@ -607,6 +607,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
+    marginTop: SPACING.md,
     marginBottom: SPACING.xl,
     gap: SPACING.sm,
   },
