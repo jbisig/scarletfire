@@ -3,6 +3,27 @@ import { User } from '@supabase/supabase-js';
 import { authService } from './authService';
 import { Alert } from 'react-native';
 import { logger } from '../utils/logger';
+import { GratefulDeadShow } from '../types/show.types';
+import { FavoriteSong } from './favoritesCloudService';
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  display_name: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicProfileData {
+  profile: UserProfile;
+  avatarUrl: string | null;
+  favorites: {
+    shows: GratefulDeadShow[];
+    songs: FavoriteSong[];
+  };
+  playCounts: Array<{ trackId: string; showIdentifier: string; count: number }>;
+}
 
 class ProfileService {
   /**
@@ -126,6 +147,124 @@ class ProfileService {
       );
       throw error;
     }
+  }
+
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+    return data;
+  }
+
+  async createProfile(userId: string, username: string): Promise<UserProfile> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({ id: userId, username: username.toLowerCase() })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateUsername(userId: string, username: string): Promise<UserProfile> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ username: username.toLowerCase(), updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateDisplayName(userId: string, displayName: string): Promise<void> {
+    const supabase = authService.getClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName || null, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) throw error;
+  }
+
+  async setProfilePublic(userId: string, isPublic: boolean): Promise<void> {
+    const supabase = authService.getClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_public: isPublic, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) throw error;
+  }
+
+  async checkUsernameAvailable(username: string): Promise<boolean> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', username.toLowerCase())
+      .maybeSingle();
+
+    if (error) throw error;
+    return data === null;
+  }
+
+  async getPublicProfile(username: string): Promise<PublicProfileData | null> {
+    const supabase = authService.getClient();
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username.toLowerCase())
+      .single();
+
+    if (profileError || !profile) return null;
+
+    const { data: avatarFiles } = await supabase.storage
+      .from('avatars')
+      .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+
+    let avatarUrl: string | null = null;
+    if (avatarFiles && avatarFiles.length > 0) {
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
+      avatarUrl = urlData.publicUrl;
+    }
+
+    const [favResult, playResult] = await Promise.all([
+      supabase
+        .from('user_favorites')
+        .select('shows, songs')
+        .eq('user_id', profile.id)
+        .single(),
+      supabase
+        .from('user_play_counts')
+        .select('play_counts')
+        .eq('user_id', profile.id)
+        .single(),
+    ]);
+
+    const favorites = {
+      shows: favResult.data?.shows || [],
+      songs: favResult.data?.songs || [],
+    };
+
+    const playCounts = playResult.data?.play_counts || [];
+
+    return { profile, avatarUrl, favorites, playCounts };
   }
 
   /**
