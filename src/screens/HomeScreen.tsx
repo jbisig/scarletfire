@@ -202,6 +202,7 @@ export function HomeScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
 
@@ -424,6 +425,7 @@ export function HomeScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onViewProfile={handleViewProfile}
       />
 
       {/* Action Bar Section with Sort */}

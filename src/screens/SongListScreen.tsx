@@ -92,6 +92,7 @@ export function SongListScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
 
@@ -293,6 +294,7 @@ export function SongListScreen() {
           onLogin={handleLogin}
           onLogout={handleLogout}
           onSettings={handleSettings}
+          onViewProfile={handleViewProfile}
         />
       </View>
     </Wrapper>

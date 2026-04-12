@@ -184,6 +184,7 @@ export function FavoritesScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
 
@@ -863,6 +864,7 @@ export function FavoritesScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onViewProfile={handleViewProfile}
       />
 
       {/* Tab Content */}

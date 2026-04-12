@@ -427,18 +427,28 @@ export function SettingsScreen() {
               />
             </View>
 
-            {/* Profile URL Preview */}
+            {/* View Profile + URL */}
             {profile?.is_public && profile.username && (
-              <TouchableOpacity
-                style={styles.profileUrlContainer}
-                onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="link-outline" size={16} color={COLORS.accent} />
-                <Text style={styles.profileUrl}>
-                  scarletfire.app/profile/{profile.username}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.profileLinkSection}>
+                <TouchableOpacity
+                  style={styles.viewProfileButton}
+                  onPress={() => navigation.navigate('PublicProfile' as never, { username: profile.username } as never)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
+                  <Text style={styles.viewProfileText}>View Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.profileUrlContainer}
+                  onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="link-outline" size={16} color={COLORS.accent} />
+                  <Text style={styles.profileUrl}>
+                    scarletfire.app/profile/{profile.username}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </>
         )}
@@ -665,11 +675,29 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  profileLinkSection: {
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  viewProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.xl,
+  },
+  viewProfileText: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+  },
   profileUrlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   profileUrl: {
     ...TYPOGRAPHY.label,

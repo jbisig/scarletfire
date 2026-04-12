@@ -17,6 +17,7 @@ interface ProfileDropdownProps {
   onLogin: () => void;
   onLogout: () => void;
   onSettings: () => void;
+  onViewProfile?: (() => void) | null;
 }
 
 export const ProfileDropdown = React.memo<ProfileDropdownProps>(function ProfileDropdown({
@@ -26,6 +27,7 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
   onLogin,
   onLogout,
   onSettings,
+  onViewProfile,
 }) {
   return (
     <Modal
@@ -43,6 +45,21 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
         >
           {isAuthenticated ? (
             <>
+              {onViewProfile && (
+                <>
+                  <TouchableOpacity
+                    style={styles.item}
+                    onPress={onViewProfile}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="View Profile"
+                    accessibilityHint="Double tap to view your public profile"
+                  >
+                    <Text style={styles.itemText}>View Profile</Text>
+                  </TouchableOpacity>
+                  <View style={styles.divider} />
+                </>
+              )}
               <TouchableOpacity
                 style={styles.item}
                 onPress={onSettings}
