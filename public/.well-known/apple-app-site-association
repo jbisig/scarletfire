@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["TODO_APPLE_TEAM_ID.com.scarletfire.app"],
+        "appIDs": ["A6AANU72S4.com.scarletfire.app"],
         "components": [
           {
             "/": "/show/*",
