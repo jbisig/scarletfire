@@ -22,7 +22,7 @@ export interface PublicProfileData {
     shows: GratefulDeadShow[];
     songs: FavoriteSong[];
   };
-  playCounts: Array<{ trackId: string; showIdentifier: string; count: number }>;
+  playCounts: Array<{ trackId: string; trackTitle: string; showIdentifier: string; showDate: string; count: number; lastPlayedAt: number; firstPlayedAt: number }>;
 }
 
 class ProfileService {

@@ -21,13 +21,15 @@ interface ShowCardProps {
   overrideRating?: 1 | 2 | 3 | null;
   /** Override the play count (use song-specific count instead of show count) */
   overridePlayCount?: number;
+  /** Hide the save/saved heart badge */
+  hideSaveBadge?: boolean;
 }
 
 /**
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { isDesktop } = useResponsive();
@@ -159,7 +161,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </View>
             )}
             <PlayCountBadge count={playCount} size="small" />
-            {isWeb && (
+            {isWeb && !hideSaveBadge && (
               <TouchableOpacity
                 style={styles.savePill}
                 onPress={handleToggleSave}

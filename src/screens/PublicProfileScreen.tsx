@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,28 +17,29 @@ import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
 import { PlayCountBadge } from '../components/PlayCountBadge';
 import { useResponsive } from '../hooks/useResponsive';
-import { usePlayer } from '../contexts/PlayerContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };
 };
+
+type TabType = 'shows' | 'songs';
 
 export function PublicProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<ProfileRouteParams, 'PublicProfile'>>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const { loadTrack } = usePlayer();
 
   const username = route.params?.username ?? '';
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('shows');
 
   useEffect(() => {
     if (!username) {
@@ -58,7 +60,7 @@ export function PublicProfileScreen() {
       .finally(() => setIsLoading(false));
   }, [username]);
 
-  // Compute top 10 shows and songs by play count
+  // Compute top 10 shows by play count
   const topShows = useMemo(() => {
     if (!data) return [];
     const showCounts: Record<string, number> = {};
@@ -75,20 +77,65 @@ export function PublicProfileScreen() {
       .slice(0, 10);
   }, [data]);
 
+  // Compute top 10 songs by play count
   const topSongs = useMemo(() => {
     if (!data) return [];
     const songCounts: Record<string, number> = {};
     for (const pc of data.playCounts) {
-      const key = `${pc.trackId}:${pc.showIdentifier}`;
+      const key = `${pc.trackTitle}:${pc.showIdentifier}`;
       songCounts[key] = (songCounts[key] || 0) + pc.count;
     }
     return data.favorites.songs
       .map(song => {
-        const key = `${song.trackId}:${song.showIdentifier}`;
+        const key = `${song.trackTitle}:${song.showIdentifier}`;
         return { song, plays: songCounts[key] || 0 };
       })
       .filter(s => s.plays > 0)
       .sort((a, b) => b.plays - a.plays)
+      .slice(0, 10);
+  }, [data]);
+
+  // Compute recently played shows (by most recent lastPlayedAt)
+  const recentShows = useMemo(() => {
+    if (!data) return [];
+    // Get most recent play per show
+    const showLastPlayed: Record<string, number> = {};
+    for (const pc of data.playCounts) {
+      const existing = showLastPlayed[pc.showIdentifier] || 0;
+      if (pc.lastPlayedAt > existing) {
+        showLastPlayed[pc.showIdentifier] = pc.lastPlayedAt;
+      }
+    }
+    // Match to favorite shows and sort by recency
+    return data.favorites.shows
+      .filter(show => showLastPlayed[show.primaryIdentifier])
+      .map(show => ({
+        show,
+        lastPlayedAt: showLastPlayed[show.primaryIdentifier],
+      }))
+      .sort((a, b) => b.lastPlayedAt - a.lastPlayedAt)
+      .slice(0, 10);
+  }, [data]);
+
+  // Compute recently played songs (by lastPlayedAt)
+  const recentSongs = useMemo(() => {
+    if (!data) return [];
+    // Get last played time per song
+    const songLastPlayed: Record<string, number> = {};
+    for (const pc of data.playCounts) {
+      const key = `${pc.trackTitle}:${pc.showIdentifier}`;
+      const existing = songLastPlayed[key] || 0;
+      if (pc.lastPlayedAt > existing) {
+        songLastPlayed[key] = pc.lastPlayedAt;
+      }
+    }
+    return data.favorites.songs
+      .filter(song => songLastPlayed[`${song.trackTitle}:${song.showIdentifier}`])
+      .map(song => ({
+        song,
+        lastPlayedAt: songLastPlayed[`${song.trackTitle}:${song.showIdentifier}`],
+      }))
+      .sort((a, b) => b.lastPlayedAt - a.lastPlayedAt)
       .slice(0, 10);
   }, [data]);
 
@@ -132,10 +179,211 @@ export function PublicProfileScreen() {
     navigation.navigate('ShowDetail', { identifier, venue, date });
   };
 
+  const formatRecentDate = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+    return `${Math.floor(diffDays / 30)}mo ago`;
+  };
+
+  const renderShowsTab = () => (
+    <>
+      {/* Recently Played Shows */}
+      {recentShows.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>Recently Played</Text>
+          {recentShows.map(item => (
+            <TouchableOpacity
+              key={`recent-${item.show.primaryIdentifier}`}
+              style={styles.rankedItem}
+              onPress={() => handleShowPress(
+                item.show.primaryIdentifier,
+                getVenueFromShow(item.show),
+                item.show.date,
+              )}
+              activeOpacity={0.7}
+            >
+              <View style={styles.rankedItemInfo}>
+                <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                  {formatDate(item.show.date)}
+                </Text>
+                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                  {getVenueFromShow(item.show)}
+                </Text>
+              </View>
+              <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Most Listened Shows */}
+      {topShows.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>Most Listened</Text>
+          {topShows.map((item, index) => (
+            <TouchableOpacity
+              key={item.show.primaryIdentifier}
+              style={styles.rankedItem}
+              onPress={() => handleShowPress(
+                item.show.primaryIdentifier,
+                getVenueFromShow(item.show),
+                item.show.date,
+              )}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.rankNumber}>{index + 1}</Text>
+              <View style={styles.rankedItemInfo}>
+                <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                  {formatDate(item.show.date)}
+                </Text>
+                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                  {getVenueFromShow(item.show)}
+                </Text>
+              </View>
+              <PlayCountBadge count={item.totalPlays} size="small" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Favorite Shows */}
+      {data.favorites.shows.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.shows.length})
+          </Text>
+          {data.favorites.shows.map(show => (
+            <ShowCard
+              key={show.primaryIdentifier}
+              show={show}
+              onPress={() => handleShowPress(
+                show.primaryIdentifier,
+                getVenueFromShow(show),
+                show.date,
+              )}
+              hideSaveBadge
+            />
+          ))}
+        </View>
+      )}
+    </>
+  );
+
+  const renderSongsTab = () => (
+    <>
+      {/* Recently Played Songs */}
+      {recentSongs.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>Recently Played</Text>
+          {recentSongs.map(item => (
+            <TouchableOpacity
+              key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}
+              style={styles.songItem}
+              onPress={() => handleShowPress(item.song.showIdentifier)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.songContentRow}>
+                <View style={styles.songInfo}>
+                  <Text style={styles.songTitle} numberOfLines={1}>
+                    {item.song.trackTitle}
+                  </Text>
+                  <View style={styles.songMeta}>
+                    <Text style={styles.songDate}>
+                      {formatDate(item.song.showDate)}
+                    </Text>
+                  </View>
+                  {item.song.venue && (
+                    <Text style={styles.songVenue} numberOfLines={1}>
+                      {item.song.venue}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Most Listened Songs */}
+      {topSongs.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>Most Listened</Text>
+          {topSongs.map((item, index) => (
+            <TouchableOpacity
+              key={`${item.song.trackId}-${item.song.showIdentifier}`}
+              style={styles.rankedItem}
+              onPress={() => handleShowPress(item.song.showIdentifier)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.rankNumber}>{index + 1}</Text>
+              <View style={styles.rankedItemInfo}>
+                <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                  {item.song.trackTitle}
+                </Text>
+                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                  {formatDate(item.song.showDate)}
+                  {item.song.venue ? ` · ${item.song.venue}` : ''}
+                </Text>
+              </View>
+              <PlayCountBadge count={item.plays} size="small" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Favorite Songs */}
+      {data.favorites.songs.length > 0 && (
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.songs.length})
+          </Text>
+          {data.favorites.songs.map(song => {
+            const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+            return (
+              <TouchableOpacity
+                key={`${song.trackId}-${song.showIdentifier}`}
+                style={styles.songItem}
+                onPress={() => handleShowPress(song.showIdentifier)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.songInfo}>
+                  <Text style={styles.songTitle} numberOfLines={1}>
+                    {song.trackTitle}
+                  </Text>
+                  <View style={styles.songMeta}>
+                    <Text style={styles.songDate}>
+                      {formatDate(song.showDate)}
+                    </Text>
+                    {performanceRating && (
+                      <StarRating tier={performanceRating} size={12} />
+                    )}
+                  </View>
+                  {song.venue && (
+                    <Text style={styles.songVenue} numberOfLines={1}>
+                      {song.venue}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </>
+  );
+
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
       <FlatList
-        data={[]} // We use ListHeaderComponent for all content
+        data={[]}
         renderItem={null}
         ListHeaderComponent={
           <View style={styles.contentContainer}>
@@ -164,121 +412,27 @@ export function PublicProfileScreen() {
               </Text>
             </View>
 
-            {/* Most Listened Shows */}
-            {topShows.length > 0 && (
-              <View style={styles.listSection}>
-                <Text style={styles.sectionTitle}>Most Listened Shows</Text>
-                {topShows.map((item, index) => (
-                  <TouchableOpacity
-                    key={item.show.primaryIdentifier}
-                    style={styles.rankedItem}
-                    onPress={() => handleShowPress(
-                      item.show.primaryIdentifier,
-                      getVenueFromShow(item.show),
-                      item.show.date,
-                    )}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.rankNumber}>{index + 1}</Text>
-                    <View style={styles.rankedItemInfo}>
-                      <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                        {formatDate(item.show.date)}
-                      </Text>
-                      <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                        {getVenueFromShow(item.show)}
-                      </Text>
-                    </View>
-                    <PlayCountBadge count={item.totalPlays} size="small" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            {/* Tab Navigation */}
+            <View style={styles.tabContainer} accessibilityRole="tablist">
+              {(['shows', 'songs'] as const).map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
+                  onPress={() => setActiveTab(tab)}
+                  activeOpacity={0.7}
+                  accessibilityRole="tab"
+                  accessibilityLabel={`${tab === 'shows' ? 'Shows' : 'Songs'} tab`}
+                  accessibilityState={{ selected: activeTab === tab }}
+                >
+                  <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
+                    {tab === 'shows' ? 'Shows' : 'Songs'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-            {/* Most Listened Songs */}
-            {topSongs.length > 0 && (
-              <View style={styles.listSection}>
-                <Text style={styles.sectionTitle}>Most Listened Songs</Text>
-                {topSongs.map((item, index) => (
-                  <TouchableOpacity
-                    key={`${item.song.trackId}-${item.song.showIdentifier}`}
-                    style={styles.rankedItem}
-                    onPress={() => handleShowPress(item.song.showIdentifier)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.rankNumber}>{index + 1}</Text>
-                    <View style={styles.rankedItemInfo}>
-                      <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                        {item.song.trackTitle}
-                      </Text>
-                      <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                        {formatDate(item.song.showDate)}
-                        {item.song.venue ? ` · ${item.song.venue}` : ''}
-                      </Text>
-                    </View>
-                    <PlayCountBadge count={item.plays} size="small" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Favorite Shows */}
-            {data.favorites.shows.length > 0 && (
-              <View style={styles.listSection}>
-                <Text style={styles.sectionTitle}>
-                  Favorite Shows ({data.favorites.shows.length})
-                </Text>
-                {data.favorites.shows.map(show => (
-                  <ShowCard
-                    key={show.primaryIdentifier}
-                    show={show}
-                    onPress={() => handleShowPress(
-                      show.primaryIdentifier,
-                      getVenueFromShow(show),
-                      show.date,
-                    )}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Favorite Songs */}
-            {data.favorites.songs.length > 0 && (
-              <View style={styles.listSection}>
-                <Text style={styles.sectionTitle}>
-                  Favorite Songs ({data.favorites.songs.length})
-                </Text>
-                {data.favorites.songs.map(song => {
-                  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-                  return (
-                    <TouchableOpacity
-                      key={`${song.trackId}-${song.showIdentifier}`}
-                      style={styles.songItem}
-                      onPress={() => handleShowPress(song.showIdentifier)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.songInfo}>
-                        <Text style={styles.songTitle} numberOfLines={1}>
-                          {song.trackTitle}
-                        </Text>
-                        <View style={styles.songMeta}>
-                          <Text style={styles.songDate}>
-                            {formatDate(song.showDate)}
-                          </Text>
-                          {performanceRating && (
-                            <StarRating tier={performanceRating} size={12} />
-                          )}
-                        </View>
-                        {song.venue && (
-                          <Text style={styles.songVenue} numberOfLines={1}>
-                            {song.venue}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+            {/* Tab Content */}
+            {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
           </View>
         }
         keyExtractor={() => 'profile'}
@@ -371,6 +525,43 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
   },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
+  },
+  tab: {
+    flex: 1,
+    paddingTop: 6,
+    paddingBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.xl,
+  },
+  activeTab: {
+    backgroundColor: COLORS.accent,
+  },
+  inactiveTab: {
+    backgroundColor: COLORS.cardBackground,
+  },
+  activeTabText: {
+    fontSize: 20,
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    ...(Platform.OS === 'android' && {
+      paddingTop: 2,
+    }),
+  },
+  inactiveTabText: {
+    fontSize: 20,
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    ...(Platform.OS === 'android' && {
+      paddingTop: 2,
+    }),
+  },
   listSection: {
     marginBottom: SPACING.xxl,
   },
@@ -408,12 +599,21 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  recentTime: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textTertiary,
+  },
   songItem: {
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  songContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   songInfo: {
+    flex: 1,
     gap: 2,
   },
   songTitle: {
