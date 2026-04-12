@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   recentTime: {
-    ...TYPOGRAPHY.captionSmall,
+    ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
   },
   songItem: {
