@@ -29,12 +29,30 @@ export default ({ config }) => {
         entitlements: {
           "com.apple.developer.applesignin": ["Default"]
         },
+        // Universal links for the share feature — any https link matching
+        // /show/* on www.scarletfire.app opens the native app directly if
+        // installed, falling back to Safari / the web build otherwise.
+        // Requires the corresponding apple-app-site-association file to be
+        // served at /.well-known/apple-app-site-association AND a rebuild
+        // (EAS) to apply the new entitlement.
+        associatedDomains: [
+          "applinks:www.scarletfire.app",
+          "applinks:scarletfire.app"
+        ],
         infoPlist: {
           NSAppleMusicUsageDescription: "This app streams audio from the Internet Archive.",
           NSPhotoLibraryUsageDescription: "This app needs access to your photo library to set your profile picture.",
           NSCameraUsageDescription: "This app needs access to your camera to take a profile picture.",
           UIBackgroundModes: [
             "audio"
+          ],
+          // Declare URL schemes we may query via Linking.canOpenURL from
+          // the share destination handlers — iOS 9+ privacy requirement.
+          LSApplicationQueriesSchemes: [
+            "whatsapp",
+            "sms",
+            "instagram",
+            "instagram-stories"
           ],
           CFBundleURLTypes: [
             {
@@ -63,7 +81,26 @@ export default ({ config }) => {
           "android.permission.WAKE_LOCK"
         ],
         edgeToEdgeEnabled: true,
-        predictiveBackGestureEnabled: false
+        predictiveBackGestureEnabled: false,
+        // Android app link: any https://www.scarletfire.app/show/* URL tapped
+        // on a device with the app installed opens the native app directly.
+        // Requires /.well-known/assetlinks.json to be served AND Google's
+        // crawler to verify the SHA256 fingerprint match — can take up to
+        // 24h to propagate after deploy.
+        intentFilters: [
+          {
+            action: "VIEW",
+            autoVerify: true,
+            data: [
+              {
+                scheme: "https",
+                host: "www.scarletfire.app",
+                pathPrefix: "/show"
+              }
+            ],
+            category: ["BROWSABLE", "DEFAULT"]
+          }
+        ]
       },
       web: {
         favicon: "./assets/favicon.png",

@@ -1,13 +1,28 @@
 {
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "node scripts/copy-share-assets.js && npx expo export --platform web && node scripts/generate-index-html.js",
   "outputDirectory": "dist",
-  "rewrites": [
-    {
-      "source": "/((?!assets|favicon|manifest|_expo).*)",
-      "destination": "/index.html"
+  "functions": {
+    "api/html/show/[identifier].ts": {
+      "maxDuration": 10
+    },
+    "api/html/song/[identifier]/[trackTitle].ts": {
+      "maxDuration": 10
     }
+  },
+  "rewrites": [
+    { "source": "/show/:identifier/:trackTitle", "destination": "/api/html/song/:identifier/:trackTitle" },
+    { "source": "/show/:identifier", "destination": "/api/html/show/:identifier" },
+    { "source": "/((?!assets|favicon|manifest|_expo|.well-known|api|share).*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    },
     {
       "source": "/(.*)",
       "headers": [

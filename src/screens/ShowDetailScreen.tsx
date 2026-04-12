@@ -31,9 +31,13 @@ import { getVenueFromShow } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
+import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { getShowNotes } from '../utils/showNotes';
 import { SHOW_NOTES_CITATION } from '../data/showNotes';
+import { haptics } from '../services/hapticService';
+import { useShareSheet } from '../contexts/ShareSheetContext';
+import type { ShareItem } from '../services/shareService';
 
 // Default profile image for logged out users (web header)
 
@@ -82,36 +86,6 @@ const songsByTitle: Map<string, Song> = new Map(
   GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
 );
 
-// Calculate string similarity using Levenshtein distance
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase();
-  const s2 = str2.toLowerCase();
-
-  const costs: number[] = [];
-  for (let i = 0; i <= s1.length; i++) {
-    let lastValue = i;
-    for (let j = 0; j <= s2.length; j++) {
-      if (i === 0) {
-        costs[j] = j;
-      } else if (j > 0) {
-        let newValue = costs[j - 1];
-        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-        }
-        costs[j - 1] = lastValue;
-        lastValue = newValue;
-      }
-    }
-    if (i > 0) {
-      costs[s2.length] = lastValue;
-    }
-  }
-
-  const maxLength = Math.max(s1.length, s2.length);
-  const distance = costs[s2.length];
-  return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
-}
-
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
 
@@ -130,9 +104,11 @@ export function ShowDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [justPressedTrackId, setJustPressedTrackId] = useState<string | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
+  const { openShareTray } = useShareSheet();
 
   // Resolve classicTier synchronously from preview or showsByYear so stars render
   // in the first paint instead of popping in after loadShowDetail completes.
@@ -147,7 +123,7 @@ export function ShowDetailScreen() {
     return match?.classicTier ?? null;
   }, [previewTier, previewDate, show?.date, showsByYear, route.params.identifier]);
 
-  const hasAutoPlayed = useRef(false);
+  const hasSelectedFromUrl = useRef(false);
 
   // Video background for web header
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
@@ -222,8 +198,23 @@ export function ShowDetailScreen() {
     return id;
   }, [showsByYear]);
 
+  /**
+   * Mark a track as "selected" — used when the user arrives on this screen via
+   * a URL-driven route (share link, pasted URL, etc.). The selected track gets
+   * a sustained visual highlight in the tracklist; the user explicitly taps
+   * play to start audio. Distinct from "playing" state which is driven by the
+   * audio player.
+   *
+   * Could be extended to scroll the selected track into view — for now the
+   * tracklist is short enough that scrolling isn't necessary; the highlight
+   * alone conveys the selection.
+   */
+  const selectTrack = useCallback((track: Track) => {
+    setSelectedTrackId(track.id);
+  }, []);
+
   useEffect(() => {
-    hasAutoPlayed.current = false;
+    hasSelectedFromUrl.current = false;
     setShowNotesExpanded(false);
     loadShowDetail(resolveIdentifier(route.params.identifier));
   }, [route.params.identifier, resolveIdentifier]);
@@ -239,28 +230,35 @@ export function ShowDetailScreen() {
     }
   }, [playerState.currentTrack?.id, playerState.isLoading, playerState.isPlaying, justPressedTrackId]);
 
-  // Auto-play track from URL slug (e.g. /shows/:identifier/dark-star)
+  // When the user taps play on the currently-selected track (or any other
+  // track), clear the selection so the "selected" highlight doesn't fight
+  // with the "playing" highlight on the same row.
   useEffect(() => {
-    if (!trackTitle || !show || hasAutoPlayed.current) return;
-    hasAutoPlayed.current = true;
-
-    const searchString = trackTitle.toLowerCase();
-    let bestMatch: Track | null = null;
-    let bestScore = 0;
-
-    for (const track of show.tracks) {
-      const normalized = normalizeTrackTitle(track.title).toLowerCase();
-      const score = calculateSimilarity(searchString, normalized);
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = track;
-      }
+    if (!selectedTrackId) return;
+    if (playerState.currentTrack?.id && playerState.isPlaying) {
+      // User started playing a track — drop any URL-driven selection.
+      setSelectedTrackId(null);
     }
+  }, [selectedTrackId, playerState.currentTrack?.id, playerState.isPlaying]);
 
-    if (bestMatch && bestScore >= SIMILARITY_THRESHOLDS.SEARCH_MATCH) {
-      loadTrack(bestMatch, show, show.tracks);
+  // Select track from URL slug (e.g. /show/:identifier/dark-star) — applies to
+  // every URL-driven arrival with a trackTitle param, regardless of whether the
+  // URL came from a share link, paste, or bookmark. One behavior: select and
+  // highlight, don't auto-play. The user taps play explicitly to start audio.
+  useEffect(() => {
+    if (!trackTitle || !show || hasSelectedFromUrl.current) return;
+    hasSelectedFromUrl.current = true;
+
+    const bestMatch = matchTrackBySlug(
+      trackTitle,
+      show.tracks,
+      SIMILARITY_THRESHOLDS.SEARCH_MATCH
+    );
+
+    if (bestMatch) {
+      selectTrack(bestMatch);
     }
-  }, [trackTitle, show]);
+  }, [trackTitle, show, selectTrack]);
 
   const formatDateMMDDYYYY = (date: string) => {
     const [year, month, day] = date.slice(0, 10).split('-');
@@ -356,6 +354,40 @@ export function ShowDetailScreen() {
       classicTier: nextShow.classicTier,
     });
   }, [navigation]);
+
+  const handleShareShow = useCallback(() => {
+    if (!show) return;
+
+    const item: ShareItem = {
+      kind: 'show',
+      showId: show.identifier,
+      date: show.date,
+      venue: getVenueFromShow(show),
+      tier: classicTier,
+    };
+
+    haptics.light();
+    openShareTray(item);
+  }, [show, classicTier, openShareTray]);
+
+  // Register a headerRight share icon. Runs in a separate useEffect from the
+  // initial title-setting call in loadShowDetail so the callback stays fresh
+  // when `show` or `classicTier` change (e.g. when the user navigates between
+  // versions or previews).
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleShareShow}
+          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Share show"
+        >
+          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, handleShareShow]);
 
   const handleToggleFavorite = () => {
     if (show) {
@@ -537,6 +569,20 @@ export function ShowDetailScreen() {
 
                 <TouchableOpacity
                   style={styles.savePillWeb}
+                  onPress={handleShareShow}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share show"
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>Share</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.savePillWeb}
                   onPress={handleToggleFavorite}
                   activeOpacity={0.7}
                   accessibilityRole="button"
@@ -651,6 +697,7 @@ export function ShowDetailScreen() {
             rating={trackRatings[track.id]}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
+            isSelected={track.id === selectedTrackId}
           />
         )) : (
           <View style={styles.tracksLoading}>

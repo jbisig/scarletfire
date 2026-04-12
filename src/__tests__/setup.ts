@@ -57,6 +57,30 @@ jest.mock('react-native-mmkv', () => ({
   })),
 }));
 
+// Mock @gorhom/bottom-sheet — the real library calls getBoundingClientRect
+// and other DOM/native APIs that aren't available in the Jest test renderer.
+// This lightweight stand-in lets children pass through so we can still
+// query/press the ShareButton descendants inside the tray.
+// Note: uses React.createElement (not JSX) because this file is .ts, not .tsx.
+jest.mock('@gorhom/bottom-sheet', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const BottomSheet = React.forwardRef(({ children }: any, ref: any) => {
+    React.useImperativeHandle(ref, () => ({ expand: jest.fn(), close: jest.fn() }));
+    return React.createElement(View, null, children);
+  });
+  const BottomSheetView = ({ children, ...p }: any) =>
+    React.createElement(View, p, children);
+  const BottomSheetBackdrop = ({ children }: any) =>
+    React.createElement(View, null, children);
+  return {
+    __esModule: true,
+    default: BottomSheet,
+    BottomSheetView,
+    BottomSheetBackdrop,
+  };
+});
+
 // Silence console warnings during tests
 const originalWarn = console.warn;
 console.warn = (...args: unknown[]) => {

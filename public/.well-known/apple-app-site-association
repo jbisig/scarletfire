@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["A6AANU72S4.com.scarletfire.app"],
+        "components": [
+          {
+            "/": "/show/*",
+            "comment": "Share links to show and song pages"
+          }
+        ]
+      }
+    ]
+  }
+}

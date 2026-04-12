@@ -33,6 +33,8 @@ import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 import { haptics } from '../services/hapticService';
 import { logger } from '../utils/logger';
 import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlayer';
+import { useShareSheet } from '../contexts/ShareSheetContext';
+import { slugifyTrackTitle, type ShareItem } from '../services/shareService';
 
 // Resolve video source to URL string for HTML5 video (web only)
 function resolveVideoUri(source: number | { uri: string } | string): string {
@@ -64,6 +66,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { getShowDetail } = useShows();
+  const { openShareTray } = useShareSheet();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
   const progressBarRef = useRef<View>(null);
   const { height: screenHeight } = useWindowDimensions();
@@ -217,6 +220,26 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const isFavorite = state.currentTrack && state.currentShow
     ? isSongFavorite(state.currentTrack.id, state.currentShow.identifier)
     : false;
+
+  const handleShare = useCallback(() => {
+    const track = state.currentTrack;
+    const show = state.currentShow;
+    if (!track || !show) return;
+
+    const item: ShareItem = {
+      kind: 'song',
+      showId: show.identifier,
+      trackId: track.id,
+      trackTitle: track.title,
+      trackSlug: slugifyTrackTitle(track.title),
+      date: show.date,
+      venue: getVenueFromShow(show),
+      rating: performanceRating,
+    };
+
+    haptics.light();
+    openShareTray(item);
+  }, [state.currentTrack, state.currentShow, performanceRating, openShareTray]);
 
   const calculatePositionFromTouch = (pageX: number, trackDurationMs: number): number => {
     if (barMeasurements.current.width === 0) return 0;
@@ -491,6 +514,17 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           <Ionicons name="chevron-down" size={32} color={COLORS.textPrimary} />
         </TouchableOpacity>
 
+        {/* Share button */}
+        <TouchableOpacity
+          onPress={handleShare}
+          style={styles.shareButton}
+          accessibilityRole="button"
+          accessibilityLabel="Share song"
+          accessibilityHint="Double tap to open the share tray"
+        >
+          <Ionicons name="share-outline" size={28} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+
         {/* Cast button - Android only */}
         {Platform.OS === 'android' && castState !== 'NO_DEVICES' && (
           <TouchableOpacity
@@ -677,6 +711,15 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   castButton: {
+    position: 'absolute',
+    top: 60,
+    // Shifted left by ~44px so it sits beside the share button without overlapping.
+    // Share button is the rightmost element; cast sits inboard of it when present.
+    right: SPACING.lg + 44,
+    padding: SPACING.sm,
+    zIndex: 10,
+  },
+  shareButton: {
     position: 'absolute',
     top: 60,
     right: SPACING.lg,

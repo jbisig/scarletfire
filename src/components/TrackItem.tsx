@@ -16,19 +16,27 @@ interface TrackItemProps {
   isSaved?: boolean;
   /** Web only: callback to toggle save state */
   onToggleSave?: (track: Track) => void;
+  /**
+   * True when this track was selected by URL-driven navigation (share link
+   * or pasted URL). Renders a sustained highlight distinct from `isPlaying`.
+   * When `isPlaying` becomes true on the same track, the playing state wins
+   * and the selected highlight is hidden.
+   */
+  isSelected?: boolean;
 }
 
 /**
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, isSelected }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
   const ratingText = rating ? `${4 - rating} star performance` : '';
   const playingText = isPlaying ? 'Now playing. ' : '';
-  const accessibilityLabel = `${playingText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
+  const selectedText = isSelected && !isPlaying ? 'Selected. ' : '';
+  const accessibilityLabel = `${playingText}${selectedText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
 
   const hasSave = !!onToggleSave;
   const showSaveButton = hasSave && (Platform.OS === 'web' ? ((isDesktop && isHovered) || isSaved) : isSaved);
@@ -40,14 +48,15 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         isDesktop && styles.containerDesktop,
         isPlaying && styles.playing,
         isPlaying && isDesktop && styles.playingDesktop,
-        isDesktop && isHovered && !isPlaying && styles.hovered,
+        isSelected && !isPlaying && styles.selected,
+        isDesktop && isHovered && !isPlaying && !isSelected && styles.hovered,
       ]}
       onPress={() => onPress(track)}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Double tap to play this track"
-      accessibilityState={{ selected: isPlaying }}
+      accessibilityState={{ selected: isPlaying || isSelected }}
       // @ts-ignore - web only mouse events
       onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
       onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
@@ -174,5 +183,11 @@ const styles = StyleSheet.create({
   },
   saveButtonHidden: {
     opacity: 0,
+  },
+  selected: {
+    backgroundColor: `${COLORS.accent}12`,  // ~7% alpha — lighter than playing's 20
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.accent,
+    paddingLeft: SPACING.xxl - 3,  // compensate so content doesn't shift
   },
 });
