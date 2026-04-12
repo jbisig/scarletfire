@@ -292,7 +292,7 @@ export function PublicProfileScreen() {
         <View style={styles.twoColumnRow}>
           {/* Recently Played Shows */}
           <View style={styles.column}>
-            <Text style={styles.sectionTitle}>Recently Played</Text>
+            <Text style={styles.columnSectionTitle}>Recently Played</Text>
             {recentShows.length > 0 ? recentShows.map(item => (
               <ShowCard
                 key={`recent-${item.show.primaryIdentifier}`}
@@ -312,7 +312,7 @@ export function PublicProfileScreen() {
 
           {/* Most Listened Shows */}
           <View style={styles.column}>
-            <Text style={styles.sectionTitle}>Most Listened</Text>
+            <Text style={styles.columnSectionTitle}>Most Listened</Text>
             {topShows.length > 0 ? topShows.map(item => (
               <ShowCard
                 key={item.show.primaryIdentifier}
@@ -383,7 +383,7 @@ export function PublicProfileScreen() {
         <View style={styles.twoColumnRow}>
           {/* Recently Played Songs */}
           <View style={styles.column}>
-            <Text style={styles.sectionTitle}>Recently Played</Text>
+            <Text style={styles.columnSectionTitle}>Recently Played</Text>
             {recentSongs.length > 0 ? recentSongs.map(item => (
               <TouchableOpacity
                 key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}
@@ -410,7 +410,7 @@ export function PublicProfileScreen() {
 
           {/* Most Listened Songs */}
           <View style={styles.column}>
-            <Text style={styles.sectionTitle}>Most Listened</Text>
+            <Text style={styles.columnSectionTitle}>Most Listened</Text>
             {topSongs.length > 0 ? topSongs.map((item, index) => (
               <TouchableOpacity
                 key={`${item.song.trackId}-${item.song.showIdentifier}`}
@@ -708,6 +708,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  columnSectionTitle: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
+    paddingLeft: SPACING.md,
   },
   sortButton: {
     flexDirection: 'row',
