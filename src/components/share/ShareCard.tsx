@@ -25,8 +25,8 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
             near-black so the white text has reliable contrast against any
             of the 6 background images. Matches the Figma card design. */}
         <LinearGradient
-          colors={['transparent', 'rgba(0, 0, 0, 0.85)']}
-          locations={[0.3, 1]}
+          colors={['transparent', 'rgba(0, 0, 0, 0.55)', 'rgba(0, 0, 0, 0.95)']}
+          locations={[0.15, 0.5, 1]}
           style={styles.gradient}
         />
         <View style={styles.content}>
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '60%',
+    height: '75%',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
