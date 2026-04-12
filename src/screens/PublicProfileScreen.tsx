@@ -591,7 +591,8 @@ const styles = StyleSheet.create({
   rankedItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
+    minHeight: 56,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     gap: SPACING.md,
@@ -619,9 +620,11 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   songItem: {
-    paddingVertical: SPACING.md,
+    minHeight: 56,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    justifyContent: 'center',
   },
   songContentRow: {
     flexDirection: 'row',
