@@ -568,6 +568,20 @@ export function ShowDetailScreen() {
 
                 <TouchableOpacity
                   style={styles.savePillWeb}
+                  onPress={handleShareShow}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share show"
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>Share</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.savePillWeb}
                   onPress={handleToggleFavorite}
                   activeOpacity={0.7}
                   accessibilityRole="button"
