@@ -6,7 +6,7 @@ import {
   shareToWhatsApp,
   shareToMessages,
   shareToInstagramStory,
-} from '../../services/shareService.native';
+} from '../../services/shareDestinations.native';
 import type { ShareItem } from '../../services/shareService';
 
 jest.mock('expo-linking', () => ({

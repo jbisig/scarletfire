@@ -13,7 +13,7 @@ import {
   shareToWhatsApp,
   shareToInstagramStory,
   shareToMessages,
-} from '../../services/shareService.native';
+} from '../../services/shareDestinations.native';
 import type { ShareTrayProps } from './ShareTray';
 
 type DestinationArgs = { item: ShareItem; bgIndex: number };

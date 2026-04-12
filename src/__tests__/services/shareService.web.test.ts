@@ -3,7 +3,7 @@ import {
   shareToWhatsApp,
   shareToMessages,
   shareToInstagramStory,
-} from '../../services/shareService.web';
+} from '../../services/shareDestinations.web';
 import type { ShareItem } from '../../services/shareService';
 
 const songItem: ShareItem = {
@@ -17,7 +17,7 @@ const songItem: ShareItem = {
   rating: 1,
 };
 
-describe('shareService.web', () => {
+describe('shareDestinations.web', () => {
   describe('shareToCopyLink', () => {
     it('writes the share URL via navigator.clipboard', async () => {
       const writeText = jest.fn().mockResolvedValue(undefined);

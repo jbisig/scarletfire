@@ -7,7 +7,7 @@ import {
   shareToCopyLink,
   shareToWhatsApp,
   shareToMessages,
-} from '../../services/shareService.web';
+} from '../../services/shareDestinations.web';
 import type { ShareTrayProps } from './ShareTray';
 import type { ShareItem } from '../../services/shareService';
 

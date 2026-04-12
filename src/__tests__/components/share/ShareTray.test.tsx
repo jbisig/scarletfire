@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ShareTray } from '../../../components/share/ShareTray.native';
-import * as shareNative from '../../../services/shareService.native';
+import * as shareNative from '../../../services/shareDestinations.native';
 import type { ShareItem } from '../../../services/shareService';
 
-jest.mock('../../../services/shareService.native', () => ({
+jest.mock('../../../services/shareDestinations.native', () => ({
   shareToCopyLink: jest.fn(),
   shareToWhatsApp: jest.fn(),
   shareToInstagramStory: jest.fn(),
