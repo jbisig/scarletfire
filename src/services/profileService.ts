@@ -230,21 +230,13 @@ class ProfileService {
       .eq('username', username.toLowerCase())
       .single();
 
-    if (profileError || !profile) return null;
+    if (profileError || !profile || !profile.is_public) return null;
 
-    const { data: avatarFiles } = await supabase.storage
-      .from('avatars')
-      .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-
-    let avatarUrl: string | null = null;
-    if (avatarFiles && avatarFiles.length > 0) {
-      const { data: urlData } = supabase.storage
+    // Fetch avatar, favorites, and play counts in parallel
+    const [avatarResult, favResult, playResult] = await Promise.all([
+      supabase.storage
         .from('avatars')
-        .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
-      avatarUrl = urlData.publicUrl;
-    }
-
-    const [favResult, playResult] = await Promise.all([
+        .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } }),
       supabase
         .from('user_favorites')
         .select('shows, songs')
@@ -256,6 +248,15 @@ class ProfileService {
         .eq('user_id', profile.id)
         .single(),
     ]);
+
+    let avatarUrl: string | null = null;
+    const avatarFiles = avatarResult.data;
+    if (avatarFiles && avatarFiles.length > 0) {
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
+      avatarUrl = urlData.publicUrl;
+    }
 
     const favorites = {
       shows: favResult.data?.shows || [],

@@ -226,7 +226,7 @@ export function FavoritesScreen() {
       return;
     }
 
-    const displayName = userProfile.display_name || authState.user?.email?.split('@')[0] || 'User';
+    const displayName = userProfile.display_name || userProfile.username;
     openShareTray({
       kind: 'profile',
       username: userProfile.username,

@@ -53,13 +53,11 @@ export default async function handler(req: Request): Promise<Response> {
   const profile = profileResult.data;
   const displayName = profile.display_name || username;
 
-  const [favResult] = await Promise.all([
-    supabase
-      .from('user_favorites')
-      .select('shows, songs')
-      .eq('user_id', profile.id)
-      .single(),
-  ]);
+  const favResult = await supabase
+    .from('user_favorites')
+    .select('shows, songs')
+    .eq('user_id', profile.id)
+    .single();
 
   const showCount = favResult.data?.shows?.length ?? 0;
   const songCount = favResult.data?.songs?.length ?? 0;
