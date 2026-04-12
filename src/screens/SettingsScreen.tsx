@@ -7,12 +7,15 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Switch,
+  TextInput,
+  Linking as RNLinking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { profileService } from '../services/profileService';
+import { profileService, UserProfile } from '../services/profileService';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -25,8 +28,112 @@ export function SettingsScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
 
   const avatarUrl = profileService.getAvatarUrl(authState.user);
+
+  React.useEffect(() => {
+    if (!authState.user?.id) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const p = await profileService.getUserProfile(authState.user!.id);
+        if (cancelled) return;
+        setProfile(p);
+        if (p) {
+          setUsername(p.username);
+          setDisplayName(p.display_name || '');
+        }
+      } catch {
+        // Silently fail — profile section will show empty fields
+      } finally {
+        if (!cancelled) setIsProfileLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [authState.user?.id]);
+
+  const validateUsername = (value: string): string | null => {
+    if (value.length < 3) return 'Must be at least 3 characters';
+    if (value.length > 20) return 'Must be 20 characters or less';
+    if (!/^[a-z0-9_-]+$/.test(value)) return 'Only lowercase letters, numbers, _ and -';
+    return null;
+  };
+
+  const handleUsernameSave = async () => {
+    const trimmed = username.toLowerCase().trim();
+    if (!trimmed || !authState.user?.id) return;
+
+    const validationError = validateUsername(trimmed);
+    if (validationError) {
+      setUsernameError(validationError);
+      return;
+    }
+
+    if (profile && trimmed === profile.username) {
+      setUsernameError(null);
+      return;
+    }
+
+    setIsSavingUsername(true);
+    setUsernameError(null);
+
+    try {
+      const available = await profileService.checkUsernameAvailable(trimmed);
+      if (!available && trimmed !== profile?.username) {
+        setUsernameError('Username is already taken');
+        return;
+      }
+
+      let updated: UserProfile;
+      if (profile) {
+        updated = await profileService.updateUsername(authState.user.id, trimmed);
+      } else {
+        updated = await profileService.createProfile(authState.user.id, trimmed);
+      }
+      setProfile(updated);
+      setUsername(updated.username);
+    } catch {
+      setUsernameError('Failed to save username');
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
+
+  const handleDisplayNameSave = async () => {
+    if (!authState.user?.id || !profile) return;
+    if (displayName === (profile.display_name || '')) return;
+
+    setIsSavingDisplayName(true);
+    try {
+      await profileService.updateDisplayName(authState.user.id, displayName.trim());
+      setProfile(prev => prev ? { ...prev, display_name: displayName.trim() || null } : null);
+    } catch {
+      // Silently fail
+    } finally {
+      setIsSavingDisplayName(false);
+    }
+  };
+
+  const handlePublicToggle = async (value: boolean) => {
+    if (!authState.user?.id || !profile) return;
+
+    setProfile(prev => prev ? { ...prev, is_public: value } : null);
+
+    try {
+      await profileService.setProfilePublic(authState.user.id, value);
+    } catch {
+      setProfile(prev => prev ? { ...prev, is_public: !value } : null);
+    }
+  };
 
   // Auth guard: show sign-in prompt for unauthenticated users
   if (!authState.user) {
@@ -254,6 +361,89 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Public Profile Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Public Profile</Text>
+
+        {isProfileLoading ? (
+          <ActivityIndicator size="small" color={COLORS.textSecondary} />
+        ) : (
+          <>
+            {/* Username */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Username</Text>
+              <TextInput
+                style={[styles.textInput, usernameError && styles.textInputError]}
+                value={username}
+                onChangeText={(text) => {
+                  setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                  setUsernameError(null);
+                }}
+                onBlur={handleUsernameSave}
+                placeholder="choose a username"
+                placeholderTextColor={COLORS.textTertiary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={20}
+                editable={!isSavingUsername}
+              />
+              {usernameError && (
+                <Text style={styles.fieldError}>{usernameError}</Text>
+              )}
+              {isSavingUsername && (
+                <ActivityIndicator size="small" color={COLORS.textSecondary} style={{ marginTop: 4 }} />
+              )}
+            </View>
+
+            {/* Display Name */}
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Display Name</Text>
+              <TextInput
+                style={styles.textInput}
+                value={displayName}
+                onChangeText={setDisplayName}
+                onBlur={handleDisplayNameSave}
+                placeholder={authState.user?.email?.split('@')[0] || 'your name'}
+                placeholderTextColor={COLORS.textTertiary}
+                maxLength={50}
+                editable={!isSavingDisplayName}
+              />
+            </View>
+
+            {/* Make Profile Public Toggle */}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleInfo}>
+                <Text style={styles.toggleLabel}>Make Profile Public</Text>
+                <Text style={styles.toggleHint}>
+                  {profile ? 'Allow others to see your favorites and listening history' : 'Set a username first to enable'}
+                </Text>
+              </View>
+              <Switch
+                value={profile?.is_public ?? false}
+                onValueChange={handlePublicToggle}
+                disabled={!profile}
+                trackColor={{ false: COLORS.border, true: COLORS.accent }}
+                thumbColor={COLORS.textPrimary}
+              />
+            </View>
+
+            {/* Profile URL Preview */}
+            {profile?.is_public && profile.username && (
+              <TouchableOpacity
+                style={styles.profileUrlContainer}
+                onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="link-outline" size={16} color={COLORS.accent} />
+                <Text style={styles.profileUrl}>
+                  scarletfire.app/profile/{profile.username}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+      </View>
+
       {/* Danger Zone */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Danger Zone</Text>
@@ -427,6 +617,63 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
+  },
+  fieldContainer: {
+    marginBottom: SPACING.lg,
+  },
+  fieldLabel: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  textInput: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  textInputError: {
+    borderColor: COLORS.error,
+  },
+  fieldError: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.error,
+    marginTop: SPACING.xs,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: SPACING.lg,
+  },
+  toggleLabel: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+  },
+  toggleHint: {
+    ...TYPOGRAPHY.captionSmall,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  profileUrlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.sm,
+  },
+  profileUrl: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.accent,
   },
   authGuardContainer: {
     flex: 1,
