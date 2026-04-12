@@ -243,7 +243,7 @@ export function PublicProfileScreen() {
                     {formatDate(item.show.date)} - {getVenueFromShow(item.show)}
                   </Text>
                 </View>
-                <PlayCountBadge count={item.totalPlays} size="small" />
+                <Text style={styles.recentTime}>{item.totalPlays} plays</Text>
               </TouchableOpacity>
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
@@ -326,7 +326,7 @@ export function PublicProfileScreen() {
                     {formatDate(item.song.showDate)}
                   </Text>
                 </View>
-                <PlayCountBadge count={item.plays} size="small" />
+                <Text style={styles.recentTime}>{item.plays} plays</Text>
               </TouchableOpacity>
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
