@@ -2,25 +2,13 @@
   "buildCommand": "node scripts/copy-share-assets.js && npx expo export --platform web",
   "outputDirectory": "dist",
   "functions": {
-    "api/og/show/[identifier].tsx": {
-      "maxDuration": 10,
-      "memory": 1024,
-      "includeFiles": "src/data/**"
-    },
-    "api/og/song/[identifier]/[trackTitle].tsx": {
-      "maxDuration": 10,
-      "memory": 1024,
-      "includeFiles": "src/data/**"
-    },
     "api/html/show/[identifier].ts": {
       "maxDuration": 10,
-      "memory": 512,
-      "includeFiles": "{src/data/**,dist/index.html}"
+      "includeFiles": "{src/data/shows.json,dist/index.html}"
     },
     "api/html/song/[identifier]/[trackTitle].ts": {
       "maxDuration": 10,
-      "memory": 512,
-      "includeFiles": "{src/data/**,dist/index.html}"
+      "includeFiles": "{src/data/shows.json,dist/index.html}"
     }
   },
   "rewrites": [

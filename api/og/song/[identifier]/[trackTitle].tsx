@@ -3,11 +3,13 @@ import { renderCard } from '../../../_lib/ogTemplate.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../../_lib/showLookup.js';
+} from '../../../_lib/showLookupEdge.js';
 import { fetchTrackList } from '../../../_lib/fetchTrackList.js';
 import { matchTrackBySlug } from '../../../_lib/trackMatching.js';
 
-export const config = { runtime: 'nodejs' };
+// See api/og/show/[identifier].tsx — Edge runtime is the canonical target
+// for @vercel/og; Node runtime hangs on Satori's image fetches.
+export const config = { runtime: 'edge' };
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-');

@@ -3,9 +3,14 @@ import { renderCard } from '../../_lib/ogTemplate.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../_lib/showLookup.js';
+} from '../../_lib/showLookupEdge.js';
 
-export const config = { runtime: 'nodejs' };
+// @vercel/og is designed for and best supported on Edge runtime — Node
+// runtime hangs on Satori's internal image fetches. Edge uses V8 isolates
+// with Web APIs, supports fetch natively, and has sub-millisecond cold
+// starts. The tradeoff is no Node APIs (no fs, no path) — but this endpoint
+// doesn't need them; shows.json is imported via the ESM JSON-assertion path.
+export const config = { runtime: 'edge' };
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-');
