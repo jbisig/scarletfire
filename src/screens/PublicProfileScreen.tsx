@@ -312,7 +312,7 @@ export function PublicProfileScreen() {
 
           {/* Most Listened Shows */}
           <View style={styles.column}>
-            <Text style={styles.columnSectionTitle}>Most Listened</Text>
+            <Text style={styles.columnSectionTitle}>Top 10</Text>
             {topShows.length > 0 ? topShows.map(item => (
               <ShowCard
                 key={item.show.primaryIdentifier}
@@ -410,7 +410,7 @@ export function PublicProfileScreen() {
 
           {/* Most Listened Songs */}
           <View style={styles.column}>
-            <Text style={styles.columnSectionTitle}>Most Listened</Text>
+            <Text style={styles.columnSectionTitle}>Top 10</Text>
             {topSongs.length > 0 ? topSongs.map((item, index) => (
               <TouchableOpacity
                 key={`${item.song.trackId}-${item.song.showIdentifier}`}
