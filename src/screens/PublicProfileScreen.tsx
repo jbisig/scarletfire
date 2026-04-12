@@ -21,7 +21,22 @@ import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { PlayCountBadge } from '../components/PlayCountBadge';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import showsData from '../data/shows.json';
+import { ShowsByYear } from '../types/show.types';
+
+const allShowsByYear = showsData as ShowsByYear;
+
+function getCorrectVenue(showDate: string): string | undefined {
+  const normalizedDate = showDate.substring(0, 10);
+  const year = normalizedDate.substring(0, 4);
+  const yearShows = allShowsByYear[year];
+  if (!yearShows) return undefined;
+  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
+  if (show) return getVenueFromShow(show);
+  return undefined;
+}
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };
@@ -376,59 +391,65 @@ export function PublicProfileScreen() {
     </>
   );
 
+  const renderSongRow = (song: typeof data.favorites.songs[0], trailingContent?: React.ReactNode) => {
+    const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+    const venue = getCorrectVenue(song.showDate) || song.venue;
+
+    return (
+      <TouchableOpacity
+        style={styles.songItem}
+        onPress={() => handleShowPress(song.showIdentifier)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.songContentRow}>
+          <View style={styles.songInfo}>
+            <Text style={styles.songTitle} numberOfLines={1}>
+              {song.trackTitle}
+            </Text>
+            <View style={styles.songDateRow}>
+              <Text style={styles.songDate}>
+                {formatDate(song.showDate)}
+              </Text>
+              {performanceRating && (
+                <StarRating tier={performanceRating} size={14} />
+              )}
+            </View>
+            {venue && (
+              <Text style={styles.songVenue} numberOfLines={1}>
+                {venue}
+              </Text>
+            )}
+          </View>
+          {trailingContent}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderSongsTab = () => (
     <>
-      {/* Two-column: Recently Played + Most Listened */}
+      {/* Two-column: Recently Played + Top 10 */}
       {(recentSongs.length > 0 || topSongs.length > 0) && (
         <View style={styles.twoColumnRow}>
           {/* Recently Played Songs */}
           <View style={styles.column}>
             <Text style={styles.columnSectionTitle}>Recently Played</Text>
             {recentSongs.length > 0 ? recentSongs.map(item => (
-              <TouchableOpacity
-                key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}
-                style={styles.songItem}
-                onPress={() => handleShowPress(item.song.showIdentifier)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.songContentRow}>
-                  <View style={styles.songInfo}>
-                    <Text style={styles.songTitle} numberOfLines={1}>
-                      {item.song.trackTitle}
-                    </Text>
-                    <Text style={styles.songDate}>
-                      {formatDate(item.song.showDate)}
-                    </Text>
-                  </View>
-                  <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
-                </View>
-              </TouchableOpacity>
+              <React.Fragment key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}>
+                {renderSongRow(item.song, <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>)}
+              </React.Fragment>
             )) : (
               <Text style={styles.emptyText}>No recent plays</Text>
             )}
           </View>
 
-          {/* Most Listened Songs */}
+          {/* Top 10 Songs */}
           <View style={styles.column}>
             <Text style={styles.columnSectionTitle}>Top 10</Text>
-            {topSongs.length > 0 ? topSongs.map((item, index) => (
-              <TouchableOpacity
-                key={`${item.song.trackId}-${item.song.showIdentifier}`}
-                style={styles.rankedItem}
-                onPress={() => handleShowPress(item.song.showIdentifier)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.rankNumber}>{index + 1}</Text>
-                <View style={styles.rankedItemInfo}>
-                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                    {item.song.trackTitle}
-                  </Text>
-                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                    {formatDate(item.song.showDate)}
-                  </Text>
-                </View>
-                <Text style={styles.recentTime}>{item.plays} plays</Text>
-              </TouchableOpacity>
+            {topSongs.length > 0 ? topSongs.map(item => (
+              <React.Fragment key={`top-${item.song.trackId}-${item.song.showIdentifier}`}>
+                {renderSongRow(item.song, <Text style={styles.recentTime}>{item.plays} plays</Text>)}
+              </React.Fragment>
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
             )}
@@ -454,36 +475,11 @@ export function PublicProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {sortedFavoriteSongs.map(song => {
-            const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-            return (
-              <TouchableOpacity
-                key={`${song.trackId}-${song.showIdentifier}`}
-                style={styles.songItem}
-                onPress={() => handleShowPress(song.showIdentifier)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.songInfo}>
-                  <Text style={styles.songTitle} numberOfLines={1}>
-                    {song.trackTitle}
-                  </Text>
-                  <View style={styles.songMeta}>
-                    <Text style={styles.songDate}>
-                      {formatDate(song.showDate)}
-                    </Text>
-                    {performanceRating && (
-                      <StarRating tier={performanceRating} size={12} />
-                    )}
-                  </View>
-                  {song.venue && (
-                    <Text style={styles.songVenue} numberOfLines={1}>
-                      {song.venue}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          {sortedFavoriteSongs.map(song => (
+            <React.Fragment key={`fav-${song.trackId}-${song.showIdentifier}`}>
+              {renderSongRow(song, <PlayCountBadge count={0} size="small" />)}
+            </React.Fragment>
+          ))}
         </View>
       )}
 
@@ -764,35 +760,40 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   songItem: {
-    minHeight: 44,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: SPACING.lg,
+    ...(Platform.OS === 'web' ? {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      marginVertical: 2,
+    } : {}),
   },
   songContentRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   songInfo: {
     flex: 1,
-    gap: 2,
+    marginRight: SPACING.md,
   },
   songTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
+    ...TYPOGRAPHY.heading4,
+    marginBottom: SPACING.xs,
   },
-  songMeta: {
+  songDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 10,
+    marginBottom: 2,
   },
   songDate: {
-    ...TYPOGRAPHY.captionSmall,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   songVenue: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textTertiary,
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
   },
 });
