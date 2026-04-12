@@ -6,6 +6,7 @@ import {
   Modal,
   Pressable,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
@@ -42,10 +43,16 @@ export function SortDropdown<T extends string>({
   selectedValue,
   onSelect,
 }: SortDropdownProps<T>) {
+  const { width: windowWidth } = useWindowDimensions();
+  const dropdownWidth = 260;
+
   const handleSelect = (value: T) => {
     onSelect(value);
     onClose();
   };
+
+  // Clamp left so the dropdown doesn't overflow the right edge
+  const clampedLeft = Math.min(position.left, windowWidth - dropdownWidth - SPACING.lg);
 
   return (
     <Modal
@@ -58,7 +65,7 @@ export function SortDropdown<T extends string>({
         <View
           style={[
             styles.container,
-            { top: position.top, left: position.left }
+            { top: position.top, left: clampedLeft, width: dropdownWidth }
           ]}
         >
           {options.map((option, index) => (
