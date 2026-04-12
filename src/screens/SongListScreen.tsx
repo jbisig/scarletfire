@@ -217,7 +217,7 @@ export function SongListScreen() {
         <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
           <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
             {/* Left side: Avatar and Title (gets covered by search bar) */}
-            <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+            <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
               {!isDesktop && (
                 <TouchableOpacity
                   ref={profileButtonRef}
@@ -234,7 +234,7 @@ export function SongListScreen() {
             </View>
 
             {/* Right side: Search button */}
-            <View style={styles.headerRight}>
+            <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
               {/* Animated Search Bar */}
               <AnimatedSearchBar
                 isExpanded={isSearchExpanded}

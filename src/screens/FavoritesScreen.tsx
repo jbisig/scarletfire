@@ -704,7 +704,7 @@ export function FavoritesScreen() {
         {/* Custom Header: Avatar + Title + Search + Filter */}
         <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
           {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
+          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
             {!isDesktop && (
               <TouchableOpacity
                 ref={profileButtonRef}
@@ -721,7 +721,7 @@ export function FavoritesScreen() {
           </View>
 
           {/* Right side: Search and Filter buttons */}
-          <View style={styles.headerRight}>
+          <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
             {/* Animated Search Bar */}
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}

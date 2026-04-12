@@ -37,6 +37,51 @@ const mobileWebLinking = Platform.OS === 'web'
   ? require('./webLinking').mobileWebLinking
   : undefined;
 
+// Native linking config for universal links (iOS) and deep links
+const nativeLinking = Platform.OS !== 'web'
+  ? {
+      prefixes: [
+        'scarletfire://',
+        'https://www.scarletfire.app',
+        'https://scarletfire.app',
+      ],
+      config: {
+        initialRouteName: 'MainTabs' as const,
+        screens: {
+          ShowDetail: {
+            path: 'show/:identifier/:trackTitle?',
+            parse: {
+              identifier: (id: string) => decodeURIComponent(id).replace(/[^a-zA-Z0-9._-]/g, ''),
+              trackTitle: (slug: string) => decodeURIComponent(slug).replace(/-/g, ' '),
+            },
+          },
+          MainTabs: {
+            path: '',
+            screens: {
+              DiscoverTab: {
+                screens: {
+                  DiscoverLanding: 'discover',
+                },
+              },
+              ShowsTab: {
+                path: 'shows',
+                screens: {
+                  Home: '',
+                },
+              },
+              FavoritesTab: {
+                path: 'favorites',
+                screens: {
+                  Favorites: '',
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+  : undefined;
+
 export type RootStackParamList = {
   Home: { sort?: string; years?: string; series?: string } | undefined;
   ShowDetail: { identifier: string; trackTitle?: string; venue?: string; date?: string; location?: string; classicTier?: 1 | 2 | 3 };
@@ -293,7 +338,9 @@ export function AppNavigator() {
   const initialLayoutRef = useRef(isDesktop);
 
   const useDesktopLayout = Platform.OS === 'web' && initialLayoutRef.current && DesktopLayout;
-  const linking = initialLayoutRef.current ? desktopWebLinking : mobileWebLinking;
+  const linking = Platform.OS !== 'web'
+    ? nativeLinking
+    : initialLayoutRef.current ? desktopWebLinking : mobileWebLinking;
 
   // Show loading while checking auth
   if (authState.isLoading) {

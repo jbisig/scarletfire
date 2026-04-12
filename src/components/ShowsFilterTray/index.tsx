@@ -177,7 +177,7 @@ export function ShowsFilterTray({
           onPress={onClose}
           activeOpacity={0.7}
         >
-          <Text style={styles.closeText}>Close</Text>
+          <Text style={styles.closeText}>Cancel</Text>
           <Ionicons name="close" size={18} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
