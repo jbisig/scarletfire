@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
-    paddingLeft: SPACING.md,
+    paddingLeft: SPACING.lg,
   },
   sortButton: {
     flexDirection: 'row',
