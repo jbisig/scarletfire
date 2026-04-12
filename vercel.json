@@ -4,11 +4,11 @@
   "functions": {
     "api/html/show/[identifier].ts": {
       "maxDuration": 10,
-      "includeFiles": "{src/data/shows.json,dist/index.html}"
+      "includeFiles": "dist/index.html"
     },
     "api/html/song/[identifier]/[trackTitle].ts": {
       "maxDuration": 10,
-      "includeFiles": "{src/data/shows.json,dist/index.html}"
+      "includeFiles": "dist/index.html"
     }
   },
   "rewrites": [

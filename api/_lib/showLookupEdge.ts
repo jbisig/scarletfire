@@ -1,20 +1,18 @@
 /**
- * Edge-runtime show lookup. Used by the /api/og/* endpoints which run on
- * Vercel's Edge Functions (V8 isolates) and don't have access to `fs`.
+ * Edge-runtime show lookup. Used by the /api/og/* endpoints.
  *
- * Mirrors the public interface of ./showLookup.ts (the Node variant). Both
- * files read from the same underlying src/data/shows.json catalog, but the
- * loading mechanism differs:
- *   - Node (showLookup.ts): fs.readFileSync + JSON.parse
- *   - Edge (showLookupEdge.ts): plain JSON import, inlined by esbuild at
- *     build time into the function bundle
+ * Mirrors showLookup.ts (the Node variant) but loads the catalog via
+ * a bundler-inlined JSON import. Edge's esbuild bundler treats `.json`
+ * imports as a JSON loader and inlines the content at build time —
+ * no runtime assertion needed and no fs required (Edge has no `fs`).
  *
- * Edge's esbuild bundler accepts `import ... from '.json'` without an
- * `assert` / `with` attribute — it treats .json files as a JSON loader.
- * Node's ESM loader rejects such imports without an attribute, which is
- * why this file can't be used from the Node-runtime HTML endpoints.
+ * Both variants exist because Vercel's bundlers produce incompatible
+ * outputs for the two runtimes: Node builds preserve the `import`
+ * statement which Node ESM rejects without `with { type: 'json' }`;
+ * Edge builds inline the JSON directly. See showLookup.ts for the
+ * Node-side rationale.
  */
-import showsData from '../../src/data/shows.json';
+import showsData from './shows.json';
 import { getClassicTier } from './classicShowsTiers.js';
 
 export interface ShowMetadata {
@@ -33,7 +31,6 @@ interface RawShow {
 
 const showsCatalog = showsData as unknown as Record<string, RawShow[]>;
 
-// Build lookup tables once at module load time.
 const byDate: Map<string, ShowMetadata> = new Map();
 const byIdentifier: Map<string, ShowMetadata> = new Map();
 

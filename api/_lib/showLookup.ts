@@ -1,17 +1,17 @@
 /**
- * Node.js-runtime show lookup. Used by the HTML injection endpoints which
- * run on Vercel's Node.js Functions and have access to `fs`.
+ * Node.js-runtime show lookup. Used by the HTML injection endpoints.
  *
- * The Edge runtime variant lives at ./showLookupEdge.ts — it uses a
- * bundler-inlined JSON import instead of fs.readFileSync. The two files
- * export the same interface so callers can import either one depending
- * on their runtime.
+ * Loads api/_lib/shows.json via fs.readFileSync. Node ESM requires
+ * `with { type: 'json' }` for JSON imports, which Vercel's bundler
+ * strips, so we can't use the bare `import` syntax here. The Edge
+ * variant (api/_lib/showLookupEdge.ts) uses `import showsData from
+ * './shows.json'` because Edge's esbuild bundler inlines JSON at
+ * build time.
  *
- * We do NOT use `import showsData from '.../shows.json'` here because
- * Node's ESM loader requires `with { type: 'json' }` on JSON imports,
- * and Vercel's esbuild-based bundler strips that attribute, so the
- * runtime rejects the import. fs.readFileSync sidesteps the whole
- * assertion dance and resolves the catalog via a bundled path.
+ * api/_lib/shows.json is a COPY of src/data/shows.json kept here so
+ * Vercel's function bundler auto-includes it without relying on a
+ * `functions.includeFiles` glob (which has proven unreliable across
+ * the various Vercel CLI versions we've deployed against).
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -31,17 +31,18 @@ interface RawShow {
   [key: string]: unknown;
 }
 
-// Resolve src/data/shows.json relative to process.cwd(), which is both:
-//  - the project root in Jest (where package.json lives)
-//  - /var/task in the Vercel Functions runtime (the bundle's root, where
-//    src/data/shows.json is included via functions.includeFiles in vercel.json)
-const showsJsonPath = path.resolve(process.cwd(), 'src/data/shows.json');
+// Resolve api/_lib/shows.json relative to process.cwd():
+//  - Jest (project root): api/_lib/shows.json resolves correctly
+//  - Vercel Node runtime (/var/task): api/_lib/shows.json is in the
+//    function bundle alongside this file, so the relative path works
+const showsJsonPath = path.resolve(process.cwd(), 'api/_lib/shows.json');
 const showsData = JSON.parse(readFileSync(showsJsonPath, 'utf-8')) as Record<
   string,
   RawShow[]
 >;
 
-// Build lookup tables once at module load time.
+// Build lookup tables once at module load time. Vercel Fluid Compute
+// reuses warm instances, so this loop runs at most once per cold start.
 const byDate: Map<string, ShowMetadata> = new Map();
 const byIdentifier: Map<string, ShowMetadata> = new Map();
 
