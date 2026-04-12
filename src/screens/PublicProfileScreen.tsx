@@ -195,10 +195,6 @@ export function PublicProfileScreen() {
 
   const displayName = data?.profile.display_name || username;
 
-  const totalPlays = useMemo(() => {
-    if (!data) return 0;
-    return data.playCounts.reduce((sum, pc) => sum + pc.count, 0);
-  }, [data]);
 
   // Sorted favorite shows
   const sortedFavoriteShows = useMemo(() => {
@@ -513,21 +509,6 @@ export function PublicProfileScreen() {
               </View>
             </View>
 
-            {/* Stats Bar */}
-            <View style={styles.statsBar}>
-              <Text style={styles.statText}>
-                {data.favorites.shows.length} Shows
-              </Text>
-              <Text style={styles.statDot}>·</Text>
-              <Text style={styles.statText}>
-                {data.favorites.songs.length} Songs
-              </Text>
-              <Text style={styles.statDot}>·</Text>
-              <Text style={styles.statText}>
-                {totalPlays} Plays
-              </Text>
-            </View>
-
             {/* Tab Navigation */}
             <View style={styles.tabContainer} accessibilityRole="tablist">
               {(['shows', 'songs'] as const).map((tab) => (
@@ -623,26 +604,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginTop: 2,
-  },
-  statsBar: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingVertical: SPACING.lg,
-    marginBottom: SPACING.lg,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  statDot: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.textTertiary,
   },
   tabContainer: {
     flexDirection: 'row',
