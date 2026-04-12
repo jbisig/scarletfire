@@ -194,62 +194,67 @@ export function PublicProfileScreen() {
 
   const renderShowsTab = () => (
     <>
-      {/* Recently Played Shows */}
-      {recentShows.length > 0 && (
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Recently Played</Text>
-          {recentShows.map(item => (
-            <TouchableOpacity
-              key={`recent-${item.show.primaryIdentifier}`}
-              style={styles.rankedItem}
-              onPress={() => handleShowPress(
-                item.show.primaryIdentifier,
-                getVenueFromShow(item.show),
-                item.show.date,
-              )}
-              activeOpacity={0.7}
-            >
-              <View style={styles.rankedItemInfo}>
-                <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                  {formatDate(item.show.date)}
-                </Text>
-                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                  {getVenueFromShow(item.show)}
-                </Text>
-              </View>
-              <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* Two-column: Recently Played + Most Listened */}
+      {(recentShows.length > 0 || topShows.length > 0) && (
+        <View style={styles.twoColumnRow}>
+          {/* Recently Played Shows */}
+          <View style={styles.column}>
+            <Text style={styles.sectionTitle}>Recently Played</Text>
+            {recentShows.length > 0 ? recentShows.map(item => (
+              <TouchableOpacity
+                key={`recent-${item.show.primaryIdentifier}`}
+                style={styles.rankedItem}
+                onPress={() => handleShowPress(
+                  item.show.primaryIdentifier,
+                  getVenueFromShow(item.show),
+                  item.show.date,
+                )}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rankedItemInfo}>
+                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                    {formatDate(item.show.date)}
+                  </Text>
+                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                    {getVenueFromShow(item.show)}
+                  </Text>
+                </View>
+                <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No recent plays</Text>
+            )}
+          </View>
 
-      {/* Most Listened Shows */}
-      {topShows.length > 0 && (
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Most Listened</Text>
-          {topShows.map((item, index) => (
-            <TouchableOpacity
-              key={item.show.primaryIdentifier}
-              style={styles.rankedItem}
-              onPress={() => handleShowPress(
-                item.show.primaryIdentifier,
-                getVenueFromShow(item.show),
-                item.show.date,
-              )}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.rankNumber}>{index + 1}</Text>
-              <View style={styles.rankedItemInfo}>
-                <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                  {formatDate(item.show.date)}
-                </Text>
-                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                  {getVenueFromShow(item.show)}
-                </Text>
-              </View>
-              <PlayCountBadge count={item.totalPlays} size="small" />
-            </TouchableOpacity>
-          ))}
+          {/* Most Listened Shows */}
+          <View style={styles.column}>
+            <Text style={styles.sectionTitle}>Most Listened</Text>
+            {topShows.length > 0 ? topShows.map((item, index) => (
+              <TouchableOpacity
+                key={item.show.primaryIdentifier}
+                style={styles.rankedItem}
+                onPress={() => handleShowPress(
+                  item.show.primaryIdentifier,
+                  getVenueFromShow(item.show),
+                  item.show.date,
+                )}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.rankNumber}>{index + 1}</Text>
+                <View style={styles.rankedItemInfo}>
+                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                    {formatDate(item.show.date)}
+                  </Text>
+                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                    {getVenueFromShow(item.show)}
+                  </Text>
+                </View>
+                <PlayCountBadge count={item.totalPlays} size="small" />
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No plays yet</Text>
+            )}
+          </View>
         </View>
       )}
 
@@ -278,64 +283,61 @@ export function PublicProfileScreen() {
 
   const renderSongsTab = () => (
     <>
-      {/* Recently Played Songs */}
-      {recentSongs.length > 0 && (
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Recently Played</Text>
-          {recentSongs.map(item => (
-            <TouchableOpacity
-              key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}
-              style={styles.songItem}
-              onPress={() => handleShowPress(item.song.showIdentifier)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.songContentRow}>
-                <View style={styles.songInfo}>
-                  <Text style={styles.songTitle} numberOfLines={1}>
-                    {item.song.trackTitle}
-                  </Text>
-                  <View style={styles.songMeta}>
+      {/* Two-column: Recently Played + Most Listened */}
+      {(recentSongs.length > 0 || topSongs.length > 0) && (
+        <View style={styles.twoColumnRow}>
+          {/* Recently Played Songs */}
+          <View style={styles.column}>
+            <Text style={styles.sectionTitle}>Recently Played</Text>
+            {recentSongs.length > 0 ? recentSongs.map(item => (
+              <TouchableOpacity
+                key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}
+                style={styles.songItem}
+                onPress={() => handleShowPress(item.song.showIdentifier)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.songContentRow}>
+                  <View style={styles.songInfo}>
+                    <Text style={styles.songTitle} numberOfLines={1}>
+                      {item.song.trackTitle}
+                    </Text>
                     <Text style={styles.songDate}>
                       {formatDate(item.song.showDate)}
                     </Text>
                   </View>
-                  {item.song.venue && (
-                    <Text style={styles.songVenue} numberOfLines={1}>
-                      {item.song.venue}
-                    </Text>
-                  )}
+                  <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
                 </View>
-                <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No recent plays</Text>
+            )}
+          </View>
 
-      {/* Most Listened Songs */}
-      {topSongs.length > 0 && (
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Most Listened</Text>
-          {topSongs.map((item, index) => (
-            <TouchableOpacity
-              key={`${item.song.trackId}-${item.song.showIdentifier}`}
-              style={styles.rankedItem}
-              onPress={() => handleShowPress(item.song.showIdentifier)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.rankNumber}>{index + 1}</Text>
-              <View style={styles.rankedItemInfo}>
-                <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                  {item.song.trackTitle}
-                </Text>
-                <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                  {formatDate(item.song.showDate)}
-                  {item.song.venue ? ` · ${item.song.venue}` : ''}
-                </Text>
-              </View>
-              <PlayCountBadge count={item.plays} size="small" />
-            </TouchableOpacity>
-          ))}
+          {/* Most Listened Songs */}
+          <View style={styles.column}>
+            <Text style={styles.sectionTitle}>Most Listened</Text>
+            {topSongs.length > 0 ? topSongs.map((item, index) => (
+              <TouchableOpacity
+                key={`${item.song.trackId}-${item.song.showIdentifier}`}
+                style={styles.rankedItem}
+                onPress={() => handleShowPress(item.song.showIdentifier)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.rankNumber}>{index + 1}</Text>
+                <View style={styles.rankedItemInfo}>
+                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
+                    {item.song.trackTitle}
+                  </Text>
+                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
+                    {formatDate(item.song.showDate)}
+                  </Text>
+                </View>
+                <PlayCountBadge count={item.plays} size="small" />
+              </TouchableOpacity>
+            )) : (
+              <Text style={styles.emptyText}>No plays yet</Text>
+            )}
+          </View>
         </View>
       )}
 
@@ -561,6 +563,19 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' && {
       paddingTop: 2,
     }),
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    gap: SPACING.xl,
+    marginBottom: SPACING.xxl,
+  },
+  column: {
+    flex: 1,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textTertiary,
+    paddingVertical: SPACING.lg,
   },
   listSection: {
     marginBottom: SPACING.xxl,
