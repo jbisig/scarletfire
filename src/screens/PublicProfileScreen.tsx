@@ -213,10 +213,7 @@ export function PublicProfileScreen() {
               >
                 <View style={styles.rankedItemInfo}>
                   <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                    {formatDate(item.show.date)}
-                  </Text>
-                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                    {getVenueFromShow(item.show)}
+                    {formatDate(item.show.date)} - {getVenueFromShow(item.show)}
                   </Text>
                 </View>
                 <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
@@ -243,10 +240,7 @@ export function PublicProfileScreen() {
                 <Text style={styles.rankNumber}>{index + 1}</Text>
                 <View style={styles.rankedItemInfo}>
                   <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                    {formatDate(item.show.date)}
-                  </Text>
-                  <Text style={styles.rankedItemSubtitle} numberOfLines={1}>
-                    {getVenueFromShow(item.show)}
+                    {formatDate(item.show.date)} - {getVenueFromShow(item.show)}
                   </Text>
                 </View>
                 <PlayCountBadge count={item.totalPlays} size="small" />
@@ -591,7 +585,7 @@ const styles = StyleSheet.create({
   rankedItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 56,
+    minHeight: 44,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -620,7 +614,7 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
   },
   songItem: {
-    minHeight: 56,
+    minHeight: 44,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
