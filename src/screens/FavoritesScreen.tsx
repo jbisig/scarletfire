@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Platform,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -43,6 +44,9 @@ import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { ProfileImage } from '../components/ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
+import { useShareSheet } from '../contexts/ShareSheetContext';
+import { profileService, UserProfile } from '../services/profileService';
+import { useAuth } from '../contexts/AuthContext';
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
@@ -146,7 +150,6 @@ export function FavoritesScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
@@ -183,6 +186,55 @@ export function FavoritesScreen() {
     handleSettings,
     closeDropdown,
   } = useProfileDropdown();
+
+  const shareButtonWidth = isAuthenticated ? LAYOUT.headerButtonSize + LAYOUT.headerButtonGap : 0;
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap - shareButtonWidth;
+
+  const { state: authState } = useAuth();
+  const { openShareTray } = useShareSheet();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  React.useEffect(() => {
+    if (!authState.user?.id) {
+      setUserProfile(null);
+      return;
+    }
+    profileService.getUserProfile(authState.user.id)
+      .then(setUserProfile)
+      .catch(() => setUserProfile(null));
+  }, [authState.user?.id]);
+
+  const handleShareProfile = useCallback(() => {
+    if (!userProfile || !userProfile.is_public || !userProfile.username) {
+      Alert.alert(
+        'Public Profile',
+        'Set up your public profile in Settings to share your favorites.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Go to Settings',
+            onPress: () => {
+              if (isDesktop) {
+                navigation.reset({ index: 0, routes: [{ name: 'Settings' as never }] });
+              } else {
+                navigation.navigate('Settings' as never);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    const displayName = userProfile.display_name || authState.user?.email?.split('@')[0] || 'User';
+    openShareTray({
+      kind: 'profile',
+      username: userProfile.username,
+      displayName,
+      showCount: favoriteShows.length,
+      songCount: favoriteSongs.length,
+    });
+  }, [userProfile, authState.user, favoriteShows.length, favoriteSongs.length, openShareTray, navigation, isDesktop]);
 
   // Create showsByYear structure from favoriteShows for the filter tray
   const favoriteShowsByYear = useMemo(() => {
@@ -722,6 +774,23 @@ export function FavoritesScreen() {
 
           {/* Right side: Search and Filter buttons */}
           <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+            {/* Share Profile Button */}
+            {isAuthenticated && (
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={handleShareProfile}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Share favorites"
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={20}
+                  color={COLORS.textHint}
+                />
+              </TouchableOpacity>
+            )}
+
             {/* Animated Search Bar */}
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
@@ -887,6 +956,12 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
+  },
+  headerButton: {
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerGradient: {
     position: 'absolute',
