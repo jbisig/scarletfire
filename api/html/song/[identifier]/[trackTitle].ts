@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { injectOgTags } from '../../../_lib/injectOgTags';
+import { injectOgTags } from '../../../_lib/injectOgTags.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../../_lib/showLookup';
-import { fetchTrackList } from '../../../_lib/fetchTrackList';
-import { matchTrackBySlug } from '../../../../src/utils/trackMatching';
-import { WEB_ORIGIN } from '../../../_lib/constants';
+} from '../../../_lib/showLookup.js';
+import { fetchTrackList } from '../../../_lib/fetchTrackList.js';
+import { matchTrackBySlug } from '../../../_lib/trackMatching.js';
+import { WEB_ORIGIN } from '../../../_lib/constants.js';
 
 export const config = { runtime: 'nodejs' };
 

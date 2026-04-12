@@ -2,17 +2,22 @@
  * Lookup a show's canonical metadata by either ISO date (e.g. "1977-05-08")
  * or archive.org identifier (e.g. "gd1977-05-08.137955.sbd.jjoregon.flacf").
  *
- * Reads the static catalog in src/data/shows.json once at module-load time
- * (Vercel Fluid Compute reuses warm instances, so this runs at most once per
- * cold start) and enriches each entry with the classicTier from
- * src/data/classicShowsTiers.ts so the OG image endpoints and HTML-injection
- * endpoints can render the correct star count without an extra lookup.
+ * Reads the static catalog bundled at src/data/shows.json ONCE at module
+ * load time (Vercel Fluid Compute reuses warm instances, so this runs at
+ * most once per cold start) and enriches each entry with the classicTier
+ * from the local api/_lib/classicShowsTiers copy so OG image endpoints and
+ * HTML injection endpoints can render the correct star count without an
+ * extra lookup.
  *
- * No network calls — show catalog and classic tier data are both bundled
- * into the function at build time via functions.includeFiles in vercel.json.
+ * No network calls. In the Vercel Functions runtime, src/data/shows.json
+ * is included in the bundle via functions.includeFiles in vercel.json and
+ * lives at the same relative path on disk. We load it via fs.readFileSync
+ * rather than `import ... from '...json' with { type: 'json' }` to avoid
+ * ESM JSON-import compatibility quirks across Vercel's bundler.
  */
-import showsData from '../../src/data/shows.json';
-import { getClassicTier } from '../../src/data/classicShowsTiers';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { getClassicTier } from './classicShowsTiers.js';
 
 export interface ShowMetadata {
   primaryIdentifier: string;
@@ -28,11 +33,23 @@ interface RawShow {
   [key: string]: unknown;
 }
 
+// Resolve src/data/shows.json relative to process.cwd(), which is both:
+//  - the project root in Jest (where package.json lives)
+//  - /var/task in the Vercel Functions runtime (the bundle's root, where
+//    src/data/shows.json is included via functions.includeFiles in vercel.json)
+// Using cwd() sidesteps ESM's import.meta.url (unsupported by Jest's Hermes
+// engine) while still resolving correctly at runtime.
+const showsJsonPath = path.resolve(process.cwd(), 'src/data/shows.json');
+const showsData = JSON.parse(readFileSync(showsJsonPath, 'utf-8')) as Record<
+  string,
+  RawShow[]
+>;
+
 // Build lookup tables once at module load time.
 const byDate: Map<string, ShowMetadata> = new Map();
 const byIdentifier: Map<string, ShowMetadata> = new Map();
 
-for (const yearShows of Object.values(showsData as Record<string, RawShow[]>)) {
+for (const yearShows of Object.values(showsData)) {
   for (const raw of yearShows) {
     if (!raw.primaryIdentifier || !raw.date) continue;
     const isoDate = raw.date.slice(0, 10);  // strip the "T00:00:00Z" suffix if present

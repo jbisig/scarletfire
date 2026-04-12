@@ -1,11 +1,11 @@
 import { ImageResponse } from '@vercel/og';
-import { renderCard } from '../../../_lib/ogTemplate';
+import { renderCard } from '../../../_lib/ogTemplate.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../../_lib/showLookup';
-import { fetchTrackList } from '../../../_lib/fetchTrackList';
-import { matchTrackBySlug } from '../../../../src/utils/trackMatching';
+} from '../../../_lib/showLookup.js';
+import { fetchTrackList } from '../../../_lib/fetchTrackList.js';
+import { matchTrackBySlug } from '../../../_lib/trackMatching.js';
 
 export const config = { runtime: 'nodejs' };
 

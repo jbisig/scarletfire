@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { injectOgTags } from '../../_lib/injectOgTags';
+import { injectOgTags } from '../../_lib/injectOgTags.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../_lib/showLookup';
-import { WEB_ORIGIN } from '../../_lib/constants';
+} from '../../_lib/showLookup.js';
+import { WEB_ORIGIN } from '../../_lib/constants.js';
 
 export const config = { runtime: 'nodejs' };
 

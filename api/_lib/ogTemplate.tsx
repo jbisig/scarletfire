@@ -15,7 +15,7 @@
  *  - Colors must be resolvable hex or rgba strings (no CSS variables)
  */
 import React from 'react';
-import { WEB_ORIGIN } from './constants';
+import { WEB_ORIGIN } from './constants.js';
 
 export interface CardProps {
   title: string;

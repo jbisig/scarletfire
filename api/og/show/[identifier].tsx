@@ -1,9 +1,9 @@
 import { ImageResponse } from '@vercel/og';
-import { renderCard } from '../../_lib/ogTemplate';
+import { renderCard } from '../../_lib/ogTemplate.js';
 import {
   lookupShowByDate,
   lookupShowByIdentifier,
-} from '../../_lib/showLookup';
+} from '../../_lib/showLookup.js';
 
 export const config = { runtime: 'nodejs' };
 

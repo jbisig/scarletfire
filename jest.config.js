@@ -17,6 +17,13 @@ module.exports = {
     // importing './shareService' — without this, haste prefers .native.ts and creates
     // a circular module).
     '^\\./shareService$': '<rootDir>/src/services/shareService.ts',
+    // Pattern 3: strip .js extensions on relative imports. The api/ tree
+    // runs as ESM at Vercel runtime, which requires explicit .js extensions
+    // on relative imports. Jest (Babel + CJS) resolves those to the source
+    // .ts files, so we strip the .js suffix at test time only. Does not
+    // affect production — Vercel compiles the real .js files and Node's
+    // ESM loader resolves them directly.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   testMatch: ['**/__tests__/**/*.test.ts?(x)'],
   collectCoverageFrom: [
