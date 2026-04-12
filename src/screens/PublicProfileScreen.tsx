@@ -700,7 +700,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
+    paddingLeft: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   sectionTitle: {
     ...TYPOGRAPHY.label,
