@@ -47,10 +47,13 @@ async function loadIndexHtml(): Promise<string> {
  * the SPA still handles the route normally (which might show a "not found"
  * state). Short TTL on misses, 1-hour SWR on hits.
  */
+// See api/og/show/[identifier].tsx for the req.url / query-param convention.
 export default async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const segments = url.pathname.split('/').filter(Boolean);
-  const identifier = decodeURIComponent(segments[segments.length - 1] ?? '');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawReq = req as any;
+  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
+  const url = new URL(rawReq.url, `https://${host}`);
+  const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
   const show =

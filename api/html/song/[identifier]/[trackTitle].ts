@@ -42,11 +42,14 @@ async function loadIndexHtml(): Promise<string> {
  * a real track title via archive.org metadata so the unfurl shows the
  * actual song name rather than a humanized slug.
  */
+// See api/og/show/[identifier].tsx for the req.url / query-param convention.
 export default async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const segments = url.pathname.split('/').filter(Boolean);
-  const trackSlug = decodeURIComponent(segments[segments.length - 1] ?? '');
-  const identifier = decodeURIComponent(segments[segments.length - 2] ?? '');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawReq = req as any;
+  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
+  const url = new URL(rawReq.url, `https://${host}`);
+  const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
+  const trackSlug = decodeURIComponent(url.searchParams.get('trackTitle') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
   const show =

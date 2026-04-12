@@ -35,12 +35,14 @@ const SEARCH_MATCH_THRESHOLD = 0.75;
  * If the show isn't in the bundled catalog OR the archive.org lookup fails,
  * falls back to a humanized slug — still cacheable, just less specific.
  */
+// See show/[identifier].tsx for the req.url / query-param convention.
 export default async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const segments = url.pathname.split('/').filter(Boolean);
-  // api/og/song/[identifier]/[trackTitle] → last two segments
-  const trackSlug = decodeURIComponent(segments[segments.length - 1] ?? '');
-  const identifier = decodeURIComponent(segments[segments.length - 2] ?? '');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawReq = req as any;
+  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
+  const url = new URL(rawReq.url, `https://${host}`);
+  const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
+  const trackSlug = decodeURIComponent(url.searchParams.get('trackTitle') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
   const show =

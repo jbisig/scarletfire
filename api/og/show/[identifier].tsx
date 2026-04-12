@@ -33,10 +33,19 @@ function clampBg(bg: string | null): number {
  * short TTL on fallback cards so a temporarily-missing show eventually
  * picks up its real metadata.
  */
+// Vercel's Node.js runtime passes an IncomingMessage-like request where
+// req.url is a RELATIVE path like "/api/og/show/1977-05-08?bg=3&identifier=1977-05-08",
+// not a full URL. We synthesize an absolute URL using the host header so
+// new URL() works, which also handles the Web API case (req.url already
+// absolute → base arg is ignored). Dynamic route params are also appended
+// to the query string by Vercel (note the "&identifier=..." above), so we
+// can read them directly from searchParams without parsing the path.
 export default async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const segments = url.pathname.split('/').filter(Boolean);
-  const identifier = decodeURIComponent(segments[segments.length - 1] ?? '');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawReq = req as any;
+  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
+  const url = new URL(rawReq.url, `https://${host}`);
+  const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
   const show =
