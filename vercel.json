@@ -7,6 +7,9 @@
     },
     "api/html/song/[identifier]/[trackTitle].ts": {
       "maxDuration": 10
+    },
+    "api/html/profile/[username].ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
