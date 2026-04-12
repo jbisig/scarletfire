@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { CommonActions } from '@react-navigation/native';
@@ -40,9 +40,20 @@ const TAB_ROOT_SCREENS: Record<string, string> = {
 // Screens whose headers render their own WebProfileAvatar
 const SCREENS_WITH_OWN_AVATAR = ['Home', 'SongList', 'Favorites'];
 
+const SCROLLBAR_STYLES = ``;
+
 export function DesktopLayout() {
   const [activeTab, setActiveTab] = useState('DiscoverTab');
   const [currentScreen, setCurrentScreen] = useState('DiscoverLanding');
+  useEffect(() => {
+    const styleEl = document.createElement('style');
+    styleEl.setAttribute('data-desktop-scrollbars', '');
+    styleEl.textContent = SCROLLBAR_STYLES;
+    document.head.appendChild(styleEl);
+    return () => {
+      styleEl.remove();
+    };
+  }, []);
 
   const handleNavigate = useCallback((tabKey: string) => {
     setActiveTab(tabKey);
@@ -61,6 +72,9 @@ export function DesktopLayout() {
 
   return (
     <View style={styles.outerContainer}>
+      {/* Electron: draggable strip over the traffic-lights row */}
+      <View style={styles.dragStrip} />
+
       {/* Main area: sidebar + content */}
       <View style={styles.mainArea}>
         <Sidebar activeTab={activeTab} onNavigate={handleNavigate} />
@@ -109,8 +123,20 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: WEB_LAYOUT.outerPadding,
+    paddingTop: 40,
+    paddingRight: WEB_LAYOUT.outerPadding,
+    paddingBottom: WEB_LAYOUT.outerPadding,
+    paddingLeft: WEB_LAYOUT.outerPadding,
     gap: WEB_LAYOUT.panelGap,
+  },
+  dragStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+    // @ts-ignore - web only: make the strip a draggable window region in Electron
+    WebkitAppRegion: 'drag',
   },
   mainArea: {
     flex: 1,

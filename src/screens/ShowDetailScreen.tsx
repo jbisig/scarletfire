@@ -430,6 +430,7 @@ export function ShowDetailScreen() {
     <ScrollView
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={!isDesktop}
     >
       {/* Web: Header with video background + blur */}
       {Platform.OS === 'web' ? (

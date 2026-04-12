@@ -41,6 +41,9 @@ yarn-error.*
 .env
 .env*.local
 
+# electron-builder output
+electron-dist/
+
 # typescript
 *.tsbuildinfo
 
