@@ -32,13 +32,11 @@ const SEARCH_MATCH_THRESHOLD = 0.75;
  * Same pattern as the show-card handler, but resolves the track slug to
  * a real track title via archive.org metadata so the unfurl shows the
  * actual song name rather than a humanized slug.
+ *
+ * See api/html/show/[identifier].ts for the GET-named-export rationale.
  */
-// See api/og/show/[identifier].tsx for the req.url / query-param convention.
-export default async function handler(req: Request): Promise<Response> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawReq = req as any;
-  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
-  const url = new URL(rawReq.url, `https://${host}`);
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url);
   const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
   const trackSlug = decodeURIComponent(url.searchParams.get('trackTitle') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));

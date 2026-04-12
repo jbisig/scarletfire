@@ -30,21 +30,21 @@ function clampBg(bg: string | null): number {
  * Real browsers continue through to SPA hydration; crawlers stop at the
  * meta tags.
  *
- * If the show isn't in the catalog, returns the unmodified index.html so
- * the SPA still handles the route normally (which might show a "not found"
- * state). Short TTL on misses, 1-hour SWR on hits.
+ * Uses the NAMED-EXPORT Web API form (`export function GET(request)`)
+ * rather than `export default`. Vercel's Node runtime dispatches named
+ * HTTP-method exports through its Fetch-API wrapper, which passes a real
+ * Web `Request` object and handles the returned `Response` correctly.
+ * A `export default` handler here gets wrapped in the legacy (req, res)
+ * launcher instead, which ignores returned Response objects and hangs
+ * until Lambda timeout.
  *
  * INDEX_HTML is the SPA's index.html inlined as a TS string constant by
- * scripts/generate-index-html.js at build time — avoids fs.readFile and
- * the functions.includeFiles glob, both of which proved unreliable in
- * this runtime.
+ * scripts/generate-index-html.js at build time.
  */
-// See api/og/show/[identifier].tsx for the req.url / query-param convention.
-export default async function handler(req: Request): Promise<Response> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawReq = req as any;
-  const host = rawReq.headers?.host ?? rawReq.headers?.get?.('host') ?? 'www.scarletfire.app';
-  const url = new URL(rawReq.url, `https://${host}`);
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  // Vercel auto-adds dynamic segments (:identifier) to the query string,
+  // so we read them from searchParams rather than parsing the pathname.
   const identifier = decodeURIComponent(url.searchParams.get('identifier') ?? '');
   const bgIndex = clampBg(url.searchParams.get('bg'));
 
