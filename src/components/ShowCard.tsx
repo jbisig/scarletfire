@@ -23,13 +23,15 @@ interface ShowCardProps {
   overridePlayCount?: number;
   /** Hide the save/saved heart badge */
   hideSaveBadge?: boolean;
+  /** Custom trailing text shown after badges (e.g. "2d ago", "12 plays") */
+  trailingText?: string;
 }
 
 /**
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge, trailingText }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { isDesktop } = useResponsive();
@@ -143,6 +145,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                   </View>
                 )}
                 <PlayCountBadge count={playCount} size="small" />
+                {trailingText && (
+                  <Text style={styles.trailingText}>{trailingText}</Text>
+                )}
               </View>
             )}
           </View>
@@ -161,6 +166,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </View>
             )}
             <PlayCountBadge count={playCount} size="small" />
+            {trailingText && (
+              <Text style={styles.trailingText}>{trailingText}</Text>
+            )}
             {isWeb && !hideSaveBadge && (
               <TouchableOpacity
                 style={styles.savePill}
@@ -271,5 +279,9 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  trailingText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textTertiary,
   },
 });

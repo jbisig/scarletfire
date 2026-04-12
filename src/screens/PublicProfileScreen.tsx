@@ -15,7 +15,6 @@ import { profileService, PublicProfileData } from '../services/profileService';
 import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
-import { PlayCountBadge } from '../components/PlayCountBadge';
 import { useResponsive } from '../hooks/useResponsive';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
@@ -295,23 +294,17 @@ export function PublicProfileScreen() {
           <View style={styles.column}>
             <Text style={styles.sectionTitle}>Recently Played</Text>
             {recentShows.length > 0 ? recentShows.map(item => (
-              <TouchableOpacity
+              <ShowCard
                 key={`recent-${item.show.primaryIdentifier}`}
-                style={styles.rankedItem}
+                show={item.show}
                 onPress={() => handleShowPress(
                   item.show.primaryIdentifier,
                   getVenueFromShow(item.show),
                   item.show.date,
                 )}
-                activeOpacity={0.7}
-              >
-                <View style={styles.rankedItemInfo}>
-                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                    {formatDate(item.show.date)} - {getVenueFromShow(item.show)}
-                  </Text>
-                </View>
-                <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>
-              </TouchableOpacity>
+                hideSaveBadge
+                trailingText={formatRecentDate(item.lastPlayedAt)}
+              />
             )) : (
               <Text style={styles.emptyText}>No recent plays</Text>
             )}
@@ -320,25 +313,18 @@ export function PublicProfileScreen() {
           {/* Most Listened Shows */}
           <View style={styles.column}>
             <Text style={styles.sectionTitle}>Most Listened</Text>
-            {topShows.length > 0 ? topShows.map((item, index) => (
-              <TouchableOpacity
+            {topShows.length > 0 ? topShows.map(item => (
+              <ShowCard
                 key={item.show.primaryIdentifier}
-                style={styles.rankedItem}
+                show={item.show}
                 onPress={() => handleShowPress(
                   item.show.primaryIdentifier,
                   getVenueFromShow(item.show),
                   item.show.date,
                 )}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.rankNumber}>{index + 1}</Text>
-                <View style={styles.rankedItemInfo}>
-                  <Text style={styles.rankedItemTitle} numberOfLines={1}>
-                    {formatDate(item.show.date)} - {getVenueFromShow(item.show)}
-                  </Text>
-                </View>
-                <Text style={styles.recentTime}>{item.totalPlays} plays</Text>
-              </TouchableOpacity>
+                hideSaveBadge
+                trailingText={`${item.totalPlays} plays`}
+              />
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
             )}
