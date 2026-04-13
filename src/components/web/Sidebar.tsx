@@ -1,7 +1,12 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, Pressable, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, WEB_LAYOUT } from '../../constants/theme';
+import { CommonActions } from '@react-navigation/native';
+import { navigationRef } from '../../navigation/navigationRef';
+import { useAuth } from '../../contexts/AuthContext';
+import { profileService, UserProfile } from '../../services/profileService';
+import { useWebAuthModal } from './WebAuthModal';
+import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY, WEB_LAYOUT } from '../../constants/theme';
 
 interface SidebarItem {
   key: string;
@@ -25,6 +30,63 @@ interface SidebarProps {
 }
 
 export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: SidebarProps) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ bottom: 0, left: 0 });
+  const settingsRef = useRef<View>(null);
+  const { state: authState, logout } = useAuth();
+  const { openAuthModal } = useWebAuthModal();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (!authState.user?.id) {
+      setProfile(null);
+      return;
+    }
+    profileService.getUserProfile(authState.user.id).then(setProfile).catch(() => {});
+  }, [authState.user?.id]);
+
+  const handleProfileNav = useCallback(() => {
+    setShowDropdown(false);
+    if (profile?.username && navigationRef.isReady()) {
+      navigationRef.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: 'PublicProfile', params: { username: profile.username } }] })
+      );
+    }
+  }, [profile?.username]);
+
+  const handleSettingsPress = useCallback(() => {
+    const node = settingsRef.current as any;
+    const domNode = node?.getNode?.() || node;
+    const rect = domNode?.getBoundingClientRect?.();
+    if (rect) {
+      setDropdownPos({
+        bottom: window.innerHeight - rect.top + 8,
+        left: rect.left,
+      });
+    }
+    setShowDropdown(prev => !prev);
+  }, []);
+
+  const handleSettingsNav = useCallback(() => {
+    setShowDropdown(false);
+    onNavigate('Settings');
+  }, [onNavigate]);
+
+  const handleLogout = useCallback(async () => {
+    setShowDropdown(false);
+    await logout();
+  }, [logout]);
+
+  const handleLogin = useCallback(() => {
+    setShowDropdown(false);
+    openAuthModal('login');
+  }, [openAuthModal]);
+
+  const handleSignup = useCallback(() => {
+    setShowDropdown(false);
+    openAuthModal('signup');
+  }, [openAuthModal]);
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -55,6 +117,62 @@ export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: Si
           );
         })}
       </View>
+
+      <View style={styles.bottomSection}>
+        <TouchableOpacity
+          ref={settingsRef}
+          style={styles.navItem}
+          onPress={handleSettingsPress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.iconWrapper}>
+            <Ionicons
+              name={activeTab === 'Settings' ? 'settings' : 'settings-outline'}
+              size={21}
+              color={activeTab === 'Settings' ? COLORS.textPrimary : '#999'}
+            />
+          </View>
+          <Text style={[styles.navLabel, activeTab === 'Settings' && styles.navLabelActive]}>
+            Settings
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal visible={showDropdown} transparent animationType="none" onRequestClose={() => setShowDropdown(false)}>
+        <Pressable style={styles.clickAway} onPress={() => setShowDropdown(false)}>
+          <View style={[styles.dropdown, { bottom: dropdownPos.bottom, left: dropdownPos.left }]}>
+            {authState.isAuthenticated ? (
+              <>
+                {profile?.is_public && profile.username && (
+                  <>
+                    <TouchableOpacity style={styles.dropdownItem} onPress={handleProfileNav} activeOpacity={0.7}>
+                      <Text style={styles.dropdownText}>My Profile</Text>
+                    </TouchableOpacity>
+                    <View style={styles.dropdownDivider} />
+                  </>
+                )}
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleSettingsNav} activeOpacity={0.7}>
+                  <Text style={styles.dropdownText}>Settings</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout} activeOpacity={0.7}>
+                  <Text style={styles.dropdownTextRed}>Log Out</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleLogin} activeOpacity={0.7}>
+                  <Text style={styles.dropdownText}>Log In</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleSignup} activeOpacity={0.7}>
+                  <Text style={styles.dropdownText}>Sign Up</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 });
@@ -96,5 +214,43 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     color: COLORS.textPrimary,
+  },
+  bottomSection: {
+    marginTop: 'auto',
+    paddingHorizontal: 13,
+    paddingBottom: 20,
+  },
+  clickAway: {
+    flex: 1,
+  },
+  dropdown: {
+    position: 'absolute',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
+    minWidth: 150,
+    ...SHADOWS.lg,
+  },
+  dropdownItem: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    // @ts-ignore
+    cursor: 'pointer',
+  },
+  dropdownText: {
+    ...TYPOGRAPHY.body,
+    // @ts-ignore
+    whiteSpace: 'nowrap',
+  },
+  dropdownTextRed: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.accent,
+    // @ts-ignore
+    whiteSpace: 'nowrap',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.lg,
   },
 });

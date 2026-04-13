@@ -9,6 +9,7 @@ import {
   Platform,
   Switch,
   TextInput,
+  ScrollView,
   Linking as RNLinking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -124,14 +125,27 @@ export function SettingsScreen() {
   };
 
   const handlePublicToggle = async (value: boolean) => {
-    if (!authState.user?.id || !profile) return;
+    if (!authState.user?.id) return;
 
-    setProfile(prev => prev ? { ...prev, is_public: value } : null);
-
-    try {
-      await profileService.setProfilePublic(authState.user.id, value);
-    } catch {
-      setProfile(prev => prev ? { ...prev, is_public: !value } : null);
+    if (profile) {
+      setProfile(prev => prev ? { ...prev, is_public: value } : null);
+      try {
+        await profileService.setProfilePublic(authState.user.id, value);
+      } catch {
+        setProfile(prev => prev ? { ...prev, is_public: !value } : null);
+      }
+    } else if (value) {
+      // Create a new profile when toggling on for the first time
+      try {
+        const defaultUsername = (authState.user.email?.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20);
+        const created = await profileService.createProfile(authState.user.id, defaultUsername || 'user');
+        await profileService.setProfilePublic(authState.user.id, true);
+        setProfile({ ...created, is_public: true });
+        setUsername(created.username);
+        setDisplayName(created.display_name || '');
+      } catch {
+        // Failed to create profile
+      }
     }
   };
 
@@ -292,6 +306,7 @@ export function SettingsScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
+      <ScrollView>
       {/* Profile Section */}
       <View style={styles.section}>
         <View style={styles.profileContainer}>
@@ -369,86 +384,93 @@ export function SettingsScreen() {
           <ActivityIndicator size="small" color={COLORS.textSecondary} />
         ) : (
           <>
-            {/* Username */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Username</Text>
-              <TextInput
-                style={[styles.textInput, usernameError && styles.textInputError]}
-                value={username}
-                onChangeText={(text) => {
-                  setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
-                  setUsernameError(null);
-                }}
-                onBlur={handleUsernameSave}
-                placeholder="choose a username"
-                placeholderTextColor={COLORS.textTertiary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-                editable={!isSavingUsername}
-              />
-              {usernameError && (
-                <Text style={styles.fieldError}>{usernameError}</Text>
-              )}
-              {isSavingUsername && (
-                <ActivityIndicator size="small" color={COLORS.textSecondary} style={{ marginTop: 4 }} />
-              )}
-            </View>
-
-            {/* Display Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Display Name</Text>
-              <TextInput
-                style={styles.textInput}
-                value={displayName}
-                onChangeText={setDisplayName}
-                onBlur={handleDisplayNameSave}
-                placeholder={authState.user?.email?.split('@')[0] || 'your name'}
-                placeholderTextColor={COLORS.textTertiary}
-                maxLength={50}
-                editable={!isSavingDisplayName}
-              />
-            </View>
-
             {/* Make Profile Public Toggle */}
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
                 <Text style={styles.toggleLabel}>Make Profile Public</Text>
                 <Text style={styles.toggleHint}>
-                  {profile ? 'Allow others to see your favorites and listening history' : 'Set a username first to enable'}
+                  Allow others to see your favorites and listening history
                 </Text>
               </View>
               <Switch
                 value={profile?.is_public ?? false}
                 onValueChange={handlePublicToggle}
-                disabled={!profile}
                 trackColor={{ false: COLORS.border, true: COLORS.accent }}
-                thumbColor={COLORS.textPrimary}
+                thumbColor="#FFFFFF"
+                // @ts-ignore - needed for web compatibility
+                activeThumbColor="#FFFFFF"
+                onTintColor={COLORS.accent}
               />
             </View>
 
-            {/* View Profile + URL */}
-            {profile?.is_public && profile.username && (
-              <View style={styles.profileLinkSection}>
-                <TouchableOpacity
-                  style={styles.viewProfileButton}
-                  onPress={() => navigation.navigate('PublicProfile' as never, { username: profile.username } as never)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
-                  <Text style={styles.viewProfileText}>View Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.profileUrlContainer}
-                  onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="link-outline" size={16} color={COLORS.accent} />
-                  <Text style={styles.profileUrl}>
-                    scarletfire.app/profile/{profile.username}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            {/* Fields shown when public */}
+            {(profile?.is_public) && (
+              <>
+                {/* Username */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.fieldLabel}>Username</Text>
+                  <TextInput
+                    style={[styles.textInput, usernameError && styles.textInputError]}
+                    value={username}
+                    onChangeText={(text) => {
+                      setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                      setUsernameError(null);
+                    }}
+                    onBlur={handleUsernameSave}
+                    placeholder="choose a username"
+                    placeholderTextColor={COLORS.textTertiary}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={20}
+                    editable={!isSavingUsername}
+                  />
+                  {usernameError && (
+                    <Text style={styles.fieldError}>{usernameError}</Text>
+                  )}
+                  {isSavingUsername && (
+                    <ActivityIndicator size="small" color={COLORS.textSecondary} style={{ marginTop: 4 }} />
+                  )}
+                </View>
+
+                {/* Display Name */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.fieldLabel}>Display Name</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    onBlur={handleDisplayNameSave}
+                    placeholder={authState.user?.email?.split('@')[0] || 'your name'}
+                    placeholderTextColor={COLORS.textTertiary}
+                    maxLength={50}
+                    editable={!isSavingDisplayName}
+                  />
+                </View>
+
+                {/* View Profile + URL */}
+                {profile.username && (
+                  <View style={styles.profileLinkSection}>
+                    <TouchableOpacity
+                      style={styles.viewProfileButton}
+                      onPress={() => navigation.navigate('PublicProfile' as never, { username: profile.username } as never)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
+                      <Text style={styles.viewProfileText}>View Profile</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.profileUrlContainer}
+                      onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="link-outline" size={16} color={COLORS.accent} />
+                      <Text style={styles.profileUrl}>
+                        scarletfire.app/profile/{profile.username}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
             )}
           </>
         )}
@@ -473,6 +495,7 @@ export function SettingsScreen() {
           This will permanently delete your account and all associated data.
         </Text>
       </View>
+      </ScrollView>
     </View>
   );
 }

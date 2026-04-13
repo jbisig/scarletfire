@@ -79,6 +79,54 @@ function getSortIcon(sortType: ShowSortType | SongSortType): 'arrow-up' | 'arrow
   return sortType === 'dateSavedOldest' || sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
 }
 
+function SongRow({ song, trailingContent, loadingSongId, isDesktop, onPress }: {
+  song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string };
+  trailingContent?: React.ReactNode;
+  loadingSongId: string | null;
+  isDesktop: boolean;
+  onPress: (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+  const venue = getCorrectVenue(song.showDate) || song.venue;
+  const songKey = `${song.trackId}-${song.showIdentifier}`;
+  const isSongLoading = loadingSongId === songKey;
+
+  return (
+    <TouchableOpacity
+      style={[styles.songItem, isSongLoading && styles.songItemLoading, isDesktop && isHovered && styles.songItemHovered]}
+      onPress={() => onPress(song)}
+      activeOpacity={0.7}
+      disabled={isSongLoading}
+      // @ts-ignore - web only mouse events
+      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
+      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
+    >
+      <View style={styles.songContentRow}>
+        <View style={styles.songInfo}>
+          <Text style={styles.songTitle} numberOfLines={1}>
+            {song.trackTitle}
+          </Text>
+          <View style={styles.songDateRow}>
+            <Text style={styles.songDate}>
+              {formatDate(song.showDate)}
+            </Text>
+            {performanceRating && (
+              <StarRating tier={performanceRating} size={14} />
+            )}
+          </View>
+          {venue && (
+            <Text style={styles.songVenue} numberOfLines={1}>
+              {venue}
+            </Text>
+          )}
+        </View>
+        {trailingContent}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export function PublicProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<ProfileRouteParams, 'PublicProfile'>>();
@@ -199,8 +247,23 @@ export function PublicProfileScreen() {
       .slice(0, 10);
   }, [data]);
 
-  const displayName = data?.profile.display_name || username;
+  const handleSongPress = useCallback(async (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
+    const songKey = `${song.trackId}-${song.showIdentifier}`;
+    try {
+      setLoadingSongId(songKey);
+      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
+      const track = showDetail.tracks.find(t => t.id === song.trackId);
+      if (track) {
+        await loadTrack(track, showDetail, showDetail.tracks);
+      }
+    } catch (error) {
+      logger.player.error('Failed to load song:', error);
+    } finally {
+      setLoadingSongId(null);
+    }
+  }, [loadTrack]);
 
+  const displayName = data?.profile.display_name || username;
 
   // Sorted favorite shows
   const sortedFavoriteShows = useMemo(() => {
@@ -288,22 +351,6 @@ export function PublicProfileScreen() {
   const handleShowPress = (identifier: string, venue?: string, date?: string) => {
     navigation.navigate('ShowDetail', { identifier, venue, date });
   };
-
-  const handleSongPress = useCallback(async (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
-    const songKey = `${song.trackId}-${song.showIdentifier}`;
-    try {
-      setLoadingSongId(songKey);
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
-      const track = showDetail.tracks.find(t => t.id === song.trackId);
-      if (track) {
-        await loadTrack(track, showDetail, showDetail.tracks);
-      }
-    } catch (error) {
-      logger.player.error('Failed to load song:', error);
-    } finally {
-      setLoadingSongId(null);
-    }
-  }, [loadTrack]);
 
   const formatRecentDate = (timestamp: number): string => {
     const date = new Date(timestamp);
@@ -410,40 +457,14 @@ export function PublicProfileScreen() {
   );
 
   const renderSongRow = (song: typeof data.favorites.songs[0], trailingContent?: React.ReactNode) => {
-    const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-    const venue = getCorrectVenue(song.showDate) || song.venue;
-    const songKey = `${song.trackId}-${song.showIdentifier}`;
-    const isSongLoading = loadingSongId === songKey;
-
     return (
-      <TouchableOpacity
-        style={[styles.songItem, isSongLoading && styles.songItemLoading]}
-        onPress={() => handleSongPress(song)}
-        activeOpacity={0.7}
-        disabled={isSongLoading}
-      >
-        <View style={styles.songContentRow}>
-          <View style={styles.songInfo}>
-            <Text style={styles.songTitle} numberOfLines={1}>
-              {song.trackTitle}
-            </Text>
-            <View style={styles.songDateRow}>
-              <Text style={styles.songDate}>
-                {formatDate(song.showDate)}
-              </Text>
-              {performanceRating && (
-                <StarRating tier={performanceRating} size={14} />
-              )}
-            </View>
-            {venue && (
-              <Text style={styles.songVenue} numberOfLines={1}>
-                {venue}
-              </Text>
-            )}
-          </View>
-          {trailingContent}
-        </View>
-      </TouchableOpacity>
+      <SongRow
+        song={song}
+        trailingContent={trailingContent}
+        loadingSongId={loadingSongId}
+        isDesktop={isDesktop}
+        onPress={handleSongPress}
+      />
     );
   };
 
@@ -750,6 +771,9 @@ const styles = StyleSheet.create({
   recentTime: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
+  },
+  songItemHovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   songItemLoading: {
     opacity: 0.5,
