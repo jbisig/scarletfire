@@ -24,6 +24,7 @@ export interface UseProfileDropdownReturn {
   handleLogin: () => Promise<void>;
   handleSettings: () => void;
   handleViewProfile: (() => void) | null;
+  userProfile: UserProfile | null;
   closeDropdown: () => void;
 }
 
@@ -119,6 +120,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     handleLogin,
     handleSettings,
     handleViewProfile: userProfile?.is_public && userProfile?.username ? handleViewProfile : null,
+    userProfile,
     closeDropdown,
   };
 }
