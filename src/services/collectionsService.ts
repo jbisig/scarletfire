@@ -491,6 +491,76 @@ class CollectionsService {
 
     return { saved, liveCollections };
   }
+
+  /**
+   * Create a fully owned copy of an existing collection. Copies all items
+   * preserving their order and metadata. Name becomes "{original} (Copy)"
+   * with slug collision handling; no back-reference to the original.
+   *
+   * The source collection must be readable by the caller (owner, saver of a
+   * public-by-link view). We don't enforce that here — RLS will gate the
+   * underlying reads.
+   */
+  async duplicateCollection(params: {
+    userId: string;
+    sourceCollectionId: string;
+  }): Promise<Collection> {
+    const { userId, sourceCollectionId } = params;
+
+    // 1. Fetch source collection + items.
+    const { data: src, error: srcErr } = await this.supabase
+      .from('collections')
+      .select('*')
+      .eq('id', sourceCollectionId)
+      .maybeSingle();
+    if (srcErr) throw srcErr;
+    if (!src) throw new Error('Source collection not found');
+
+    const srcRow = src as CollectionRow;
+    const items = await this.fetchCollectionItems(sourceCollectionId);
+
+    // 2. Create the new owned collection with "(Copy)" suffix, slug-collision handled.
+    const copyName = `${srcRow.name.trimEnd()} (Copy)`;
+    const created = await this.createCollection({
+      userId,
+      name: copyName,
+      type: srcRow.type,
+      description: srcRow.description ?? undefined,
+    });
+
+    // 3. Copy cover image if present.
+    if (srcRow.cover_image_url) {
+      const { error: updErr } = await this.supabase
+        .from('collections')
+        .update({ cover_image_url: srcRow.cover_image_url })
+        .eq('id', created.id);
+      if (updErr) logger.api.error('duplicateCollection cover copy failed', updErr);
+    }
+
+    // 4. Bulk-insert items preserving position order.
+    if (items.length > 0) {
+      const rows = items.map((it, idx) => ({
+        collection_id: created.id,
+        item_identifier: it.itemIdentifier,
+        item_metadata: it.itemMetadata,
+        position: idx,
+      }));
+      const { error: insErr } = await this.supabase
+        .from('collection_items')
+        .insert(rows);
+      if (insErr) {
+        // Best-effort rollback: delete the (now empty-ish) collection.
+        await this.supabase.from('collections').delete().eq('id', created.id);
+        throw insErr;
+      }
+    }
+
+    return {
+      ...created,
+      coverImageUrl: srcRow.cover_image_url ?? undefined,
+      itemCount: items.length,
+    };
+  }
 }
 
 export const collectionsService = new CollectionsService();
