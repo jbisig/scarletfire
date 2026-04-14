@@ -383,24 +383,14 @@ export function ShowDetailScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity
-            onPress={() => setAddToCollectionVisible(true)}
-            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Add to collection"
-          >
-            <Ionicons name="folder-open-outline" size={22} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleShareShow}
-            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Share show"
-          >
-            <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={handleShareShow}
+          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Share show"
+        >
+          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+        </TouchableOpacity>
       ),
     });
   }, [navigation, handleShareShow]);
