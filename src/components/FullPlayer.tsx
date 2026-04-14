@@ -591,32 +591,34 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 </View>
               </TouchableOpacity>
 
-              {/* Add to Playlist */}
-              <TouchableOpacity
-                style={styles.trackActionBtn}
-                onPress={() => setAddToPlaylistVisible(true)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Add to playlist"
-              >
-                <Ionicons name="add" size={26} color={COLORS.textPrimary} />
-              </TouchableOpacity>
+              <View style={styles.trackActionsGroup}>
+                {/* Add to Playlist */}
+                <TouchableOpacity
+                  style={styles.trackActionBtn}
+                  onPress={() => setAddToPlaylistVisible(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add to playlist"
+                >
+                  <Ionicons name="add" size={26} color={COLORS.textPrimary} />
+                </TouchableOpacity>
 
-              {/* Save Song (Heart) */}
-              <TouchableOpacity
-                style={styles.trackActionBtn}
-                onPress={handleToggleFavoriteSong}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                accessibilityState={{ selected: isFavorite }}
-              >
-                <Ionicons
-                  name={isFavorite ? 'heart' : 'heart-outline'}
-                  size={26}
-                  color={isFavorite ? COLORS.accent : COLORS.textPrimary}
-                />
-              </TouchableOpacity>
+                {/* Save Song (Heart) */}
+                <TouchableOpacity
+                  style={styles.trackActionBtn}
+                  onPress={handleToggleFavoriteSong}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                  accessibilityState={{ selected: isFavorite }}
+                >
+                  <Ionicons
+                    name={isFavorite ? 'heart' : 'heart-outline'}
+                    size={26}
+                    color={isFavorite ? COLORS.accent : COLORS.textPrimary}
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -813,6 +815,11 @@ const styles = StyleSheet.create({
   saveButtonActive: {
     backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
+  },
+  trackActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   trackActionBtn: {
     width: 36,
