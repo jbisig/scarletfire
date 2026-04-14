@@ -5,7 +5,7 @@ export default ({ config }) => {
       name: "Scarlet>fire",
       slug: "scarletfire",
       owner: "scarlet-fire",
-      version: "1.2.6",
+      version: "1.2.7",
       orientation: "portrait",
       icon: "./assets/icon.png",
       userInterfaceStyle: "dark",
