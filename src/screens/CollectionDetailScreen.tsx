@@ -117,6 +117,8 @@ export function CollectionDetailScreen() {
   const user = state.user;
   const {
     collections,
+    savedCollections,
+    liveSavedCollectionsById,
     fetchItems,
     removeItem,
     reorderItems,
@@ -207,27 +209,42 @@ export function CollectionDetailScreen() {
 
   // Keep `collection` in sync with the context for owner-edited collections
   // (rename, description change) without triggering the expensive items load.
+  // Also resolves saved collections (owned by someone else) via the live map.
   useEffect(() => {
     if (!route.params?.collectionId) return;
-    const found = collections.find((c) => c.id === route.params!.collectionId);
+    const found =
+      collections.find((c) => c.id === route.params!.collectionId) ??
+      liveSavedCollectionsById.get(route.params!.collectionId);
     if (found) setCollection(found);
-  }, [collections, route.params?.collectionId]);
+  }, [collections, liveSavedCollectionsById, route.params?.collectionId]);
 
   // Reset owner username when the route changes.
   useEffect(() => {
     setOwnerUsername(route.params?.username ?? null);
   }, [route.params?.collectionId, route.params?.username, route.params?.slug]);
 
-  // Load owner username for share builder (owner view only).
+  // Load owner username for share builder and header attribution.
+  // Three paths: (1) owner viewing own → look up their profile,
+  // (2) viewer has saved this collection → use the snapshot on SavedCollection,
+  // (3) public-link view → already set from route.params.username.
   useEffect(() => {
     (async () => {
       if (!collection || ownerUsername) return;
       if (user && user.id === collection.userId) {
         const me = await profileService.getUserProfile(user.id);
         setOwnerUsername(me?.username ?? null);
+        return;
       }
+      const savedMatch = savedCollections.find((s) => s.collectionId === collection.id);
+      if (savedMatch) {
+        setOwnerUsername(savedMatch.lastKnownOwnerUsername);
+        return;
+      }
+      // Fallback: fetch the owner's profile by userId so the share/Owner fields populate.
+      const prof = await profileService.getUserProfile(collection.userId);
+      setOwnerUsername(prof?.username ?? null);
     })();
-  }, [collection, user, ownerUsername]);
+  }, [collection, user, ownerUsername, savedCollections]);
 
   const isOwner =
     !routeReadOnly && !isPublicLink && !!user && !!collection && user.id === collection.userId;
@@ -437,9 +454,26 @@ export function CollectionDetailScreen() {
     );
   }
   if (!collection) {
+    // Signed-in viewers with a tombstoned save row likely landed here because
+    // the owner deleted the collection while they had it open. Surface that
+    // context and give them an out.
+    const viewerHasTombstones =
+      !!user && savedCollections.some((s) => s.collectionId === null);
     return (
       <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
-        <Text style={styles.empty}>Collection not found.</Text>
+        <Text style={styles.empty}>
+          {viewerHasTombstones
+            ? 'This collection is no longer available. It may have been deleted by its owner.'
+            : 'Collection not found.'}
+        </Text>
+        <TouchableOpacity
+          style={[styles.pill, { marginTop: 16 }]}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={17} color={COLORS.textPrimary} />
+          <Text style={styles.pillText}>Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
