@@ -816,13 +816,13 @@ const styles = StyleSheet.create({
   },
   toolbarText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
 
-  // List bodies
+  // List bodies. Native cards (ShowCard/SongCard) already have their own
+  // horizontal padding (SPACING.xxl), so we don't add any on native. On web,
+  // ShowCard uses 16px internal padding and we offset the wrapper by 8/24
+  // so card content aligns with the header (header 24, desktop 40).
   listBody: {
-    // ShowCard adds 16px of internal horizontal padding on web, so we subtract
-    // that from the container padding to visually align card content with the
-    // header (header 24, desktop 40).
-    paddingHorizontal: 8,
     paddingTop: 8,
+    ...(Platform.OS === 'web' ? { paddingHorizontal: 8 } : {}),
   },
   listBodyDesktop: {
     paddingHorizontal: 24,
