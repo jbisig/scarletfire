@@ -5,6 +5,7 @@ import {
   CollectionItem,
   CollectionItemMetadata,
   CollectionType,
+  SavedCollection,
 } from '../types/collection.types';
 import { slugifyName, nextAvailableSlug } from './collectionsSlug';
 
@@ -41,6 +42,28 @@ function mapCollection(row: CollectionRow, itemCount?: number): Collection {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     itemCount,
+  };
+}
+
+interface SavedCollectionRow {
+  id: string;
+  user_id: string;
+  collection_id: string | null;
+  last_known_name: string;
+  last_known_type: CollectionType;
+  last_known_owner_username: string;
+  saved_at: string;
+}
+
+function mapSavedCollection(row: SavedCollectionRow): SavedCollection {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    collectionId: row.collection_id,
+    lastKnownName: row.last_known_name,
+    lastKnownType: row.last_known_type,
+    lastKnownOwnerUsername: row.last_known_owner_username,
+    savedAt: row.saved_at,
   };
 }
 
@@ -289,6 +312,96 @@ class CollectionsService {
     const collection = mapCollection(data as CollectionRow);
     const items = await this.fetchCollectionItems(collection.id);
     return { collection, items };
+  }
+
+  /**
+   * Save a reference to another user's collection. Snapshots the collection's
+   * name, type, and owner username at save time; snapshots are refreshed on
+   * subsequent fetches while the source still exists.
+   *
+   * Returns null if the caller owns the collection (defensive — UI hides).
+   * Returns the existing row if the collection is already saved (idempotent).
+   */
+  async saveCollection(params: {
+    userId: string;
+    collectionId: string;
+  }): Promise<SavedCollection | null> {
+    const { userId, collectionId } = params;
+
+    const { data: col, error: colErr } = await this.supabase
+      .from('collections')
+      .select('id, user_id, name, type')
+      .eq('id', collectionId)
+      .maybeSingle();
+    if (colErr) throw colErr;
+    if (!col) throw new Error('Collection not found');
+    if (col.user_id === userId) return null; // can't save your own
+
+    const { data: ownerProfile, error: profErr } = await this.supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', col.user_id)
+      .maybeSingle();
+    if (profErr) throw profErr;
+    if (!ownerProfile?.username) throw new Error('Owner profile not found');
+
+    const { data, error } = await this.supabase
+      .from('saved_collections')
+      .insert({
+        user_id: userId,
+        collection_id: collectionId,
+        last_known_name: col.name,
+        last_known_type: col.type,
+        last_known_owner_username: ownerProfile.username,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        // Already saved — fetch and return existing row.
+        const { data: existing, error: fetchErr } = await this.supabase
+          .from('saved_collections')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('collection_id', collectionId)
+          .single();
+        if (fetchErr) throw fetchErr;
+        return mapSavedCollection(existing as SavedCollectionRow);
+      }
+      throw error;
+    }
+    return mapSavedCollection(data as SavedCollectionRow);
+  }
+
+  async unsaveCollection(userId: string, collectionId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('saved_collections')
+      .delete()
+      .eq('user_id', userId)
+      .eq('collection_id', collectionId);
+    if (error) throw error;
+  }
+
+  /** Remove a saved row by id — used by the tombstone "Remove" action. */
+  async deleteSavedCollection(userId: string, savedId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('saved_collections')
+      .delete()
+      .eq('user_id', userId)
+      .eq('id', savedId);
+    if (error) throw error;
+  }
+
+  async isCollectionSaved(userId: string, collectionId: string): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .from('saved_collections')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('collection_id', collectionId)
+      .maybeSingle();
+    if (error) throw error;
+    return !!data;
   }
 }
 
