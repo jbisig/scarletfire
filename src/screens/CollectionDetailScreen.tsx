@@ -270,7 +270,9 @@ export function CollectionDetailScreen() {
 
   const handleShowPress = useCallback(
     (show: GratefulDeadShow) => {
-      navigation.navigate('ShowDetail', {
+      // Use push (not navigate) so Back always returns to THIS collection,
+      // even if ShowDetail already exists elsewhere in the nav stack.
+      (navigation as any).push('ShowDetail', {
         identifier: show.primaryIdentifier,
         date: show.date,
         venue: show.venue,
