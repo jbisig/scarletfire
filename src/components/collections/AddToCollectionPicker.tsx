@@ -176,6 +176,7 @@ export function AddToCollectionPicker({
               <FlatList
                 data={filtered}
                 keyExtractor={(c) => c.id}
+                style={styles.list}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                   <Text style={styles.empty}>
@@ -282,6 +283,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginTop: -6,
     marginBottom: 8,
+  },
+  list: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingBottom: 16,
