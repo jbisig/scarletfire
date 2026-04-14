@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { FavoriteSong } from '../contexts/FavoritesContext';
-import { formatDate, getCorrectVenue } from '../utils/formatters';
+import { formatDate } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { PlayCountBadge } from './PlayCountBadge';
@@ -30,7 +30,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
 }) {
   const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = getCorrectVenue(song.showDate) || song.venue;
+  const venue = song.venue;
   const [isHovered, setIsHovered] = useState(false);
 
   return (

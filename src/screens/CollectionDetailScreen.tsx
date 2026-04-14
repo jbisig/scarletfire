@@ -519,38 +519,40 @@ export function CollectionDetailScreen() {
           })}
         </View>
       ) : (
-        <FlatList
-          scrollEnabled={false}
-          data={items}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item, index }) => {
+        <View style={[styles.playlistBody, isDesktop && styles.listBodyDesktop]}>
+          {items.map((item, index) => {
             const md = item.itemMetadata as PlaylistItemMetadata;
+            const song = {
+              trackId: md.trackId,
+              trackTitle: md.trackTitle,
+              showIdentifier: md.showIdentifier,
+              showDate: md.showDate,
+              venue: md.venue,
+              streamUrl: md.streamUrl,
+            };
             return (
-              <View style={styles.trackRow}>
-                <TouchableOpacity
-                  style={{ flex: 1 }}
-                  onPress={() => handleTrackPress(index)}
-                  onLongPress={
-                    isOwner
-                      ? () =>
-                          Alert.alert(md.trackTitle, undefined, [
-                            { text: 'Move up', onPress: () => handleMove(item, -1) },
-                            { text: 'Move down', onPress: () => handleMove(item, 1) },
-                            {
-                              text: 'Remove',
-                              style: 'destructive',
-                              onPress: () => confirmRemoveItem(item),
-                            },
-                            { text: 'Cancel', style: 'cancel' },
-                          ])
-                      : undefined
-                  }
-                >
-                  <Text style={styles.trackTitle} numberOfLines={1}>{md.trackTitle}</Text>
-                  <Text style={styles.trackSubtitle} numberOfLines={1}>
-                    {md.showDate}{md.venue ? ` · ${md.venue}` : ''}
-                  </Text>
-                </TouchableOpacity>
+              <View key={item.id} style={styles.playlistRow}>
+                <View style={{ flex: 1 }}>
+                  <SongCard
+                    song={song}
+                    onPress={() => handleTrackPress(index)}
+                    onLongPress={
+                      isOwner
+                        ? () =>
+                            Alert.alert(md.trackTitle, undefined, [
+                              { text: 'Move up', onPress: () => handleMove(item, -1) },
+                              { text: 'Move down', onPress: () => handleMove(item, 1) },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => confirmRemoveItem(item),
+                              },
+                              { text: 'Cancel', style: 'cancel' },
+                            ])
+                        : undefined
+                    }
+                  />
+                </View>
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
@@ -562,8 +564,8 @@ export function CollectionDetailScreen() {
                 )}
               </View>
             );
-          }}
-        />
+          })}
+        </View>
       )}
 
       <SortDropdown
