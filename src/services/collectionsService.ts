@@ -227,6 +227,31 @@ class CollectionsService {
     return this.fetchCollections(userId);
   }
 
+  /**
+   * Return a map of item_identifier → count across all of the user's collections.
+   * Used to badge UI (e.g. "Added (2)") without fetching each collection's items.
+   */
+  async fetchItemCountsByIdentifier(userId: string): Promise<Record<string, number>> {
+    const { data: cols, error: colsErr } = await this.supabase
+      .from('collections')
+      .select('id')
+      .eq('user_id', userId);
+    if (colsErr) throw colsErr;
+    const ids = (cols ?? []).map((r: { id: string }) => r.id);
+    if (ids.length === 0) return {};
+    const { data: rows, error: rowsErr } = await this.supabase
+      .from('collection_items')
+      .select('item_identifier')
+      .in('collection_id', ids);
+    if (rowsErr) throw rowsErr;
+    const counts: Record<string, number> = {};
+    for (const row of rows ?? []) {
+      const key = (row as { item_identifier: string }).item_identifier;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   async fetchPublicCollectionByLink(
     userId: string,
     slug: string,

@@ -18,6 +18,8 @@ import { logger } from '../utils/logger';
 
 interface CollectionsContextValue {
   collections: Collection[];
+  /** How many of the user's collections contain a given item_identifier. */
+  itemCountsByIdentifier: Record<string, number>;
   loading: boolean;
   error: string | null;
   refreshCollections: () => Promise<void>;
@@ -45,18 +47,24 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const { state } = useAuth();
   const user = state.user;
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [itemCountsByIdentifier, setItemCountsByIdentifier] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshCollections = useCallback(async () => {
     if (!user) {
       setCollections([]);
+      setItemCountsByIdentifier({});
       return;
     }
     setLoading(true);
     try {
-      const data = await collectionsService.fetchCollections(user.id);
+      const [data, counts] = await Promise.all([
+        collectionsService.fetchCollections(user.id),
+        collectionsService.fetchItemCountsByIdentifier(user.id),
+      ]);
       setCollections(data);
+      setItemCountsByIdentifier(counts);
       setError(null);
     } catch (e) {
       logger.api.error('refreshCollections failed', e);
@@ -140,6 +148,10 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
             : c,
         ),
       );
+      setItemCountsByIdentifier((prev) => ({
+        ...prev,
+        [itemIdentifier]: (prev[itemIdentifier] ?? 0) + 1,
+      }));
     },
     [],
   );
@@ -154,6 +166,14 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
             : c,
         ),
       );
+      setItemCountsByIdentifier((prev) => {
+        const current = prev[itemIdentifier] ?? 0;
+        const next = Math.max(0, current - 1);
+        const copy = { ...prev };
+        if (next === 0) delete copy[itemIdentifier];
+        else copy[itemIdentifier] = next;
+        return copy;
+      });
     },
     [],
   );
@@ -168,6 +188,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const value = useMemo<CollectionsContextValue>(
     () => ({
       collections,
+      itemCountsByIdentifier,
       loading,
       error,
       refreshCollections,
@@ -182,6 +203,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     }),
     [
       collections,
+      itemCountsByIdentifier,
       loading,
       error,
       refreshCollections,

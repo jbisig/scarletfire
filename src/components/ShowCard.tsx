@@ -5,6 +5,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { useCollections } from '../contexts/CollectionsContext';
 import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
@@ -35,6 +36,8 @@ interface ShowCardProps {
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge, trailingText }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
+  const { itemCountsByIdentifier } = useCollections();
+  const collectionCount = itemCountsByIdentifier[show.primaryIdentifier] ?? 0;
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
   const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
@@ -181,14 +184,20 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                   }}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Add to collection"
+                  accessibilityLabel={
+                    collectionCount > 0
+                      ? `Added to ${collectionCount} ${collectionCount === 1 ? 'collection' : 'collections'}`
+                      : 'Add to collection'
+                  }
                 >
                   <Ionicons
-                    name="folder-open-outline"
+                    name={collectionCount > 0 ? 'folder' : 'folder-open-outline'}
                     size={15}
                     color={COLORS.textPrimary}
                   />
-                  <Text style={styles.savePillText}>Add</Text>
+                  <Text style={styles.savePillText}>
+                    {collectionCount > 0 ? `Added (${collectionCount})` : 'Add'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.savePill}
