@@ -241,19 +241,25 @@ export function CollectionDetailScreen() {
       const md = item.itemMetadata as any;
       const title = collection.type === 'playlist' ? md.trackTitle : md.title;
       const noun = collection.type === 'playlist' ? 'playlist' : 'collection';
+      const doRemove = async () => {
+        await removeItem(collection.id, item.itemIdentifier);
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+      };
+      if (Platform.OS === 'web') {
+        // Alert.alert with destructive buttons is flaky on RN Web; use the
+        // browser's native confirm dialog instead.
+        const ok =
+          typeof window !== 'undefined' &&
+          window.confirm(`Remove "${title}" from this ${noun}?`);
+        if (ok) void doRemove();
+        return;
+      }
       Alert.alert(
         `Remove "${title}"?`,
         `This will remove it from this ${noun}.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: async () => {
-              await removeItem(collection.id, item.itemIdentifier);
-              setItems((prev) => prev.filter((i) => i.id !== item.id));
-            },
-          },
+          { text: 'Remove', style: 'destructive', onPress: () => void doRemove() },
         ],
       );
     },
