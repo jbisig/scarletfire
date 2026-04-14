@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
+import { useToast } from '../../contexts/ToastContext';
 import { COLORS } from '../../constants/theme';
 
 interface Props {
@@ -27,6 +28,7 @@ export function CreateCollectionModal({
   onCreated,
 }: Props) {
   const { createCollection } = useCollections();
+  const { showToast } = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<CollectionType>(initialType);
@@ -53,6 +55,8 @@ export function CreateCollectionModal({
       onCreated?.(created.id);
     } catch (e) {
       setSubmitting(false);
+      const msg = e instanceof Error ? e.message : 'Failed to create collection';
+      showToast(msg, 'error');
     }
   };
 
