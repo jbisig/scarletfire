@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { COLORS, TYPOGRAPHY, FONTS, SPACING, RADIUS } from '../constants/theme';
 
@@ -56,7 +56,9 @@ export function ConfirmModal({
 const styles = StyleSheet.create({
   card: {
     paddingHorizontal: 20,
-    paddingBottom: 120,
+    // Native needs extra bottom padding to clear the iOS home indicator; web
+    // has no such affordance so that space just reads as dead air.
+    paddingBottom: Platform.OS === 'web' ? 24 : 120,
     gap: 12,
   },
   title: { ...TYPOGRAPHY.heading4, fontSize: 18 },
