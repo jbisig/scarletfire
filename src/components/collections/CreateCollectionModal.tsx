@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Animated,
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -34,6 +35,30 @@ export function CreateCollectionModal({
   const [description, setDescription] = useState('');
   const [type, setType] = useState<CollectionType>(initialType);
   const [submitting, setSubmitting] = useState(false);
+
+  // Animate opacity on visibility change so both open and dismiss are smooth.
+  // We keep the Modal mounted for the duration of the fade-out via `rendered`.
+  const [rendered, setRendered] = useState(visible);
+  const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  useEffect(() => {
+    if (visible) {
+      setRendered(true);
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    } else if (rendered) {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setRendered(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const reset = () => {
     setName('');
@@ -67,8 +92,8 @@ export function CreateCollectionModal({
 
   return (
     <Modal
-      visible={visible}
-      animationType={isWeb ? 'fade' : 'slide'}
+      visible={rendered}
+      animationType="none"
       transparent
       onRequestClose={onClose}
     >
@@ -76,6 +101,7 @@ export function CreateCollectionModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
+        <Animated.View style={[{ flex: 1, opacity }]}>
         <Pressable
           style={[styles.backdrop, isWeb && styles.backdropWeb]}
           onPress={onClose}
@@ -136,6 +162,7 @@ export function CreateCollectionModal({
           </View>
           </Pressable>
         </Pressable>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
