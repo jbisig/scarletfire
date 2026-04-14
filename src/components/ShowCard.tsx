@@ -11,6 +11,7 @@ import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
+import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
@@ -36,6 +37,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
+  const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   // Get official releases for this show
@@ -170,21 +172,40 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               <Text style={styles.trailingText}>{trailingText}</Text>
             )}
             {isWeb && !hideSaveBadge && (
-              <TouchableOpacity
-                style={styles.savePill}
-                onPress={handleToggleSave}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-                accessibilityState={{ selected: isSaved }}
-              >
-                <Ionicons
-                  name={isSaved ? 'heart' : 'heart-outline'}
-                  size={15}
-                  color={COLORS.textPrimary}
-                />
-                <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={styles.savePill}
+                  onPress={(e: any) => {
+                    e?.stopPropagation?.();
+                    setAddToCollectionVisible(true);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add to collection"
+                >
+                  <Ionicons
+                    name="folder-open-outline"
+                    size={15}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>Add</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.savePill}
+                  onPress={handleToggleSave}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                  accessibilityState={{ selected: isSaved }}
+                >
+                  <Ionicons
+                    name={isSaved ? 'heart' : 'heart-outline'}
+                    size={15}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         )}
@@ -197,6 +218,23 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
         show={show}
         onClose={() => setModalVisible(false)}
       />
+
+      {/* Add to Collection Picker (web pill) */}
+      {isWeb && (
+        <AddToCollectionPicker
+          visible={addToCollectionVisible}
+          onClose={() => setAddToCollectionVisible(false)}
+          type="show_collection"
+          itemIdentifier={show.primaryIdentifier}
+          itemMetadata={{
+            title: show.title,
+            date: show.date,
+            venue: show.venue,
+            location: show.location,
+            primaryIdentifier: show.primaryIdentifier,
+          }}
+        />
+      )}
     </>
   );
 });
