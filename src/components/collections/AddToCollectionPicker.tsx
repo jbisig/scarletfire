@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   FlatList,
   StyleSheet,
   Platform,
@@ -106,16 +107,31 @@ export function AddToCollectionPicker({
             renderItem={({ item }) => {
               const selected = !!memberships[item.id];
               return (
-                <TouchableOpacity style={styles.row} onPress={() => toggle(item.id)}>
-                  <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.checkSlot}>
-                    {selected && (
-                      <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                    )}
-                  </View>
-                </TouchableOpacity>
+                <Pressable
+                  onPress={() => toggle(item.id)}
+                  style={({ pressed }) => [
+                    styles.row,
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  {({ pressed }) => (
+                    <>
+                      <Text
+                        style={[
+                          styles.rowText,
+                          (selected || pressed) && styles.rowTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                      <View style={styles.checkSlot}>
+                        {(selected || pressed) && (
+                          <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                        )}
+                      </View>
+                    </>
+                  )}
+                </Pressable>
               );
             }}
           />
@@ -180,6 +196,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  rowPressed: {
+    backgroundColor: COLORS.accentTransparent,
   },
   checkSlot: {
     width: 20,
