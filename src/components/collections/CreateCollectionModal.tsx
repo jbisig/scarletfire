@@ -62,13 +62,20 @@ export function CreateCollectionModal({
     }
   };
 
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType={isWeb ? 'fade' : 'slide'}
+      transparent
+      onRequestClose={onClose}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.backdrop}
+        style={[styles.backdrop, isWeb && styles.backdropWeb]}
       >
-        <View style={styles.card}>
+        <View style={[styles.card, isWeb && styles.cardWeb]}>
           <Text style={styles.title}>New Collection</Text>
 
           <Text style={styles.label}>Name</Text>
@@ -131,12 +138,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backdrop,
     justifyContent: 'flex-end',
   },
+  backdropWeb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   card: {
     backgroundColor: COLORS.cardBackground,
     padding: 20,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     gap: 8,
+  },
+  cardWeb: {
+    width: '100%',
+    maxWidth: 480,
+    borderRadius: 16,
   },
   title: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8 },
   label: { color: COLORS.textSecondary, fontSize: 13, marginTop: 8 },
