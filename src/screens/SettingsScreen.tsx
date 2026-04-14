@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { ProfileImage } from '../components/ProfileImage';
+import { BottomSheet } from '../components/BottomSheet';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
@@ -32,10 +33,13 @@ export function SettingsScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+
+  // Edit modal state — one of 'username' | 'displayName' at a time.
+  const [editingField, setEditingField] = useState<'username' | 'displayName' | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const avatarUrl = profileService.getAvatarUrl(authState.user);
 
@@ -69,58 +73,76 @@ export function SettingsScreen() {
     return null;
   };
 
-  const handleUsernameSave = async () => {
-    const trimmed = username.toLowerCase().trim();
-    if (!trimmed || !authState.user?.id) return;
+  const openEdit = (field: 'username' | 'displayName') => {
+    setEditingField(field);
+    setEditValue(field === 'username' ? username : displayName);
+    setEditError(null);
+  };
 
-    const validationError = validateUsername(trimmed);
-    if (validationError) {
-      setUsernameError(validationError);
-      return;
-    }
+  const closeEdit = () => {
+    if (editSaving) return;
+    setEditingField(null);
+    setEditError(null);
+  };
 
-    if (profile && trimmed === profile.username) {
-      setUsernameError(null);
-      return;
-    }
+  const handleEditSave = async () => {
+    if (!editingField || !authState.user?.id) return;
 
-    setIsSavingUsername(true);
-    setUsernameError(null);
-
-    try {
-      const available = await profileService.checkUsernameAvailable(trimmed);
-      if (!available && trimmed !== profile?.username) {
-        setUsernameError('Username is already taken');
+    if (editingField === 'username') {
+      const trimmed = editValue.toLowerCase().trim();
+      if (!trimmed) {
+        setEditError('Username cannot be empty');
+        return;
+      }
+      const validationError = validateUsername(trimmed);
+      if (validationError) {
+        setEditError(validationError);
+        return;
+      }
+      if (profile && trimmed === profile.username) {
+        setEditingField(null);
         return;
       }
 
-      let updated: UserProfile;
-      if (profile) {
-        updated = await profileService.updateUsername(authState.user.id, trimmed);
-      } else {
-        updated = await profileService.createProfile(authState.user.id, trimmed);
+      setEditSaving(true);
+      setEditError(null);
+      try {
+        const available = await profileService.checkUsernameAvailable(trimmed);
+        if (!available) {
+          setEditError('Username is already taken');
+          return;
+        }
+        const updated = profile
+          ? await profileService.updateUsername(authState.user.id, trimmed)
+          : await profileService.createProfile(authState.user.id, trimmed);
+        setProfile(updated);
+        setUsername(updated.username);
+        setEditingField(null);
+      } catch {
+        setEditError('Failed to save username');
+      } finally {
+        setEditSaving(false);
       }
-      setProfile(updated);
-      setUsername(updated.username);
-    } catch {
-      setUsernameError('Failed to save username');
-    } finally {
-      setIsSavingUsername(false);
+      return;
     }
-  };
 
-  const handleDisplayNameSave = async () => {
-    if (!authState.user?.id || !profile) return;
-    if (displayName === (profile.display_name || '')) return;
-
-    setIsSavingDisplayName(true);
+    // Display name
+    const trimmed = editValue.trim();
+    if (profile && trimmed === (profile.display_name || '')) {
+      setEditingField(null);
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
     try {
-      await profileService.updateDisplayName(authState.user.id, displayName.trim());
-      setProfile(prev => prev ? { ...prev, display_name: displayName.trim() || null } : null);
+      await profileService.updateDisplayName(authState.user.id, trimmed);
+      setProfile(prev => (prev ? { ...prev, display_name: trimmed || null } : null));
+      setDisplayName(trimmed);
+      setEditingField(null);
     } catch {
-      // Silently fail
+      setEditError('Failed to save display name');
     } finally {
-      setIsSavingDisplayName(false);
+      setEditSaving(false);
     }
   };
 
@@ -303,7 +325,14 @@ export function SettingsScreen() {
           <Ionicons name="close" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={styles.headerLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+        >
+          <Text style={styles.headerLogoutText}>Log Out</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView>
@@ -358,24 +387,6 @@ export function SettingsScreen() {
         </View>
       </View>
 
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-
-        <View style={styles.accountItem}>
-          <Text style={styles.accountLabel}>Email</Text>
-          <Text style={styles.accountValue}>{authState.user?.email}</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out-outline" size={22} color={COLORS.accent} />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Public Profile Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Public Profile</Text>
@@ -409,42 +420,39 @@ export function SettingsScreen() {
                 {/* Username */}
                 <View style={styles.fieldContainer}>
                   <Text style={styles.fieldLabel}>Username</Text>
-                  <TextInput
-                    style={[styles.textInput, usernameError && styles.textInputError]}
-                    value={username}
-                    onChangeText={(text) => {
-                      setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
-                      setUsernameError(null);
-                    }}
-                    onBlur={handleUsernameSave}
-                    placeholder="choose a username"
-                    placeholderTextColor={COLORS.textTertiary}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={20}
-                    editable={!isSavingUsername}
-                  />
-                  {usernameError && (
-                    <Text style={styles.fieldError}>{usernameError}</Text>
-                  )}
-                  {isSavingUsername && (
-                    <ActivityIndicator size="small" color={COLORS.textSecondary} style={{ marginTop: 4 }} />
-                  )}
+                  <View style={styles.lockedFieldRow}>
+                    <Text style={styles.lockedFieldValue} numberOfLines={1}>
+                      {username || '—'}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => openEdit('username')}
+                      style={styles.editFieldBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit username"
+                    >
+                      <Ionicons name="pencil" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.editFieldBtnText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Display Name */}
                 <View style={styles.fieldContainer}>
                   <Text style={styles.fieldLabel}>Display Name</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={displayName}
-                    onChangeText={setDisplayName}
-                    onBlur={handleDisplayNameSave}
-                    placeholder={authState.user?.email?.split('@')[0] || 'your name'}
-                    placeholderTextColor={COLORS.textTertiary}
-                    maxLength={50}
-                    editable={!isSavingDisplayName}
-                  />
+                  <View style={styles.lockedFieldRow}>
+                    <Text style={styles.lockedFieldValue} numberOfLines={1}>
+                      {displayName || authState.user?.email?.split('@')[0] || '—'}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => openEdit('displayName')}
+                      style={styles.editFieldBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit display name"
+                    >
+                      <Ionicons name="pencil" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.editFieldBtnText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* View Profile + URL */}
@@ -496,6 +504,65 @@ export function SettingsScreen() {
         </Text>
       </View>
       </ScrollView>
+
+      <BottomSheet
+        visible={editingField !== null}
+        onClose={closeEdit}
+        cardStyle={styles.editSheetCard}
+        swipeToDismiss={false}
+      >
+        {editingField && (
+          <>
+            <Text style={styles.editSheetTitle}>
+              {editingField === 'username' ? 'Change Username' : 'Change Display Name'}
+            </Text>
+            <TextInput
+              style={[styles.textInput, editError && styles.textInputError]}
+              value={editValue}
+              onChangeText={(text) => {
+                if (editingField === 'username') {
+                  setEditValue(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                } else {
+                  setEditValue(text);
+                }
+                setEditError(null);
+              }}
+              autoFocus
+              autoCapitalize={editingField === 'username' ? 'none' : 'sentences'}
+              autoCorrect={editingField !== 'username'}
+              maxLength={editingField === 'username' ? 20 : 50}
+              placeholder={
+                editingField === 'username'
+                  ? 'choose a username'
+                  : authState.user?.email?.split('@')[0] || 'your name'
+              }
+              placeholderTextColor={COLORS.textTertiary}
+              editable={!editSaving}
+            />
+            {editError && <Text style={styles.fieldError}>{editError}</Text>}
+            <View style={styles.editSheetActions}>
+              <TouchableOpacity
+                onPress={closeEdit}
+                style={styles.editSheetCancel}
+                disabled={editSaving}
+              >
+                <Text style={styles.editSheetCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleEditSave}
+                style={[styles.editSheetSave, editSaving && styles.editSheetSaveDisabled]}
+                disabled={editSaving}
+              >
+                {editSaving ? (
+                  <ActivityIndicator size="small" color={COLORS.textPrimary} />
+                ) : (
+                  <Text style={styles.editSheetSaveText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </BottomSheet>
     </View>
   );
 }
@@ -527,14 +594,21 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },
-  headerSpacer: {
-    width: 40,
+  headerLogout: {
+    minWidth: 40,
+    height: 40,
+    paddingHorizontal: SPACING.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerLogoutText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.accent,
+    fontWeight: '600',
   },
   section: {
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.xxl,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   sectionTitle: {
     ...TYPOGRAPHY.label,
@@ -610,31 +684,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
-  accountItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  accountLabel: {
-    ...TYPOGRAPHY.body,
-  },
-  accountValue: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
-    gap: SPACING.md,
-  },
-  logoutText: {
-    ...TYPOGRAPHY.labelLarge,
-    color: COLORS.accent,
-  },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -677,6 +726,79 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.captionSmall,
     color: COLORS.error,
     marginTop: SPACING.xs,
+  },
+  lockedFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.md,
+    paddingLeft: SPACING.lg,
+    paddingRight: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  lockedFieldValue: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  editFieldBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+  },
+  editFieldBtnText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  editSheetCard: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: Platform.OS === 'web' ? SPACING.lg : 120,
+    gap: SPACING.md,
+  },
+  editSheetTitle: {
+    ...TYPOGRAPHY.heading4,
+    fontSize: 18,
+  },
+  editSheetActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+  editSheetCancel: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm + 2,
+  },
+  editSheetCancelText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  editSheetSave: {
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm + 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 88,
+  },
+  editSheetSaveDisabled: {
+    opacity: 0.6,
+  },
+  editSheetSaveText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   toggleRow: {
     flexDirection: 'row',
