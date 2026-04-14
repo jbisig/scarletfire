@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
@@ -8,11 +7,6 @@ import {
   FlatList,
   StyleSheet,
   Platform,
-  Animated,
-  PanResponder,
-  Keyboard,
-  KeyboardEvent,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -23,6 +17,7 @@ import {
 } from '../../types/collection.types';
 import { collectionsService } from '../../services/collectionsService';
 import { authService } from '../../services/authService';
+import { BottomSheet } from '../BottomSheet';
 import { COLORS, TYPOGRAPHY, FONTS } from '../../constants/theme';
 
 interface Props {
@@ -50,74 +45,11 @@ export function AddToCollectionPicker({
 
   const isWeb = Platform.OS === 'web';
 
-  // Animated fade + slide, mirror of CreateCollectionModal.
-  const [rendered, setRendered] = useState(visible);
-  const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(visible ? 0 : 600)).current;
-  useEffect(() => {
-    if (visible) {
-      setRendered(true);
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
-      ]).start();
-    } else if (rendered) {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 600, duration: 200, useNativeDriver: true }),
-      ]).start(({ finished }) => {
-        if (finished) setRendered(false);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
-
-  // Keyboard height for native bottom-sheet lift.
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    if (isWeb) return;
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
-    const onHide = () => setKeyboardHeight(0);
-    const s = Keyboard.addListener(showEvent, onShow);
-    const h = Keyboard.addListener(hideEvent, onHide);
-    return () => {
-      s.remove();
-      h.remove();
-    };
-  }, [isWeb]);
-
-  // Swipe-to-dismiss (native only).
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => !isWeb && g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderGrant: () => {
-        translateY.stopAnimation();
-      },
-      onPanResponderMove: (_, g) => {
-        if (g.dy > 0) translateY.setValue(g.dy);
-      },
-      onPanResponderRelease: (_, g) => {
-        const shouldDismiss = g.dy > 120 || g.vy > 0.6;
-        if (shouldDismiss) {
-          onClose();
-        } else {
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 180,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    }),
-  ).current;
-
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     (async () => {
-      // One round-trip using a JOIN filtered to this user, instead of N queries.
+      // One JOIN query per open, replacing the N+1 `fetchCollectionItems` loop.
       const userId =
         filtered[0]?.userId ??
         (await authService.getClient().auth.getUser()).data.user?.id;
@@ -132,7 +64,7 @@ export function AddToCollectionPicker({
           Object.fromEntries(filtered.map((c) => [c.id, ids.has(c.id)])),
         );
       } catch {
-        // Ignore — leave memberships empty; toggles will still work.
+        // Ignore — toggles will still work, just no pre-populated checkmarks.
       }
     })();
     return () => {
@@ -155,87 +87,59 @@ export function AddToCollectionPicker({
   const newLabel = type === 'playlist' ? 'New Playlist' : 'New Show Collection';
 
   return (
-    <Modal visible={rendered} animationType="none" transparent onRequestClose={onClose}>
-      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity }]}>
-        <Pressable
-          style={[styles.backdrop, isWeb && styles.backdropWeb]}
-          onPress={onClose}
-        >
-          <Animated.View
-            style={
-              isWeb
-                ? styles.cardWrapperWeb
-                : [
-                    styles.cardWrapperNative,
-                    {
-                      transform: [{ translateY }],
-                      // When keyboard is open, lift the tray above it. Keep
-                      // the -80 extension only when keyboard is hidden.
-                      bottom: keyboardHeight > 0 ? keyboardHeight : -80,
-                    },
-                  ]
-            }
-            {...(isWeb ? {} : panResponder.panHandlers)}
-          >
-            <Pressable style={[styles.card, isWeb && styles.cardWeb]} onPress={() => {}}>
-              {!isWeb && <View style={styles.grabber} />}
+    <BottomSheet visible={visible} onClose={onClose} cardStyle={styles.card}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>{title}</Text>
+        {isWeb && (
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        )}
+      </View>
 
-              <View style={styles.headerRow}>
-                <Text style={styles.title}>{title}</Text>
-                {isWeb && (
-                  <TouchableOpacity onPress={onClose}>
-                    <Ionicons name="close" size={22} color={COLORS.textPrimary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <FlatList
-                data={filtered}
-                keyExtractor={(c) => c.id}
-                style={isWeb ? styles.listWeb : styles.list}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                  <Text style={styles.empty}>
-                    No {type === 'playlist' ? 'playlists' : 'collections'} yet.
+      <FlatList
+        data={filtered}
+        keyExtractor={(c) => c.id}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            No {type === 'playlist' ? 'playlists' : 'collections'} yet.
+          </Text>
+        }
+        renderItem={({ item }) => {
+          const selected = !!memberships[item.id];
+          return (
+            <Pressable
+              onPress={() => toggle(item.id)}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            >
+              {({ pressed }) => (
+                <>
+                  <Text
+                    style={[
+                      styles.rowText,
+                      (selected || pressed) && styles.rowTextSelected,
+                    ]}
+                  >
+                    {item.name}
                   </Text>
-                }
-                renderItem={({ item }) => {
-                  const selected = !!memberships[item.id];
-                  return (
-                    <Pressable
-                      onPress={() => toggle(item.id)}
-                      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-                    >
-                      {({ pressed }) => (
-                        <>
-                          <Text
-                            style={[
-                              styles.rowText,
-                              (selected || pressed) && styles.rowTextSelected,
-                            ]}
-                          >
-                            {item.name}
-                          </Text>
-                          <View style={styles.checkSlot}>
-                            {(selected || pressed) && (
-                              <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                            )}
-                          </View>
-                        </>
-                      )}
-                    </Pressable>
-                  );
-                }}
-              />
-
-              <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
-                <Ionicons name="add" size={20} color={COLORS.accent} />
-                <Text style={styles.newText}>{newLabel}</Text>
-              </TouchableOpacity>
+                  <View style={styles.checkSlot}>
+                    {(selected || pressed) && (
+                      <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                    )}
+                  </View>
+                </>
+              )}
             </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Animated.View>
+          );
+        }}
+      />
+
+      <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
+        <Ionicons name="add" size={20} color={COLORS.accent} />
+        <Text style={styles.newText}>{newLabel}</Text>
+      </TouchableOpacity>
 
       <CreateCollectionModal
         visible={createVisible}
@@ -246,80 +150,13 @@ export function AddToCollectionPicker({
           setMemberships((prev) => ({ ...prev, [createdId]: true }));
         }}
       />
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: COLORS.backdrop,
-    justifyContent: 'flex-end',
-  },
-  backdropWeb: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardWrapperWeb: {
-    width: '100%',
-    maxWidth: 480,
-    paddingHorizontal: 16,
-  },
-  cardWrapperNative: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    // Extend 80pt below the visible bottom so the card ALWAYS flushes past
-    // the home indicator / any inset. Internal paddingBottom compensates.
-    bottom: -80,
-    // Cap the wrapper height so the card's `maxHeight: 75%` has a concrete
-    // parent height to resolve against (absolute-positioned parents have no
-    // inherited height by default).
-    maxHeight: Dimensions.get('window').height * 0.8,
-  },
   card: {
-    backgroundColor: COLORS.background,
     paddingTop: 16,
-    // Extra bottom padding to clear the iOS home indicator area since the
-    // card is pinned below bottom: 0 and extends past the safe area.
-    paddingBottom: 88,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '75%',
-  },
-  cardWeb: {
-    width: '100%',
-    maxWidth: 480,
-    // Hug content until we hit 75% of viewport, then the inner list scrolls.
-    maxHeight: Dimensions.get('window').height * 0.75,
-    paddingBottom: 0,
-    borderRadius: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.border,
-    marginTop: -6,
-    marginBottom: 8,
-  },
-  list: {
-    flexGrow: 0,
-    flexShrink: 1,
-  },
-  listWeb: {
-    // Hugs content normally; when the card hits maxHeight this shrinks and
-    // scrolls internally so the New button below stays pinned.
-    flexGrow: 0,
-    flexShrink: 1,
-    minHeight: 0,
-  },
-  listContent: {
-    paddingBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -329,6 +166,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: { ...TYPOGRAPHY.heading4, fontSize: 18 },
+  list: {
+    flexGrow: 0,
+    flexShrink: 1,
+    minHeight: 0,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

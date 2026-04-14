@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { BottomSheet } from './BottomSheet';
 import { COLORS, TYPOGRAPHY, FONTS, SPACING, RADIUS } from '../constants/theme';
 
 interface Props {
@@ -14,9 +15,9 @@ interface Props {
 }
 
 /**
- * App-styled confirmation dialog. Renders as a bottom sheet on native and a
- * centered modal on web. Replaces Alert.alert for destructive confirmations
- * since RN Web's Alert with a destructive button is unreliable.
+ * App-styled confirmation dialog built on the shared `<BottomSheet>` primitive.
+ * Replaces Alert.alert for destructive confirmations since RN Web's Alert with
+ * a destructive button is unreliable.
  */
 export function ConfirmModal({
   visible,
@@ -28,64 +29,34 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
-  const isWeb = Platform.OS === 'web';
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType={isWeb ? 'fade' : 'slide'}
-      onRequestClose={onCancel}
+      onClose={onCancel}
+      cardStyle={styles.card}
+      swipeToDismiss={false}
     >
-      <TouchableOpacity
-        activeOpacity={1}
-        style={[styles.backdrop, isWeb && styles.backdropWeb]}
-        onPress={onCancel}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => {}}
-          style={[styles.card, isWeb && styles.cardWeb]}
-        >
-          <Text style={styles.title}>{title}</Text>
-          {message ? <Text style={styles.message}>{message}</Text> : null}
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>{cancelLabel}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onConfirm}
-              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive]}
-            >
-              <Text style={styles.confirmText}>{confirmLabel}</Text>
-            </TouchableOpacity>
-          </View>
+      <Text style={styles.title}>{title}</Text>
+      {message ? <Text style={styles.message}>{message}</Text> : null}
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
+          <Text style={styles.cancelText}>{cancelLabel}</Text>
         </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
+        <TouchableOpacity
+          onPress={onConfirm}
+          style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive]}
+        >
+          <Text style={styles.confirmText}>{confirmLabel}</Text>
+        </TouchableOpacity>
+      </View>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: COLORS.backdrop,
-    justifyContent: 'flex-end',
-  },
-  backdropWeb: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   card: {
-    backgroundColor: COLORS.cardBackground,
-    padding: 20,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
     gap: 12,
-  },
-  cardWeb: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: 16,
   },
   title: { ...TYPOGRAPHY.heading4, fontSize: 18 },
   message: { ...TYPOGRAPHY.body, color: COLORS.textSecondary },
