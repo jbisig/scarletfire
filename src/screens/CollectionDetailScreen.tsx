@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   ImageBackground,
+  Modal,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -566,7 +567,12 @@ export function CollectionDetailScreen() {
         onSelect={setShowSort}
       />
 
-      {menuVisible && (
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
         <TouchableOpacity
           style={styles.menuBackdrop}
           activeOpacity={1}
@@ -599,7 +605,7 @@ export function CollectionDetailScreen() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-      )}
+      </Modal>
 
       {renameOpen && collection && (
         <View style={styles.renameOverlay}>
@@ -765,9 +771,7 @@ const styles = StyleSheet.create({
   },
 
   menuBackdrop: {
-    position: 'absolute',
-    top: 0, bottom: 0, left: 0, right: 0,
-    zIndex: 100,
+    flex: 1,
   },
   menu: {
     position: 'absolute',
