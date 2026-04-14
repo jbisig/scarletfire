@@ -27,7 +27,6 @@ import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
-import { Track } from '../types/show.types';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
