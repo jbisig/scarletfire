@@ -102,7 +102,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
               : 'Add to playlist'
           }
         >
-          <Ionicons name="add" size={14} color={COLORS.textPrimary} />
+          <Ionicons name="add" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
       )}
       {/* Save button — heart icon, red when saved. Reserves space to prevent layout shift. */}
@@ -124,7 +124,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         >
           <Ionicons
             name={isSaved ? 'heart' : 'heart-outline'}
-            size={14}
+            size={20}
             color={isSaved ? COLORS.accent : COLORS.textPrimary}
           />
         </TouchableOpacity>
@@ -214,21 +214,15 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   iconButton: {
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     borderRadius: RADIUS.full,
-    borderWidth: 1.5,
-    borderColor: COLORS.textPrimary,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.sm,
   },
-  iconButtonActive: {
-    borderColor: COLORS.textPrimary,
-  },
-  iconButtonSaved: {
-    borderColor: COLORS.accent,
-  },
+  iconButtonActive: {},
+  iconButtonSaved: {},
   iconButtonHidden: {
     opacity: 0,
   },
