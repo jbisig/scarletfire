@@ -410,13 +410,13 @@ export function CollectionDetailScreen() {
             {isOwner && (
               <View ref={menuButtonRef} collapsable={false}>
                 <TouchableOpacity
-                  style={styles.pill}
+                  style={styles.menuCircleBtn}
                   activeOpacity={0.7}
                   onPress={handleMenuPress}
                   accessibilityRole="button"
                   accessibilityLabel="More actions"
                 >
-                  <Ionicons name="ellipsis-horizontal" size={17} color={COLORS.textPrimary} />
+                  <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
                 </TouchableOpacity>
               </View>
             )}
@@ -739,6 +739,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: COLORS.surfaceLight,
+  },
+  menuCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.surfaceLight,
   },
   pillDestructive: {
