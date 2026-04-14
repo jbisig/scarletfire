@@ -56,6 +56,8 @@ export function CreateCollectionModal({
     } catch (e) {
       setSubmitting(false);
       const msg = e instanceof Error ? e.message : 'Failed to create collection';
+      // Close the modal so the toast isn't hidden behind its overlay.
+      onClose();
       showToast(msg, 'error');
     }
   };
