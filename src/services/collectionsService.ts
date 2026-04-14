@@ -230,6 +230,26 @@ class CollectionsService {
   }
 
   /**
+   * For a given item, return the set of the user's collection IDs that already
+   * contain it. One round-trip, replacing the N+1 `fetchCollectionItems` loop
+   * that the "Add to collection/playlist" picker used to do.
+   */
+  async fetchCollectionIdsContainingItem(
+    userId: string,
+    itemIdentifier: string,
+  ): Promise<Set<string>> {
+    const { data, error } = await this.supabase
+      .from('collection_items')
+      .select('collection_id, collections!inner(user_id)')
+      .eq('item_identifier', itemIdentifier)
+      .eq('collections.user_id', userId);
+    if (error) throw error;
+    return new Set(
+      (data ?? []).map((r: { collection_id: string }) => r.collection_id),
+    );
+  }
+
+  /**
    * Return a map of item_identifier → count across all of the user's collections.
    * Used to badge UI (e.g. "Added (2)") without fetching each collection's items.
    */

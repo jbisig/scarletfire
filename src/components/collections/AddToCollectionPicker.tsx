@@ -22,6 +22,7 @@ import {
   CollectionItemMetadata,
 } from '../../types/collection.types';
 import { collectionsService } from '../../services/collectionsService';
+import { authService } from '../../services/authService';
 import { COLORS, TYPOGRAPHY, FONTS } from '../../constants/theme';
 
 interface Props {
@@ -114,15 +115,29 @@ export function AddToCollectionPicker({
 
   useEffect(() => {
     if (!visible) return;
+    let cancelled = false;
     (async () => {
-      const entries = await Promise.all(
-        filtered.map(async (c) => {
-          const items = await collectionsService.fetchCollectionItems(c.id);
-          return [c.id, items.some((i) => i.itemIdentifier === itemIdentifier)] as const;
-        }),
-      );
-      setMemberships(Object.fromEntries(entries));
+      // One round-trip using a JOIN filtered to this user, instead of N queries.
+      const userId =
+        filtered[0]?.userId ??
+        (await authService.getClient().auth.getUser()).data.user?.id;
+      if (!userId) return;
+      try {
+        const ids = await collectionsService.fetchCollectionIdsContainingItem(
+          userId,
+          itemIdentifier,
+        );
+        if (cancelled) return;
+        setMemberships(
+          Object.fromEntries(filtered.map((c) => [c.id, ids.has(c.id)])),
+        );
+      } catch {
+        // Ignore — leave memberships empty; toggles will still work.
+      }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [visible, filtered, itemIdentifier]);
 
   const toggle = (collectionId: string) => {
