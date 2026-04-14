@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { FavoriteSong } from '../contexts/FavoritesContext';
 import { formatDate } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
@@ -34,11 +34,18 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <TouchableOpacity
-      style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
-      onPress={() => onPress(song)}
+    <Pressable
+      style={({ pressed }) => [
+        styles.songItem,
+        isDesktop && isHovered && styles.songItemHovered,
+        pressed && styles.songItemPressed,
+      ]}
+      onPress={() => {
+        // eslint-disable-next-line no-console
+        console.log('[SongCard] onPress', song.trackTitle);
+        onPress(song);
+      }}
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
-      activeOpacity={0.7}
       disabled={isLoading}
       // @ts-ignore - web only mouse events
       onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
@@ -64,7 +71,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
 
         <PlayCountBadge count={playCount} size="small" />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 
@@ -85,6 +92,9 @@ const styles = StyleSheet.create({
   },
   songItemHovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  songItemPressed: {
+    opacity: 0.6,
   },
   songContentRow: {
     flexDirection: 'row',
