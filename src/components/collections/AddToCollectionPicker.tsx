@@ -248,8 +248,6 @@ const styles = StyleSheet.create({
   cardWrapperWeb: {
     width: '100%',
     maxWidth: 480,
-    // Shrinks to content; caps at 85% of viewport so tall lists become scrollable.
-    maxHeight: Dimensions.get('window').height * 0.85,
     paddingHorizontal: 16,
   },
   cardWrapperNative: {
@@ -277,9 +275,8 @@ const styles = StyleSheet.create({
   cardWeb: {
     width: '100%',
     maxWidth: 480,
-    // Shrinks to content height; fills wrapper when content is tall.
-    flexGrow: 0,
-    flexShrink: 1,
+    // Hug content until we hit 75% of viewport, then the inner list scrolls.
+    maxHeight: Dimensions.get('window').height * 0.75,
     paddingBottom: 0,
     borderRadius: 16,
     borderTopLeftRadius: 16,
@@ -300,12 +297,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   listWeb: {
-    // Grow to content, shrink when the card hits its max height so the list
-    // itself becomes scrollable (keeping the New button visible below).
+    // Hugs content normally; when the card hits maxHeight this shrinks and
+    // scrolls internally so the New button below stays pinned.
     flexGrow: 0,
     flexShrink: 1,
-    // @ts-ignore web only
-    overflow: 'auto',
     minHeight: 0,
   },
   listContent: {
