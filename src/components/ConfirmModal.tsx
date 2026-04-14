@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { COLORS, TYPOGRAPHY, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, FONTS, SPACING, RADIUS } from '../constants/theme';
 
 interface Props {
   visible: boolean;
@@ -92,17 +92,36 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 8,
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.sm,
   },
-  cancelBtn: { paddingHorizontal: 16, paddingVertical: 10 },
-  cancelText: { fontFamily: FONTS.secondary, color: COLORS.textSecondary, fontSize: 15 },
+  cancelBtn: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm + 2,
+    // @ts-ignore web only
+    cursor: 'pointer',
+  },
+  cancelText: {
+    ...TYPOGRAPHY.label,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
   confirmBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm + 4,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    // @ts-ignore web only
+    cursor: 'pointer',
   },
   confirmBtnDestructive: { backgroundColor: COLORS.error },
-  confirmText: { fontFamily: FONTS.secondary, color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
+  confirmText: {
+    ...TYPOGRAPHY.label,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
 });
