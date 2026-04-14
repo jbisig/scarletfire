@@ -21,6 +21,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
+import { archiveApi } from '../services/archiveApi';
+import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { collectionsService } from '../services/collectionsService';
 import { profileService } from '../services/profileService';
@@ -118,7 +120,8 @@ export function CollectionDetailScreen() {
     deleteCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
-  const { startSequentialSongs, startShuffleSongs } = usePlayer();
+  const { startSequentialSongs, startShuffleSongs, loadTrack } = usePlayer();
+  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
@@ -283,11 +286,27 @@ export function CollectionDetailScreen() {
   );
 
   const handleTrackPress = useCallback(
-    (index: number) => {
+    async (index: number) => {
       if (!collection || collection.type !== 'playlist') return;
-      startSequentialSongs(playlistQueue, index);
+      const md = playlistQueue[index];
+      if (!md) return;
+      const key = `${md.showIdentifier}::${md.trackId}`;
+      setLoadingTrackId(key);
+      try {
+        const showDetail = await archiveApi.getShowDetail(md.showIdentifier);
+        const track = showDetail.tracks.find((t) => t.id === md.trackId);
+        if (track) {
+          await loadTrack(track, showDetail, showDetail.tracks);
+        } else {
+          logger.player.error('Playlist track not found on show:', md.trackId);
+        }
+      } catch (e) {
+        logger.player.error('Failed to play playlist track:', e);
+      } finally {
+        setLoadingTrackId(null);
+      }
     },
-    [collection, playlistQueue, startSequentialSongs],
+    [collection, playlistQueue, loadTrack],
   );
 
   const handleShuffle = useCallback(() => {
