@@ -138,9 +138,9 @@ export function CollectionDetailScreen() {
   };
 
   const handleMenuPress = () => {
-    menuButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      // Anchor the menu's right edge to the button's right edge.
-      setMenuPosition({ top: pageY + height + 8, left: pageX + width - 180 });
+    menuButtonRef.current?.measure((_x, _y, _width, height, pageX, pageY) => {
+      // Left-align the menu with the button so it sits directly under it.
+      setMenuPosition({ top: pageY + height + 4, left: pageX });
       setMenuVisible(true);
     });
   };
