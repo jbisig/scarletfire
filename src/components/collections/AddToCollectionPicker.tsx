@@ -140,17 +140,20 @@ export function AddToCollectionPicker({
 
   return (
     <Modal visible={rendered} animationType="none" transparent onRequestClose={onClose}>
-      <Animated.View style={[{ flex: 1, opacity }]}>
+      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity }]}>
         <Pressable
-          style={[
-            styles.backdrop,
-            isWeb && styles.backdropWeb,
-            !isWeb && { paddingBottom: keyboardHeight },
-          ]}
+          style={[styles.backdrop, isWeb && styles.backdropWeb]}
           onPress={onClose}
         >
           <Animated.View
-            style={isWeb ? styles.cardWrapperWeb : { transform: [{ translateY }] }}
+            style={
+              isWeb
+                ? styles.cardWrapperWeb
+                : [
+                    styles.cardWrapperNative,
+                    { transform: [{ translateY }], bottom: keyboardHeight },
+                  ]
+            }
             {...(isWeb ? {} : panResponder.panHandlers)}
           >
             <Pressable style={[styles.card, isWeb && styles.cardWeb]} onPress={() => {}}>
@@ -239,6 +242,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     paddingHorizontal: 16,
+  },
+  cardWrapperNative: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   card: {
     backgroundColor: COLORS.background,
