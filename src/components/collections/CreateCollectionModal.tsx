@@ -17,7 +17,7 @@ import {
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
 import { useToast } from '../../contexts/ToastContext';
-import { COLORS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 interface Props {
   visible: boolean;
@@ -279,15 +279,39 @@ const styles = StyleSheet.create({
   typeChipActive: { backgroundColor: COLORS.accent },
   typeText: { color: COLORS.textSecondary, fontSize: 13 },
   typeTextActive: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '600' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16 },
-  cancelBtn: { paddingHorizontal: 16, paddingVertical: 10 },
-  cancelText: { color: COLORS.textSecondary, fontSize: 15 },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  cancelBtn: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm + 2,
+    // @ts-ignore web only
+    cursor: 'pointer',
+  },
+  cancelText: {
+    ...TYPOGRAPHY.label,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
   createBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm + 4,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    // @ts-ignore web only
+    cursor: 'pointer',
   },
   disabledBtn: { opacity: 0.5 },
-  createText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
+  createText: {
+    ...TYPOGRAPHY.label,
+    fontFamily: FONTS.secondary,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
 });
