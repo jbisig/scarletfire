@@ -436,22 +436,36 @@ class CollectionsService {
     if (liveIds.length > 0) {
       const { data: cols, error: colsErr } = await this.supabase
         .from('collections')
-        .select('*, collection_items(count), profiles:user_id(username)')
+        .select('*, collection_items(count)')
         .in('id', liveIds);
       if (colsErr) throw colsErr;
+
+      const ownerIds = Array.from(
+        new Set((cols ?? []).map((r: { user_id: string }) => r.user_id)),
+      );
+      const usernamesByOwnerId = new Map<string, string>();
+      if (ownerIds.length > 0) {
+        const { data: profs, error: profsErr } = await this.supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', ownerIds);
+        if (profsErr) throw profsErr;
+        for (const p of profs ?? []) {
+          const row = p as { id: string; username: string };
+          usernamesByOwnerId.set(row.id, row.username);
+        }
+      }
 
       const snapshotUpdates: Array<Promise<unknown>> = [];
       for (const raw of cols ?? []) {
         const row = raw as CollectionRow & {
           collection_items?: { count: number }[];
-          profiles?: { username: string } | null;
         };
         const count = row.collection_items?.[0]?.count ?? 0;
         liveCollections.set(row.id, mapCollection(row, count));
 
-        // Refresh snapshot columns when they drift.
         const match = saved.find((s) => s.collectionId === row.id);
-        const ownerUsername = row.profiles?.username;
+        const ownerUsername = usernamesByOwnerId.get(row.user_id);
         if (
           match &&
           ownerUsername &&
@@ -472,7 +486,7 @@ class CollectionsService {
         }
       }
       // Fire-and-forget; snapshot drift is self-healing on subsequent fetches.
-      Promise.allSettled(snapshotUpdates).catch(() => {});
+      void Promise.allSettled(snapshotUpdates);
     }
 
     return { saved, liveCollections };
