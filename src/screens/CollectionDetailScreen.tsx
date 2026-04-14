@@ -126,10 +126,22 @@ export function CollectionDetailScreen() {
   const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
   const showSortButtonRef = useRef<View>(null);
 
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const menuButtonRef = useRef<View>(null);
+
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
       setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
       setShowSortModalVisible(true);
+    });
+  };
+
+  const handleMenuPress = () => {
+    menuButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      // Anchor the menu's right edge to the button's right edge.
+      setMenuPosition({ top: pageY + height + 8, left: pageX + width - 180 });
+      setMenuVisible(true);
     });
   };
 
@@ -395,27 +407,17 @@ export function CollectionDetailScreen() {
               </TouchableOpacity>
             )}
             {isOwner && (
-              <>
+              <View ref={menuButtonRef} collapsable={false}>
                 <TouchableOpacity
                   style={styles.pill}
                   activeOpacity={0.7}
-                  onPress={() => {
-                    setRenameText(collection.name);
-                    setRenameOpen(true);
-                  }}
+                  onPress={handleMenuPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="More actions"
                 >
-                  <Ionicons name="pencil-outline" size={17} color={COLORS.textPrimary} />
-                  <Text style={styles.pillText}>Rename</Text>
+                  <Ionicons name="ellipsis-horizontal" size={17} color={COLORS.textPrimary} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.pill, styles.pillDestructive]}
-                  activeOpacity={0.7}
-                  onPress={handleDelete}
-                >
-                  <Ionicons name="trash-outline" size={17} color={COLORS.error} />
-                  <Text style={[styles.pillText, { color: COLORS.error }]}>Delete</Text>
-                </TouchableOpacity>
-              </>
+              </View>
             )}
           </View>
 
@@ -563,6 +565,41 @@ export function CollectionDetailScreen() {
         selectedValue={showSort}
         onSelect={setShowSort}
       />
+
+      {menuVisible && (
+        <TouchableOpacity
+          style={styles.menuBackdrop}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View
+            style={[styles.menu, { top: menuPosition.top, left: menuPosition.left }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                setRenameText(collection.name);
+                setRenameOpen(true);
+              }}
+            >
+              <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
+              <Text style={styles.menuItemText}>Rename</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                handleDelete();
+              }}
+            >
+              <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+              <Text style={[styles.menuItemText, { color: COLORS.error }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {renameOpen && collection && (
         <View style={styles.renameOverlay}>
@@ -725,6 +762,33 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     fontSize: 14,
     color: COLORS.textSecondary,
+  },
+
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0, right: 0,
+    zIndex: 100,
+  },
+  menu: {
+    position: 'absolute',
+    minWidth: 180,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 8,
+    paddingVertical: 6,
+    // @ts-ignore web only
+    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  menuItemText: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
   },
 
   toolbar: {
