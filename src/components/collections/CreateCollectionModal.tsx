@@ -47,7 +47,7 @@ export function CreateCollectionModal({
       setRendered(true);
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 180, mass: 0.9 }),
+        Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
       ]).start();
     } else if (rendered) {
       Animated.parallel([
