@@ -554,12 +554,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             </View>
           )}
 
-          {/* Shuffle Mode Indicator */}
+          {/* Shuffle / Playlist Mode Indicator */}
           {isShuffleMode && (
             <View style={styles.radioIndicator}>
-              <Ionicons name="shuffle" size={16} color={COLORS.textPrimary} />
+              <Ionicons
+                name={state.shuffleType === 'playlist' ? 'musical-notes' : 'shuffle'}
+                size={16}
+                color={COLORS.textPrimary}
+              />
               <Text style={styles.radioIndicatorText}>
-                {state.shuffleType === 'shows' ? 'Saved Shows' : 'Saved Songs'}
+                {state.shuffleType === 'playlist'
+                  ? 'Playlist'
+                  : state.shuffleType === 'shows'
+                    ? 'Saved Shows'
+                    : 'Saved Songs'}
               </Text>
             </View>
           )}
