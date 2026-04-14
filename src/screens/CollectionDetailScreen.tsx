@@ -31,6 +31,7 @@ import {
 } from '../types/collection.types';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
@@ -131,6 +132,9 @@ export function CollectionDetailScreen() {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef<View>(null);
 
+  const [removeTarget, setRemoveTarget] = useState<CollectionItem | null>(null);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
       setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
@@ -222,49 +226,27 @@ export function CollectionDetailScreen() {
 
   const handleDelete = useCallback(() => {
     if (!collection) return;
-    Alert.alert('Delete collection?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteCollection(collection.id);
-          navigation.goBack();
-        },
-      },
-    ]);
-  }, [collection, deleteCollection, navigation]);
+    setDeleteConfirmVisible(true);
+  }, [collection]);
 
-  const confirmRemoveItem = useCallback(
-    (item: CollectionItem) => {
-      if (!collection) return;
-      const md = item.itemMetadata as any;
-      const title = collection.type === 'playlist' ? md.trackTitle : md.title;
-      const noun = collection.type === 'playlist' ? 'playlist' : 'collection';
-      const doRemove = async () => {
-        await removeItem(collection.id, item.itemIdentifier);
-        setItems((prev) => prev.filter((i) => i.id !== item.id));
-      };
-      if (Platform.OS === 'web') {
-        // Alert.alert with destructive buttons is flaky on RN Web; use the
-        // browser's native confirm dialog instead.
-        const ok =
-          typeof window !== 'undefined' &&
-          window.confirm(`Remove "${title}" from this ${noun}?`);
-        if (ok) void doRemove();
-        return;
-      }
-      Alert.alert(
-        `Remove "${title}"?`,
-        `This will remove it from this ${noun}.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: () => void doRemove() },
-        ],
-      );
-    },
-    [collection, removeItem],
-  );
+  const confirmRemoveItem = useCallback((item: CollectionItem) => {
+    setRemoveTarget(item);
+  }, []);
+
+  const performRemove = useCallback(async () => {
+    if (!collection || !removeTarget) return;
+    const target = removeTarget;
+    setRemoveTarget(null);
+    await removeItem(collection.id, target.itemIdentifier);
+    setItems((prev) => prev.filter((i) => i.id !== target.id));
+  }, [collection, removeItem, removeTarget]);
+
+  const performDelete = useCallback(async () => {
+    if (!collection) return;
+    setDeleteConfirmVisible(false);
+    await deleteCollection(collection.id);
+    navigation.goBack();
+  }, [collection, deleteCollection, navigation]);
 
   const handleMove = useCallback(
     async (item: CollectionItem, direction: -1 | 1) => {
@@ -631,6 +613,34 @@ export function CollectionDetailScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <ConfirmModal
+        visible={!!removeTarget}
+        title={
+          removeTarget
+            ? `Remove "${
+                collection.type === 'playlist'
+                  ? (removeTarget.itemMetadata as PlaylistItemMetadata).trackTitle
+                  : (removeTarget.itemMetadata as ShowCollectionItemMetadata).title
+              }"?`
+            : ''
+        }
+        message={`This will remove it from this ${collection.type === 'playlist' ? 'playlist' : 'collection'}.`}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={performRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
+
+      <ConfirmModal
+        visible={deleteConfirmVisible}
+        title={`Delete "${collection.name}"?`}
+        message="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={performDelete}
+        onCancel={() => setDeleteConfirmVisible(false)}
+      />
 
       {renameOpen && collection && (
         <View style={styles.renameOverlay}>
