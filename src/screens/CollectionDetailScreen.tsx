@@ -235,11 +235,27 @@ export function CollectionDetailScreen() {
     ]);
   }, [collection, deleteCollection, navigation]);
 
-  const handleRemoveItem = useCallback(
-    async (item: CollectionItem) => {
+  const confirmRemoveItem = useCallback(
+    (item: CollectionItem) => {
       if (!collection) return;
-      await removeItem(collection.id, item.itemIdentifier);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      const md = item.itemMetadata as any;
+      const title = collection.type === 'playlist' ? md.trackTitle : md.title;
+      const noun = collection.type === 'playlist' ? 'playlist' : 'collection';
+      Alert.alert(
+        `Remove "${title}"?`,
+        `This will remove it from this ${noun}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: async () => {
+              await removeItem(collection.id, item.itemIdentifier);
+              setItems((prev) => prev.filter((i) => i.id !== item.id));
+            },
+          },
+        ],
+      );
     },
     [collection, removeItem],
   );
@@ -508,7 +524,7 @@ export function CollectionDetailScreen() {
                         {
                           text: 'Remove from collection',
                           style: 'destructive',
-                          onPress: () => handleRemoveItem(item),
+                          onPress: () => confirmRemoveItem(item),
                         },
                         { text: 'Cancel', style: 'cancel' },
                       ])
@@ -543,7 +559,7 @@ export function CollectionDetailScreen() {
                             {
                               text: 'Remove',
                               style: 'destructive',
-                              onPress: () => handleRemoveItem(item),
+                              onPress: () => confirmRemoveItem(item),
                             },
                             { text: 'Cancel', style: 'cancel' },
                           ])
@@ -558,7 +574,7 @@ export function CollectionDetailScreen() {
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
-                    onPress={() => handleRemoveItem(item)}
+                    onPress={() => confirmRemoveItem(item)}
                     accessibilityLabel="Remove from playlist"
                   >
                     <Ionicons name="close" size={20} color={COLORS.textSecondary} />
