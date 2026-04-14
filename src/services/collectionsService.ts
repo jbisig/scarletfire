@@ -113,7 +113,7 @@ class CollectionsService {
         return mapCollection(data as CollectionRow, 0);
       }
       lastError = error;
-      if ((error as any).code !== '23505') break;
+      if ((error as { code?: string }).code !== '23505') break;
       // Collision — fetch updated slug set and try again.
       taken = await this.fetchTakenSlugs(userId);
       taken.add(slug);
@@ -190,7 +190,7 @@ class CollectionsService {
       .select('*')
       .single();
     if (error) {
-      if ((error as any).code === '23505') return null;
+      if ((error as { code?: string }).code === '23505') return null;
       throw error;
     }
     return mapItem(data as CollectionItemRow);

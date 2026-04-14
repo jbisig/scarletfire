@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { ShareCard } from './ShareCard';
 import { ShareButton } from './ShareButton';
-import { pickRandomBackground } from '../../services/shareService';
+import { pickRandomBackground, shareItemKey } from '../../services/shareService';
 import {
   shareToCopyLink,
   shareToWhatsApp,
@@ -40,14 +40,7 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
   const bgIndex = useMemo(() => {
     return item ? pickRandomBackground() : 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    item?.kind === 'profile'
-      ? (item as any).username
-      : item?.kind === 'collection'
-        ? (item as any).collectionId
-        : (item as any)?.showId,
-    item?.kind,
-  ]);
+  }, [shareItemKey(item)]);
 
   // Escape key closes the modal on web (convention on desktop).
   useEffect(() => {

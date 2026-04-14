@@ -7,7 +7,7 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import { ShareCard } from './ShareCard';
 import { ShareButton } from './ShareButton';
-import { pickRandomBackground, type ShareItem } from '../../services/shareService';
+import { pickRandomBackground, shareItemKey, type ShareItem } from '../../services/shareService';
 import {
   shareToCopyLink,
   shareToWhatsApp,
@@ -37,15 +37,7 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
   const bgIndex = useMemo(() => {
     return item ? pickRandomBackground() : 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    item?.kind === 'profile'
-      ? (item as any).username
-      : item?.kind === 'collection'
-        ? (item as any).collectionId
-        : (item as any)?.showId,
-    item?.kind,
-    item?.kind === 'song' ? item.trackId : null,
-  ]);
+  }, [shareItemKey(item)]);
 
   // Drive the sheet open/closed from the `item` prop. The sheet owns its own
   // animated state; we just call expand/close imperatively when item changes.

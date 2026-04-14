@@ -13,7 +13,7 @@ import {
   ImageBackground,
   Modal,
 } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, StackActions, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -227,7 +227,7 @@ export function CollectionDetailScreen() {
       name: collection.name,
       type: collection.type,
       itemCount: items.length,
-    } as any);
+    });
   }, [collection, items.length, openShareTray, ownerUsername]);
 
   const handleDelete = useCallback(() => {
@@ -275,12 +275,14 @@ export function CollectionDetailScreen() {
     (show: GratefulDeadShow) => {
       // Use push (not navigate) so Back always returns to THIS collection,
       // even if ShowDetail already exists elsewhere in the nav stack.
-      (navigation as any).push('ShowDetail', {
-        identifier: show.primaryIdentifier,
-        date: show.date,
-        venue: show.venue,
-        location: show.location,
-      });
+      navigation.dispatch(
+        StackActions.push('ShowDetail', {
+          identifier: show.primaryIdentifier,
+          date: show.date,
+          venue: show.venue,
+          location: show.location,
+        }),
+      );
     },
     [navigation],
   );

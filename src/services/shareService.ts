@@ -119,3 +119,22 @@ export function formatDateMMDDYYYY(iso: string): string {
 export function slugifyTrackTitle(title: string): string {
   return encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'));
 }
+
+/**
+ * A stable identity string for a ShareItem — used as a React hook dep key so
+ * things like bgIndex memos re-roll when the item changes. Replaces ad-hoc
+ * `(item as any).showId || (item as any).username` patterns.
+ */
+export function shareItemKey(item: ShareItem | null | undefined): string {
+  if (!item) return '';
+  switch (item.kind) {
+    case 'show':
+      return `show:${item.showId}`;
+    case 'song':
+      return `song:${item.showId}:${item.trackId}`;
+    case 'profile':
+      return `profile:${item.username}`;
+    case 'collection':
+      return `collection:${item.collectionId}`;
+  }
+}
