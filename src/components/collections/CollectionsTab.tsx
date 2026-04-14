@@ -48,7 +48,7 @@ export function CollectionsTab({
         items.map((c) => (
           <CollectionCard
             key={c.id}
-            collection={c}
+            variant={{ kind: 'owned', collection: c }}
             onPress={() => onCardPress(c)}
             onLongPress={onCardLongPress ? () => onCardLongPress(c) : undefined}
           />
