@@ -823,11 +823,14 @@ const styles = StyleSheet.create({
 
   // List bodies
   listBody: {
-    paddingHorizontal: 24,
+    // ShowCard adds 16px of internal horizontal padding on web, so we subtract
+    // that from the container padding to visually align card content with the
+    // header (header 24, desktop 40).
+    paddingHorizontal: 8,
     paddingTop: 8,
   },
   listBodyDesktop: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 24,
   },
   showCardRow: {
     flexDirection: 'row',
