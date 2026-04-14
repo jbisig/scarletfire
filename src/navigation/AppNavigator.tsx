@@ -266,6 +266,11 @@ function FavoritesStack() {
           headerBackTitle: ' ',
         }}
       />
+      <Stack.Screen
+        name="CollectionDetail"
+        component={CollectionDetailScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
