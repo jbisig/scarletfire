@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
   cardWrapperWeb: {
     width: '100%',
     maxWidth: 480,
-    // Tall wrapper so inner card's flex:1 can expand; cap at 85% of viewport.
-    height: '85%',
+    // Shrinks to content; caps at 85% so tall lists become scrollable.
+    maxHeight: '85%',
     paddingHorizontal: 16,
   },
   cardWrapperNative: {
@@ -277,9 +277,8 @@ const styles = StyleSheet.create({
   cardWeb: {
     width: '100%',
     maxWidth: 480,
-    // Fill the wrapper's height (set on cardWrapperWeb).
-    flex: 1,
-    paddingBottom: 16,
+    // Auto-height: shrinks to content, grows up to wrapper's maxHeight.
+    paddingBottom: 0,
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
@@ -294,7 +293,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   list: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingBottom: 16,
@@ -335,10 +335,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 8,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
