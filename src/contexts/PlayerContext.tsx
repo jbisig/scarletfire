@@ -351,6 +351,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Auto-load track when currentTrack changes
   // Skip in shuffle mode - loadShuffleSong/loadShuffleShow handle loading directly
   useEffect(() => {
+    logger.player.info(
+      '[effect] currentTrack=',
+      state.currentTrack?.title,
+      'isLoading=',
+      state.isLoading,
+      'mode=',
+      state.playbackMode,
+    );
     if (state.currentTrack && state.isLoading) {
       // In shuffle mode, loading is handled by loadShuffleSong/loadShuffleShow
       if (state.playbackMode === 'shuffle') {
@@ -361,6 +369,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const trackId = state.currentTrack.id;
       const shouldPlay = state.shouldAutoPlay;
       currentLoadingTrackIdRef.current = trackId;
+      logger.player.info('[effect] calling audioService.loadTrack for', trackId);
 
       audioService.loadTrack(
         state.currentTrack,
