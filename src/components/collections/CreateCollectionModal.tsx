@@ -36,24 +36,24 @@ export function CreateCollectionModal({
   const [type, setType] = useState<CollectionType>(initialType);
   const [submitting, setSubmitting] = useState(false);
 
-  // Animate opacity on visibility change so both open and dismiss are smooth.
-  // We keep the Modal mounted for the duration of the fade-out via `rendered`.
+  // Animate opacity (backdrop fade) + card slide-up on native. Web uses fade
+  // only since the card is centered. Keep the Modal mounted for the duration
+  // of the exit animation via `rendered`.
   const [rendered, setRendered] = useState(visible);
   const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  const translateY = useRef(new Animated.Value(visible ? 0 : 600)).current;
   useEffect(() => {
     if (visible) {
       setRendered(true);
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 180, mass: 0.9 }),
+      ]).start();
     } else if (rendered) {
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 600, duration: 200, useNativeDriver: true }),
+      ]).start(({ finished }) => {
         if (finished) setRendered(false);
       });
     }
@@ -106,6 +106,9 @@ export function CreateCollectionModal({
           style={[styles.backdrop, isWeb && styles.backdropWeb]}
           onPress={onClose}
         >
+          <Animated.View
+            style={isWeb ? undefined : { transform: [{ translateY }] }}
+          >
           <Pressable
             style={[styles.card, isWeb && styles.cardWeb]}
             onPress={() => {}}
@@ -161,6 +164,7 @@ export function CreateCollectionModal({
             </TouchableOpacity>
           </View>
           </Pressable>
+          </Animated.View>
         </Pressable>
         </Animated.View>
       </KeyboardAvoidingView>
