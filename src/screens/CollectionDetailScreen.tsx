@@ -770,11 +770,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   webMetaText: {
-    color: COLORS.textSecondary,
+    color: COLORS.textTertiary,
     fontSize: 14,
   },
   webMetaDot: {
-    color: COLORS.textSecondary,
+    color: COLORS.textTertiary,
     fontSize: 14,
   },
   webDescription: {
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.surfaceLight,
+    backgroundColor: COLORS.surfaceMedium,
   },
   menuCircleBtn: {
     width: 36,
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surfaceLight,
+    backgroundColor: COLORS.surfaceMedium,
   },
   pillDestructive: {
     backgroundColor: COLORS.surfaceLight,
