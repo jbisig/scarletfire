@@ -13,11 +13,17 @@ import {
   CollectionItem,
   CollectionItemMetadata,
   CollectionType,
+  LibraryCollectionEntry,
+  SavedCollection,
 } from '../types/collection.types';
 import { logger } from '../utils/logger';
+import { mergeLibraryEntries } from '../utils/collectionsLibrary';
 
 interface CollectionsContextValue {
   collections: Collection[];
+  savedCollections: SavedCollection[];
+  liveSavedCollectionsById: Map<string, Collection>;
+  libraryEntries: LibraryCollectionEntry[];
   /** How many of the user's collections contain a given item_identifier. */
   itemCountsByIdentifier: Record<string, number>;
   loading: boolean;
@@ -39,6 +45,11 @@ interface CollectionsContextValue {
   ) => Promise<void>;
   removeItem: (collectionId: string, itemIdentifier: string) => Promise<void>;
   reorderItems: (collectionId: string, orderedItemIds: string[]) => Promise<void>;
+  saveCollection: (collectionId: string) => Promise<void>;
+  unsaveCollection: (collectionId: string) => Promise<void>;
+  isCollectionSaved: (collectionId: string) => boolean;
+  removeTombstone: (savedId: string) => Promise<void>;
+  duplicateCollection: (sourceCollectionId: string) => Promise<Collection>;
 }
 
 const CollectionsContext = createContext<CollectionsContextValue | null>(null);
@@ -47,6 +58,10 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const { state } = useAuth();
   const user = state.user;
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [savedCollections, setSavedCollections] = useState<SavedCollection[]>([]);
+  const [liveSavedCollectionsById, setLiveSavedCollectionsById] = useState<
+    Map<string, Collection>
+  >(new Map());
   const [itemCountsByIdentifier, setItemCountsByIdentifier] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,17 +69,22 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const refreshCollections = useCallback(async () => {
     if (!user) {
       setCollections([]);
+      setSavedCollections([]);
+      setLiveSavedCollectionsById(new Map());
       setItemCountsByIdentifier({});
       return;
     }
     setLoading(true);
     try {
-      const [data, counts] = await Promise.all([
+      const [data, counts, savedResult] = await Promise.all([
         collectionsService.fetchCollections(user.id),
         collectionsService.fetchItemCountsByIdentifier(user.id),
+        collectionsService.fetchSavedCollections(user.id),
       ]);
       setCollections(data);
       setItemCountsByIdentifier(counts);
+      setSavedCollections(savedResult.saved);
+      setLiveSavedCollectionsById(savedResult.liveCollections);
       setError(null);
     } catch (e) {
       logger.api.error('refreshCollections failed', e);
@@ -185,9 +205,68 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     [],
   );
 
+  const saveCollection: CollectionsContextValue['saveCollection'] = useCallback(
+    async (collectionId) => {
+      if (!user) throw new Error('Must be signed in to save a collection');
+      const saved = await collectionsService.saveCollection({ userId: user.id, collectionId });
+      if (!saved) return; // owner of the collection — no-op
+      await refreshCollections();
+    },
+    [user, refreshCollections],
+  );
+
+  const unsaveCollection: CollectionsContextValue['unsaveCollection'] = useCallback(
+    async (collectionId) => {
+      if (!user) throw new Error('Must be signed in');
+      await collectionsService.unsaveCollection(user.id, collectionId);
+      setSavedCollections((prev) => prev.filter((s) => s.collectionId !== collectionId));
+      setLiveSavedCollectionsById((prev) => {
+        const next = new Map(prev);
+        next.delete(collectionId);
+        return next;
+      });
+    },
+    [user],
+  );
+
+  const isCollectionSaved: CollectionsContextValue['isCollectionSaved'] = useCallback(
+    (collectionId) => savedCollections.some((s) => s.collectionId === collectionId),
+    [savedCollections],
+  );
+
+  const removeTombstone: CollectionsContextValue['removeTombstone'] = useCallback(
+    async (savedId) => {
+      if (!user) throw new Error('Must be signed in');
+      await collectionsService.deleteSavedCollection(user.id, savedId);
+      setSavedCollections((prev) => prev.filter((s) => s.id !== savedId));
+    },
+    [user],
+  );
+
+  const duplicateCollection: CollectionsContextValue['duplicateCollection'] = useCallback(
+    async (sourceCollectionId) => {
+      if (!user) throw new Error('Must be signed in to duplicate');
+      const created = await collectionsService.duplicateCollection({
+        userId: user.id,
+        sourceCollectionId,
+      });
+      setCollections((prev) => [created, ...prev]);
+      return created;
+    },
+    [user],
+  );
+
+  const libraryEntries = useMemo(
+    () => mergeLibraryEntries(collections, savedCollections, liveSavedCollectionsById),
+    [collections, savedCollections, liveSavedCollectionsById],
+  );
+
   const value = useMemo<CollectionsContextValue>(
     () => ({
       collections,
+      savedCollections,
+      liveSavedCollectionsById,
+      libraryEntries,
       itemCountsByIdentifier,
       loading,
       error,
@@ -200,9 +279,17 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       addItem,
       removeItem,
       reorderItems,
+      saveCollection,
+      unsaveCollection,
+      isCollectionSaved,
+      removeTombstone,
+      duplicateCollection,
     }),
     [
       collections,
+      savedCollections,
+      liveSavedCollectionsById,
+      libraryEntries,
       itemCountsByIdentifier,
       loading,
       error,
@@ -215,6 +302,11 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       addItem,
       removeItem,
       reorderItems,
+      saveCollection,
+      unsaveCollection,
+      isCollectionSaved,
+      removeTombstone,
+      duplicateCollection,
     ],
   );
 
