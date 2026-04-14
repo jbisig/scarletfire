@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -73,9 +74,16 @@ export function CreateCollectionModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={[styles.backdrop, isWeb && styles.backdropWeb]}
+        style={{ flex: 1 }}
       >
-        <View style={[styles.card, isWeb && styles.cardWeb]}>
+        <Pressable
+          style={[styles.backdrop, isWeb && styles.backdropWeb]}
+          onPress={onClose}
+        >
+          <Pressable
+            style={[styles.card, isWeb && styles.cardWeb]}
+            onPress={() => {}}
+          >
           <Text style={styles.title}>New Collection</Text>
 
           <Text style={styles.label}>Name</Text>
@@ -126,7 +134,8 @@ export function CreateCollectionModal({
               <Text style={styles.createText}>{submitting ? 'Creating…' : 'Create'}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   );
