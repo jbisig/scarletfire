@@ -387,7 +387,7 @@ export function ShowDetailScreen() {
           onPress={handleShareShow}
           // paddingRight matches headerContainer's SPACING.xl so the share icon
           // aligns vertically with the heart icon in the info row below.
-          style={{ paddingLeft: 16, paddingRight: 24, paddingVertical: 8 }}
+          style={{ paddingLeft: 16, paddingRight: 26, paddingVertical: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Share show"
         >
