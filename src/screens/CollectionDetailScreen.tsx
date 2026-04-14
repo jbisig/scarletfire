@@ -8,6 +8,8 @@ import {
   StyleSheet,
   TextInput,
   ActivityIndicator,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,14 +27,33 @@ import {
   PlaylistItemMetadata,
   ShowCollectionItemMetadata,
 } from '../types/collection.types';
+import { GratefulDeadShow } from '../types/show.types';
+import { ShowCard } from '../components/ShowCard';
+import { useResponsive } from '../hooks/useResponsive';
 import { COLORS } from '../constants/theme';
 
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
 
+type ShowSortType = 'dateAdded' | 'performanceDate' | 'alphabetical';
+
+// Map a stored show metadata blob to the GratefulDeadShow shape that ShowCard expects.
+function toGratefulDeadShow(md: ShowCollectionItemMetadata): GratefulDeadShow {
+  return {
+    date: md.date,
+    year: md.date.slice(0, 4),
+    venue: md.venue,
+    location: md.location,
+    versions: [],
+    primaryIdentifier: md.primaryIdentifier,
+    title: md.title,
+  };
+}
+
 export function CollectionDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
+  const { isDesktop } = useResponsive();
   const { state } = useAuth();
   const user = state.user;
   const {
@@ -46,15 +67,13 @@ export function CollectionDetailScreen() {
   const { openShareTray } = useShareSheet();
   const { startSequentialSongs, startShuffleSongs } = usePlayer();
 
-  type ShowSortType = 'dateAdded' | 'performanceDate' | 'alphabetical';
-  const [showSort, setShowSort] = useState<ShowSortType>('dateAdded');
-
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameText, setRenameText] = useState('');
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
+  const [showSort, setShowSort] = useState<ShowSortType>('dateAdded');
 
   const routeReadOnly = !!route.params?.readOnly;
   const isPublicLink = !!route.params?.username && !!route.params?.slug;
@@ -71,7 +90,6 @@ export function CollectionDetailScreen() {
             setItems(await fetchItems(found.id));
           }
         } else if (route.params?.username && route.params?.slug) {
-          // Universal link: look up owner id without gating on is_public.
           const owner = await profileService.getProfileIdByUsername(route.params.username);
           if (owner?.id) {
             const result = await collectionsService.fetchPublicCollectionByLink(
@@ -91,13 +109,12 @@ export function CollectionDetailScreen() {
     })();
   }, [collections, fetchItems, route.params]);
 
-  // Reset owner username when the collection changes (so a re-navigation doesn't
-  // keep a stale username from a previous collection).
+  // Reset owner username when the route changes.
   useEffect(() => {
     setOwnerUsername(route.params?.username ?? null);
   }, [route.params?.collectionId, route.params?.username, route.params?.slug]);
 
-  // Load owner username for share builder (owner view only)
+  // Load owner username for share builder (owner view only).
   useEffect(() => {
     (async () => {
       if (!collection || ownerUsername) return;
@@ -111,6 +128,14 @@ export function CollectionDetailScreen() {
   const isOwner =
     !routeReadOnly && !isPublicLink && !!user && !!collection && user.id === collection.userId;
 
+  const playlistQueue = useMemo(
+    () =>
+      items
+        .filter(() => collection?.type === 'playlist')
+        .map((i) => i.itemMetadata as PlaylistItemMetadata),
+    [items, collection],
+  );
+
   const handleShare = useCallback(() => {
     if (!collection || !ownerUsername) return;
     openShareTray({
@@ -121,7 +146,7 @@ export function CollectionDetailScreen() {
       name: collection.name,
       type: collection.type,
       itemCount: items.length,
-    } as any); // ShareItem extended in Task 16
+    } as any);
   }, [collection, items.length, openShareTray, ownerUsername]);
 
   const handleDelete = useCallback(() => {
@@ -165,30 +190,24 @@ export function CollectionDetailScreen() {
     [collection, items, reorderItems],
   );
 
-  const playlistQueue = useMemo(
-    () =>
-      items
-        .filter((i) => collection?.type === 'playlist')
-        .map((i) => i.itemMetadata as PlaylistItemMetadata),
-    [items, collection],
+  const handleShowPress = useCallback(
+    (show: GratefulDeadShow) => {
+      navigation.navigate('ShowDetail', {
+        identifier: show.primaryIdentifier,
+        date: show.date,
+        venue: show.venue,
+        location: show.location,
+      });
+    },
+    [navigation],
   );
 
-  const handleItemPress = useCallback(
-    (item: CollectionItem, index: number) => {
-      if (!collection) return;
-      if (collection.type === 'show_collection') {
-        const md = item.itemMetadata as ShowCollectionItemMetadata;
-        navigation.navigate('ShowDetail', {
-          identifier: md.primaryIdentifier,
-          date: md.date,
-          venue: md.venue,
-          location: md.location,
-        });
-      } else {
-        startSequentialSongs(playlistQueue, index);
-      }
+  const handleTrackPress = useCallback(
+    (index: number) => {
+      if (!collection || collection.type !== 'playlist') return;
+      startSequentialSongs(playlistQueue, index);
     },
-    [collection, navigation, playlistQueue, startSequentialSongs],
+    [collection, playlistQueue, startSequentialSongs],
   );
 
   const handleShuffle = useCallback(() => {
@@ -196,7 +215,7 @@ export function CollectionDetailScreen() {
     startShuffleSongs(playlistQueue);
   }, [collection, playlistQueue, startShuffleSongs]);
 
-  // For show collections, apply sort. Playlists keep manual order.
+  // Sorted items for show collections.
   const displayItems = useMemo(() => {
     if (!collection || collection.type !== 'show_collection') return items;
     const sorted = [...items];
@@ -218,7 +237,9 @@ export function CollectionDetailScreen() {
     return sorted;
   }, [collection, items, showSort]);
 
+  // Native header (hidden on web; web uses an in-body header instead).
   useLayoutEffect(() => {
+    if (Platform.OS === 'web') return;
     navigation.setOptions({
       title: collection?.name ?? 'Collection',
       headerRight: () => (
@@ -257,15 +278,110 @@ export function CollectionDetailScreen() {
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} />;
   if (!collection) return <Text style={styles.empty}>Collection not found.</Text>;
 
-  return (
-    <View style={styles.container}>
+  const typeLabel = collection.type === 'playlist' ? 'Playlist' : 'Show Collection';
+  const itemCountLabel = `${items.length} item${items.length === 1 ? '' : 's'}`;
+
+  const webHeader = Platform.OS === 'web' ? (
+    <View style={styles.webHeaderWrapper}>
+      <View style={styles.webHeaderBlur} />
+      <View style={[styles.webHeaderContent, isDesktop && styles.webHeaderContentDesktop]}>
+        <View style={styles.webNavRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={styles.webBackButton}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.webInfoSection}>
+          <View style={styles.webTitleBlock}>
+            <Text style={styles.webCollectionName} numberOfLines={2}>{collection.name}</Text>
+            <View style={styles.webMetaRow}>
+              <Text style={styles.webMetaText}>{typeLabel}</Text>
+              <Text style={styles.webMetaDot}>·</Text>
+              <Text style={styles.webMetaText}>{itemCountLabel}</Text>
+              {ownerUsername && (
+                <>
+                  <Text style={styles.webMetaDot}>·</Text>
+                  <Text style={styles.webMetaText}>by @{ownerUsername}</Text>
+                </>
+              )}
+            </View>
+            {collection.description ? (
+              <Text style={styles.webDescription}>{collection.description}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.pillsRow}>
+            {collection.type === 'playlist' && items.length > 0 && (
+              <TouchableOpacity style={styles.pill} onPress={handleShuffle} activeOpacity={0.7}>
+                <Ionicons name="shuffle" size={17} color={COLORS.textPrimary} />
+                <Text style={styles.pillText}>Shuffle</Text>
+              </TouchableOpacity>
+            )}
+            {collection && ownerUsername && (
+              <TouchableOpacity style={styles.pill} onPress={handleShare} activeOpacity={0.7}>
+                <Ionicons name="share-outline" size={17} color={COLORS.textPrimary} />
+                <Text style={styles.pillText}>Share</Text>
+              </TouchableOpacity>
+            )}
+            {isOwner && (
+              <>
+                <TouchableOpacity
+                  style={styles.pill}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setRenameText(collection.name);
+                    setRenameOpen(true);
+                  }}
+                >
+                  <Ionicons name="pencil-outline" size={17} color={COLORS.textPrimary} />
+                  <Text style={styles.pillText}>Rename</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.pill, styles.pillDestructive]}
+                  activeOpacity={0.7}
+                  onPress={handleDelete}
+                >
+                  <Ionicons name="trash-outline" size={17} color={COLORS.error} />
+                  <Text style={[styles.pillText, { color: COLORS.error }]}>Delete</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {collection.type === 'show_collection' && items.length > 0 && (
+            <View style={styles.sortRow}>
+              {(['dateAdded', 'performanceDate', 'alphabetical'] as const).map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.sortChip, showSort === s && styles.sortChipActive]}
+                  onPress={() => setShowSort(s)}
+                >
+                  <Text style={showSort === s ? styles.sortTextActive : styles.sortText}>
+                    {s === 'dateAdded' ? 'Added' : s === 'performanceDate' ? 'Date' : 'A–Z'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  ) : null;
+
+  // Native body header (shown when the nav header IS visible, provides toolbar
+  // and optional description/attribution).
+  const nativeBodyHeader = Platform.OS !== 'web' ? (
+    <View>
       {collection.description ? (
         <Text style={styles.description}>{collection.description}</Text>
       ) : null}
       {!isOwner && ownerUsername && (
         <Text style={styles.attribution}>by @{ownerUsername}</Text>
       )}
-
       {collection.type === 'playlist' && items.length > 0 && (
         <View style={styles.toolbar}>
           <TouchableOpacity style={styles.toolbarBtn} onPress={handleShuffle}>
@@ -274,7 +390,6 @@ export function CollectionDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
-
       {collection.type === 'show_collection' && items.length > 0 && (
         <View style={styles.toolbar}>
           {(['dateAdded', 'performanceDate', 'alphabetical'] as const).map((s) => (
@@ -290,51 +405,95 @@ export function CollectionDetailScreen() {
           ))}
         </View>
       )}
+    </View>
+  ) : null;
 
-      <FlatList
-        data={displayItems}
-        keyExtractor={(i) => i.id}
-        ListEmptyComponent={<Text style={styles.empty}>No items yet.</Text>}
-        renderItem={({ item, index }) => {
-          const md = item.itemMetadata as any;
-          const title =
-            collection.type === 'playlist' ? md.trackTitle : md.title;
-          const subtitle =
-            collection.type === 'playlist'
-              ? `${md.showDate}${md.venue ? ` · ${md.venue}` : ''}`
-              : `${md.date}${md.venue ? ` · ${md.venue}` : ''}`;
-          return (
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={{ flex: 1 }}
-                onPress={() => handleItemPress(item, index)}
-                onLongPress={
-                  isOwner
-                    ? () =>
-                        Alert.alert(title, undefined, [
-                          ...(collection.type === 'playlist'
-                            ? [
-                                { text: 'Move up', onPress: () => handleMove(item, -1) },
-                                { text: 'Move down', onPress: () => handleMove(item, 1) },
-                              ]
-                            : []),
-                          {
-                            text: 'Remove',
-                            style: 'destructive',
-                            onPress: () => handleRemoveItem(item),
-                          },
-                          { text: 'Cancel', style: 'cancel' },
-                        ])
-                    : undefined
-                }
-              >
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
-                <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+      {webHeader}
+      {nativeBodyHeader}
+
+      {items.length === 0 ? (
+        <Text style={styles.empty}>No items yet.</Text>
+      ) : collection.type === 'show_collection' ? (
+        <View style={[styles.listBody, isDesktop && styles.listBodyDesktop]}>
+          {displayItems.map((item) => {
+            const md = item.itemMetadata as ShowCollectionItemMetadata;
+            const show = toGratefulDeadShow(md);
+            return (
+              <View key={item.id} style={styles.showCardRow}>
+                <View style={{ flex: 1 }}>
+                  <ShowCard show={show} onPress={handleShowPress} hideSaveBadge />
+                </View>
+                {isOwner && (
+                  <TouchableOpacity
+                    style={styles.removeIconBtn}
+                    onPress={() =>
+                      Alert.alert(md.title, undefined, [
+                        {
+                          text: 'Remove from collection',
+                          style: 'destructive',
+                          onPress: () => handleRemoveItem(item),
+                        },
+                        { text: 'Cancel', style: 'cancel' },
+                      ])
+                    }
+                    accessibilityLabel="Remove from collection"
+                  >
+                    <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <FlatList
+          scrollEnabled={false}
+          data={items}
+          keyExtractor={(i) => i.id}
+          renderItem={({ item, index }) => {
+            const md = item.itemMetadata as PlaylistItemMetadata;
+            return (
+              <View style={styles.trackRow}>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => handleTrackPress(index)}
+                  onLongPress={
+                    isOwner
+                      ? () =>
+                          Alert.alert(md.trackTitle, undefined, [
+                            { text: 'Move up', onPress: () => handleMove(item, -1) },
+                            { text: 'Move down', onPress: () => handleMove(item, 1) },
+                            {
+                              text: 'Remove',
+                              style: 'destructive',
+                              onPress: () => handleRemoveItem(item),
+                            },
+                            { text: 'Cancel', style: 'cancel' },
+                          ])
+                      : undefined
+                  }
+                >
+                  <Text style={styles.trackTitle} numberOfLines={1}>{md.trackTitle}</Text>
+                  <Text style={styles.trackSubtitle} numberOfLines={1}>
+                    {md.showDate}{md.venue ? ` · ${md.venue}` : ''}
+                  </Text>
+                </TouchableOpacity>
+                {isOwner && (
+                  <TouchableOpacity
+                    style={styles.removeIconBtn}
+                    onPress={() => handleRemoveItem(item)}
+                    accessibilityLabel="Remove from playlist"
+                  >
+                    <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          }}
+        />
+      )}
 
       {renameOpen && collection && (
         <View style={styles.renameOverlay}>
@@ -365,7 +524,7 @@ export function CollectionDetailScreen() {
           </View>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -382,43 +541,107 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 13,
   },
-  row: {
+  empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
+
+  // Web header
+  webHeaderWrapper: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  webHeaderBlur: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  webHeaderContent: {
+    position: 'relative',
+    zIndex: 2,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 20,
+  },
+  webHeaderContentDesktop: {
+    paddingHorizontal: 40,
+  },
+  webNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
   },
-  title: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
-  subtitle: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
-  empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
-  renameOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.backdropDark,
-    justifyContent: 'center',
-    padding: 20,
+  webBackButton: {
+    // @ts-ignore
+    cursor: 'pointer',
   },
-  renameCard: {
-    backgroundColor: COLORS.cardBackground,
-    padding: 20,
-    borderRadius: 12,
-    gap: 12,
+  webInfoSection: {
+    gap: 16,
   },
-  renameTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
-  renameInput: {
-    backgroundColor: COLORS.searchBackground,
+  webTitleBlock: {
+    gap: 8,
+  },
+  webCollectionName: {
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '700',
+    fontSize: 28,
     color: COLORS.textPrimary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
   },
-  cancelText: { color: COLORS.textSecondary, fontSize: 15, padding: 10 },
-  saveText: { color: COLORS.accent, fontSize: 15, fontWeight: '600', padding: 10 },
+  webMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  webMetaText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  webMetaDot: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  webDescription: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 4,
+  },
+
+  pillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceLight,
+  },
+  pillDestructive: {
+    backgroundColor: COLORS.surfaceLight,
+  },
+  pillText: {
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  sortRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: COLORS.cardBackground,
+  },
+  sortChipActive: { backgroundColor: COLORS.accent },
+  sortText: { color: COLORS.textSecondary, fontSize: 12 },
+  sortTextActive: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '600' },
+
   toolbar: {
     flexDirection: 'row',
     gap: 8,
@@ -436,13 +659,59 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   toolbarText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-  sortChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: COLORS.cardBackground,
+
+  // List bodies
+  listBody: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
-  sortChipActive: { backgroundColor: COLORS.accent },
-  sortText: { color: COLORS.textSecondary, fontSize: 12 },
-  sortTextActive: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '600' },
+  listBodyDesktop: {
+    paddingHorizontal: 40,
+  },
+  showCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  trackTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
+  trackSubtitle: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
+  removeIconBtn: {
+    padding: 8,
+  },
+
+  // Rename overlay
+  renameOverlay: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0, right: 0,
+    backgroundColor: COLORS.backdropDark,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  renameCard: {
+    backgroundColor: COLORS.cardBackground,
+    padding: 20,
+    borderRadius: 12,
+    gap: 12,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  renameTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
+  renameInput: {
+    backgroundColor: COLORS.searchBackground,
+    color: COLORS.textPrimary,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  cancelText: { color: COLORS.textSecondary, fontSize: 15, padding: 10 },
+  saveText: { color: COLORS.accent, fontSize: 15, fontWeight: '600', padding: 10 },
 });
