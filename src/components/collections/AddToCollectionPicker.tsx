@@ -99,6 +99,7 @@ export function AddToCollectionPicker({
           <FlatList
             data={filtered}
             keyExtractor={(c) => c.id}
+            contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <Text style={styles.empty}>
                 No {type === 'playlist' ? 'playlists' : 'collections'} yet.
@@ -169,10 +170,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.cardBackground,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 0,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '75%',
+  },
+  listContent: {
+    paddingBottom: 16,
   },
   cardWeb: {
     width: '100%',
