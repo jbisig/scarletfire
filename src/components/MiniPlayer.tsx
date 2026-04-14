@@ -148,6 +148,7 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
                   <View style={styles.radioBadge}>
                     <Ionicons
                       name={state.shuffleType === 'playlist' ? 'musical-notes' : 'shuffle'}
+                      // 'playlistShuffle' keeps the shuffle icon; 'playlist' shows musical-notes
                       size={12}
                       color={COLORS.textPrimary}
                     />

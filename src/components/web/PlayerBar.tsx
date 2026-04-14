@@ -374,7 +374,7 @@ export function PlayerBar() {
             <Text style={styles.modeBadgeText}>
               {isRadioMode
                 ? 'Radio'
-                : state.shuffleType === 'playlist'
+                : state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle'
                   ? 'Playlist'
                   : state.shuffleType === 'songs'
                     ? 'Song Shuffle'

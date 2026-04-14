@@ -340,7 +340,7 @@ export function CollectionDetailScreen() {
 
   const handleShuffle = useCallback(() => {
     if (!collection || collection.type !== 'playlist' || playlistQueue.length === 0) return;
-    startShuffleSongs(playlistQueue);
+    startShuffleSongs(playlistQueue, 'playlist');
   }, [collection, playlistQueue, startShuffleSongs]);
 
   // Sorted items for show collections.

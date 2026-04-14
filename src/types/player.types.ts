@@ -2,7 +2,7 @@ import { Track, ShowDetail, GratefulDeadShow } from './show.types';
 import { RatedSongPerformance } from '../data/songPerformanceRatings';
 
 export type PlaybackMode = 'show' | 'radio' | 'shuffle';
-export type ShuffleType = 'shows' | 'songs' | 'playlist';
+export type ShuffleType = 'shows' | 'songs' | 'playlist' | 'playlistShuffle';
 
 // Minimal interface for shuffle queue items (matches FavoriteSong from FavoritesContext)
 export interface ShuffleSongItem {

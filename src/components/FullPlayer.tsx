@@ -563,7 +563,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 color={COLORS.textPrimary}
               />
               <Text style={styles.radioIndicatorText}>
-                {state.shuffleType === 'playlist'
+                {state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle'
                   ? 'Playlist'
                   : state.shuffleType === 'shows'
                     ? 'Saved Shows'
