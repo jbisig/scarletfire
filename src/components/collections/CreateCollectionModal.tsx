@@ -11,6 +11,8 @@ import {
   Pressable,
   Animated,
   PanResponder,
+  Keyboard,
+  KeyboardEvent,
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -91,6 +93,23 @@ export function CreateCollectionModal({
 
   const isWeb = Platform.OS === 'web';
 
+  // Track keyboard height so we can lift the bottom-sheet above it on native.
+  // KeyboardAvoidingView alone is unreliable when the sheet is inside a Modal.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    if (isWeb) return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const s = Keyboard.addListener(showEvent, onShow);
+    const h = Keyboard.addListener(hideEvent, onHide);
+    return () => {
+      s.remove();
+      h.remove();
+    };
+  }, [isWeb]);
+
   // Swipe-to-dismiss gesture (native only). Updates translateY live with the
   // drag, and either dismisses (if dragged past threshold or flung down) or
   // snaps back on release.
@@ -125,13 +144,14 @@ export function CreateCollectionModal({
       transparent
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={undefined} style={{ flex: 1 }}>
         <Animated.View style={[{ flex: 1, opacity }]}>
         <Pressable
-          style={[styles.backdrop, isWeb && styles.backdropWeb]}
+          style={[
+            styles.backdrop,
+            isWeb && styles.backdropWeb,
+            !isWeb && { paddingBottom: keyboardHeight },
+          ]}
           onPress={onClose}
         >
           <Animated.View
