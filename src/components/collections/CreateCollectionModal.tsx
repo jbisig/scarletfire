@@ -287,15 +287,18 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
   cancelBtn: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm + 2,
+    paddingVertical: SPACING.sm + 4,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceLight,
+    alignItems: 'center',
     // @ts-ignore web only
     cursor: 'pointer',
   },
   cancelText: {
     ...TYPOGRAPHY.label,
     fontFamily: FONTS.secondary,
-    color: COLORS.textSecondary,
+    color: COLORS.textPrimary,
     fontWeight: '600',
   },
   createBtn: {
