@@ -31,6 +31,7 @@ import {
 } from '../types/collection.types';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { getShareBackground } from '../components/share/shareBackgrounds';
@@ -882,6 +883,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
+  },
+  playlistBody: {
+    paddingTop: 8,
+  },
+  playlistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   trackTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
   trackSubtitle: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
