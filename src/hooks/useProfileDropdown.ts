@@ -50,6 +50,14 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
   }, [authState.user?.id]);
 
   const handleProfilePress = useCallback(() => {
+    // Re-fetch profile each time the dropdown opens so username / display
+    // name changes made in Settings show up without a page reload.
+    if (authState.user?.id) {
+      profileService.getUserProfile(authState.user.id)
+        .then(setUserProfile)
+        .catch(() => {});
+    }
+
     if (Platform.OS === 'web') {
       // On web, resolve the DOM node from the ref (TouchableOpacity may not expose it directly)
       let domNode: HTMLElement | null = null;
@@ -79,7 +87,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
         setIsVisible(true);
       });
     }
-  }, []);
+  }, [authState.user?.id]);
 
   const closeDropdown = useCallback(() => {
     setIsVisible(false);
