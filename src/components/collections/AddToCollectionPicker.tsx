@@ -151,7 +151,12 @@ export function AddToCollectionPicker({
                 ? styles.cardWrapperWeb
                 : [
                     styles.cardWrapperNative,
-                    { transform: [{ translateY }], bottom: keyboardHeight },
+                    {
+                      transform: [{ translateY }],
+                      // When keyboard is open, lift the tray above it. Keep
+                      // the -40 extension only when keyboard is hidden.
+                      bottom: keyboardHeight > 0 ? keyboardHeight : -40,
+                    },
                   ]
             }
             {...(isWeb ? {} : panResponder.panHandlers)}
@@ -247,12 +252,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    // Extend 40pt below the visible bottom so the card ALWAYS flushes past
+    // the home indicator / any inset. Internal paddingBottom compensates.
+    bottom: -40,
   },
   card: {
     backgroundColor: COLORS.background,
     paddingTop: 16,
-    paddingBottom: 24,
+    // Extra bottom padding to clear the iOS home indicator area since the
+    // card is pinned below bottom: 0 and extends past the safe area.
+    paddingBottom: 44,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '75%',
