@@ -431,12 +431,7 @@ export function AppNavigator() {
             <RootStack.Screen
               name="CollectionDetail"
               component={CollectionDetailScreen}
-              options={{
-                title: 'Collection',
-                headerShown: Platform.OS !== 'web',
-                headerStyle: { backgroundColor: COLORS.background },
-                headerTintColor: COLORS.textPrimary,
-              }}
+              options={{ headerShown: false }}
             />
             {Platform.OS === 'web' && (
               <RootStack.Screen

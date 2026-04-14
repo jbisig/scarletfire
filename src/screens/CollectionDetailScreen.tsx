@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -105,6 +106,7 @@ export function CollectionDetailScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
   const { isDesktop } = useResponsive();
+  const insets = useSafeAreaInsets();
   const { state } = useAuth();
   const user = state.user;
   const {
@@ -319,43 +321,8 @@ export function CollectionDetailScreen() {
     return sorted;
   }, [collection, items, showSort]);
 
-  // Native header (hidden on web; web uses an in-body header instead).
-  useLayoutEffect(() => {
-    if (Platform.OS === 'web') return;
-    navigation.setOptions({
-      title: collection?.name ?? 'Collection',
-      headerRight: () => (
-        <View style={{ flexDirection: 'row' }}>
-          {collection && ownerUsername && (
-            <TouchableOpacity onPress={handleShare} style={styles.headerBtn}>
-              <Ionicons name="share-outline" size={22} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          )}
-          {isOwner && (
-            <TouchableOpacity
-              onPress={() => {
-                if (!collection) return;
-                Alert.alert(collection.name, undefined, [
-                  {
-                    text: 'Rename',
-                    onPress: () => {
-                      setRenameText(collection.name);
-                      setRenameOpen(true);
-                    },
-                  },
-                  { text: 'Delete', style: 'destructive', onPress: handleDelete },
-                  { text: 'Cancel', style: 'cancel' },
-                ]);
-              }}
-              style={styles.headerBtn}
-            >
-              <Ionicons name="ellipsis-horizontal" size={22} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      ),
-    });
-  }, [collection, isOwner, handleDelete, handleShare, navigation, ownerUsername]);
+  // Header is rendered inline (see `header` JSX below) on all platforms. The
+  // stack navigator's default header is hidden via the AppNavigator config.
 
   if (loading) {
     return (
@@ -377,11 +344,17 @@ export function CollectionDetailScreen() {
 
   const bgSource = getShareBackground(bgIndexFromId(collection.id));
 
-  const webHeader = Platform.OS === 'web' ? (
+  const header = (
     <View style={styles.webHeaderWrapper}>
       <ImageBackground source={bgSource} style={styles.webHeaderBg} imageStyle={styles.webHeaderBgImage} />
       <View style={styles.webHeaderBlur} />
-      <View style={[styles.webHeaderContent, isDesktop && styles.webHeaderContentDesktop]}>
+      <View
+        style={[
+          styles.webHeaderContent,
+          isDesktop && styles.webHeaderContentDesktop,
+          Platform.OS !== 'web' && { paddingTop: insets.top + 8 },
+        ]}
+      >
         <View style={styles.webNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -442,28 +415,7 @@ export function CollectionDetailScreen() {
         </View>
       </View>
     </View>
-  ) : null;
-
-  // Native body header (shown when the nav header IS visible, provides toolbar
-  // and optional description/attribution).
-  const nativeBodyHeader = Platform.OS !== 'web' ? (
-    <View>
-      {collection.description ? (
-        <Text style={styles.description}>{collection.description}</Text>
-      ) : null}
-      {!isOwner && ownerUsername && (
-        <Text style={styles.attribution}>by @{ownerUsername}</Text>
-      )}
-      {collection.type === 'playlist' && items.length > 0 && (
-        <View style={styles.toolbar}>
-          <TouchableOpacity style={styles.toolbarBtn} onPress={handleShuffle}>
-            <Ionicons name="shuffle" size={16} color={COLORS.accent} />
-            <Text style={styles.toolbarText}>Shuffle</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  ) : null;
+  );
 
   // Sort bar rendered directly above the list for show collections.
   const sortBar = collection.type === 'show_collection' && items.length > 0 ? (
@@ -489,8 +441,7 @@ export function CollectionDetailScreen() {
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
-      {webHeader}
-      {nativeBodyHeader}
+      {header}
       {sortBar}
 
       {items.length === 0 ? (
