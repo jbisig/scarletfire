@@ -407,6 +407,8 @@ export function AppNavigator() {
                 headerStyle: { backgroundColor: COLORS.background },
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
+                headerBackTitle: ' ',
+                headerBackTitleVisible: false,
               }}
             />
             <RootStack.Screen
