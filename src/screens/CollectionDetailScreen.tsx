@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -30,9 +30,10 @@ import {
 } from '../types/collection.types';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 // Derive a stable background index (1-6) from the collection id so that
 // returning to a collection shows the same header image.
@@ -47,7 +48,42 @@ function bgIndexFromId(id: string): number {
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
 
-type ShowSortType = 'dateAdded' | 'performanceDate' | 'alphabetical';
+type ShowSortType =
+  | 'alphabetical'
+  | 'dateAddedOldest'
+  | 'dateAddedNewest'
+  | 'performanceDateOldest'
+  | 'performanceDateNewest';
+
+const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
+  { value: 'alphabetical', label: 'Alphabetical' },
+  { value: 'dateAddedOldest', label: 'Date Added (Oldest First)' },
+  { value: 'dateAddedNewest', label: 'Date Added (Newest First)' },
+  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+];
+
+function getShowSortLabel(s: ShowSortType): string {
+  switch (s) {
+    case 'alphabetical': return 'Alphabetical';
+    case 'dateAddedOldest':
+    case 'dateAddedNewest': return 'Date Added';
+    case 'performanceDateOldest':
+    case 'performanceDateNewest': return 'Show Date';
+  }
+}
+
+function getShowSortIcon(s: ShowSortType): 'arrow-up' | 'arrow-down' {
+  switch (s) {
+    case 'dateAddedOldest':
+    case 'performanceDateOldest':
+      return 'arrow-up';
+    case 'alphabetical':
+      return 'arrow-down';
+    default:
+      return 'arrow-down';
+  }
+}
 
 // Map a stored show metadata blob to the GratefulDeadShow shape that ShowCard expects.
 function toGratefulDeadShow(md: ShowCollectionItemMetadata): GratefulDeadShow {
@@ -85,7 +121,17 @@ export function CollectionDetailScreen() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameText, setRenameText] = useState('');
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
-  const [showSort, setShowSort] = useState<ShowSortType>('dateAdded');
+  const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
+  const [showSortModalVisible, setShowSortModalVisible] = useState(false);
+  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
+  const showSortButtonRef = useRef<View>(null);
+
+  const handleShowSortPress = () => {
+    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
+      setShowSortModalVisible(true);
+    });
+  };
 
   const routeReadOnly = !!route.params?.readOnly;
   const isPublicLink = !!route.params?.username && !!route.params?.slug;
@@ -231,20 +277,26 @@ export function CollectionDetailScreen() {
   const displayItems = useMemo(() => {
     if (!collection || collection.type !== 'show_collection') return items;
     const sorted = [...items];
-    if (showSort === 'dateAdded') {
-      sorted.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
-    } else if (showSort === 'performanceDate') {
-      sorted.sort((a, b) => {
-        const ad = (a.itemMetadata as ShowCollectionItemMetadata).date;
-        const bd = (b.itemMetadata as ShowCollectionItemMetadata).date;
-        return ad < bd ? -1 : 1;
-      });
-    } else {
-      sorted.sort((a, b) => {
-        const at = (a.itemMetadata as ShowCollectionItemMetadata).title;
-        const bt = (b.itemMetadata as ShowCollectionItemMetadata).title;
-        return at.localeCompare(bt);
-      });
+    const title = (i: CollectionItem) =>
+      (i.itemMetadata as ShowCollectionItemMetadata).title ?? '';
+    const perfDate = (i: CollectionItem) =>
+      (i.itemMetadata as ShowCollectionItemMetadata).date ?? '';
+    switch (showSort) {
+      case 'alphabetical':
+        sorted.sort((a, b) => title(a).localeCompare(title(b)));
+        break;
+      case 'dateAddedOldest':
+        sorted.sort((a, b) => (a.addedAt < b.addedAt ? -1 : 1));
+        break;
+      case 'dateAddedNewest':
+        sorted.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
+        break;
+      case 'performanceDateOldest':
+        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? -1 : 1));
+        break;
+      case 'performanceDateNewest':
+        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? 1 : -1));
+        break;
     }
     return sorted;
   }, [collection, items, showSort]);
@@ -367,21 +419,6 @@ export function CollectionDetailScreen() {
             )}
           </View>
 
-          {collection.type === 'show_collection' && items.length > 0 && (
-            <View style={styles.sortRow}>
-              {(['dateAdded', 'performanceDate', 'alphabetical'] as const).map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.sortChip, showSort === s && styles.sortChipActive]}
-                  onPress={() => setShowSort(s)}
-                >
-                  <Text style={showSort === s ? styles.sortTextActive : styles.sortText}>
-                    {s === 'dateAdded' ? 'Added' : s === 'performanceDate' ? 'Date' : 'A–Z'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
         </View>
       </View>
     </View>
@@ -405,21 +442,25 @@ export function CollectionDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
-      {collection.type === 'show_collection' && items.length > 0 && (
-        <View style={styles.toolbar}>
-          {(['dateAdded', 'performanceDate', 'alphabetical'] as const).map((s) => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.sortChip, showSort === s && styles.sortChipActive]}
-              onPress={() => setShowSort(s)}
-            >
-              <Text style={showSort === s ? styles.sortTextActive : styles.sortText}>
-                {s === 'dateAdded' ? 'Added' : s === 'performanceDate' ? 'Date' : 'A–Z'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+    </View>
+  ) : null;
+
+  // Sort bar rendered directly above the list for show collections.
+  const sortBar = collection.type === 'show_collection' && items.length > 0 ? (
+    <View style={[styles.sortBar, isDesktop && styles.sortBarDesktop]}>
+      <View ref={showSortButtonRef} collapsable={false}>
+        <TouchableOpacity
+          style={styles.sortLabelButton}
+          onPress={handleShowSortPress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Sort shows by ${getShowSortLabel(showSort)}`}
+          accessibilityHint="Double tap to change sort order"
+        >
+          <Ionicons name={getShowSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
+          <Text style={styles.sortLabelText}>{getShowSortLabel(showSort)}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   ) : null;
 
@@ -430,6 +471,7 @@ export function CollectionDetailScreen() {
     >
       {webHeader}
       {nativeBodyHeader}
+      {sortBar}
 
       {items.length === 0 ? (
         <Text style={styles.empty}>No items yet.</Text>
@@ -512,6 +554,15 @@ export function CollectionDetailScreen() {
           }}
         />
       )}
+
+      <SortDropdown
+        visible={showSortModalVisible}
+        onClose={() => setShowSortModalVisible(false)}
+        position={showSortButtonPosition}
+        options={SHOW_SORT_OPTIONS}
+        selectedValue={showSort}
+        onSelect={setShowSort}
+      />
 
       {renameOpen && collection && (
         <View style={styles.renameOverlay}>
@@ -656,20 +707,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  sortRow: {
+  sortBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  sortBarDesktop: {
+    paddingHorizontal: 40,
+  },
+  sortLabelButton: {
     flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    alignSelf: 'flex-start',
   },
-  sortChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: COLORS.cardBackground,
+  sortLabelText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
-  sortChipActive: { backgroundColor: COLORS.accent },
-  sortText: { color: COLORS.textSecondary, fontSize: 12 },
-  sortTextActive: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '600' },
 
   toolbar: {
     flexDirection: 'row',
