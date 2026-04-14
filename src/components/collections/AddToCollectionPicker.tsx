@@ -154,8 +154,8 @@ export function AddToCollectionPicker({
                     {
                       transform: [{ translateY }],
                       // When keyboard is open, lift the tray above it. Keep
-                      // the -40 extension only when keyboard is hidden.
-                      bottom: keyboardHeight > 0 ? keyboardHeight : -40,
+                      // the -80 extension only when keyboard is hidden.
+                      bottom: keyboardHeight > 0 ? keyboardHeight : -80,
                     },
                   ]
             }
@@ -254,14 +254,14 @@ const styles = StyleSheet.create({
     right: 0,
     // Extend 40pt below the visible bottom so the card ALWAYS flushes past
     // the home indicator / any inset. Internal paddingBottom compensates.
-    bottom: -40,
+    bottom: -80,
   },
   card: {
     backgroundColor: COLORS.background,
     paddingTop: 16,
     // Extra bottom padding to clear the iOS home indicator area since the
     // card is pinned below bottom: 0 and extends past the safe area.
-    paddingBottom: 44,
+    paddingBottom: 88,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '75%',
