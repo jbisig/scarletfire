@@ -200,7 +200,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.savePill, isSaved && styles.savePillSaved]}
+                  style={styles.savePill}
                   onPress={handleToggleSave}
                   activeOpacity={0.7}
                   accessibilityRole="button"
@@ -320,10 +320,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     gap: 6,
-  },
-  savePillSaved: {
-    backgroundColor: COLORS.accentTransparent,
-    borderColor: COLORS.accent,
   },
   savePillText: {
     ...TYPOGRAPHY.label,
