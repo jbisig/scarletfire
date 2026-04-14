@@ -38,7 +38,11 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
     return item ? pickRandomBackground() : 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    item?.kind === 'profile' ? (item as any).username : item?.showId,
+    item?.kind === 'profile'
+      ? (item as any).username
+      : item?.kind === 'collection'
+        ? (item as any).collectionId
+        : (item as any)?.showId,
     item?.kind,
     item?.kind === 'song' ? item.trackId : null,
   ]);

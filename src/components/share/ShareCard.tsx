@@ -23,6 +23,10 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
   if (item.kind === 'profile') {
     title = `${item.displayName}'s Favorites`;
     subtitle = `${item.showCount} shows · ${item.songCount} songs`;
+  } else if (item.kind === 'collection') {
+    const noun = item.type === 'playlist' ? 'tracks' : 'shows';
+    title = item.name;
+    subtitle = `${item.itemCount} ${noun} · by @${item.ownerUsername}`;
   } else {
     const formattedDate = formatDateMMDDYYYY(item.date);
     title = item.kind === 'show' ? formattedDate : item.trackTitle;
