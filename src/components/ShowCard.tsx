@@ -210,9 +210,8 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                   <Ionicons
                     name={isSaved ? 'heart' : 'heart-outline'}
                     size={15}
-                    color={COLORS.textPrimary}
+                    color={isSaved ? COLORS.accent : COLORS.textPrimary}
                   />
-                  <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
                 </TouchableOpacity>
               </>
             )}
