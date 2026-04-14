@@ -40,11 +40,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
         isDesktop && isHovered && styles.songItemHovered,
         pressed && styles.songItemPressed,
       ]}
-      onPress={() => {
-        // eslint-disable-next-line no-console
-        console.log('[SongCard] onPress', song.trackTitle);
-        onPress(song);
-      }}
+      onPress={() => onPress(song)}
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       disabled={isLoading}
       // @ts-ignore - web only mouse events

@@ -287,33 +287,17 @@ export function CollectionDetailScreen() {
 
   const handleTrackPress = useCallback(
     async (md: PlaylistItemMetadata) => {
-      logger.player.info('Playlist tap:', md.trackTitle, md.showIdentifier);
-      if (Platform.OS !== 'web') {
-        // Diagnostic: confirm the tap actually fires on native.
-        // eslint-disable-next-line no-console
-        console.log('[CollectionDetail] playlist tap', md.trackTitle, md.showIdentifier);
-      }
       const key = `${md.showIdentifier}::${md.trackId}`;
       setLoadingTrackId(key);
       try {
-        logger.player.info('Playlist: calling getShowDetail', md.showIdentifier);
         const showDetail = await archiveApi.getShowDetail(md.showIdentifier);
-        logger.player.info('Playlist: got show', showDetail?.identifier, 'tracks:', showDetail?.tracks?.length);
         const track = showDetail.tracks.find((t) => t.id === md.trackId);
-        logger.player.info('Playlist: found track?', !!track, 'looking for', md.trackId);
         if (track) {
-          logger.player.info('Playlist: calling loadTrack');
           await loadTrack(track, showDetail, showDetail.tracks);
-          logger.player.info('Playlist: loadTrack resolved');
         } else {
-          Alert.alert('Track not found', `Couldn't find "${md.trackTitle}" on the show.`);
           logger.player.error('Playlist track not found on show:', md.trackId);
         }
       } catch (e) {
-        Alert.alert(
-          'Playback error',
-          e instanceof Error ? e.message : 'Unknown error',
-        );
         logger.player.error('Failed to play playlist track:', e);
       } finally {
         setLoadingTrackId(null);

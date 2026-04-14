@@ -351,14 +351,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Auto-load track when currentTrack changes
   // Skip in shuffle mode - loadShuffleSong/loadShuffleShow handle loading directly
   useEffect(() => {
-    logger.player.info(
-      '[effect] currentTrack=',
-      state.currentTrack?.title,
-      'isLoading=',
-      state.isLoading,
-      'mode=',
-      state.playbackMode,
-    );
     if (state.currentTrack && state.isLoading) {
       // In shuffle mode, loading is handled by loadShuffleSong/loadShuffleShow
       if (state.playbackMode === 'shuffle') {
@@ -369,32 +361,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const trackId = state.currentTrack.id;
       const shouldPlay = state.shouldAutoPlay;
       currentLoadingTrackIdRef.current = trackId;
-      logger.player.info('[effect] calling audioService.loadTrack for', trackId);
 
       audioService.loadTrack(
         state.currentTrack,
         state.currentShow || undefined,
         state.playlist  // Pass full playlist for gapless playback
       ).then(() => {
-        logger.player.info('[effect] audioService.loadTrack resolved, shouldPlay=', shouldPlay, 'sameTrack=', currentLoadingTrackIdRef.current === trackId);
         dispatch({ type: 'SET_LOADING', isLoading: false });
 
         // Only play if we're still on the same track (prevent race condition)
         if (currentLoadingTrackIdRef.current !== trackId) {
-          logger.player.warn('[effect] skipping play - track changed during load');
           return;
         }
 
         if (shouldPlay) {
-          logger.player.info('[effect] calling audioService.play()');
           audioService.play().then(() => {
-            logger.player.info('[effect] audioService.play() resolved');
             dispatch({ type: 'PLAY' });
           }).catch((error) => {
             logger.player.error('Auto-play failed:', error.message);
           });
-        } else {
-          logger.player.warn('[effect] shouldPlay=false, not playing');
         }
       }).catch((error) => {
         logger.player.error('Track load failed:', error.message);
