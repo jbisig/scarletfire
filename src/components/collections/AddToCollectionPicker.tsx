@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -8,6 +8,10 @@ import {
   FlatList,
   StyleSheet,
   Platform,
+  Animated,
+  PanResponder,
+  Keyboard,
+  KeyboardEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -42,6 +46,71 @@ export function AddToCollectionPicker({
   const [createVisible, setCreateVisible] = useState(false);
   const [memberships, setMemberships] = useState<Record<string, boolean>>({});
 
+  const isWeb = Platform.OS === 'web';
+
+  // Animated fade + slide, mirror of CreateCollectionModal.
+  const [rendered, setRendered] = useState(visible);
+  const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  const translateY = useRef(new Animated.Value(visible ? 0 : 600)).current;
+  useEffect(() => {
+    if (visible) {
+      setRendered(true);
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+      ]).start();
+    } else if (rendered) {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 600, duration: 200, useNativeDriver: true }),
+      ]).start(({ finished }) => {
+        if (finished) setRendered(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  // Keyboard height for native bottom-sheet lift.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    if (isWeb) return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const s = Keyboard.addListener(showEvent, onShow);
+    const h = Keyboard.addListener(hideEvent, onHide);
+    return () => {
+      s.remove();
+      h.remove();
+    };
+  }, [isWeb]);
+
+  // Swipe-to-dismiss (native only).
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => !isWeb && g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderGrant: () => {
+        translateY.stopAnimation();
+      },
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        const shouldDismiss = g.dy > 120 || g.vy > 0.6;
+        if (shouldDismiss) {
+          onClose();
+        } else {
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
   useEffect(() => {
     if (!visible) return;
     (async () => {
@@ -57,7 +126,6 @@ export function AddToCollectionPicker({
 
   const toggle = (collectionId: string) => {
     const wasIn = !!memberships[collectionId];
-    // Optimistically flip UI immediately; revert on failure.
     setMemberships((prev) => ({ ...prev, [collectionId]: !wasIn }));
     const op = wasIn
       ? removeItem(collectionId, itemIdentifier)
@@ -68,81 +136,81 @@ export function AddToCollectionPicker({
   };
 
   const title = type === 'playlist' ? 'Add to Playlist' : 'Add to Collection';
-  const newLabel = type === 'playlist' ? 'New Playlist' : 'New Collection';
-
-  const isWeb = Platform.OS === 'web';
+  const newLabel = type === 'playlist' ? 'New Playlist' : 'New Show Collection';
 
   return (
-    <Modal
-      visible={visible}
-      animationType={isWeb ? 'fade' : 'slide'}
-      transparent
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        style={[styles.backdrop, isWeb && styles.backdropWeb]}
-        onPress={isWeb ? onClose : undefined}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => {}}
-          style={[styles.card, isWeb && styles.cardWeb]}
+    <Modal visible={rendered} animationType="none" transparent onRequestClose={onClose}>
+      <Animated.View style={[{ flex: 1, opacity }]}>
+        <Pressable
+          style={[
+            styles.backdrop,
+            isWeb && styles.backdropWeb,
+            !isWeb && { paddingBottom: keyboardHeight },
+          ]}
+          onPress={onClose}
         >
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={22} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          </View>
+          <Animated.View
+            style={isWeb ? styles.cardWrapperWeb : { transform: [{ translateY }] }}
+            {...(isWeb ? {} : panResponder.panHandlers)}
+          >
+            <Pressable style={[styles.card, isWeb && styles.cardWeb]} onPress={() => {}}>
+              {!isWeb && <View style={styles.grabber} />}
 
-          <FlatList
-            data={filtered}
-            keyExtractor={(c) => c.id}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <Text style={styles.empty}>
-                No {type === 'playlist' ? 'playlists' : 'collections'} yet.
-              </Text>
-            }
-            renderItem={({ item }) => {
-              const selected = !!memberships[item.id];
-              return (
-                <Pressable
-                  onPress={() => toggle(item.id)}
-                  style={({ pressed }) => [
-                    styles.row,
-                    pressed && styles.rowPressed,
-                  ]}
-                >
-                  {({ pressed }) => (
-                    <>
-                      <Text
-                        style={[
-                          styles.rowText,
-                          (selected || pressed) && styles.rowTextSelected,
-                        ]}
-                      >
-                        {item.name}
-                      </Text>
-                      <View style={styles.checkSlot}>
-                        {(selected || pressed) && (
-                          <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                        )}
-                      </View>
-                    </>
-                  )}
-                </Pressable>
-              );
-            }}
-          />
+              <View style={styles.headerRow}>
+                <Text style={styles.title}>{title}</Text>
+                {isWeb && (
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-          <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
-            <Ionicons name="add" size={20} color={COLORS.accent} />
-            <Text style={styles.newText}>{newLabel}</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </TouchableOpacity>
+              <FlatList
+                data={filtered}
+                keyExtractor={(c) => c.id}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  <Text style={styles.empty}>
+                    No {type === 'playlist' ? 'playlists' : 'collections'} yet.
+                  </Text>
+                }
+                renderItem={({ item }) => {
+                  const selected = !!memberships[item.id];
+                  return (
+                    <Pressable
+                      onPress={() => toggle(item.id)}
+                      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                    >
+                      {({ pressed }) => (
+                        <>
+                          <Text
+                            style={[
+                              styles.rowText,
+                              (selected || pressed) && styles.rowTextSelected,
+                            ]}
+                          >
+                            {item.name}
+                          </Text>
+                          <View style={styles.checkSlot}>
+                            {(selected || pressed) && (
+                              <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                            )}
+                          </View>
+                        </>
+                      )}
+                    </Pressable>
+                  );
+                }}
+              />
+
+              <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
+                <Ionicons name="add" size={20} color={COLORS.accent} />
+                <Text style={styles.newText}>{newLabel}</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
 
       <CreateCollectionModal
         visible={createVisible}
@@ -167,16 +235,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cardWrapperWeb: {
+    width: '100%',
+    maxWidth: 480,
+    paddingHorizontal: 16,
+  },
   card: {
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.background,
     paddingTop: 16,
-    paddingBottom: 0,
+    paddingBottom: 24,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '75%',
-  },
-  listContent: {
-    paddingBottom: 16,
   },
   cardWeb: {
     width: '100%',
@@ -185,6 +255,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+    marginTop: -6,
+    marginBottom: 8,
+  },
+  listContent: {
+    paddingBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -222,9 +304,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 8,
+    marginTop: 12,
+    marginBottom: 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
