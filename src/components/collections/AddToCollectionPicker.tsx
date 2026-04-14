@@ -54,14 +54,16 @@ export function AddToCollectionPicker({
     })();
   }, [visible, filtered, itemIdentifier]);
 
-  const toggle = async (collectionId: string) => {
-    if (memberships[collectionId]) {
-      await removeItem(collectionId, itemIdentifier);
-      setMemberships((prev) => ({ ...prev, [collectionId]: false }));
-    } else {
-      await addItem(collectionId, itemIdentifier, itemMetadata);
-      setMemberships((prev) => ({ ...prev, [collectionId]: true }));
-    }
+  const toggle = (collectionId: string) => {
+    const wasIn = !!memberships[collectionId];
+    // Optimistically flip UI immediately; revert on failure.
+    setMemberships((prev) => ({ ...prev, [collectionId]: !wasIn }));
+    const op = wasIn
+      ? removeItem(collectionId, itemIdentifier)
+      : addItem(collectionId, itemIdentifier, itemMetadata);
+    op.catch(() => {
+      setMemberships((prev) => ({ ...prev, [collectionId]: wasIn }));
+    });
   };
 
   const title = type === 'playlist' ? 'Add to Playlist' : 'Add to Collection';
