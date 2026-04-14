@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   Animated,
+  PanResponder,
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -89,6 +90,33 @@ export function CreateCollectionModal({
   };
 
   const isWeb = Platform.OS === 'web';
+
+  // Swipe-to-dismiss gesture (native only). Updates translateY live with the
+  // drag, and either dismisses (if dragged past threshold or flung down) or
+  // snaps back on release.
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => !isWeb && g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderGrant: () => {
+        translateY.stopAnimation();
+      },
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        const shouldDismiss = g.dy > 120 || g.vy > 0.6;
+        if (shouldDismiss) {
+          onClose();
+        } else {
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
   return (
     <Modal
@@ -193,6 +221,15 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     borderRadius: 16,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+    marginTop: -6,
+    marginBottom: 8,
   },
   title: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 8 },
   label: { color: COLORS.textSecondary, fontSize: 13, marginTop: 8 },
