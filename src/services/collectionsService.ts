@@ -403,6 +403,80 @@ class CollectionsService {
     if (error) throw error;
     return !!data;
   }
+
+  /**
+   * Fetch all of the user's saved collections along with the current state of
+   * each underlying live collection. Refreshes snapshot columns (name, type,
+   * owner username) in the background when they drift from the live row.
+   *
+   * Returns:
+   *  - `saved`: SavedCollection rows (source of truth for kind/tombstone).
+   *  - `liveCollections`: Map from collection_id → current `Collection`. Only
+   *    includes non-tombstoned saves.
+   */
+  async fetchSavedCollections(userId: string): Promise<{
+    saved: SavedCollection[];
+    liveCollections: Map<string, Collection>;
+  }> {
+    const { data, error } = await this.supabase
+      .from('saved_collections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('saved_at', { ascending: false });
+    if (error) throw error;
+
+    const rows = (data ?? []) as SavedCollectionRow[];
+    const saved = rows.map(mapSavedCollection);
+
+    const liveIds = saved
+      .map((s) => s.collectionId)
+      .filter((id): id is string => id !== null);
+
+    const liveCollections = new Map<string, Collection>();
+    if (liveIds.length > 0) {
+      const { data: cols, error: colsErr } = await this.supabase
+        .from('collections')
+        .select('*, collection_items(count), profiles:user_id(username)')
+        .in('id', liveIds);
+      if (colsErr) throw colsErr;
+
+      const snapshotUpdates: Array<Promise<unknown>> = [];
+      for (const raw of cols ?? []) {
+        const row = raw as CollectionRow & {
+          collection_items?: { count: number }[];
+          profiles?: { username: string } | null;
+        };
+        const count = row.collection_items?.[0]?.count ?? 0;
+        liveCollections.set(row.id, mapCollection(row, count));
+
+        // Refresh snapshot columns when they drift.
+        const match = saved.find((s) => s.collectionId === row.id);
+        const ownerUsername = row.profiles?.username;
+        if (
+          match &&
+          ownerUsername &&
+          (match.lastKnownName !== row.name ||
+            match.lastKnownType !== row.type ||
+            match.lastKnownOwnerUsername !== ownerUsername)
+        ) {
+          snapshotUpdates.push(
+            this.supabase
+              .from('saved_collections')
+              .update({
+                last_known_name: row.name,
+                last_known_type: row.type,
+                last_known_owner_username: ownerUsername,
+              })
+              .eq('id', match.id),
+          );
+        }
+      }
+      // Fire-and-forget; snapshot drift is self-healing on subsequent fetches.
+      Promise.allSettled(snapshotUpdates).catch(() => {});
+    }
+
+    return { saved, liveCollections };
+  }
 }
 
 export const collectionsService = new CollectionsService();
