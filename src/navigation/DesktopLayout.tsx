@@ -13,6 +13,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { Sidebar } from '../components/web/Sidebar';
 import { PlayerBar } from '../components/web/PlayerBar';
 import { COLORS, FONTS, WEB_LAYOUT } from '../constants/theme';
@@ -109,6 +110,7 @@ export function DesktopLayout() {
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </View>
 
