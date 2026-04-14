@@ -101,14 +101,19 @@ export function AddToCollectionPicker({
                 No {type === 'playlist' ? 'playlists' : 'collections'} yet.
               </Text>
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity style={styles.row} onPress={() => toggle(item.id)}>
-                <Text style={styles.rowText}>{item.name}</Text>
-                {memberships[item.id] && (
-                  <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                )}
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const selected = !!memberships[item.id];
+              return (
+                <TouchableOpacity style={styles.row} onPress={() => toggle(item.id)}>
+                  <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
+                    {item.name}
+                  </Text>
+                  {selected && (
+                    <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
           />
 
           <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
@@ -172,6 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   rowText: { color: COLORS.textPrimary, fontSize: 15 },
+  rowTextSelected: { color: COLORS.accent, fontWeight: '600' },
   empty: { color: COLORS.textSecondary, paddingHorizontal: 16, paddingVertical: 12 },
   newBtn: {
     flexDirection: 'row',
