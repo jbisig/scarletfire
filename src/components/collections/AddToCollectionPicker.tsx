@@ -177,7 +177,7 @@ export function AddToCollectionPicker({
               <FlatList
                 data={filtered}
                 keyExtractor={(c) => c.id}
-                style={styles.list}
+                style={isWeb ? styles.listWeb : styles.list}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                   <Text style={styles.empty}>
@@ -282,6 +282,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+    // @ts-ignore web only
+    overflow: 'auto',
   },
   grabber: {
     alignSelf: 'center',
@@ -295,6 +297,12 @@ const styles = StyleSheet.create({
   list: {
     flexGrow: 0,
     flexShrink: 1,
+  },
+  listWeb: {
+    // On web, let the list grow to content height; outer maxHeight handles
+    // overflow via the card's own scroll.
+    flexGrow: 0,
+    flexShrink: 0,
   },
   listContent: {
     paddingBottom: 16,
