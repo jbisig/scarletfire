@@ -221,6 +221,26 @@ class ProfileService {
     return data === null;
   }
 
+  /**
+   * Look up a profile's id + display name by username, WITHOUT the is_public gate.
+   * Used for universal-link features (e.g. shared collection URLs) where the
+   * content is intended to be viewable regardless of profile visibility.
+   * Do not use this to decide whether a profile is publicly listed — use
+   * getPublicProfile for that.
+   */
+  async getProfileIdByUsername(
+    username: string,
+  ): Promise<{ id: string; username: string; display_name: string | null } | null> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .eq('username', username.toLowerCase())
+      .maybeSingle();
+    if (error || !data) return null;
+    return data;
+  }
+
   async getPublicProfile(username: string): Promise<PublicProfileData | null> {
     const supabase = authService.getClient();
 

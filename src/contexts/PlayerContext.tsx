@@ -309,6 +309,7 @@ interface PlayerContextType {
   // Shuffle mode functions
   startShuffleSongs: (songs: ShuffleSongItem[]) => Promise<void>;
   startShuffleShows: (shows: GratefulDeadShow[]) => Promise<void>;
+  startSequentialSongs: (songs: ShuffleSongItem[], startIndex?: number) => Promise<void>;
   stopShuffle: () => Promise<void>;
   isShuffleMode: boolean;
   // Full player visibility
@@ -970,6 +971,31 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.playbackMode, loadShuffleSong]);
 
+  // Sequential playback of a fixed song list (e.g. a playlist). Starts at startIndex
+  // and plays through to the end, reusing the shuffle-queue infrastructure without
+  // randomizing the order.
+  const startSequentialSongs = useCallback(
+    async (songs: ShuffleSongItem[], startIndex = 0) => {
+      if (songs.length === 0) return;
+      const safeIndex = Math.max(0, Math.min(startIndex, songs.length - 1));
+      // Rotate so the chosen track is first; later tracks follow in order.
+      const queue = [...songs.slice(safeIndex), ...songs.slice(0, safeIndex)];
+      try {
+        if (state.playbackMode === 'radio') {
+          radioService.resetSession();
+          lastReplenishIndexRef.current = -1;
+          replenishPromiseRef.current = null;
+        }
+        dispatch({ type: 'START_SHUFFLE', shuffleType: 'songs', queue });
+        await loadShuffleSong(queue[0]);
+      } catch (error) {
+        logger.player.error('Failed to start playlist:', error);
+        dispatch({ type: 'STOP_SHUFFLE' });
+      }
+    },
+    [state.playbackMode, loadShuffleSong],
+  );
+
   // Start shuffle mode for shows
   const startShuffleShows = useCallback(async (shows: GratefulDeadShow[]) => {
     if (shows.length === 0) {
@@ -1111,6 +1137,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     currentRadioTrack,
     startShuffleSongs,
     startShuffleShows,
+    startSequentialSongs,
     stopShuffle,
     isShuffleMode,
     isFullPlayerVisible,
@@ -1131,6 +1158,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     currentRadioTrack,
     startShuffleSongs,
     startShuffleShows,
+    startSequentialSongs,
     stopShuffle,
     isShuffleMode,
     isFullPlayerVisible,

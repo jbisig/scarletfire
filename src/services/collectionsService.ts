@@ -91,21 +91,35 @@ class CollectionsService {
     description?: string;
   }): Promise<Collection> {
     const { userId, name, type, description } = params;
-    const taken = await this.fetchTakenSlugs(userId);
-    const slug = nextAvailableSlug(slugifyName(name), taken);
-    const { data, error } = await this.supabase
-      .from('collections')
-      .insert({
-        user_id: userId,
-        name,
-        type,
-        description: description ?? null,
-        slug,
-      })
-      .select('*')
-      .single();
-    if (error) throw error;
-    return mapCollection(data as CollectionRow, 0);
+    // Retry up to 3 times on unique-constraint collision (covers the race
+    // between fetchTakenSlugs and insert when two creates happen concurrently).
+    let attempt = 0;
+    let taken = await this.fetchTakenSlugs(userId);
+    let lastError: unknown = null;
+    while (attempt < 3) {
+      const slug = nextAvailableSlug(slugifyName(name), taken);
+      const { data, error } = await this.supabase
+        .from('collections')
+        .insert({
+          user_id: userId,
+          name,
+          type,
+          description: description ?? null,
+          slug,
+        })
+        .select('*')
+        .single();
+      if (!error) {
+        return mapCollection(data as CollectionRow, 0);
+      }
+      lastError = error;
+      if ((error as any).code !== '23505') break;
+      // Collision — fetch updated slug set and try again.
+      taken = await this.fetchTakenSlugs(userId);
+      taken.add(slug);
+      attempt += 1;
+    }
+    throw lastError;
   }
 
   async updateCollection(

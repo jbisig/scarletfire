@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlayer } from '../contexts/PlayerContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { collectionsService } from '../services/collectionsService';
 import { profileService } from '../services/profileService';
@@ -43,6 +44,10 @@ export function CollectionDetailScreen() {
     deleteCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
+  const { startSequentialSongs, startShuffleSongs } = usePlayer();
+
+  type ShowSortType = 'dateAdded' | 'performanceDate' | 'alphabetical';
+  const [showSort, setShowSort] = useState<ShowSortType>('dateAdded');
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
@@ -66,10 +71,11 @@ export function CollectionDetailScreen() {
             setItems(await fetchItems(found.id));
           }
         } else if (route.params?.username && route.params?.slug) {
-          const profile = await profileService.getPublicProfile(route.params.username);
-          if (profile?.profile?.id) {
+          // Universal link: look up owner id without gating on is_public.
+          const owner = await profileService.getProfileIdByUsername(route.params.username);
+          if (owner?.id) {
             const result = await collectionsService.fetchPublicCollectionByLink(
-              profile.profile.id,
+              owner.id,
               route.params.slug,
             );
             if (result) {
@@ -84,6 +90,12 @@ export function CollectionDetailScreen() {
       }
     })();
   }, [collections, fetchItems, route.params]);
+
+  // Reset owner username when the collection changes (so a re-navigation doesn't
+  // keep a stale username from a previous collection).
+  useEffect(() => {
+    setOwnerUsername(route.params?.username ?? null);
+  }, [route.params?.collectionId, route.params?.username, route.params?.slug]);
 
   // Load owner username for share builder (owner view only)
   useEffect(() => {
@@ -153,8 +165,16 @@ export function CollectionDetailScreen() {
     [collection, items, reorderItems],
   );
 
+  const playlistQueue = useMemo(
+    () =>
+      items
+        .filter((i) => collection?.type === 'playlist')
+        .map((i) => i.itemMetadata as PlaylistItemMetadata),
+    [items, collection],
+  );
+
   const handleItemPress = useCallback(
-    (item: CollectionItem) => {
+    (item: CollectionItem, index: number) => {
       if (!collection) return;
       if (collection.type === 'show_collection') {
         const md = item.itemMetadata as ShowCollectionItemMetadata;
@@ -165,18 +185,38 @@ export function CollectionDetailScreen() {
           location: md.location,
         });
       } else {
-        // TODO: wire up playlist queue playback once a queue API is available
-        const md = item.itemMetadata as PlaylistItemMetadata;
-        navigation.navigate('ShowDetail', {
-          identifier: md.showIdentifier,
-          trackTitle: md.trackTitle,
-          date: md.showDate,
-          venue: md.venue,
-        });
+        startSequentialSongs(playlistQueue, index);
       }
     },
-    [collection, navigation],
+    [collection, navigation, playlistQueue, startSequentialSongs],
   );
+
+  const handleShuffle = useCallback(() => {
+    if (!collection || collection.type !== 'playlist' || playlistQueue.length === 0) return;
+    startShuffleSongs(playlistQueue);
+  }, [collection, playlistQueue, startShuffleSongs]);
+
+  // For show collections, apply sort. Playlists keep manual order.
+  const displayItems = useMemo(() => {
+    if (!collection || collection.type !== 'show_collection') return items;
+    const sorted = [...items];
+    if (showSort === 'dateAdded') {
+      sorted.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
+    } else if (showSort === 'performanceDate') {
+      sorted.sort((a, b) => {
+        const ad = (a.itemMetadata as ShowCollectionItemMetadata).date;
+        const bd = (b.itemMetadata as ShowCollectionItemMetadata).date;
+        return ad < bd ? -1 : 1;
+      });
+    } else {
+      sorted.sort((a, b) => {
+        const at = (a.itemMetadata as ShowCollectionItemMetadata).title;
+        const bt = (b.itemMetadata as ShowCollectionItemMetadata).title;
+        return at.localeCompare(bt);
+      });
+    }
+    return sorted;
+  }, [collection, items, showSort]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -226,11 +266,36 @@ export function CollectionDetailScreen() {
         <Text style={styles.attribution}>by @{ownerUsername}</Text>
       )}
 
+      {collection.type === 'playlist' && items.length > 0 && (
+        <View style={styles.toolbar}>
+          <TouchableOpacity style={styles.toolbarBtn} onPress={handleShuffle}>
+            <Ionicons name="shuffle" size={16} color={COLORS.accent} />
+            <Text style={styles.toolbarText}>Shuffle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {collection.type === 'show_collection' && items.length > 0 && (
+        <View style={styles.toolbar}>
+          {(['dateAdded', 'performanceDate', 'alphabetical'] as const).map((s) => (
+            <TouchableOpacity
+              key={s}
+              style={[styles.sortChip, showSort === s && styles.sortChipActive]}
+              onPress={() => setShowSort(s)}
+            >
+              <Text style={showSort === s ? styles.sortTextActive : styles.sortText}>
+                {s === 'dateAdded' ? 'Added' : s === 'performanceDate' ? 'Date' : 'A–Z'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <FlatList
-        data={items}
+        data={displayItems}
         keyExtractor={(i) => i.id}
         ListEmptyComponent={<Text style={styles.empty}>No items yet.</Text>}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const md = item.itemMetadata as any;
           const title =
             collection.type === 'playlist' ? md.trackTitle : md.title;
@@ -242,7 +307,7 @@ export function CollectionDetailScreen() {
             <View style={styles.row}>
               <TouchableOpacity
                 style={{ flex: 1 }}
-                onPress={() => handleItemPress(item)}
+                onPress={() => handleItemPress(item, index)}
                 onLongPress={
                   isOwner
                     ? () =>
@@ -354,4 +419,30 @@ const styles = StyleSheet.create({
   },
   cancelText: { color: COLORS.textSecondary, fontSize: 15, padding: 10 },
   saveText: { color: COLORS.accent, fontSize: 15, fontWeight: '600', padding: 10 },
+  toolbar: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  toolbarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBackground,
+  },
+  toolbarText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: COLORS.cardBackground,
+  },
+  sortChipActive: { backgroundColor: COLORS.accent },
+  sortText: { color: COLORS.textSecondary, fontSize: 12 },
+  sortTextActive: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '600' },
 });

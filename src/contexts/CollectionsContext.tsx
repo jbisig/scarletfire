@@ -121,7 +121,14 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
 
   const addItem: CollectionsContextValue['addItem'] = useCallback(
     async (collectionId, itemIdentifier, itemMetadata) => {
-      await collectionsService.addItemToCollection(collectionId, itemIdentifier, itemMetadata);
+      // addItemToCollection returns null on duplicate (unique violation) — don't
+      // inflate the count in that case.
+      const added = await collectionsService.addItemToCollection(
+        collectionId,
+        itemIdentifier,
+        itemMetadata,
+      );
+      if (!added) return;
       setCollections((prev) =>
         prev.map((c) =>
           c.id === collectionId
