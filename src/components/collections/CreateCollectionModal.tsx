@@ -136,11 +136,13 @@ export function CreateCollectionModal({
         >
           <Animated.View
             style={isWeb ? undefined : { transform: [{ translateY }] }}
+            {...(isWeb ? {} : panResponder.panHandlers)}
           >
           <Pressable
             style={[styles.card, isWeb && styles.cardWeb]}
             onPress={() => {}}
           >
+          {!isWeb && <View style={styles.grabber} />}
           <Text style={styles.title}>New Collection</Text>
 
           <Text style={styles.label}>Name</Text>
