@@ -63,6 +63,13 @@ const nativeLinking = Platform.OS !== 'web'
               username: (u: string) => decodeURIComponent(u),
             },
           },
+          CollectionDetail: {
+            path: 'profile/:username/collection/:slug',
+            parse: {
+              username: (u: string) => decodeURIComponent(u),
+              slug: (s: string) => decodeURIComponent(s),
+            },
+          },
           MainTabs: {
             path: '',
             screens: {

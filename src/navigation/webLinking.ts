@@ -35,6 +35,18 @@ const songPerformancesRoute = {
 // ShowDetail: /show/{date}/{track-title}
 const sanitizeIdentifier = (id: string) => decodeURIComponent(id).replace(/[^a-zA-Z0-9._-]/g, '');
 
+const collectionDetailRoute = {
+  path: 'profile/:username/collection/:slug',
+  parse: {
+    username: (u: string) => decodeURIComponent(u),
+    slug: (s: string) => decodeURIComponent(s),
+  },
+  stringify: {
+    username: (u: string) => encodeURIComponent(u),
+    slug: (s: string) => encodeURIComponent(s),
+  },
+};
+
 const showDetailRoute = {
   path: 'show/:identifier/:trackTitle?',
   parse: {
@@ -80,6 +92,7 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
         path: 'profile/:username',
         parse: { username: (u: string) => decodeURIComponent(u) },
       },
+      CollectionDetail: collectionDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
       ResetPassword: 'reset-password',
@@ -142,6 +155,7 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
         path: 'profile/:username',
         parse: { username: (u: string) => decodeURIComponent(u) },
       },
+      CollectionDetail: collectionDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
       ResetPassword: 'reset-password',
