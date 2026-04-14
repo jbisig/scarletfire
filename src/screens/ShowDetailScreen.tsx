@@ -26,6 +26,8 @@ import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
+import { useCollections } from '../contexts/CollectionsContext';
+import { Track } from '../types/show.types';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
@@ -376,6 +378,8 @@ export function ShowDetailScreen() {
   // when `show` or `classicTier` change (e.g. when the user navigates between
   // versions or previews).
   const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
+  const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
+  const { itemCountsByIdentifier } = useCollections();
 
   useEffect(() => {
     navigation.setOptions({
@@ -724,6 +728,8 @@ export function ShowDetailScreen() {
             rating={trackRatings[track.id]}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
+            onAddToPlaylist={(t) => setPickerTrack(t)}
+            playlistCount={itemCountsByIdentifier[`${show.identifier}::${track.id}`] ?? 0}
             isSelected={track.id === selectedTrackId}
           />
         )) : (
@@ -791,6 +797,23 @@ export function ShowDetailScreen() {
             venue: show.venue,
             location: show.location,
             primaryIdentifier: show.identifier,
+          }}
+        />
+      )}
+
+      {show && pickerTrack && (
+        <AddToCollectionPicker
+          visible
+          onClose={() => setPickerTrack(null)}
+          type="playlist"
+          itemIdentifier={`${show.identifier}::${pickerTrack.id}`}
+          itemMetadata={{
+            trackId: pickerTrack.id,
+            trackTitle: pickerTrack.title,
+            showIdentifier: show.identifier,
+            showDate: show.date,
+            venue: show.venue,
+            streamUrl: pickerTrack.streamUrl,
           }}
         />
       )}
