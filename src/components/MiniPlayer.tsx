@@ -146,7 +146,11 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
                 )}
                 {isShuffleMode && (
                   <View style={styles.radioBadge}>
-                    <Ionicons name="shuffle" size={12} color={COLORS.textPrimary} />
+                    <Ionicons
+                      name={state.shuffleType === 'playlist' ? 'musical-notes' : 'shuffle'}
+                      size={12}
+                      color={COLORS.textPrimary}
+                    />
                   </View>
                 )}
               </View>
