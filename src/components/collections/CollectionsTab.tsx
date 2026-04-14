@@ -6,7 +6,7 @@ import {
   LibraryCollectionEntry,
 } from '../../types/collection.types';
 import { CollectionCard } from './CollectionCard';
-import { COLORS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY } from '../../constants/theme';
 
 interface Props {
   entries: LibraryCollectionEntry[];
@@ -105,8 +105,8 @@ export function CollectionsTab({
 }
 
 const styles = StyleSheet.create({
-  container: { paddingBottom: 200 },
-  section: { marginTop: 16 },
+  container: { paddingTop: 12, paddingBottom: 200 },
+  section: { marginBottom: 16 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -114,7 +114,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 4,
   },
-  headerText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },
+  headerText: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   addBtn: { padding: 4 },
   empty: {
     color: COLORS.textSecondary,
