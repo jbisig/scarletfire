@@ -17,7 +17,7 @@ import {
   CollectionItemMetadata,
 } from '../../types/collection.types';
 import { collectionsService } from '../../services/collectionsService';
-import { COLORS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, FONTS } from '../../constants/theme';
 
 interface Props {
   visible: boolean;
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  title: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
+  title: { ...TYPOGRAPHY.heading4, fontSize: 18 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,9 +210,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowText: { color: COLORS.textPrimary, fontSize: 15 },
+  rowText: { ...TYPOGRAPHY.body, fontSize: 15 },
   rowTextSelected: { color: COLORS.accent },
-  empty: { color: COLORS.textSecondary, paddingHorizontal: 16, paddingVertical: 12 },
+  empty: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   newBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -223,5 +228,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  newText: { color: COLORS.accent, fontSize: 15, fontWeight: '600' },
+  newText: {
+    fontFamily: FONTS.secondary,
+    color: COLORS.accent,
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
