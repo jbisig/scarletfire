@@ -596,6 +596,20 @@ export function ShowDetailScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.savePillWeb}
+                  onPress={() => setAddToCollectionVisible(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add to collection"
+                >
+                  <Ionicons
+                    name="folder-open-outline"
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.savePillText}>Add to Collection</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.savePillWeb}
                   onPress={handleToggleFavorite}
                   activeOpacity={0.7}
                   accessibilityRole="button"
