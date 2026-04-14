@@ -385,7 +385,9 @@ export function ShowDetailScreen() {
       headerRight: () => (
         <TouchableOpacity
           onPress={handleShareShow}
-          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          // paddingRight matches headerContainer's SPACING.xl so the share icon
+          // aligns vertically with the heart icon in the info row below.
+          style={{ paddingLeft: 16, paddingRight: 24, paddingVertical: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Share show"
         >
