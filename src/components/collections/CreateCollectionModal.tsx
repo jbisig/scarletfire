@@ -135,7 +135,7 @@ export function CreateCollectionModal({
           onPress={onClose}
         >
           <Animated.View
-            style={isWeb ? undefined : { transform: [{ translateY }] }}
+            style={isWeb ? styles.cardWrapperWeb : { transform: [{ translateY }] }}
             {...(isWeb ? {} : panResponder.panHandlers)}
           >
           <Pressable
@@ -218,6 +218,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     gap: 8,
+  },
+  cardWrapperWeb: {
+    width: '100%',
+    maxWidth: 480,
+    paddingHorizontal: 16,
   },
   cardWeb: {
     width: '100%',
