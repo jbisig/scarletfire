@@ -48,6 +48,7 @@ import { useCollections } from '../contexts/CollectionsContext';
 import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
 import { CollectionType, Collection } from '../types/collection.types';
+import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
@@ -74,9 +75,10 @@ interface SongItemProps {
   isLoading: boolean;
   playCount: number;
   onPress: (song: FavoriteSong) => void;
+  onLongPress?: (song: FavoriteSong) => void;
 }
 
-const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
+const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress, onLongPress }) => {
   const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
   const venue = getCorrectVenue(song.showDate) || song.venue;
@@ -86,6 +88,7 @@ const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPres
     <TouchableOpacity
       style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
       onPress={() => onPress(song)}
+      onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       activeOpacity={0.7}
       disabled={isLoading}
       // @ts-ignore - web only mouse events
@@ -155,6 +158,7 @@ export function FavoritesScreen() {
   const { collections, deleteCollection } = useCollections();
   const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
+  const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
@@ -718,6 +722,12 @@ export function FavoritesScreen() {
                 isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
                 playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
                 onPress={handleSongPress}
+                onLongPress={(song) =>
+                  Alert.alert(song.trackTitle, undefined, [
+                    { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
+                    { text: 'Cancel', style: 'cancel' },
+                  ])
+                }
               />
             )}
             contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
@@ -895,6 +905,23 @@ export function FavoritesScreen() {
             initialType={createCollectionType}
           />
         </>
+      )}
+
+      {pickerSong && (
+        <AddToCollectionPicker
+          visible
+          onClose={() => setPickerSong(null)}
+          type="playlist"
+          itemIdentifier={`${pickerSong.showIdentifier}::${pickerSong.trackId}`}
+          itemMetadata={{
+            trackId: pickerSong.trackId,
+            trackTitle: pickerSong.trackTitle,
+            showIdentifier: pickerSong.showIdentifier,
+            showDate: pickerSong.showDate,
+            venue: pickerSong.venue,
+            streamUrl: pickerSong.streamUrl,
+          }}
+        />
       )}
 
       {/* Song Sort Dropdown */}
