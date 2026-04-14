@@ -12,6 +12,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { profileService, PublicProfileData } from '../services/profileService';
+import { collectionsService } from '../services/collectionsService';
+import { CollectionsTab } from '../components/collections/CollectionsTab';
+import { Collection } from '../types/collection.types';
 import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
@@ -46,7 +49,7 @@ type ProfileRouteParams = {
   PublicProfile: { username: string };
 };
 
-type TabType = 'shows' | 'songs';
+type TabType = 'shows' | 'songs' | 'collections';
 type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
 type SongSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
 
@@ -146,6 +149,7 @@ export function PublicProfileScreen() {
   const [songSortModal, setSongSortModal] = useState(false);
   const [showSortPosition, setShowSortPosition] = useState({ top: 0, left: 0 });
   const [songSortPosition, setSongSortPosition] = useState({ top: 0, left: 0 });
+  const [publicCollections, setPublicCollections] = useState<Collection[]>([]);
   const showSortRef = useRef<View>(null);
   const songSortRef = useRef<View>(null);
 
@@ -167,6 +171,17 @@ export function PublicProfileScreen() {
       .catch(() => setError(true))
       .finally(() => setIsLoading(false));
   }, [username]);
+
+  useEffect(() => {
+    if (!data?.profile?.is_public) {
+      setPublicCollections([]);
+      return;
+    }
+    collectionsService
+      .fetchPublicCollections(data.profile.id)
+      .then(setPublicCollections)
+      .catch(() => setPublicCollections([]));
+  }, [data]);
 
   // Compute top 10 shows by play count
   const topShows = useMemo(() => {
@@ -557,25 +572,44 @@ export function PublicProfileScreen() {
 
             {/* Tab Navigation */}
             <View style={styles.tabContainer} accessibilityRole="tablist">
-              {(['shows', 'songs'] as const).map((tab) => (
+              {(data?.profile?.is_public
+                ? (['shows', 'songs', 'collections'] as const)
+                : (['shows', 'songs'] as const)
+              ).map((tab) => (
                 <TouchableOpacity
                   key={tab}
                   style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
                   onPress={() => setActiveTab(tab)}
                   activeOpacity={0.7}
                   accessibilityRole="tab"
-                  accessibilityLabel={`${tab === 'shows' ? 'Shows' : 'Songs'} tab`}
+                  accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
                   accessibilityState={{ selected: activeTab === tab }}
                 >
                   <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                    {tab === 'shows' ? 'Shows' : 'Songs'}
+                    {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Tab Content */}
-            {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
+            {activeTab === 'shows' ? (
+              renderShowsTab()
+            ) : activeTab === 'songs' ? (
+              renderSongsTab()
+            ) : (
+              <CollectionsTab
+                collections={publicCollections}
+                onCardPress={(c) =>
+                  navigation.navigate('CollectionDetail', {
+                    username,
+                    slug: c.slug,
+                    readOnly: true,
+                  })
+                }
+                emptyMessage="No public collections."
+              />
+            )}
           </View>
         }
         keyExtractor={() => 'profile'}
