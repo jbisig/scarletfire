@@ -391,7 +391,7 @@ export function ShowDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Share show"
         >
-          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="share-outline" size={26} color={COLORS.textPrimary} />
         </TouchableOpacity>
       ),
     });
