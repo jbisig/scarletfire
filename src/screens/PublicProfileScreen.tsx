@@ -599,14 +599,19 @@ export function PublicProfileScreen() {
               renderSongsTab()
             ) : (
               <CollectionsTab
-                collections={publicCollections}
-                onCardPress={(c) =>
+                entries={publicCollections.map((c) => ({
+                  kind: 'owned' as const,
+                  collection: c,
+                  sortKey: c.updatedAt,
+                }))}
+                onEntryPress={(e) => {
+                  if (e.kind !== 'owned') return;
                   navigation.navigate('CollectionDetail', {
                     username,
-                    slug: c.slug,
+                    slug: e.collection.slug,
                     readOnly: true,
-                  })
-                }
+                  });
+                }}
                 emptyMessage="No public collections."
               />
             )}

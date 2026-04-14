@@ -1,32 +1,71 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Collection, CollectionType } from '../../types/collection.types';
+import {
+  CollectionType,
+  LibraryCollectionEntry,
+} from '../../types/collection.types';
 import { CollectionCard } from './CollectionCard';
 import { COLORS } from '../../constants/theme';
 
 interface Props {
-  collections: Collection[];
-  onCardPress: (c: Collection) => void;
-  onCardLongPress?: (c: Collection) => void;
+  entries: LibraryCollectionEntry[];
+  onEntryPress: (entry: LibraryCollectionEntry) => void;
+  onEntryLongPress?: (entry: LibraryCollectionEntry) => void;
   onCreate?: (type: CollectionType) => void;
   emptyMessage?: string;
 }
 
+function entryType(e: LibraryCollectionEntry): CollectionType {
+  if (e.kind === 'tombstone') return e.type;
+  return e.collection.type;
+}
+
+function entryKey(e: LibraryCollectionEntry): string {
+  switch (e.kind) {
+    case 'owned':
+      return `o-${e.collection.id}`;
+    case 'saved':
+      return `s-${e.collection.id}`;
+    case 'tombstone':
+      return `t-${e.savedId}`;
+  }
+}
+
+function variantForEntry(e: LibraryCollectionEntry) {
+  switch (e.kind) {
+    case 'owned':
+      return { kind: 'owned' as const, collection: e.collection };
+    case 'saved':
+      return {
+        kind: 'saved' as const,
+        collection: e.collection,
+        ownerUsername: e.ownerUsername,
+      };
+    case 'tombstone':
+      return {
+        kind: 'tombstone' as const,
+        name: e.name,
+        type: e.type,
+        ownerUsername: e.ownerUsername,
+      };
+  }
+}
+
 export function CollectionsTab({
-  collections,
-  onCardPress,
-  onCardLongPress,
+  entries,
+  onEntryPress,
+  onEntryLongPress,
   onCreate,
   emptyMessage = 'No collections yet.',
 }: Props) {
-  const showCollections = collections.filter((c) => c.type === 'show_collection');
-  const playlists = collections.filter((c) => c.type === 'playlist');
+  const showEntries = entries.filter((e) => entryType(e) === 'show_collection');
+  const playlistEntries = entries.filter((e) => entryType(e) === 'playlist');
 
   const renderSection = (
     label: string,
     type: CollectionType,
-    items: Collection[],
+    items: LibraryCollectionEntry[],
   ) => (
     <View style={styles.section}>
       <View style={styles.header}>
@@ -45,12 +84,12 @@ export function CollectionsTab({
       {items.length === 0 ? (
         <Text style={styles.empty}>{emptyMessage}</Text>
       ) : (
-        items.map((c) => (
+        items.map((e) => (
           <CollectionCard
-            key={c.id}
-            variant={{ kind: 'owned', collection: c }}
-            onPress={() => onCardPress(c)}
-            onLongPress={onCardLongPress ? () => onCardLongPress(c) : undefined}
+            key={entryKey(e)}
+            variant={variantForEntry(e)}
+            onPress={() => onEntryPress(e)}
+            onLongPress={onEntryLongPress ? () => onEntryLongPress(e) : undefined}
           />
         ))
       )}
@@ -59,8 +98,8 @@ export function CollectionsTab({
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {renderSection('Show Collections', 'show_collection', showCollections)}
-      {renderSection('Playlists', 'playlist', playlists)}
+      {renderSection('Show Collections', 'show_collection', showEntries)}
+      {renderSection('Playlists', 'playlist', playlistEntries)}
     </ScrollView>
   );
 }

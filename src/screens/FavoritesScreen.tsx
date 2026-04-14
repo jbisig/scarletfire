@@ -47,7 +47,7 @@ import { useShareSheet } from '../contexts/ShareSheetContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
-import { CollectionType, Collection } from '../types/collection.types';
+import { CollectionType, LibraryCollectionEntry } from '../types/collection.types';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 
 // Layout constants
@@ -155,7 +155,13 @@ export function FavoritesScreen() {
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
-  const { collections, deleteCollection } = useCollections();
+  const {
+    deleteCollection,
+    libraryEntries,
+    unsaveCollection,
+    removeTombstone,
+    duplicateCollection,
+  } = useCollections();
   const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
@@ -876,19 +882,79 @@ export function FavoritesScreen() {
       ) : (
         <>
           <CollectionsTab
-            collections={collections}
-            onCardPress={(c: Collection) => navigation.navigate('CollectionDetail', { collectionId: c.id })}
-            onCardLongPress={(c: Collection) => {
-              Alert.alert(c.name, undefined, [
-                {
-                  text: 'Delete',
-                  style: 'destructive',
-                  onPress: () => {
-                    Alert.alert('Delete collection?', 'This cannot be undone.', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => deleteCollection(c.id) },
-                    ]);
+            entries={libraryEntries}
+            onEntryPress={(e: LibraryCollectionEntry) => {
+              if (e.kind === 'tombstone') {
+                Alert.alert(e.name, 'This collection is no longer available.', [
+                  {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: () => removeTombstone(e.savedId),
                   },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              navigation.navigate('CollectionDetail', { collectionId: e.collection.id });
+            }}
+            onEntryLongPress={(e: LibraryCollectionEntry) => {
+              if (e.kind === 'tombstone') {
+                Alert.alert(e.name, 'No longer available.', [
+                  {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: () => removeTombstone(e.savedId),
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              if (e.kind === 'owned') {
+                Alert.alert(e.collection.name, undefined, [
+                  {
+                    text: 'Duplicate',
+                    onPress: async () => {
+                      try {
+                        const created = await duplicateCollection(e.collection.id);
+                        navigation.navigate('CollectionDetail', { collectionId: created.id });
+                      } catch (err) {
+                        logger.api.error('duplicate failed', err);
+                        Alert.alert('Could not duplicate collection', 'Please try again.');
+                      }
+                    },
+                  },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      Alert.alert('Delete collection?', 'This cannot be undone.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteCollection(e.collection.id) },
+                      ]);
+                    },
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              // saved
+              Alert.alert(e.collection.name, `Saved from @${e.ownerUsername}`, [
+                {
+                  text: 'Duplicate',
+                  onPress: async () => {
+                    try {
+                      const created = await duplicateCollection(e.collection.id);
+                      navigation.navigate('CollectionDetail', { collectionId: created.id });
+                    } catch (err) {
+                      logger.api.error('duplicate failed', err);
+                      Alert.alert('Could not duplicate collection', 'Please try again.');
+                    }
+                  },
+                },
+                {
+                  text: 'Unsave',
+                  style: 'destructive',
+                  onPress: () => unsaveCollection(e.collection.id),
                 },
                 { text: 'Cancel', style: 'cancel' },
               ]);
