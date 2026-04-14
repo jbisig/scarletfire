@@ -108,9 +108,11 @@ export function AddToCollectionPicker({
                   <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
                     {item.name}
                   </Text>
-                  {selected && (
-                    <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                  )}
+                  <View style={styles.checkSlot}>
+                    {selected && (
+                      <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             }}
@@ -172,9 +174,16 @@ const styles = StyleSheet.create({
   title: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  checkSlot: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowText: { color: COLORS.textPrimary, fontSize: 15 },
   rowTextSelected: { color: COLORS.accent },
