@@ -54,6 +54,8 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
   let headline: string;
   if (item.kind === 'profile') {
     headline = 'Share your favorites';
+  } else if (item.kind === 'collection') {
+    headline = 'Share this collection';
   } else {
     headline = item.kind === 'song' ? 'Share this song' : 'Share this show';
   }
