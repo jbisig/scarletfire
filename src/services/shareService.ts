@@ -22,6 +22,22 @@ export type ShareItem =
       date: string;
       venue: string;
       rating: 1 | 2 | 3 | null;   // per-performance rating, falls back to tier
+    }
+  | {
+      kind: 'profile';
+      username: string;
+      displayName: string;
+      showCount: number;
+      songCount: number;
+    }
+  | {
+      kind: 'collection';
+      collectionId: string;
+      ownerUsername: string;
+      slug: string;
+      name: string;
+      type: 'show_collection' | 'playlist';
+      itemCount: number;
     };
 
 function clampBg(bg: number): number {
@@ -43,6 +59,12 @@ function clampBg(bg: number): number {
  */
 export function buildShareUrl(item: ShareItem, bg: number): string {
   const bgSafe = clampBg(bg);
+  if (item.kind === 'profile') {
+    return `${WEB_ORIGIN}/profile/${item.username}?bg=${bgSafe}`;
+  }
+  if (item.kind === 'collection') {
+    return `${WEB_ORIGIN}/profile/${item.ownerUsername}/collection/${item.slug}?bg=${bgSafe}`;
+  }
   const base = `${WEB_ORIGIN}/show/${item.date}`;
   if (item.kind === 'show') {
     return `${base}?bg=${bgSafe}`;
@@ -56,6 +78,13 @@ export function buildShareUrl(item: ShareItem, bg: number): string {
  * The share URL is appended by the destination handler, not by this function.
  */
 export function buildShareText(item: ShareItem): string {
+  if (item.kind === 'profile') {
+    return `${item.displayName}'s Favorites · ${item.showCount} shows · ${item.songCount} songs`;
+  }
+  if (item.kind === 'collection') {
+    const noun = item.type === 'playlist' ? 'tracks' : 'shows';
+    return `${item.name} — ${item.itemCount} ${noun} by @${item.ownerUsername}`;
+  }
   const formattedDate = formatDateMMDDYYYY(item.date);
   if (item.kind === 'show') {
     return `${formattedDate} · ${item.venue}`;
@@ -89,4 +118,23 @@ export function formatDateMMDDYYYY(iso: string): string {
  */
 export function slugifyTrackTitle(title: string): string {
   return encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'));
+}
+
+/**
+ * A stable identity string for a ShareItem — used as a React hook dep key so
+ * things like bgIndex memos re-roll when the item changes. Replaces ad-hoc
+ * `(item as any).showId || (item as any).username` patterns.
+ */
+export function shareItemKey(item: ShareItem | null | undefined): string {
+  if (!item) return '';
+  switch (item.kind) {
+    case 'show':
+      return `show:${item.showId}`;
+    case 'song':
+      return `song:${item.showId}:${item.trackId}`;
+    case 'profile':
+      return `profile:${item.username}`;
+    case 'collection':
+      return `collection:${item.collectionId}`;
+  }
 }

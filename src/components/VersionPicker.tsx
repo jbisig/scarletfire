@@ -178,6 +178,9 @@ const styles = StyleSheet.create({
     height: 35,
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
+    // Keep the pill wide enough to show the source name, views, and chevron
+    // without the chevron getting pushed past the right edge on narrow layouts.
+    minWidth: 220,
     // @ts-ignore - web only
     backdropFilter: 'blur(34px)',
     WebkitBackdropFilter: 'blur(34px)',

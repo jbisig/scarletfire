@@ -1,9 +1,9 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { View, Platform, findNodeHandle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
-import { profileService } from '../services/profileService';
+import { profileService, UserProfile } from '../services/profileService';
 import { useWebAuthModal } from '../components/web/WebAuthModal';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -23,6 +23,8 @@ export interface UseProfileDropdownReturn {
   handleLogout: () => Promise<void>;
   handleLogin: () => Promise<void>;
   handleSettings: () => void;
+  handleViewProfile: (() => void) | null;
+  userProfile: UserProfile | null;
   closeDropdown: () => void;
 }
 
@@ -35,8 +37,27 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   const avatarUrl = profileService.getAvatarUrl(authState.user);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (!authState.user?.id) {
+      setUserProfile(null);
+      return;
+    }
+    profileService.getUserProfile(authState.user.id)
+      .then(setUserProfile)
+      .catch(() => setUserProfile(null));
+  }, [authState.user?.id]);
 
   const handleProfilePress = useCallback(() => {
+    // Re-fetch profile each time the dropdown opens so username / display
+    // name changes made in Settings show up without a page reload.
+    if (authState.user?.id) {
+      profileService.getUserProfile(authState.user.id)
+        .then(setUserProfile)
+        .catch(() => {});
+    }
+
     if (Platform.OS === 'web') {
       // On web, resolve the DOM node from the ref (TouchableOpacity may not expose it directly)
       let domNode: HTMLElement | null = null;
@@ -66,7 +87,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
         setIsVisible(true);
       });
     }
-  }, []);
+  }, [authState.user?.id]);
 
   const closeDropdown = useCallback(() => {
     setIsVisible(false);
@@ -91,6 +112,12 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     navigation.navigate('Settings');
   }, [navigation]);
 
+  const handleViewProfile = useCallback(() => {
+    if (!userProfile?.username || !userProfile.is_public) return;
+    setIsVisible(false);
+    navigation.navigate('PublicProfile' as any, { username: userProfile.username });
+  }, [navigation, userProfile]);
+
   return {
     profileButtonRef,
     avatarUrl,
@@ -100,6 +127,8 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile: userProfile?.is_public && userProfile?.username ? handleViewProfile : null,
+    userProfile,
     closeDropdown,
   };
 }

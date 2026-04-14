@@ -25,6 +25,8 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
+import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
@@ -374,16 +376,22 @@ export function ShowDetailScreen() {
   // initial title-setting call in loadShowDetail so the callback stays fresh
   // when `show` or `classicTier` change (e.g. when the user navigates between
   // versions or previews).
+  const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
+  const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
+  const { itemCountsByIdentifier } = useCollections();
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
           onPress={handleShareShow}
-          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+          // paddingRight matches headerContainer's SPACING.xl so the share icon
+          // aligns vertically with the heart icon in the info row below.
+          style={{ paddingLeft: 16, paddingRight: 26, paddingVertical: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Share show"
         >
-          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="share-outline" size={26} color={COLORS.textPrimary} />
         </TouchableOpacity>
       ),
     });
@@ -495,7 +503,7 @@ export function ShowDetailScreen() {
               <View style={styles.webVenueBlock}>
                 <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
-                {/* Details section with play count on mobile */}
+                {/* Details section with play count on mobile + action buttons */}
                 <View style={styles.webDetailsSectionRow}>
                   <View style={styles.webDetailsSection}>
                     {/* Date with stars */}
@@ -512,14 +520,69 @@ export function ShowDetailScreen() {
                     </Text>
                   </View>
 
-                  {/* Play count badge - mobile web only */}
-                  {!isDesktop && playCount > 0 && (
-                    <View style={styles.playCountPillWeb}>
-                      <Text style={styles.playCountPillText}>
-                        {playCount} {playCount === 1 ? 'play' : 'plays'}
-                      </Text>
-                    </View>
-                  )}
+                  <View style={styles.webDetailsActions}>
+                    {/* Play count badge - mobile web only */}
+                    {!isDesktop && playCount > 0 && (
+                      <View style={styles.playCountPillWeb}>
+                        <Text style={styles.playCountPillText}>
+                          {playCount} {playCount === 1 ? 'play' : 'plays'}
+                        </Text>
+                      </View>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.savePillWeb}
+                      onPress={handleShareShow}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Share show"
+                    >
+                      <Ionicons
+                        name="share-outline"
+                        size={17}
+                        color={COLORS.textPrimary}
+                      />
+                    </TouchableOpacity>
+                    {(() => {
+                      const collectionCount = show ? (itemCountsByIdentifier[show.identifier] ?? 0) : 0;
+                      return (
+                        <TouchableOpacity
+                          style={styles.savePillWeb}
+                          onPress={() => setAddToCollectionVisible(true)}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            collectionCount > 0
+                              ? `Added to ${collectionCount} ${collectionCount === 1 ? 'collection' : 'collections'}`
+                              : 'Add to collection'
+                          }
+                        >
+                          <Ionicons
+                            name={collectionCount > 0 ? 'folder' : 'folder-open-outline'}
+                            size={17}
+                            color={COLORS.textPrimary}
+                          />
+                          {collectionCount > 0 && (
+                            <Text style={styles.savePillText}>{collectionCount}</Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })()}
+                    <TouchableOpacity
+                      style={styles.savePillWeb}
+                      onPress={handleToggleFavorite}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                      accessibilityState={{ selected: isSaved }}
+                    >
+                      <Ionicons
+                        name={isSaved ? 'heart' : 'heart-outline'}
+                        size={17}
+                        color={COLORS.textPrimary}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -557,46 +620,14 @@ export function ShowDetailScreen() {
                 ) : null}
               </View>
 
-              <View style={styles.pillsRight}>
-                {/* Play count pill - desktop only */}
-                {isDesktop && playCount > 0 && (
-                  <View style={styles.playCountPillWeb}>
-                    <Text style={styles.playCountPillText}>
-                      {playCount} {playCount === 1 ? 'play' : 'plays'}
-                    </Text>
-                  </View>
-                )}
-
-                <TouchableOpacity
-                  style={styles.savePillWeb}
-                  onPress={handleShareShow}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share show"
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.savePillText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.savePillWeb}
-                  onPress={handleToggleFavorite}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-                  accessibilityState={{ selected: isSaved }}
-                >
-                  <Ionicons
-                    name={isSaved ? 'heart' : 'heart-outline'}
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
-                </TouchableOpacity>
-              </View>
+              {/* Play count pill - desktop only */}
+              {isDesktop && playCount > 0 && (
+                <View style={[styles.playCountPillWeb, styles.pillsRightSlot]}>
+                  <Text style={styles.playCountPillText}>
+                    {playCount} {playCount === 1 ? 'play' : 'plays'}
+                  </Text>
+                </View>
+              )}
             </View>
             </View>
           </View>
@@ -624,25 +655,32 @@ export function ShowDetailScreen() {
               </Text>
             </View>
 
-            {/* Save button */}
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                isSaved && styles.saveButtonActive
-              ]}
-              onPress={handleToggleFavorite}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-              accessibilityHint={isSaved ? 'Double tap to remove this show from your favorites' : 'Double tap to save this show to your favorites'}
-              accessibilityState={{ selected: isSaved }}
-            >
-              {isSaved ? (
-                <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
-              ) : (
-                <Ionicons name="add" size={21} color={COLORS.textPrimary} />
-              )}
-            </TouchableOpacity>
+            {/* Action icons: Add to Collection (+) / Save (heart) */}
+            <View style={styles.showActionsGroup}>
+              <TouchableOpacity
+                style={styles.showActionBtn}
+                onPress={() => setAddToCollectionVisible(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Add to collection"
+              >
+                <Ionicons name="add" size={28} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.showActionBtn}
+                onPress={handleToggleFavorite}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                accessibilityState={{ selected: isSaved }}
+              >
+                <Ionicons
+                  name={isSaved ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={isSaved ? COLORS.accent : COLORS.textPrimary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Badges row - Official Release and Play Count */}
@@ -697,6 +735,8 @@ export function ShowDetailScreen() {
             rating={trackRatings[track.id]}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
+            onAddToPlaylist={(t) => setPickerTrack(t)}
+            playlistCount={itemCountsByIdentifier[`${show.identifier}::${track.id}`] ?? 0}
             isSelected={track.id === selectedTrackId}
           />
         )) : (
@@ -752,6 +792,38 @@ export function ShowDetailScreen() {
         show={show || undefined}
         onClose={() => setReleaseModalVisible(false)}
       />
+      {show && (
+        <AddToCollectionPicker
+          visible={addToCollectionVisible}
+          onClose={() => setAddToCollectionVisible(false)}
+          type="show_collection"
+          itemIdentifier={show.identifier}
+          itemMetadata={{
+            title: show.title,
+            date: show.date,
+            venue: show.venue,
+            location: show.location,
+            primaryIdentifier: show.identifier,
+          }}
+        />
+      )}
+
+      {show && pickerTrack && (
+        <AddToCollectionPicker
+          visible
+          onClose={() => setPickerTrack(null)}
+          type="playlist"
+          itemIdentifier={`${show.identifier}::${pickerTrack.id}`}
+          itemMetadata={{
+            trackId: pickerTrack.id,
+            trackTitle: pickerTrack.title,
+            showIdentifier: show.identifier,
+            showDate: show.date,
+            venue: show.venue,
+            streamUrl: pickerTrack.streamUrl,
+          }}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -848,6 +920,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textPrimary,
   },
+  showActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  showActionBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   saveButton: {
     width: 33,
     height: 33,
@@ -872,6 +955,16 @@ const styles = StyleSheet.create({
     gap: 8,
     flexShrink: 0,
     marginLeft: 'auto',
+  },
+  pillsRightSlot: {
+    marginLeft: 'auto',
+    flexShrink: 0,
+  },
+  webDetailsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
   },
   sourceInfoPill: {
     flexDirection: 'row',

@@ -12,9 +12,10 @@ import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
+import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { Sidebar } from '../components/web/Sidebar';
 import { PlayerBar } from '../components/web/PlayerBar';
-import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { COLORS, FONTS, WEB_LAYOUT } from '../constants/theme';
 
 const Stack = createStackNavigator();
@@ -37,14 +38,19 @@ const TAB_ROOT_SCREENS: Record<string, string> = {
   Settings: 'Settings',
 };
 
-// Screens whose headers render their own WebProfileAvatar
-const SCREENS_WITH_OWN_AVATAR = ['Home', 'SongList', 'Favorites'];
+const SCREEN_TO_TAB: Record<string, string> = {
+  DiscoverLanding: 'DiscoverTab',
+  Home: 'ShowsTab',
+  SongList: 'SongsTab',
+  SongPerformances: 'SongsTab',
+  Favorites: 'FavoritesTab',
+  Settings: 'Settings',
+};
 
 const SCROLLBAR_STYLES = ``;
 
 export function DesktopLayout() {
   const [activeTab, setActiveTab] = useState('DiscoverTab');
-  const [currentScreen, setCurrentScreen] = useState('DiscoverLanding');
   useEffect(() => {
     const styleEl = document.createElement('style');
     styleEl.setAttribute('data-desktop-scrollbars', '');
@@ -68,8 +74,6 @@ export function DesktopLayout() {
     }
   }, []);
 
-  const showGlobalAvatar = !SCREENS_WITH_OWN_AVATAR.includes(currentScreen);
-
   return (
     <View style={styles.outerContainer}>
       {/* Electron: draggable strip over the traffic-lights row */}
@@ -88,7 +92,10 @@ export function DesktopLayout() {
                 const state = e.data.state;
                 if (state) {
                   const name = state.routes[state.index]?.name;
-                  if (name) setCurrentScreen(name);
+                  if (name) {
+                    const tab = SCREEN_TO_TAB[name];
+                    if (tab) setActiveTab(tab);
+                  }
                 }
               },
             }}
@@ -102,15 +109,15 @@ export function DesktopLayout() {
             <Stack.Screen name="ShowDetail" component={ShowDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="CollectionDetail"
+              component={CollectionDetailScreen}
+              options={{ headerShown: false, cardStyle: { backgroundColor: COLORS.backgroundSecondary } }}
+            />
           </Stack.Navigator>
         </View>
 
-        {/* Global profile avatar — shown on tabs without their own header avatar */}
-        {showGlobalAvatar && (
-          <View style={styles.avatarContainer}>
-            <WebProfileAvatar />
-          </View>
-        )}
       </View>
 
       {/* Persistent bottom player bar */}
@@ -150,11 +157,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
     // @ts-ignore - web only: fix anti-aliasing artifacts at rounded corners
     WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-  },
-  avatarContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 32,
-    zIndex: 100,
   },
 });

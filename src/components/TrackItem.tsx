@@ -16,6 +16,10 @@ interface TrackItemProps {
   isSaved?: boolean;
   /** Web only: callback to toggle save state */
   onToggleSave?: (track: Track) => void;
+  /** Web only: callback to open Add-to-Playlist picker for this track */
+  onAddToPlaylist?: (track: Track) => void;
+  /** Web only: number of playlists this track is currently in (for pill badge) */
+  playlistCount?: number;
   /**
    * True when this track was selected by URL-driven navigation (share link
    * or pasted URL). Renders a sustained highlight distinct from `isPlaying`.
@@ -29,7 +33,7 @@ interface TrackItemProps {
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, isSelected }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, onAddToPlaylist, playlistCount = 0, isSelected }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
@@ -40,6 +44,8 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
 
   const hasSave = !!onToggleSave;
   const showSaveButton = hasSave && (Platform.OS === 'web' ? ((isDesktop && isHovered) || isSaved) : isSaved);
+  const hasAdd = !!onAddToPlaylist;
+  const showAddButton = hasAdd && Platform.OS === 'web' && (((isDesktop && isHovered) || playlistCount > 0));
 
   return (
     <TouchableOpacity
@@ -76,13 +82,36 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           )}
         </View>
       </View>
-      {/* Always reserve space for save button on web to prevent layout shift */}
+      {/* Add-to-playlist button (web only) — plus icon. */}
+      {hasAdd && (
+        <TouchableOpacity
+          style={[
+            styles.iconButton,
+            playlistCount > 0 && styles.iconButtonActive,
+            !showAddButton && styles.iconButtonHidden,
+          ]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onAddToPlaylist?.(track);
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={
+            playlistCount > 0
+              ? `Track is in ${playlistCount} ${playlistCount === 1 ? 'playlist' : 'playlists'}. Add or remove.`
+              : 'Add to playlist'
+          }
+        >
+          <Ionicons name="add" size={20} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      )}
+      {/* Save button — heart icon, red when saved. Reserves space to prevent layout shift. */}
       {hasSave && (
         <TouchableOpacity
           style={[
-            styles.saveButton,
-            isSaved && styles.saveButtonActive,
-            !showSaveButton && styles.saveButtonHidden,
+            styles.iconButton,
+            isSaved && styles.iconButtonSaved,
+            !showSaveButton && styles.iconButtonHidden,
           ]}
           onPress={(e) => {
             e.stopPropagation();
@@ -94,9 +123,9 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           accessibilityState={{ selected: isSaved }}
         >
           <Ionicons
-            name={isSaved ? 'checkmark-sharp' : 'add'}
-            size={13}
-            color={COLORS.textPrimary}
+            name={isSaved ? 'heart' : 'heart-outline'}
+            size={20}
+            color={isSaved ? COLORS.accent : COLORS.textPrimary}
           />
         </TouchableOpacity>
       )}
@@ -182,6 +211,19 @@ const styles = StyleSheet.create({
     borderColor: COLORS.accent,
   },
   saveButtonHidden: {
+    opacity: 0,
+  },
+  iconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: RADIUS.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: SPACING.sm,
+  },
+  iconButtonActive: {},
+  iconButtonSaved: {},
+  iconButtonHidden: {
     opacity: 0,
   },
   selected: {

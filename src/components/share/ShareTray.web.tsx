@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { ShareCard } from './ShareCard';
 import { ShareButton } from './ShareButton';
-import { pickRandomBackground } from '../../services/shareService';
+import { pickRandomBackground, shareItemKey } from '../../services/shareService';
 import {
   shareToCopyLink,
   shareToWhatsApp,
@@ -19,13 +19,12 @@ const MOBILE_WEB_MAX_WIDTH = 768;
 
 /**
  * Web share tray: a portal-style modal dialog. Layout adapts by viewport:
- *  - desktop (≥1024px): centered modal, Copy link + WhatsApp only
- *  - tablet (768-1023px): centered modal, Copy link + WhatsApp
+ *  - desktop & tablet (≥768px): centered modal, Copy link + WhatsApp
  *  - mobile web (<768px): slide-up bottom panel, Copy link + WhatsApp + Messages
  *
  * Instagram is hidden on web entirely — the web doesn't have a
- * share-to-stories API equivalent. Messages is hidden on desktop because
- * the sms: URL scheme is only meaningful on mobile browsers.
+ * share-to-stories API equivalent. Messages is hidden on tablet/desktop
+ * because the sms: URL scheme is only meaningful on mobile browsers.
  *
  * Rendered once by <ShareSheetProvider>. Open/close driven by the `item`
  * prop: non-null → visible, null → not rendered.
@@ -40,7 +39,7 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
   const bgIndex = useMemo(() => {
     return item ? pickRandomBackground() : 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?.showId, item?.kind]);
+  }, [shareItemKey(item)]);
 
   // Escape key closes the modal on web (convention on desktop).
   useEffect(() => {
@@ -55,7 +54,14 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
 
   if (!item) return null;
 
-  const headline = item.kind === 'song' ? 'Share this song' : 'Share this show';
+  let headline: string;
+  if (item.kind === 'profile') {
+    headline = 'Share your favorites';
+  } else if (item.kind === 'collection') {
+    headline = 'Share this collection';
+  } else {
+    headline = item.kind === 'song' ? 'Share this song' : 'Share this show';
+  }
 
   const handleDestination = (fn: DestinationFn) => async () => {
     try {
@@ -75,7 +81,7 @@ export function ShareTray({ item, onClose }: ShareTrayProps) {
         }}
         style={[
           styles.panel,
-          isDesktop ? styles.panelDesktop : styles.panelMobile,
+          isMobileWeb ? styles.panelMobile : styles.panelDesktop,
         ]}
       >
         <View style={styles.cardWrap}>

@@ -28,7 +28,6 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
@@ -202,6 +201,7 @@ export function HomeScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
 
@@ -393,8 +393,6 @@ export function HomeScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
-
-            {isDesktop && <WebProfileAvatar />}
           </View>
         </View>
 
@@ -424,6 +422,7 @@ export function HomeScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onViewProfile={handleViewProfile}
       />
 
       {/* Action Bar Section with Sort */}

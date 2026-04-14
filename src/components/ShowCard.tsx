@@ -5,12 +5,14 @@ import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { useCollections } from '../contexts/CollectionsContext';
 import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
+import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
@@ -21,17 +23,24 @@ interface ShowCardProps {
   overrideRating?: 1 | 2 | 3 | null;
   /** Override the play count (use song-specific count instead of show count) */
   overridePlayCount?: number;
+  /** Hide the save/saved heart badge */
+  hideSaveBadge?: boolean;
+  /** Custom trailing text shown after badges (e.g. "2d ago", "12 plays") */
+  trailingText?: string;
 }
 
 /**
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge, trailingText }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
+  const { itemCountsByIdentifier } = useCollections();
+  const collectionCount = itemCountsByIdentifier[show.primaryIdentifier] ?? 0;
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
+  const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   // Get official releases for this show
@@ -141,6 +150,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                   </View>
                 )}
                 <PlayCountBadge count={playCount} size="small" />
+                {trailingText && (
+                  <Text style={styles.trailingText}>{trailingText}</Text>
+                )}
               </View>
             )}
           </View>
@@ -159,22 +171,49 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               </View>
             )}
             <PlayCountBadge count={playCount} size="small" />
-            {isWeb && (
-              <TouchableOpacity
-                style={styles.savePill}
-                onPress={handleToggleSave}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-                accessibilityState={{ selected: isSaved }}
-              >
-                <Ionicons
-                  name={isSaved ? 'heart' : 'heart-outline'}
-                  size={15}
-                  color={COLORS.textPrimary}
-                />
-                <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
-              </TouchableOpacity>
+            {trailingText && (
+              <Text style={styles.trailingText}>{trailingText}</Text>
+            )}
+            {isWeb && !hideSaveBadge && (
+              <>
+                <TouchableOpacity
+                  style={styles.savePill}
+                  onPress={(e: any) => {
+                    e?.stopPropagation?.();
+                    setAddToCollectionVisible(true);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    collectionCount > 0
+                      ? `Added to ${collectionCount} ${collectionCount === 1 ? 'collection' : 'collections'}`
+                      : 'Add to collection'
+                  }
+                >
+                  <Ionicons
+                    name={collectionCount > 0 ? 'folder' : 'folder-open-outline'}
+                    size={15}
+                    color={COLORS.textPrimary}
+                  />
+                  {collectionCount > 0 && (
+                    <Text style={styles.savePillText}>{collectionCount}</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.savePill}
+                  onPress={handleToggleSave}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                  accessibilityState={{ selected: isSaved }}
+                >
+                  <Ionicons
+                    name={isSaved ? 'heart' : 'heart-outline'}
+                    size={15}
+                    color={isSaved ? COLORS.accent : COLORS.textPrimary}
+                  />
+                </TouchableOpacity>
+              </>
             )}
           </View>
         )}
@@ -187,6 +226,23 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
         show={show}
         onClose={() => setModalVisible(false)}
       />
+
+      {/* Add to Collection Picker (web pill) */}
+      {isWeb && (
+        <AddToCollectionPicker
+          visible={addToCollectionVisible}
+          onClose={() => setAddToCollectionVisible(false)}
+          type="show_collection"
+          itemIdentifier={show.primaryIdentifier}
+          itemMetadata={{
+            title: show.title,
+            date: show.date,
+            venue: show.venue,
+            location: show.location,
+            primaryIdentifier: show.primaryIdentifier,
+          }}
+        />
+      )}
     </>
   );
 });
@@ -269,5 +325,9 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  trailingText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textTertiary,
   },
 });

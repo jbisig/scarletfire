@@ -14,16 +14,30 @@ interface ShareCardProps {
 
 export function ShareCard({ item, bgIndex }: ShareCardProps) {
   const bgSource = getShareBackground(bgIndex);
-  const formattedDate = formatDateMMDDYYYY(item.date);
-  const title = item.kind === 'show' ? formattedDate : item.trackTitle;
-  const tier = item.kind === 'show' ? item.tier : item.rating;
+
+  let title: string;
+  let subtitle: string;
+  let metaDate: string | null = null;
+  let tier: 1 | 2 | 3 | null = null;
+
+  if (item.kind === 'profile') {
+    title = `${item.displayName}'s Favorites`;
+    subtitle = `${item.showCount} shows · ${item.songCount} songs`;
+  } else if (item.kind === 'collection') {
+    const noun = item.type === 'playlist' ? 'tracks' : 'shows';
+    title = item.name;
+    subtitle = `${item.itemCount} ${noun} · by @${item.ownerUsername}`;
+  } else {
+    const formattedDate = formatDateMMDDYYYY(item.date);
+    title = item.kind === 'show' ? formattedDate : item.trackTitle;
+    subtitle = item.venue;
+    tier = item.kind === 'show' ? item.tier : item.rating;
+    if (item.kind === 'song') metaDate = formattedDate;
+  }
 
   return (
     <View style={styles.card}>
       <ImageBackground source={bgSource} style={styles.bg} imageStyle={styles.bgImage}>
-        {/* Dark gradient overlay — bottom half fades from transparent to
-            near-black so the white text has reliable contrast against any
-            of the 6 background images. Matches the Figma card design. */}
         <LinearGradient
           colors={['rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.5)', 'rgba(0, 0, 0, 0.75)']}
           locations={[0, 0.5, 1]}
@@ -36,11 +50,11 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
               {title}
             </Text>
             <Text style={styles.subtitle} numberOfLines={1}>
-              {item.venue}
+              {subtitle}
             </Text>
             <View style={styles.metaRow}>
-              {item.kind === 'song' && (
-                <Text style={styles.meta}>{formattedDate}</Text>
+              {metaDate && (
+                <Text style={styles.meta}>{metaDate}</Text>
               )}
               {tier !== null && <StarRating tier={tier} size={14} />}
             </View>

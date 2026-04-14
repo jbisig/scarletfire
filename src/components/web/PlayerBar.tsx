@@ -361,16 +361,24 @@ export function PlayerBar() {
         {(isRadioMode || isShuffleMode) && (
           <View style={styles.modeBadge}>
             <Ionicons
-              name={isRadioMode ? 'radio' : 'shuffle'}
+              name={
+                isRadioMode
+                  ? 'radio'
+                  : state.shuffleType === 'playlist'
+                    ? 'musical-notes'
+                    : 'shuffle'
+              }
               size={14}
               color={COLORS.textPrimary}
             />
             <Text style={styles.modeBadgeText}>
               {isRadioMode
                 ? 'Radio'
-                : state.shuffleType === 'songs'
-                  ? 'Song Shuffle'
-                  : 'Show Shuffle'}
+                : state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle'
+                  ? 'Playlist'
+                  : state.shuffleType === 'songs'
+                    ? 'Song Shuffle'
+                    : 'Show Shuffle'}
             </Text>
           </View>
         )}

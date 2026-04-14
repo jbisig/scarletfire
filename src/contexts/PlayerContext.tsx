@@ -307,8 +307,12 @@ interface PlayerContextType {
   isRadioMode: boolean;
   currentRadioTrack: RadioTrack | null;
   // Shuffle mode functions
-  startShuffleSongs: (songs: ShuffleSongItem[]) => Promise<void>;
+  startShuffleSongs: (
+    songs: ShuffleSongItem[],
+    source?: 'favorites' | 'playlist',
+  ) => Promise<void>;
   startShuffleShows: (shows: GratefulDeadShow[]) => Promise<void>;
+  startSequentialSongs: (songs: ShuffleSongItem[], startIndex?: number) => Promise<void>;
   stopShuffle: () => Promise<void>;
   isShuffleMode: boolean;
   // Full player visibility
@@ -736,8 +740,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const nextTrack = useCallback(async () => {
     try {
-      // In shuffle songs mode, manually advance to next shuffled song
-      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
+      // In shuffle songs / playlist modes, manually advance to next queued song
+      if (
+        state.playbackMode === 'shuffle' &&
+        (state.shuffleType === 'songs' || state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle')
+      ) {
         shuffleNextRef.current();
         return;
       }
@@ -776,8 +783,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // In shuffle songs mode, go to previous song in shuffle queue
-      if (state.playbackMode === 'shuffle' && state.shuffleType === 'songs') {
+      // In shuffle songs / playlist modes, go to previous queued song
+      if (
+        state.playbackMode === 'shuffle' &&
+        (state.shuffleType === 'songs' || state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle')
+      ) {
         shufflePreviousRef.current();
         return;
       }
@@ -941,8 +951,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Start shuffle mode for songs
-  const startShuffleSongs = useCallback(async (songs: ShuffleSongItem[]) => {
+  // Start shuffle mode for songs. `source` distinguishes favorites shuffle
+  // from a playlist shuffle so the UI can show a distinct badge.
+  const startShuffleSongs = useCallback(async (
+    songs: ShuffleSongItem[],
+    source: 'favorites' | 'playlist' = 'favorites',
+  ) => {
     if (songs.length === 0) {
       logger.player.warn('No songs to shuffle');
       return;
@@ -959,8 +973,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Shuffle the songs
       const shuffledSongs = shuffleArray(songs);
 
-      // Start shuffle mode
-      dispatch({ type: 'START_SHUFFLE', shuffleType: 'songs', queue: shuffledSongs });
+      // Start shuffle mode with the source-appropriate badge type.
+      const shuffleType = source === 'playlist' ? 'playlistShuffle' : 'songs';
+      dispatch({ type: 'START_SHUFFLE', shuffleType, queue: shuffledSongs });
 
       // Load and play the first song
       await loadShuffleSong(shuffledSongs[0]);
@@ -969,6 +984,31 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'STOP_SHUFFLE' });
     }
   }, [state.playbackMode, loadShuffleSong]);
+
+  // Sequential playback of a fixed song list (e.g. a playlist). Starts at startIndex
+  // and plays through to the end, reusing the shuffle-queue infrastructure without
+  // randomizing the order.
+  const startSequentialSongs = useCallback(
+    async (songs: ShuffleSongItem[], startIndex = 0) => {
+      if (songs.length === 0) return;
+      const safeIndex = Math.max(0, Math.min(startIndex, songs.length - 1));
+      // Rotate so the chosen track is first; later tracks follow in order.
+      const queue = [...songs.slice(safeIndex), ...songs.slice(0, safeIndex)];
+      try {
+        if (state.playbackMode === 'radio') {
+          radioService.resetSession();
+          lastReplenishIndexRef.current = -1;
+          replenishPromiseRef.current = null;
+        }
+        dispatch({ type: 'START_SHUFFLE', shuffleType: 'playlist', queue });
+        await loadShuffleSong(queue[0]);
+      } catch (error) {
+        logger.player.error('Failed to start playlist:', error);
+        dispatch({ type: 'STOP_SHUFFLE' });
+      }
+    },
+    [state.playbackMode, loadShuffleSong],
+  );
 
   // Start shuffle mode for shows
   const startShuffleShows = useCallback(async (shows: GratefulDeadShow[]) => {
@@ -1011,7 +1051,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // Handle shuffle next - called when track/show ends in shuffle mode
   const shuffleNext = useCallback(async () => {
-    if (state.shuffleType === 'songs') {
+    if (state.shuffleType === 'songs' || state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle') {
       const nextIndex = state.shuffleQueueIndex + 1;
       if (nextIndex < state.shuffleQueue.length) {
         const nextItem = state.shuffleQueue[nextIndex];
@@ -1050,7 +1090,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   // Handle shuffle previous - go back to previous song in shuffle queue
   const shufflePrevious = useCallback(async () => {
-    if (state.shuffleType === 'songs') {
+    if (state.shuffleType === 'songs' || state.shuffleType === 'playlist' || state.shuffleType === 'playlistShuffle') {
       const prevIndex = state.shuffleQueueIndex - 1;
       if (prevIndex >= 0) {
         const prevItem = state.shuffleQueue[prevIndex];
@@ -1111,6 +1151,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     currentRadioTrack,
     startShuffleSongs,
     startShuffleShows,
+    startSequentialSongs,
     stopShuffle,
     isShuffleMode,
     isFullPlayerVisible,
@@ -1131,6 +1172,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     currentRadioTrack,
     startShuffleSongs,
     startShuffleShows,
+    startSequentialSongs,
     stopShuffle,
     isShuffleMode,
     isFullPlayerVisible,

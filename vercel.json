@@ -7,11 +7,15 @@
     },
     "api/html/song/[identifier]/[trackTitle].ts": {
       "maxDuration": 10
+    },
+    "api/html/profile/[username].ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
     { "source": "/show/:identifier/:trackTitle", "destination": "/api/html/song/:identifier/:trackTitle" },
     { "source": "/show/:identifier", "destination": "/api/html/show/:identifier" },
+    { "source": "/profile/:username", "destination": "/api/html/profile/:username" },
     { "source": "/((?!assets|favicon|manifest|_expo|.well-known|api|share).*)", "destination": "/index.html" }
   ],
   "headers": [

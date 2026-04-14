@@ -23,7 +23,6 @@ import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
@@ -92,6 +91,7 @@ export function SongListScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
 
@@ -245,8 +245,6 @@ export function SongListScreen() {
                 placeholder="Search songs"
                 expandedWidth={searchBarFullWidth}
               />
-
-              {isDesktop && <WebProfileAvatar />}
             </View>
           </View>
 
@@ -293,6 +291,7 @@ export function SongListScreen() {
           onLogin={handleLogin}
           onLogout={handleLogout}
           onSettings={handleSettings}
+          onViewProfile={handleViewProfile}
         />
       </View>
     </Wrapper>

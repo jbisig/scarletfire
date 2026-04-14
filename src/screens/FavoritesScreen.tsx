@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Platform,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -39,10 +40,15 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebProfileAvatar } from '../components/web/WebProfileAvatar';
 import { ProfileImage } from '../components/ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
+import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useCollections } from '../contexts/CollectionsContext';
+import { CollectionsTab } from '../components/collections/CollectionsTab';
+import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
+import { CollectionType, LibraryCollectionEntry } from '../types/collection.types';
+import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
@@ -69,9 +75,10 @@ interface SongItemProps {
   isLoading: boolean;
   playCount: number;
   onPress: (song: FavoriteSong) => void;
+  onLongPress?: (song: FavoriteSong) => void;
 }
 
-const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress }) => {
+const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress, onLongPress }) => {
   const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
   const venue = getCorrectVenue(song.showDate) || song.venue;
@@ -81,6 +88,7 @@ const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPres
     <TouchableOpacity
       style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
       onPress={() => onPress(song)}
+      onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       activeOpacity={0.7}
       disabled={isLoading}
       // @ts-ignore - web only mouse events
@@ -119,7 +127,7 @@ SongItem.displayName = 'SongItem';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
-type TabType = 'shows' | 'songs';
+type TabType = 'shows' | 'songs' | 'collections';
 type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 
@@ -146,8 +154,17 @@ export function FavoritesScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
-  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
+  const {
+    deleteCollection,
+    libraryEntries,
+    unsaveCollection,
+    removeTombstone,
+    duplicateCollection,
+  } = useCollections();
+  const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
+  const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
+  const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
@@ -181,8 +198,47 @@ export function FavoritesScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleViewProfile,
+    userProfile,
     closeDropdown,
   } = useProfileDropdown();
+
+  const shareButtonWidth = isAuthenticated ? LAYOUT.headerButtonSize + LAYOUT.headerButtonGap : 0;
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap - shareButtonWidth;
+
+  const { openShareTray } = useShareSheet();
+
+  const handleShareProfile = useCallback(() => {
+    if (!userProfile || !userProfile.is_public || !userProfile.username) {
+      Alert.alert(
+        'Public Profile',
+        'Set up your public profile in Settings to share your favorites.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Go to Settings',
+            onPress: () => {
+              if (isDesktop) {
+                navigation.reset({ index: 0, routes: [{ name: 'Settings' as never }] });
+              } else {
+                navigation.navigate('Settings' as never);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    const displayName = userProfile.display_name || userProfile.username;
+    openShareTray({
+      kind: 'profile',
+      username: userProfile.username,
+      displayName,
+      showCount: favoriteShows.length,
+      songCount: favoriteSongs.length,
+    });
+  }, [userProfile, favoriteShows.length, favoriteSongs.length, openShareTray, navigation, isDesktop]);
 
   // Create showsByYear structure from favoriteShows for the filter tray
   const favoriteShowsByYear = useMemo(() => {
@@ -672,6 +728,12 @@ export function FavoritesScreen() {
                 isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
                 playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
                 onPress={handleSongPress}
+                onLongPress={(song) =>
+                  Alert.alert(song.trackTitle, undefined, [
+                    { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
+                    { text: 'Cancel', style: 'cancel' },
+                  ])
+                }
               />
             )}
             contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
@@ -722,6 +784,23 @@ export function FavoritesScreen() {
 
           {/* Right side: Search and Filter buttons */}
           <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+            {/* Share Profile Button */}
+            {isAuthenticated && (
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={handleShareProfile}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Share favorites"
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={20}
+                  color={COLORS.textHint}
+                />
+              </TouchableOpacity>
+            )}
+
             {/* Animated Search Bar */}
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
@@ -751,26 +830,24 @@ export function FavoritesScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
-
-            {isDesktop && <WebProfileAvatar />}
           </View>
         </View>
 
         {/* Tab Navigation */}
         <View style={styles.tabContainer} accessibilityRole="tablist">
-          {(['shows', 'songs'] as const).map((tab) => (
+          {(['shows', 'songs', 'collections'] as const).map((tab) => (
             <TouchableOpacity
               key={`${tab}-${activeTab}`}
               style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
               onPress={() => setActiveTab(tab)}
               activeOpacity={0.7}
               accessibilityRole="tab"
-              accessibilityLabel={`${tab === 'shows' ? 'Shows' : 'Songs'} tab`}
+              accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
               accessibilityState={{ selected: activeTab === tab }}
-              accessibilityHint={`Double tap to view favorite ${tab}`}
+              accessibilityHint={`Double tap to view ${tab}`}
             >
               <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                {tab === 'shows' ? 'Shows' : 'Songs'}
+                {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -794,10 +871,124 @@ export function FavoritesScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onViewProfile={handleViewProfile}
       />
 
       {/* Tab Content */}
-      {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
+      {activeTab === 'shows' ? (
+        renderShowsTab()
+      ) : activeTab === 'songs' ? (
+        renderSongsTab()
+      ) : (
+        <>
+          <CollectionsTab
+            entries={libraryEntries}
+            onEntryPress={(e: LibraryCollectionEntry) => {
+              if (e.kind === 'tombstone') {
+                Alert.alert(e.name, 'This collection is no longer available.', [
+                  {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: () => removeTombstone(e.savedId),
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              navigation.navigate('CollectionDetail', { collectionId: e.collection.id });
+            }}
+            onEntryLongPress={(e: LibraryCollectionEntry) => {
+              if (e.kind === 'tombstone') {
+                Alert.alert(e.name, 'No longer available.', [
+                  {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: () => removeTombstone(e.savedId),
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              if (e.kind === 'owned') {
+                Alert.alert(e.collection.name, undefined, [
+                  {
+                    text: 'Duplicate',
+                    onPress: async () => {
+                      try {
+                        const created = await duplicateCollection(e.collection.id);
+                        navigation.navigate('CollectionDetail', { collectionId: created.id });
+                      } catch (err) {
+                        logger.api.error('duplicate failed', err);
+                        Alert.alert('Could not duplicate collection', 'Please try again.');
+                      }
+                    },
+                  },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      Alert.alert('Delete collection?', 'This cannot be undone.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteCollection(e.collection.id) },
+                      ]);
+                    },
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+                return;
+              }
+              // saved
+              Alert.alert(e.collection.name, `Saved from @${e.ownerUsername}`, [
+                {
+                  text: 'Duplicate',
+                  onPress: async () => {
+                    try {
+                      const created = await duplicateCollection(e.collection.id);
+                      navigation.navigate('CollectionDetail', { collectionId: created.id });
+                    } catch (err) {
+                      logger.api.error('duplicate failed', err);
+                      Alert.alert('Could not duplicate collection', 'Please try again.');
+                    }
+                  },
+                },
+                {
+                  text: 'Unsave',
+                  style: 'destructive',
+                  onPress: () => unsaveCollection(e.collection.id),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
+            }}
+            onCreate={(type) => {
+              setCreateCollectionType(type);
+              setCreateCollectionVisible(true);
+            }}
+            emptyMessage="Tap + to create one."
+          />
+          <CreateCollectionModal
+            visible={createCollectionVisible}
+            onClose={() => setCreateCollectionVisible(false)}
+            initialType={createCollectionType}
+          />
+        </>
+      )}
+
+      {pickerSong && (
+        <AddToCollectionPicker
+          visible
+          onClose={() => setPickerSong(null)}
+          type="playlist"
+          itemIdentifier={`${pickerSong.showIdentifier}::${pickerSong.trackId}`}
+          itemMetadata={{
+            trackId: pickerSong.trackId,
+            trackTitle: pickerSong.trackTitle,
+            showIdentifier: pickerSong.showIdentifier,
+            showDate: pickerSong.showDate,
+            venue: pickerSong.venue,
+            streamUrl: pickerSong.streamUrl,
+          }}
+        />
+      )}
 
       {/* Song Sort Dropdown */}
       <SortDropdown
@@ -888,6 +1079,12 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: COLORS.accent,
   },
+  headerButton: {
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerGradient: {
     position: 'absolute',
     bottom: -30,
@@ -955,7 +1152,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   activeTabText: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'FamiljenGrotesk',
     fontWeight: '600',
     color: COLORS.textPrimary,
@@ -964,7 +1161,7 @@ const styles = StyleSheet.create({
     }),
   },
   inactiveTabText: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'FamiljenGrotesk',
     fontWeight: '600',
     color: COLORS.textSecondary,

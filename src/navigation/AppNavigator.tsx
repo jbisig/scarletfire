@@ -12,6 +12,8 @@ import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
@@ -55,6 +57,19 @@ const nativeLinking = Platform.OS !== 'web'
               trackTitle: (slug: string) => decodeURIComponent(slug).replace(/-/g, ' '),
             },
           },
+          PublicProfile: {
+            path: 'profile/:username',
+            parse: {
+              username: (u: string) => decodeURIComponent(u),
+            },
+          },
+          CollectionDetail: {
+            path: 'profile/:username/collection/:slug',
+            parse: {
+              username: (u: string) => decodeURIComponent(u),
+              slug: (s: string) => decodeURIComponent(s),
+            },
+          },
           MainTabs: {
             path: '',
             screens: {
@@ -94,6 +109,13 @@ export type RootStackParamList = {
   };
   Settings: undefined;
   PrivacyPolicy: undefined;
+  PublicProfile: { username: string };
+  CollectionDetail: {
+    collectionId?: string;
+    username?: string;
+    slug?: string;
+    readOnly?: boolean;
+  };
   ResetPassword: undefined;
   MainTabs: undefined;
 };
@@ -119,6 +141,7 @@ const SCREEN_TITLES: Record<string, string> = {
   Favorites: 'Favorites',
   Settings: 'Settings',
   PrivacyPolicy: 'Privacy Policy',
+  PublicProfile: 'Profile',
   ResetPassword: 'Reset Password',
 };
 
@@ -242,6 +265,11 @@ function FavoritesStack() {
           headerShown: Platform.OS !== 'web',
           headerBackTitle: ' ',
         }}
+      />
+      <Stack.Screen
+        name="CollectionDetail"
+        component={CollectionDetailScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
@@ -384,6 +412,8 @@ export function AppNavigator() {
                 headerStyle: { backgroundColor: COLORS.background },
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
+                headerBackTitle: ' ',
+                headerBackTitleVisible: false,
               }}
             />
             <RootStack.Screen
@@ -395,8 +425,20 @@ export function AppNavigator() {
               }}
             />
             <RootStack.Screen
+              name="PublicProfile"
+              component={PublicProfileScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <RootStack.Screen
               name="PrivacyPolicy"
               component={PrivacyPolicyScreen}
+            />
+            <RootStack.Screen
+              name="CollectionDetail"
+              component={CollectionDetailScreen}
+              options={{ headerShown: false }}
             />
             {Platform.OS === 'web' && (
               <RootStack.Screen
