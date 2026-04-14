@@ -56,6 +56,7 @@ export function ConfirmModal({
 const styles = StyleSheet.create({
   card: {
     paddingHorizontal: 20,
+    paddingBottom: 120,
     gap: 12,
   },
   title: { ...TYPOGRAPHY.heading4, fontSize: 18 },
