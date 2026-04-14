@@ -35,6 +35,7 @@ import { logger } from '../utils/logger';
 import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlayer';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { slugifyTrackTitle, type ShareItem } from '../services/shareService';
+import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 
 // Resolve video source to URL string for HTML5 video (web only)
 function resolveVideoUri(source: number | { uri: string } | string): string {
@@ -88,6 +89,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   // Force video remount when source changes by briefly unmounting
   const [videoMounted, setVideoMounted] = useState(true);
+  const [addToPlaylistVisible, setAddToPlaylistVisible] = useState(false);
   const prevVideoIdRef = useRef(videoId);
 
   useEffect(() => {
@@ -589,24 +591,31 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 </View>
               </TouchableOpacity>
 
-              {/* Save Song Button */}
+              {/* Add to Playlist */}
               <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  isFavorite && styles.saveButtonActive
-                ]}
+                style={styles.trackActionBtn}
+                onPress={() => setAddToPlaylistVisible(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Add to playlist"
+              >
+                <Ionicons name="add" size={26} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+
+              {/* Save Song (Heart) */}
+              <TouchableOpacity
+                style={styles.trackActionBtn}
                 onPress={handleToggleFavoriteSong}
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                accessibilityHint={isFavorite ? 'Double tap to remove this song from your favorites' : 'Double tap to save this song to your favorites'}
                 accessibilityState={{ selected: isFavorite }}
               >
-                {isFavorite ? (
-                  <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
-                ) : (
-                  <Ionicons name="add" size={21} color={COLORS.textPrimary} />
-                )}
+                <Ionicons
+                  name={isFavorite ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={isFavorite ? COLORS.accent : COLORS.textPrimary}
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -672,6 +681,23 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           </TouchableOpacity>
         </View>
       </View>
+
+      {state.currentTrack && state.currentShow && (
+        <AddToCollectionPicker
+          visible={addToPlaylistVisible}
+          onClose={() => setAddToPlaylistVisible(false)}
+          type="playlist"
+          itemIdentifier={`${state.currentShow.identifier}::${state.currentTrack.id}`}
+          itemMetadata={{
+            trackId: state.currentTrack.id,
+            trackTitle: state.currentTrack.title,
+            showIdentifier: state.currentShow.identifier,
+            showDate: state.currentShow.date,
+            venue: state.currentShow.venue,
+            streamUrl: state.currentTrack.streamUrl,
+          }}
+        />
+      )}
     </Animated.View>
   );
 });
@@ -787,6 +813,12 @@ const styles = StyleSheet.create({
   saveButtonActive: {
     backgroundColor: COLORS.accent,
     borderColor: COLORS.accent,
+  },
+  trackActionBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   controlsSection: {
     backgroundColor: COLORS.background,
