@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   },
 
   sortBar: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 8,
   },
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
 
   // List bodies
   listBody: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingTop: 8,
   },
   listBodyDesktop: {
