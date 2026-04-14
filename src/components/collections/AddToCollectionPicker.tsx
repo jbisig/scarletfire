@@ -12,6 +12,7 @@ import {
   PanResponder,
   Keyboard,
   KeyboardEvent,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -253,9 +254,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    // Extend 40pt below the visible bottom so the card ALWAYS flushes past
+    // Extend 80pt below the visible bottom so the card ALWAYS flushes past
     // the home indicator / any inset. Internal paddingBottom compensates.
     bottom: -80,
+    // Cap the wrapper height so the card's `maxHeight: 75%` has a concrete
+    // parent height to resolve against (absolute-positioned parents have no
+    // inherited height by default).
+    maxHeight: Dimensions.get('window').height * 0.8,
   },
   card: {
     backgroundColor: COLORS.background,
@@ -285,8 +290,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   list: {
-    flexGrow: 0,
-    flexShrink: 1,
+    flex: 1,
   },
   listContent: {
     paddingBottom: 16,
