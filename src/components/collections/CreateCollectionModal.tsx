@@ -36,8 +36,11 @@ export function CreateCollectionModal({
   const { showToast } = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<CollectionType>(initialType);
   const [submitting, setSubmitting] = useState(false);
+  const type: CollectionType = initialType;
+  const isPlaylist = type === 'playlist';
+  const titleText = isPlaylist ? 'New Playlist' : 'New Show Collection';
+  const namePlaceholder = isPlaylist ? 'e.g. Best Dark Stars' : 'e.g. Best 77 Shows';
 
   // Animate opacity (backdrop fade) + card slide-up on native. Web uses fade
   // only since the card is centered. Keep the Modal mounted for the duration
@@ -66,7 +69,6 @@ export function CreateCollectionModal({
   const reset = () => {
     setName('');
     setDescription('');
-    setType(initialType);
     setSubmitting(false);
   };
 
@@ -163,33 +165,18 @@ export function CreateCollectionModal({
             onPress={() => {}}
           >
           {!isWeb && <View style={styles.grabber} />}
-          <Text style={styles.title}>New Collection</Text>
+          <Text style={styles.title}>{titleText}</Text>
 
           <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Best 77 Shows"
+            placeholder={namePlaceholder}
             placeholderTextColor={COLORS.textSecondary}
             autoFocus
             maxLength={80}
           />
-
-          <Text style={styles.label}>Type</Text>
-          <View style={styles.typeRow}>
-            {(['show_collection', 'playlist'] as const).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.typeChip, type === t && styles.typeChipActive]}
-                onPress={() => setType(t)}
-              >
-                <Text style={type === t ? styles.typeTextActive : styles.typeText}>
-                  {t === 'playlist' ? 'Playlist' : 'Show Collection'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
 
           <Text style={styles.label}>Description (optional)</Text>
           <TextInput
