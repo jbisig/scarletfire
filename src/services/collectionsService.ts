@@ -212,19 +212,21 @@ class CollectionsService {
     collectionId: string,
     orderedItemIds: string[],
   ): Promise<void> {
-    await Promise.all(
-      orderedItemIds.map((id, index) =>
-        this.supabase
-          .from('collection_items')
-          .update({ position: index })
-          .eq('id', id)
-          .eq('collection_id', collectionId),
-      ),
-    );
-  }
-
-  async fetchPublicCollections(userId: string): Promise<Collection[]> {
-    return this.fetchCollections(userId);
+    // Run sequentially so a partial failure stops cleanly instead of racing
+    // other updates to completion. If any update fails we throw — the caller
+    // is expected to refresh items from the server to reconcile state.
+    for (let i = 0; i < orderedItemIds.length; i++) {
+      const id = orderedItemIds[i];
+      const { error } = await this.supabase
+        .from('collection_items')
+        .update({ position: i })
+        .eq('id', id)
+        .eq('collection_id', collectionId);
+      if (error) {
+        logger.api.error('reorderCollectionItems failed at index', i, error);
+        throw error;
+      }
+    }
   }
 
   /**

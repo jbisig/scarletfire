@@ -262,16 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   inputMulti: { minHeight: 60, textAlignVertical: 'top' },
-  typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  typeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: COLORS.searchBackground,
-  },
-  typeChipActive: { backgroundColor: COLORS.accent },
-  typeText: { color: COLORS.textSecondary, fontSize: 13 },
-  typeTextActive: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '600' },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

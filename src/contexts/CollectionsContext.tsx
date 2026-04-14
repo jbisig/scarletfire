@@ -162,7 +162,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       setCollections((prev) =>
         prev.map((c) =>
           c.id === collectionId
-            ? { ...c, itemCount: Math.max(0, (c.itemCount ?? 1) - 1) }
+            ? { ...c, itemCount: Math.max(0, (c.itemCount ?? 0) - 1) }
             : c,
         ),
       );

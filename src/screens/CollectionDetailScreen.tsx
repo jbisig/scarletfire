@@ -46,9 +46,11 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 function bgIndexFromId(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff;
+    // >>> 0 coerces to unsigned 32-bit so the modulo stays positive without
+    // the Math.abs → overflow trap.
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   }
-  return Math.abs(hash) % 6 + 1;
+  return (hash % 6) + 1;
 }
 
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
@@ -159,25 +161,27 @@ export function CollectionDetailScreen() {
   const routeReadOnly = !!route.params?.readOnly;
   const isPublicLink = !!route.params?.username && !!route.params?.slug;
 
-  // Load collection + items
+  // Load the collection + items once per route change. We intentionally do
+  // NOT depend on `collections` here: the context mutates that array on every
+  // optimistic update, and re-running this effect would re-fetch items and
+  // race with local state. A separate effect keeps the live `collection`
+  // object in sync from the context for owner mutations (rename etc.).
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setLoading(true);
       try {
         if (route.params?.collectionId) {
-          const found = collections.find((c) => c.id === route.params!.collectionId);
-          if (found) {
-            setCollection(found);
-            setItems(await fetchItems(found.id));
-          }
+          const items = await fetchItems(route.params.collectionId);
+          if (!cancelled) setItems(items);
         } else if (route.params?.username && route.params?.slug) {
           const owner = await profileService.getProfileIdByUsername(route.params.username);
-          if (owner?.id) {
+          if (owner?.id && !cancelled) {
             const result = await collectionsService.fetchPublicCollectionByLink(
               owner.id,
               route.params.slug,
             );
-            if (result) {
+            if (result && !cancelled) {
               setCollection(result.collection);
               setItems(result.items);
               setOwnerUsername(route.params.username);
@@ -185,10 +189,21 @@ export function CollectionDetailScreen() {
           }
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [collections, fetchItems, route.params]);
+    return () => {
+      cancelled = true;
+    };
+  }, [route.params?.collectionId, route.params?.username, route.params?.slug, fetchItems]);
+
+  // Keep `collection` in sync with the context for owner-edited collections
+  // (rename, description change) without triggering the expensive items load.
+  useEffect(() => {
+    if (!route.params?.collectionId) return;
+    const found = collections.find((c) => c.id === route.params!.collectionId);
+    if (found) setCollection(found);
+  }, [collections, route.params?.collectionId]);
 
   // Reset owner username when the route changes.
   useEffect(() => {
@@ -211,9 +226,9 @@ export function CollectionDetailScreen() {
 
   const playlistQueue = useMemo(
     () =>
-      items
-        .filter(() => collection?.type === 'playlist')
-        .map((i) => i.itemMetadata as PlaylistItemMetadata),
+      collection?.type === 'playlist'
+        ? items.map((i) => i.itemMetadata as PlaylistItemMetadata)
+        : [],
     [items, collection],
   );
 
@@ -260,15 +275,28 @@ export function CollectionDetailScreen() {
       const idx = items.findIndex((i) => i.id === item.id);
       const targetIdx = idx + direction;
       if (idx < 0 || targetIdx < 0 || targetIdx >= items.length) return;
+      const prev = items;
       const next = [...items];
       [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
       setItems(next);
-      await reorderItems(
-        collection.id,
-        next.map((i) => i.id),
-      );
+      try {
+        await reorderItems(
+          collection.id,
+          next.map((i) => i.id),
+        );
+      } catch (e) {
+        logger.player.error('Reorder failed, refetching items', e);
+        // Partial DB update may have left inconsistent positions — refetch
+        // from server to reconcile, or fall back to the pre-move order.
+        try {
+          const fresh = await fetchItems(collection.id);
+          setItems(fresh);
+        } catch {
+          setItems(prev);
+        }
+      }
     },
-    [collection, items, reorderItems],
+    [collection, items, reorderItems, fetchItems],
   );
 
   const handleShowPress = useCallback(

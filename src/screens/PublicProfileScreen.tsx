@@ -178,7 +178,7 @@ export function PublicProfileScreen() {
       return;
     }
     collectionsService
-      .fetchPublicCollections(data.profile.id)
+      .fetchCollections(data.profile.id)
       .then(setPublicCollections)
       .catch(() => setPublicCollections([]));
   }, [data]);
