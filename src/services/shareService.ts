@@ -29,6 +29,15 @@ export type ShareItem =
       displayName: string;
       showCount: number;
       songCount: number;
+    }
+  | {
+      kind: 'collection';
+      collectionId: string;
+      ownerUsername: string;
+      slug: string;
+      name: string;
+      type: 'show_collection' | 'playlist';
+      itemCount: number;
     };
 
 function clampBg(bg: number): number {
@@ -53,6 +62,9 @@ export function buildShareUrl(item: ShareItem, bg: number): string {
   if (item.kind === 'profile') {
     return `${WEB_ORIGIN}/profile/${item.username}?bg=${bgSafe}`;
   }
+  if (item.kind === 'collection') {
+    return `${WEB_ORIGIN}/profile/${item.ownerUsername}/collection/${item.slug}?bg=${bgSafe}`;
+  }
   const base = `${WEB_ORIGIN}/show/${item.date}`;
   if (item.kind === 'show') {
     return `${base}?bg=${bgSafe}`;
@@ -68,6 +80,10 @@ export function buildShareUrl(item: ShareItem, bg: number): string {
 export function buildShareText(item: ShareItem): string {
   if (item.kind === 'profile') {
     return `${item.displayName}'s Favorites · ${item.showCount} shows · ${item.songCount} songs`;
+  }
+  if (item.kind === 'collection') {
+    const noun = item.type === 'playlist' ? 'tracks' : 'shows';
+    return `${item.name} — ${item.itemCount} ${noun} by @${item.ownerUsername}`;
   }
   const formattedDate = formatDateMMDDYYYY(item.date);
   if (item.kind === 'show') {
