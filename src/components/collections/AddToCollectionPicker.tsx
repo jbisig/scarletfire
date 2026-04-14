@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   rowText: { color: COLORS.textPrimary, fontSize: 15 },
-  rowTextSelected: { color: COLORS.accent, fontWeight: '600' },
+  rowTextSelected: { color: COLORS.accent },
   empty: { color: COLORS.textSecondary, paddingHorizontal: 16, paddingVertical: 12 },
   newBtn: {
     flexDirection: 'row',
