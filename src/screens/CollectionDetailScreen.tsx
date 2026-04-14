@@ -286,10 +286,8 @@ export function CollectionDetailScreen() {
   );
 
   const handleTrackPress = useCallback(
-    async (index: number) => {
-      if (!collection || collection.type !== 'playlist') return;
-      const md = playlistQueue[index];
-      if (!md) return;
+    async (md: PlaylistItemMetadata) => {
+      logger.player.info('Playlist: playing track', md.trackTitle, md.showIdentifier);
       const key = `${md.showIdentifier}::${md.trackId}`;
       setLoadingTrackId(key);
       try {
@@ -306,7 +304,7 @@ export function CollectionDetailScreen() {
         setLoadingTrackId(null);
       }
     },
-    [collection, playlistQueue, loadTrack],
+    [loadTrack],
   );
 
   const handleShuffle = useCallback(() => {
@@ -507,7 +505,7 @@ export function CollectionDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <SongCard
                     song={song}
-                    onPress={() => handleTrackPress(index)}
+                    onPress={() => handleTrackPress(md)}
                     onLongPress={
                       isOwner
                         ? () =>
