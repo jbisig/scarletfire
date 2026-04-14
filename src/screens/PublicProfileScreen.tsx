@@ -384,7 +384,7 @@ export function PublicProfileScreen() {
     <>
       {/* Two-column: Recently Played + Most Listened */}
       {(recentShows.length > 0 || topShows.length > 0) && (
-        <View style={styles.twoColumnRow}>
+        <View style={[styles.twoColumnRow, !isDesktop && styles.twoColumnStacked]}>
           {/* Recently Played Shows */}
           <View style={styles.column}>
             <Text style={styles.columnSectionTitle}>Recently Played</Text>
@@ -487,7 +487,7 @@ export function PublicProfileScreen() {
     <>
       {/* Two-column: Recently Played + Top 10 */}
       {(recentSongs.length > 0 || topSongs.length > 0) && (
-        <View style={styles.twoColumnRow}>
+        <View style={[styles.twoColumnRow, !isDesktop && styles.twoColumnStacked]}>
           {/* Recently Played Songs */}
           <View style={styles.column}>
             <Text style={styles.columnSectionTitle}>Recently Played</Text>
@@ -732,6 +732,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.xxxl,
     marginBottom: SPACING.xxl,
+  },
+  twoColumnStacked: {
+    flexDirection: 'column',
+    gap: SPACING.xxl,
   },
   column: {
     flex: 1,
