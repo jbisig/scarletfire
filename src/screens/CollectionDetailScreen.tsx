@@ -36,6 +36,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
@@ -649,9 +650,14 @@ export function CollectionDetailScreen() {
         onCancel={() => setDeleteConfirmVisible(false)}
       />
 
-      {renameOpen && collection && (
-        <View style={styles.renameOverlay}>
-          <View style={styles.renameCard}>
+      <BottomSheet
+        visible={renameOpen && !!collection}
+        onClose={() => setRenameOpen(false)}
+        cardStyle={styles.renameCard}
+        swipeToDismiss={false}
+      >
+        {collection && (
+          <>
             <Text style={styles.renameTitle}>Rename Collection</Text>
             <TextInput
               style={styles.renameInput}
@@ -660,11 +666,15 @@ export function CollectionDetailScreen() {
               autoFocus
               maxLength={80}
             />
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
-              <TouchableOpacity onPress={() => setRenameOpen(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+            <View style={styles.renameActions}>
+              <TouchableOpacity
+                onPress={() => setRenameOpen(false)}
+                style={styles.renameCancelBtn}
+              >
+                <Text style={styles.renameCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                style={styles.renameSaveBtn}
                 onPress={async () => {
                   if (!renameText.trim()) return;
                   await renameCollection(collection.id, renameText.trim());
@@ -672,12 +682,12 @@ export function CollectionDetailScreen() {
                   setCollection({ ...collection, name: renameText.trim() });
                 }}
               >
-                <Text style={styles.saveText}>Save</Text>
+                <Text style={styles.renameSaveText}>Save</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      )}
+          </>
+        )}
+      </BottomSheet>
     </ScrollView>
   );
 }
@@ -903,24 +913,12 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 
-  // Rename overlay
-  renameOverlay: {
-    position: 'absolute',
-    top: 0, bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.backdropDark,
-    justifyContent: 'center',
-    padding: 20,
-  },
+  // Rename modal (inside <BottomSheet>)
   renameCard: {
-    backgroundColor: COLORS.cardBackground,
-    padding: 20,
-    borderRadius: 12,
+    paddingHorizontal: 20,
     gap: 12,
-    maxWidth: 480,
-    width: '100%',
-    alignSelf: 'center',
   },
-  renameTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
+  renameTitle: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '700' },
   renameInput: {
     backgroundColor: COLORS.searchBackground,
     color: COLORS.textPrimary,
@@ -929,6 +927,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
   },
-  cancelText: { color: COLORS.textSecondary, fontSize: 15, padding: 10 },
-  saveText: { color: COLORS.accent, fontSize: 15, fontWeight: '600', padding: 10 },
+  renameActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  renameCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.surfaceLight,
+  },
+  renameCancelText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
+  renameSaveBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.accent,
+  },
+  renameSaveText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
 });
