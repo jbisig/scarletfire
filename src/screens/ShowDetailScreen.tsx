@@ -25,6 +25,7 @@ import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
 import { getVenueFromShow } from '../utils/formatters';
@@ -374,17 +375,29 @@ export function ShowDetailScreen() {
   // initial title-setting call in loadShowDetail so the callback stays fresh
   // when `show` or `classicTier` change (e.g. when the user navigates between
   // versions or previews).
+  const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={handleShareShow}
-          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Share show"
-        >
-          <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity
+            onPress={() => setAddToCollectionVisible(true)}
+            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Add to collection"
+          >
+            <Ionicons name="folder-open-outline" size={22} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShareShow}
+            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Share show"
+          >
+            <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        </View>
       ),
     });
   }, [navigation, handleShareShow]);
@@ -752,6 +765,21 @@ export function ShowDetailScreen() {
         show={show || undefined}
         onClose={() => setReleaseModalVisible(false)}
       />
+      {show && (
+        <AddToCollectionPicker
+          visible={addToCollectionVisible}
+          onClose={() => setAddToCollectionVisible(false)}
+          type="show_collection"
+          itemIdentifier={show.identifier}
+          itemMetadata={{
+            title: show.title,
+            date: show.date,
+            venue: show.venue,
+            location: show.location,
+            primaryIdentifier: show.identifier,
+          }}
+        />
+      )}
     </ScrollView>
   );
 }
