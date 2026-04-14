@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollections } from '../../contexts/CollectionsContext';
@@ -66,10 +67,25 @@ export function AddToCollectionPicker({
   const title = type === 'playlist' ? 'Add to Playlist' : 'Add to Collection';
   const newLabel = type === 'playlist' ? 'New Playlist' : 'New Collection';
 
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
+    <Modal
+      visible={visible}
+      animationType={isWeb ? 'fade' : 'slide'}
+      transparent
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        style={[styles.backdrop, isWeb && styles.backdropWeb]}
+        onPress={isWeb ? onClose : undefined}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => {}}
+          style={[styles.card, isWeb && styles.cardWeb]}
+        >
           <View style={styles.headerRow}>
             <Text style={styles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
@@ -99,8 +115,8 @@ export function AddToCollectionPicker({
             <Ionicons name="add" size={20} color={COLORS.accent} />
             <Text style={styles.newText}>{newLabel}</Text>
           </TouchableOpacity>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
 
       <CreateCollectionModal
         visible={createVisible}
@@ -121,6 +137,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backdrop,
     justifyContent: 'flex-end',
   },
+  backdropWeb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   card: {
     backgroundColor: COLORS.cardBackground,
     paddingTop: 16,
@@ -128,6 +148,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '75%',
+  },
+  cardWeb: {
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '70%',
+    borderRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   headerRow: {
     flexDirection: 'row',
