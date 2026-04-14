@@ -248,6 +248,8 @@ const styles = StyleSheet.create({
   cardWrapperWeb: {
     width: '100%',
     maxWidth: 480,
+    // Tall wrapper so inner card's flex:1 can expand; cap at 85% of viewport.
+    height: '85%',
     paddingHorizontal: 16,
   },
   cardWrapperNative: {
@@ -275,9 +277,8 @@ const styles = StyleSheet.create({
   cardWeb: {
     width: '100%',
     maxWidth: 480,
-    // Take more of the viewport on web (the 70% that was here made the list
-    // feel cramped).
-    maxHeight: '85%',
+    // Fill the wrapper's height (set on cardWrapperWeb).
+    flex: 1,
     paddingBottom: 16,
     borderRadius: 16,
     borderTopLeftRadius: 16,
