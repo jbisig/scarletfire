@@ -296,10 +296,15 @@ export function CollectionDetailScreen() {
       const key = `${md.showIdentifier}::${md.trackId}`;
       setLoadingTrackId(key);
       try {
+        logger.player.info('Playlist: calling getShowDetail', md.showIdentifier);
         const showDetail = await archiveApi.getShowDetail(md.showIdentifier);
+        logger.player.info('Playlist: got show', showDetail?.identifier, 'tracks:', showDetail?.tracks?.length);
         const track = showDetail.tracks.find((t) => t.id === md.trackId);
+        logger.player.info('Playlist: found track?', !!track, 'looking for', md.trackId);
         if (track) {
+          logger.player.info('Playlist: calling loadTrack');
           await loadTrack(track, showDetail, showDetail.tracks);
+          logger.player.info('Playlist: loadTrack resolved');
         } else {
           Alert.alert('Track not found', `Couldn't find "${md.trackTitle}" on the show.`);
           logger.player.error('Playlist track not found on show:', md.trackId);
