@@ -654,25 +654,32 @@ export function ShowDetailScreen() {
               </Text>
             </View>
 
-            {/* Save button */}
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                isSaved && styles.saveButtonActive
-              ]}
-              onPress={handleToggleFavorite}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-              accessibilityHint={isSaved ? 'Double tap to remove this show from your favorites' : 'Double tap to save this show to your favorites'}
-              accessibilityState={{ selected: isSaved }}
-            >
-              {isSaved ? (
-                <Ionicons name="checkmark-sharp" size={18} color={COLORS.textPrimary} />
-              ) : (
-                <Ionicons name="add" size={21} color={COLORS.textPrimary} />
-              )}
-            </TouchableOpacity>
+            {/* Action icons: Add to Collection (+) / Save (heart) */}
+            <View style={styles.showActionsGroup}>
+              <TouchableOpacity
+                style={styles.showActionBtn}
+                onPress={() => setAddToCollectionVisible(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Add to collection"
+              >
+                <Ionicons name="add" size={28} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.showActionBtn}
+                onPress={handleToggleFavorite}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                accessibilityState={{ selected: isSaved }}
+              >
+                <Ionicons
+                  name={isSaved ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={isSaved ? COLORS.accent : COLORS.textPrimary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Badges row - Official Release and Play Count */}
@@ -911,6 +918,17 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     fontSize: 14,
     color: COLORS.textPrimary,
+  },
+  showActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  showActionBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButton: {
     width: 33,
