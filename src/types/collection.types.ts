@@ -42,3 +42,38 @@ export interface CollectionItem {
   position: number;
   addedAt: string;
 }
+
+export interface SavedCollection {
+  id: string;
+  userId: string;
+  /** null when the source collection has been deleted (tombstone). */
+  collectionId: string | null;
+  lastKnownName: string;
+  lastKnownType: CollectionType;
+  lastKnownOwnerUsername: string;
+  savedAt: string;
+}
+
+/**
+ * Unified entry used by the Collections tab to render the user's library,
+ * which is a merge of owned collections, saved (live) collections, and
+ * tombstones for saved collections whose source has been deleted.
+ */
+export type LibraryCollectionEntry =
+  | { kind: 'owned'; collection: Collection; sortKey: string }
+  | {
+      kind: 'saved';
+      collection: Collection;
+      ownerUsername: string;
+      savedAt: string;
+      sortKey: string;
+    }
+  | {
+      kind: 'tombstone';
+      savedId: string;
+      name: string;
+      type: CollectionType;
+      ownerUsername: string;
+      savedAt: string;
+      sortKey: string;
+    };
