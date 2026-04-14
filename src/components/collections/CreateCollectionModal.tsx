@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.background,
     padding: 20,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
