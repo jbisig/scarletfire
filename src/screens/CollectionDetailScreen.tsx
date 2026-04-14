@@ -120,7 +120,7 @@ export function CollectionDetailScreen() {
     deleteCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
-  const { startSequentialSongs, startShuffleSongs, loadTrack } = usePlayer();
+  const { startSequentialSongs, startShuffleSongs } = usePlayer();
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
 
   const [collection, setCollection] = useState<Collection | null>(null);
@@ -287,23 +287,24 @@ export function CollectionDetailScreen() {
 
   const handleTrackPress = useCallback(
     async (md: PlaylistItemMetadata) => {
+      // Sequential playback through the playlist: the queue is the whole list,
+      // starting from the tapped index. "Next" advances to the next playlist
+      // item (not the next track in its show).
+      const index = playlistQueue.findIndex(
+        (q) => q.trackId === md.trackId && q.showIdentifier === md.showIdentifier,
+      );
+      if (index < 0) return;
       const key = `${md.showIdentifier}::${md.trackId}`;
       setLoadingTrackId(key);
       try {
-        const showDetail = await archiveApi.getShowDetail(md.showIdentifier);
-        const track = showDetail.tracks.find((t) => t.id === md.trackId);
-        if (track) {
-          await loadTrack(track, showDetail, showDetail.tracks);
-        } else {
-          logger.player.error('Playlist track not found on show:', md.trackId);
-        }
+        await startSequentialSongs(playlistQueue, index);
       } catch (e) {
         logger.player.error('Failed to play playlist track:', e);
       } finally {
         setLoadingTrackId(null);
       }
     },
-    [loadTrack],
+    [playlistQueue, startSequentialSongs],
   );
 
   const handleShuffle = useCallback(() => {
