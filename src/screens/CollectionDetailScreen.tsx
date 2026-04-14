@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,8 +30,19 @@ import {
 } from '../types/collection.types';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
+import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS } from '../constants/theme';
+
+// Derive a stable background index (1-6) from the collection id so that
+// returning to a collection shows the same header image.
+function bgIndexFromId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff;
+  }
+  return Math.abs(hash) % 6 + 1;
+}
 
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
@@ -281,8 +293,11 @@ export function CollectionDetailScreen() {
   const typeLabel = collection.type === 'playlist' ? 'Playlist' : 'Show Collection';
   const itemCountLabel = `${items.length} item${items.length === 1 ? '' : 's'}`;
 
+  const bgSource = getShareBackground(bgIndexFromId(collection.id));
+
   const webHeader = Platform.OS === 'web' ? (
     <View style={styles.webHeaderWrapper}>
+      <ImageBackground source={bgSource} style={styles.webHeaderBg} imageStyle={styles.webHeaderBgImage} />
       <View style={styles.webHeaderBlur} />
       <View style={[styles.webHeaderContent, isDesktop && styles.webHeaderContentDesktop]}>
         <View style={styles.webNavRow}>
@@ -409,7 +424,10 @@ export function CollectionDetailScreen() {
   ) : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+    <ScrollView
+      style={[styles.container, isDesktop && styles.containerDesktop]}
+      contentContainerStyle={{ paddingBottom: 120 }}
+    >
       {webHeader}
       {nativeBodyHeader}
 
@@ -530,6 +548,7 @@ export function CollectionDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  containerDesktop: { backgroundColor: COLORS.backgroundSecondary },
   headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
   description: {
     color: COLORS.textSecondary,
@@ -548,10 +567,20 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
+  webHeaderBg: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    opacity: 0.68,
+  },
+  webHeaderBgImage: {},
   webHeaderBlur: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    // @ts-ignore - web only
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    zIndex: 1,
   },
   webHeaderContent: {
     position: 'relative',
