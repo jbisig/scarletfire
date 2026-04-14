@@ -195,9 +195,9 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
                     size={15}
                     color={COLORS.textPrimary}
                   />
-                  <Text style={styles.savePillText}>
-                    {collectionCount > 0 ? `Added (${collectionCount})` : 'Add'}
-                  </Text>
+                  {collectionCount > 0 && (
+                    <Text style={styles.savePillText}>{collectionCount}</Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.savePill}
