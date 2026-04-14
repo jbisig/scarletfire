@@ -13,6 +13,7 @@ import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
@@ -102,6 +103,12 @@ export type RootStackParamList = {
   Settings: undefined;
   PrivacyPolicy: undefined;
   PublicProfile: { username: string };
+  CollectionDetail: {
+    collectionId?: string;
+    username?: string;
+    slug?: string;
+    readOnly?: boolean;
+  };
   ResetPassword: undefined;
   MainTabs: undefined;
 };
@@ -413,6 +420,16 @@ export function AppNavigator() {
             <RootStack.Screen
               name="PrivacyPolicy"
               component={PrivacyPolicyScreen}
+            />
+            <RootStack.Screen
+              name="CollectionDetail"
+              component={CollectionDetailScreen}
+              options={{
+                title: 'Collection',
+                headerShown: Platform.OS !== 'web',
+                headerStyle: { backgroundColor: COLORS.background },
+                headerTintColor: COLORS.textPrimary,
+              }}
             />
             {Platform.OS === 'web' && (
               <RootStack.Screen
