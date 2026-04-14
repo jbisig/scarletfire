@@ -66,7 +66,7 @@ export function CollectionsTab({
 }
 
 const styles = StyleSheet.create({
-  container: { paddingBottom: 120 },
+  container: { paddingBottom: 200 },
   section: { marginTop: 16 },
   header: {
     flexDirection: 'row',
