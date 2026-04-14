@@ -275,7 +275,10 @@ const styles = StyleSheet.create({
   cardWeb: {
     width: '100%',
     maxWidth: 480,
-    maxHeight: '70%',
+    // Take more of the viewport on web (the 70% that was here made the list
+    // feel cramped).
+    maxHeight: '85%',
+    paddingBottom: 16,
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
