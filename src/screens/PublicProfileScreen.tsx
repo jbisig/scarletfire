@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   activeTabText: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'FamiljenGrotesk',
     fontWeight: '600',
     color: COLORS.textPrimary,
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
     }),
   },
   inactiveTabText: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'FamiljenGrotesk',
     fontWeight: '600',
     color: COLORS.textSecondary,

@@ -14,7 +14,6 @@ class AudioPlayerModule: RCTEventEmitter {
   private var originalTracks: [[String: Any]] = []
   private var currentTrackIndex: Int = 0
   private var queueStartIndex: Int = 0  // Tracks offset between currentItems and originalTracks
-  private var isRebuildingQueue: Bool = false  // Prevents race conditions during queue rebuild
   private var cachedArtwork: MPMediaItemArtwork?
   private var cachedArtworkUrl: String?
 
@@ -23,20 +22,6 @@ class AudioPlayerModule: RCTEventEmitter {
     setupAudioSession()
     setupPlayer()
     setupTrackEndObserver()
-    warmDownloadEndpoint()
-  }
-
-  // Warms the native TCP/TLS connection pool for archive.org's download hosts
-  // so the first real audio stream doesn't pay the full handshake cost. The
-  // fetch() warmup in App.tsx uses a different URLSession than AVPlayer, so
-  // this native-side warmup is needed separately. Following the redirect warms
-  // the ia***.us.archive.org host that actually serves the file.
-  private func warmDownloadEndpoint() {
-    guard let url = URL(string: "https://archive.org/download/gd1977-05-08.shure57.hicks.4982.sbeok.shnf/gd1977-05-08.shure57.hicks.4982.sbeok.shnf_files.xml") else { return }
-    var request = URLRequest(url: url)
-    request.httpMethod = "HEAD"
-    request.timeoutInterval = 10
-    URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
   }
 
   // MARK: - Track End Observer (for automatic advancement)
@@ -337,16 +322,7 @@ class AudioPlayerModule: RCTEventEmitter {
   }
 
   private func rebuildQueueFromCurrentIndex() {
-    // Prevent concurrent rebuilds which could cause race conditions
-    guard !isRebuildingQueue else { return }
-    isRebuildingQueue = true
-
-    // Capture playback state atomically before any modifications
     let wasPlaying = player?.rate != 0
-    let seekPosition = player?.currentTime()
-
-    // Pause during rebuild to prevent state changes
-    player?.pause()
 
     // Clear existing queue
     player?.removeAllItems()
@@ -387,13 +363,10 @@ class AudioPlayerModule: RCTEventEmitter {
       currentItems.append(item)
     }
 
-    updateNowPlayingInfo()
-
-    // Restore playback state atomically after rebuild is complete
-    isRebuildingQueue = false
     if wasPlaying {
       player?.play()
     }
+    updateNowPlayingInfo()
   }
 
   @objc func setQueue(_ tracks: [[String: Any]], startIndex: Int, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
@@ -458,20 +431,8 @@ class AudioPlayerModule: RCTEventEmitter {
     // Add to originalTracks so track end observer knows about it
     originalTracks.append(trackData)
 
-    // If player has no current item (queue ended), we need to make this track current
-    let needsToBecomeCurrent = player?.currentItem == nil
-
-    if needsToBecomeCurrent {
-      // Recreate player with this item as current
-      player = AVQueuePlayer(playerItem: item)
-      setupTimeObserver()
-      currentItems = [item]
-      currentTrackIndex = originalTracks.count - 1
-      queueStartIndex = currentTrackIndex
-    } else {
-      player?.insert(item, after: nil)
-      currentItems.append(item)
-    }
+    player?.insert(item, after: nil)
+    currentItems.append(item)
 
     resolve(nil)
   }
