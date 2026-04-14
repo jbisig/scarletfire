@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { PlayerProvider } from './src/contexts/PlayerContext';
 import { ShowsProvider } from './src/contexts/ShowsContext';
 import { FavoritesProvider } from './src/contexts/FavoritesContext';
+import { CollectionsProvider } from './src/contexts/CollectionsContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
@@ -104,7 +105,8 @@ export default function App() {
                 <ShowsProvider>
                   <ShowOfTheDayProvider>
                     <FavoritesProvider>
-                      <PlayCountsProvider>
+                      <CollectionsProvider>
+                        <PlayCountsProvider>
                         <PlayerProvider>
                           <VideoBackgroundProvider>
                             <ShareSheetProvider>
@@ -115,7 +117,8 @@ export default function App() {
                             </ShareSheetProvider>
                           </VideoBackgroundProvider>
                         </PlayerProvider>
-                      </PlayCountsProvider>
+                        </PlayCountsProvider>
+                      </CollectionsProvider>
                     </FavoritesProvider>
                   </ShowOfTheDayProvider>
                 </ShowsProvider>
