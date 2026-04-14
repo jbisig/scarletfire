@@ -4,11 +4,11 @@
 create table if not exists public.collections (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
+  name text not null check (char_length(name) between 1 and 80),
   type text not null check (type in ('show_collection', 'playlist')),
-  description text,
-  cover_image_url text,
-  slug text not null,
+  description text check (description is null or char_length(description) <= 500),
+  cover_image_url text check (cover_image_url is null or char_length(cover_image_url) <= 1024),
+  slug text not null check (char_length(slug) between 1 and 100),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, slug)
@@ -20,9 +20,13 @@ create index if not exists collections_user_updated_idx
 create table if not exists public.collection_items (
   id uuid primary key default gen_random_uuid(),
   collection_id uuid not null references public.collections(id) on delete cascade,
-  item_identifier text not null,
-  item_metadata jsonb not null,
-  position integer not null default 0,
+  item_identifier text not null check (char_length(item_identifier) between 1 and 256),
+  item_metadata jsonb not null
+    check (
+      jsonb_typeof(item_metadata) = 'object'
+      and octet_length(item_metadata::text) <= 4096
+    ),
+  position integer not null default 0 check (position >= 0),
   added_at timestamptz not null default now(),
   unique (collection_id, item_identifier)
 );
