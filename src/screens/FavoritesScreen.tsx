@@ -44,6 +44,10 @@ import { ProfileImage } from '../components/ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useCollections } from '../contexts/CollectionsContext';
+import { CollectionsTab } from '../components/collections/CollectionsTab';
+import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
+import { CollectionType, Collection } from '../types/collection.types';
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
@@ -120,7 +124,7 @@ SongItem.displayName = 'SongItem';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
-type TabType = 'shows' | 'songs';
+type TabType = 'shows' | 'songs' | 'collections';
 type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
 
@@ -148,6 +152,9 @@ export function FavoritesScreen() {
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
+  const { collections, deleteCollection } = useCollections();
+  const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
+  const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
@@ -812,19 +819,19 @@ export function FavoritesScreen() {
 
         {/* Tab Navigation */}
         <View style={styles.tabContainer} accessibilityRole="tablist">
-          {(['shows', 'songs'] as const).map((tab) => (
+          {(['shows', 'songs', 'collections'] as const).map((tab) => (
             <TouchableOpacity
               key={`${tab}-${activeTab}`}
               style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
               onPress={() => setActiveTab(tab)}
               activeOpacity={0.7}
               accessibilityRole="tab"
-              accessibilityLabel={`${tab === 'shows' ? 'Shows' : 'Songs'} tab`}
+              accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
               accessibilityState={{ selected: activeTab === tab }}
-              accessibilityHint={`Double tap to view favorite ${tab}`}
+              accessibilityHint={`Double tap to view ${tab}`}
             >
               <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                {tab === 'shows' ? 'Shows' : 'Songs'}
+                {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -852,7 +859,43 @@ export function FavoritesScreen() {
       />
 
       {/* Tab Content */}
-      {activeTab === 'shows' ? renderShowsTab() : renderSongsTab()}
+      {activeTab === 'shows' ? (
+        renderShowsTab()
+      ) : activeTab === 'songs' ? (
+        renderSongsTab()
+      ) : (
+        <>
+          <CollectionsTab
+            collections={collections}
+            onCardPress={(c: Collection) => navigation.navigate('CollectionDetail', { collectionId: c.id })}
+            onCardLongPress={(c: Collection) => {
+              Alert.alert(c.name, undefined, [
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => {
+                    Alert.alert('Delete collection?', 'This cannot be undone.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteCollection(c.id) },
+                    ]);
+                  },
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
+            }}
+            onCreate={(type) => {
+              setCreateCollectionType(type);
+              setCreateCollectionVisible(true);
+            }}
+            emptyMessage="Tap + to create one."
+          />
+          <CreateCollectionModal
+            visible={createCollectionVisible}
+            onClose={() => setCreateCollectionVisible(false)}
+            initialType={createCollectionType}
+          />
+        </>
+      )}
 
       {/* Song Sort Dropdown */}
       <SortDropdown
