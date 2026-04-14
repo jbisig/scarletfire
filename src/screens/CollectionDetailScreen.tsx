@@ -469,6 +469,10 @@ export function CollectionDetailScreen() {
     <ScrollView
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={{ paddingBottom: 120 }}
+      keyboardShouldPersistTaps="handled"
+      // iOS: ensure tap events are delivered to children quickly without being
+      // swallowed by the scroll view's touch arbitration.
+      canCancelContentTouches={false}
     >
       {header}
       {sortBar}
