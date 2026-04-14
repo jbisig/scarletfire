@@ -24,6 +24,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useWebAuthModal } from '../components/web/WebAuthModal';
 import { collectionsService } from '../services/collectionsService';
 import { profileService } from '../services/profileService';
 import {
@@ -121,8 +122,13 @@ export function CollectionDetailScreen() {
     reorderItems,
     renameCollection,
     deleteCollection,
+    saveCollection,
+    unsaveCollection,
+    isCollectionSaved,
+    duplicateCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
+  const { openAuthModal } = useWebAuthModal();
   const { startSequentialSongs, startShuffleSongs } = usePlayer();
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
 
@@ -143,6 +149,7 @@ export function CollectionDetailScreen() {
 
   const [removeTarget, setRemoveTarget] = useState<CollectionItem | null>(null);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [signInPromptVisible, setSignInPromptVisible] = useState(false);
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -225,6 +232,11 @@ export function CollectionDetailScreen() {
   const isOwner =
     !routeReadOnly && !isPublicLink && !!user && !!collection && user.id === collection.userId;
 
+  const isSignedIn = !!user;
+  // A non-owner viewer (saved-collection view, public-link view, or logged-out viewer)
+  const isNonOwnerViewer = !isOwner;
+  const saved = !!collection && isSignedIn && isCollectionSaved(collection.id);
+
   const playlistQueue = useMemo(
     () =>
       collection?.type === 'playlist'
@@ -245,6 +257,49 @@ export function CollectionDetailScreen() {
       itemCount: items.length,
     });
   }, [collection, items.length, openShareTray, ownerUsername]);
+
+  const handleToggleSave = useCallback(async () => {
+    if (!collection) return;
+    if (!isSignedIn) {
+      if (Platform.OS === 'web') {
+        openAuthModal('login');
+      } else {
+        setSignInPromptVisible(true);
+      }
+      return;
+    }
+    try {
+      if (saved) {
+        await unsaveCollection(collection.id);
+      } else {
+        await saveCollection(collection.id);
+      }
+    } catch (e) {
+      logger.api.error('toggle save failed', e);
+      Alert.alert('Could not update saved collections', 'Please try again.');
+    }
+  }, [collection, isSignedIn, saved, saveCollection, unsaveCollection, openAuthModal]);
+
+  const handleDuplicate = useCallback(async () => {
+    if (!collection) return;
+    if (!isSignedIn) {
+      if (Platform.OS === 'web') {
+        openAuthModal('login');
+      } else {
+        setSignInPromptVisible(true);
+      }
+      return;
+    }
+    try {
+      const created = await duplicateCollection(collection.id);
+      navigation.dispatch(
+        StackActions.replace('CollectionDetail', { collectionId: created.id }),
+      );
+    } catch (e) {
+      logger.api.error('duplicate failed', e);
+      Alert.alert('Could not duplicate collection', 'Please try again.');
+    }
+  }, [collection, isSignedIn, duplicateCollection, navigation, openAuthModal]);
 
   const handleDelete = useCallback(() => {
     if (!collection) return;
@@ -441,13 +496,28 @@ export function CollectionDetailScreen() {
                 <Text style={styles.pillText}>Shuffle</Text>
               </TouchableOpacity>
             )}
+            {isNonOwnerViewer && collection && (
+              <TouchableOpacity
+                style={styles.pill}
+                onPress={handleToggleSave}
+                activeOpacity={0.7}
+                accessibilityLabel={saved ? 'Unsave collection' : 'Save collection'}
+              >
+                <Ionicons
+                  name={saved ? 'bookmark' : 'bookmark-outline'}
+                  size={17}
+                  color={COLORS.textPrimary}
+                />
+                <Text style={styles.pillText}>{saved ? 'Saved' : 'Save'}</Text>
+              </TouchableOpacity>
+            )}
             {collection && ownerUsername && (
               <TouchableOpacity style={styles.pill} onPress={handleShare} activeOpacity={0.7}>
                 <Ionicons name="share-outline" size={17} color={COLORS.textPrimary} />
                 <Text style={styles.pillText}>Share</Text>
               </TouchableOpacity>
             )}
-            {isOwner && (
+            {collection && (
               <View ref={menuButtonRef} collapsable={false}>
                 <TouchableOpacity
                   style={styles.menuCircleBtn}
@@ -597,27 +667,58 @@ export function CollectionDetailScreen() {
             style={[styles.menu, { top: menuPosition.top, left: menuPosition.left }]}
             onStartShouldSetResponder={() => true}
           >
+            {isOwner && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    setRenameText(collection.name);
+                    setRenameOpen(true);
+                  }}
+                >
+                  <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
+                  <Text style={styles.menuItemText}>Rename</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
                 setMenuVisible(false);
-                setRenameText(collection.name);
-                setRenameOpen(true);
+                handleDuplicate();
               }}
             >
-              <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
-              <Text style={styles.menuItemText}>Rename</Text>
+              <Ionicons name="copy-outline" size={16} color={COLORS.textPrimary} />
+              <Text style={styles.menuItemText}>Duplicate</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                handleDelete();
-              }}
-            >
-              <Ionicons name="trash-outline" size={16} color={COLORS.error} />
-              <Text style={[styles.menuItemText, { color: COLORS.error }]}>Delete</Text>
-            </TouchableOpacity>
+
+            {isOwner && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleDelete();
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+                <Text style={[styles.menuItemText, { color: COLORS.error }]}>Delete</Text>
+              </TouchableOpacity>
+            )}
+
+            {isNonOwnerViewer && isSignedIn && saved && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleToggleSave();
+                }}
+              >
+                <Ionicons name="bookmark-outline" size={16} color={COLORS.error} />
+                <Text style={[styles.menuItemText, { color: COLORS.error }]}>Unsave</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -648,6 +749,15 @@ export function CollectionDetailScreen() {
         destructive
         onConfirm={performDelete}
         onCancel={() => setDeleteConfirmVisible(false)}
+      />
+
+      <ConfirmModal
+        visible={signInPromptVisible}
+        title="Sign in required"
+        message="Sign in to save and duplicate collections."
+        confirmLabel="OK"
+        onConfirm={() => setSignInPromptVisible(false)}
+        onCancel={() => setSignInPromptVisible(false)}
       />
 
       <BottomSheet
