@@ -352,8 +352,20 @@ export function CollectionDetailScreen() {
     });
   }, [collection, isOwner, handleDelete, handleShare, navigation, ownerUsername]);
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 40 }} />;
-  if (!collection) return <Text style={styles.empty}>Collection not found.</Text>;
+  if (loading) {
+    return (
+      <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
+        <ActivityIndicator color={COLORS.accent} />
+      </View>
+    );
+  }
+  if (!collection) {
+    return (
+      <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
+        <Text style={styles.empty}>Collection not found.</Text>
+      </View>
+    );
+  }
 
   const typeLabel = collection.type === 'playlist' ? 'Playlist' : 'Show Collection';
   const itemCountLabel = `${items.length} item${items.length === 1 ? '' : 's'}`;
@@ -643,6 +655,10 @@ export function CollectionDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   containerDesktop: { backgroundColor: COLORS.backgroundSecondary },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
   description: {
     color: COLORS.textSecondary,

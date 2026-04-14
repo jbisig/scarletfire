@@ -110,7 +110,11 @@ export function DesktopLayout() {
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PublicProfile" component={PublicProfileScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="CollectionDetail"
+              component={CollectionDetailScreen}
+              options={{ headerShown: false, cardStyle: { backgroundColor: COLORS.backgroundSecondary } }}
+            />
           </Stack.Navigator>
         </View>
 
