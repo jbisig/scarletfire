@@ -503,7 +503,7 @@ export function ShowDetailScreen() {
               <View style={styles.webVenueBlock}>
                 <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
-                {/* Details section with play count on mobile */}
+                {/* Details section with play count on mobile + action buttons */}
                 <View style={styles.webDetailsSectionRow}>
                   <View style={styles.webDetailsSection}>
                     {/* Date with stars */}
@@ -520,14 +520,69 @@ export function ShowDetailScreen() {
                     </Text>
                   </View>
 
-                  {/* Play count badge - mobile web only */}
-                  {!isDesktop && playCount > 0 && (
-                    <View style={styles.playCountPillWeb}>
-                      <Text style={styles.playCountPillText}>
-                        {playCount} {playCount === 1 ? 'play' : 'plays'}
-                      </Text>
-                    </View>
-                  )}
+                  <View style={styles.webDetailsActions}>
+                    {/* Play count badge - mobile web only */}
+                    {!isDesktop && playCount > 0 && (
+                      <View style={styles.playCountPillWeb}>
+                        <Text style={styles.playCountPillText}>
+                          {playCount} {playCount === 1 ? 'play' : 'plays'}
+                        </Text>
+                      </View>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.savePillWeb}
+                      onPress={handleShareShow}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Share show"
+                    >
+                      <Ionicons
+                        name="share-outline"
+                        size={17}
+                        color={COLORS.textPrimary}
+                      />
+                    </TouchableOpacity>
+                    {(() => {
+                      const collectionCount = show ? (itemCountsByIdentifier[show.identifier] ?? 0) : 0;
+                      return (
+                        <TouchableOpacity
+                          style={styles.savePillWeb}
+                          onPress={() => setAddToCollectionVisible(true)}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            collectionCount > 0
+                              ? `Added to ${collectionCount} ${collectionCount === 1 ? 'collection' : 'collections'}`
+                              : 'Add to collection'
+                          }
+                        >
+                          <Ionicons
+                            name={collectionCount > 0 ? 'folder' : 'folder-open-outline'}
+                            size={17}
+                            color={COLORS.textPrimary}
+                          />
+                          {collectionCount > 0 && (
+                            <Text style={styles.savePillText}>{collectionCount}</Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })()}
+                    <TouchableOpacity
+                      style={styles.savePillWeb}
+                      onPress={handleToggleFavorite}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                      accessibilityState={{ selected: isSaved }}
+                    >
+                      <Ionicons
+                        name={isSaved ? 'heart' : 'heart-outline'}
+                        size={17}
+                        color={COLORS.textPrimary}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -565,60 +620,14 @@ export function ShowDetailScreen() {
                 ) : null}
               </View>
 
-              <View style={styles.pillsRight}>
-                {/* Play count pill - desktop only */}
-                {isDesktop && playCount > 0 && (
-                  <View style={styles.playCountPillWeb}>
-                    <Text style={styles.playCountPillText}>
-                      {playCount} {playCount === 1 ? 'play' : 'plays'}
-                    </Text>
-                  </View>
-                )}
-
-                <TouchableOpacity
-                  style={styles.savePillWeb}
-                  onPress={handleShareShow}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share show"
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.savePillText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.savePillWeb}
-                  onPress={() => setAddToCollectionVisible(true)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add to collection"
-                >
-                  <Ionicons
-                    name="folder-open-outline"
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.savePillText}>Add to Collection</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.savePillWeb}
-                  onPress={handleToggleFavorite}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
-                  accessibilityState={{ selected: isSaved }}
-                >
-                  <Ionicons
-                    name={isSaved ? 'heart' : 'heart-outline'}
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.savePillText}>{isSaved ? 'Saved' : 'Save'}</Text>
-                </TouchableOpacity>
-              </View>
+              {/* Play count pill - desktop only */}
+              {isDesktop && playCount > 0 && (
+                <View style={[styles.playCountPillWeb, styles.pillsRightSlot]}>
+                  <Text style={styles.playCountPillText}>
+                    {playCount} {playCount === 1 ? 'play' : 'plays'}
+                  </Text>
+                </View>
+              )}
             </View>
             </View>
           </View>
@@ -946,6 +955,16 @@ const styles = StyleSheet.create({
     gap: 8,
     flexShrink: 0,
     marginLeft: 'auto',
+  },
+  pillsRightSlot: {
+    marginLeft: 'auto',
+    flexShrink: 0,
+  },
+  webDetailsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
   },
   sourceInfoPill: {
     flexDirection: 'row',
