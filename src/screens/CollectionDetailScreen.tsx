@@ -525,16 +525,7 @@ export function CollectionDetailScreen() {
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
-                    onPress={() =>
-                      Alert.alert(md.title, undefined, [
-                        {
-                          text: 'Remove from collection',
-                          style: 'destructive',
-                          onPress: () => confirmRemoveItem(item),
-                        },
-                        { text: 'Cancel', style: 'cancel' },
-                      ])
-                    }
+                    onPress={() => confirmRemoveItem(item)}
                     accessibilityLabel="Remove from collection"
                   >
                     <Ionicons name="close" size={20} color={COLORS.textSecondary} />
