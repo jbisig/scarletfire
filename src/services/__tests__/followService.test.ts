@@ -70,15 +70,17 @@ describe('followService mutations', () => {
 describe('followService reads', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('getFollowCounts returns followers + following counts', async () => {
+  it('getFollowCounts returns followers + following counts (public profiles only)', async () => {
     const supabase = {
-      from: jest.fn((table: string) => {
-        const chain: any = {
-          select: jest.fn().mockReturnThis(),
-          eq: jest.fn((col: string, val: string) => {
-            return Promise.resolve({ count: col === 'following_id' ? 5 : 7, error: null });
-          }),
-        };
+      from: jest.fn(() => {
+        let selectArg = '';
+        const chain: any = {};
+        chain.select = jest.fn((arg: string) => { selectArg = arg; return chain; });
+        chain.eq = jest.fn().mockReturnThis();
+        chain.then = (resolve: any) => resolve({
+          count: selectArg.startsWith('follower:') ? 5 : 7,
+          error: null,
+        });
         return chain;
       }),
       auth: { getUser: jest.fn() },

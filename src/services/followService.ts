@@ -52,9 +52,26 @@ class FollowService {
 
   async getFollowCounts(userId: string): Promise<FollowCounts> {
     const supabase = authService.getClient();
+    // Count only rows whose other-side profile is public, so counts stay
+    // consistent with getFollowers/getFollowing (which hide private profiles
+    // via the profiles RLS policy).
     const [followersRes, followingRes] = await Promise.all([
-      supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
-      supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId),
+      supabase
+        .from('user_follows')
+        .select('follower:profiles!user_follows_follower_id_fkey!inner(is_public)', {
+          count: 'exact',
+          head: true,
+        })
+        .eq('following_id', userId)
+        .eq('follower.is_public', true),
+      supabase
+        .from('user_follows')
+        .select('following:profiles!user_follows_following_id_fkey!inner(is_public)', {
+          count: 'exact',
+          head: true,
+        })
+        .eq('follower_id', userId)
+        .eq('following.is_public', true),
     ]);
     return { followers: followersRes.count ?? 0, following: followingRes.count ?? 0 };
   }
