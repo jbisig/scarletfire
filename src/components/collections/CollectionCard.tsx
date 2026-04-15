@@ -1,8 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { Platform, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Collection, CollectionType } from '../../types/collection.types';
-import { COLORS } from '../../constants/theme';
+import { COLORS, SPACING } from '../../constants/theme';
 
 type Variant =
   | { kind: 'owned'; collection: Collection }
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 16 : SPACING.xxl,
     gap: 12,
   },
   tombstoneRow: { opacity: 0.6 },
