@@ -893,17 +893,15 @@ const styles = StyleSheet.create({
     paddingRight: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.accent,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginTop: SPACING.lg,
   },
   followBtnIcon: {
     marginLeft: 4,
   },
-  followBtnActive: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+  followBtnActive: {},
   followBtnText: {
     ...TYPOGRAPHY.label,
     color: COLORS.textPrimary,
