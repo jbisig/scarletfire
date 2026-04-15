@@ -66,3 +66,47 @@ describe('followService mutations', () => {
     await expect(followService.followUser('x')).rejects.toThrow(/signed in/i);
   });
 });
+
+describe('followService reads', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('getFollowCounts returns followers + following counts', async () => {
+    const supabase = {
+      from: jest.fn((table: string) => {
+        const chain: any = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn((col: string, val: string) => {
+            return Promise.resolve({ count: col === 'following_id' ? 5 : 7, error: null });
+          }),
+        };
+        return chain;
+      }),
+      auth: { getUser: jest.fn() },
+    };
+    (authService.getClient as jest.Mock).mockReturnValue(supabase);
+
+    const result = await followService.getFollowCounts('user-1');
+    expect(result).toEqual({ followers: 5, following: 7 });
+  });
+
+  it('isFollowing returns true when row exists', async () => {
+    const chain: any = {
+      select: jest.fn().mockReturnThis(),
+      match: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: { follower_id: 'me' }, error: null }),
+    };
+    (authService.getClient as jest.Mock).mockReturnValue({
+      from: jest.fn().mockReturnValue(chain),
+      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'me' } }, error: null }) },
+    });
+    await expect(followService.isFollowing('target-1')).resolves.toBe(true);
+  });
+
+  it('isFollowing returns false when not signed in', async () => {
+    (authService.getClient as jest.Mock).mockReturnValue({
+      from: jest.fn(),
+      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }) },
+    });
+    await expect(followService.isFollowing('target-1')).resolves.toBe(false);
+  });
+});

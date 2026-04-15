@@ -50,10 +50,31 @@ class FollowService {
     if (error) throw error;
   }
 
-  async getFollowCounts(userId: string): Promise<FollowCounts> { throw new Error('not implemented'); }
+  async getFollowCounts(userId: string): Promise<FollowCounts> {
+    const supabase = authService.getClient();
+    const [followersRes, followingRes] = await Promise.all([
+      supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
+      supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId),
+    ]);
+    return { followers: followersRes.count ?? 0, following: followingRes.count ?? 0 };
+  }
+
+  async isFollowing(targetUserId: string): Promise<boolean> {
+    const supabase = authService.getClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const me = userData?.user?.id;
+    if (!me) return false;
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('follower_id')
+      .match({ follower_id: me, following_id: targetUserId })
+      .maybeSingle();
+    if (error) return false;
+    return data !== null;
+  }
+
   async getFollowers(userId: string): Promise<FollowUser[]> { throw new Error('not implemented'); }
   async getFollowing(userId: string): Promise<FollowUser[]> { throw new Error('not implemented'); }
-  async isFollowing(targetUserId: string): Promise<boolean> { throw new Error('not implemented'); }
 }
 
 export const followService = new FollowService();
