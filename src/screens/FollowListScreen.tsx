@@ -68,6 +68,7 @@ export function FollowListScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleRowPress = (row: FollowUser) => {
+    if (row.isPrivate || !row.username) return;
     navigation.push('PublicProfile', { username: row.username });
   };
 
@@ -110,13 +111,27 @@ export function FollowListScreen() {
           keyExtractor={(r) => r.id}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <TouchableOpacity style={styles.rowMain} onPress={() => handleRowPress(item)}>
+              <TouchableOpacity
+                style={styles.rowMain}
+                onPress={() => handleRowPress(item)}
+                disabled={item.isPrivate}
+                activeOpacity={item.isPrivate ? 1 : 0.7}
+              >
                 <ProfileImage uri={item.avatarUrl} style={styles.avatar} />
                 <View style={styles.rowText}>
-                  <Text style={styles.displayName} numberOfLines={1}>
-                    {item.display_name || item.username}
-                  </Text>
-                  <Text style={styles.username} numberOfLines={1}>@{item.username}</Text>
+                  {item.isPrivate ? (
+                    <>
+                      <Text style={styles.displayName} numberOfLines={1}>Private User</Text>
+                      <Text style={styles.username} numberOfLines={1}>Profile is not public</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.displayName} numberOfLines={1}>
+                        {item.display_name || item.username}
+                      </Text>
+                      <Text style={styles.username} numberOfLines={1}>@{item.username}</Text>
+                    </>
+                  )}
                 </View>
               </TouchableOpacity>
               {viewingOwn && (

@@ -70,17 +70,16 @@ describe('followService mutations', () => {
 describe('followService reads', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('getFollowCounts returns followers + following counts (public profiles only)', async () => {
+  it('getFollowCounts returns followers + following counts', async () => {
     const supabase = {
       from: jest.fn(() => {
-        let selectArg = '';
-        const chain: any = {};
-        chain.select = jest.fn((arg: string) => { selectArg = arg; return chain; });
-        chain.eq = jest.fn().mockReturnThis();
-        chain.then = (resolve: any) => resolve({
-          count: selectArg.startsWith('follower:') ? 5 : 7,
-          error: null,
-        });
+        const chain: any = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn((col: string) => Promise.resolve({
+            count: col === 'following_id' ? 5 : 7,
+            error: null,
+          })),
+        };
         return chain;
       }),
       auth: { getUser: jest.fn() },
@@ -116,28 +115,44 @@ describe('followService reads', () => {
 describe('followService lists', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('getFollowers returns joined profile rows (public only)', async () => {
-    const joinRows = [
-      { follower: { id: 'a', username: 'alice', display_name: 'Alice', is_public: true } },
-      { follower: { id: 'b', username: 'bob', display_name: null, is_public: true } },
+  it('getFollowers returns public followers and placeholder rows for private ones', async () => {
+    const followRows = [
+      { follower_id: 'a', created_at: '2026-01-02' },
+      { follower_id: 'b', created_at: '2026-01-01' },
+      { follower_id: 'c', created_at: '2026-01-03' },
     ];
-    const chain: any = {
+    // Private follower 'c' isn't returned by the profiles query (RLS hides it).
+    const publicProfiles = [
+      { id: 'a', username: 'alice', display_name: 'Alice' },
+      { id: 'b', username: 'bob', display_name: null },
+    ];
+
+    const followChain: any = {
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockResolvedValue({ data: joinRows, error: null }),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: followRows, error: null }),
     };
+    const profilesChain: any = {
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({ data: publicProfiles, error: null }),
+    };
+
     const storageList = jest.fn().mockResolvedValue({ data: [], error: null });
     const getPublicUrl = jest.fn().mockReturnValue({ data: { publicUrl: '' } });
+
     (authService.getClient as jest.Mock).mockReturnValue({
-      from: jest.fn().mockReturnValue(chain),
+      from: jest.fn((table: string) =>
+        table === 'user_follows' ? followChain : profilesChain,
+      ),
       storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
       auth: { getUser: jest.fn() },
     });
 
     const result = await followService.getFollowers('target-1');
     expect(result).toEqual([
-      { id: 'a', username: 'alice', display_name: 'Alice', avatarUrl: null },
-      { id: 'b', username: 'bob', display_name: null, avatarUrl: null },
+      { id: 'a', username: 'alice', display_name: 'Alice', avatarUrl: null, isPrivate: false },
+      { id: 'b', username: 'bob', display_name: null, avatarUrl: null, isPrivate: false },
+      { id: 'c', username: null, display_name: null, avatarUrl: null, isPrivate: true },
     ]);
-    expect(chain.select).toHaveBeenCalledWith(expect.stringContaining('follower:profiles!user_follows_follower_id_fkey'));
   });
 });
