@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   followBtnText: {
-    ...TYPOGRAPHY.labelLarge,
+    ...TYPOGRAPHY.label,
     color: COLORS.textPrimary,
   },
   followBtnTextActive: {
