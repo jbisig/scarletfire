@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 import {
   View,
   Text,
@@ -146,6 +146,9 @@ export function PublicProfileScreen() {
   const [error, setError] = useState(false);
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('shows');
+  // Content renders against the deferred value so tab button style flips
+  // immediately on press, even while the heavy tab content re-renders.
+  const renderedTab = useDeferredValue(activeTab);
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
   const [showSortModal, setShowSortModal] = useState(false);
@@ -734,9 +737,9 @@ export function PublicProfileScreen() {
             </View>
 
             {/* Tab Content */}
-            {activeTab === 'shows' ? (
+            {renderedTab === 'shows' ? (
               renderShowsTab()
-            ) : activeTab === 'songs' ? (
+            ) : renderedTab === 'songs' ? (
               renderSongsTab()
             ) : (
               <CollectionsTab
