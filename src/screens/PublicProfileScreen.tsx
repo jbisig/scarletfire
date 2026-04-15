@@ -7,23 +7,31 @@ import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 function useProgressiveCount(
   total: number,
   resetKey: unknown,
-  initial: number = 8,
+  initial: number = 0,
   chunk: number = 8,
   intervalMs: number = 120,
 ): number {
-  const [count, setCount] = useState(() => Math.min(total, initial));
+  const [state, setState] = useState<{ key: unknown; count: number }>(() => ({
+    key: resetKey,
+    count: Math.min(total, initial),
+  }));
+
+  // Render-phase reset so the new tab paints skeletons on the first frame
+  // instead of waiting for the post-render effect to clear the stale count.
+  if (state.key !== resetKey) {
+    setState({ key: resetKey, count: Math.min(total, initial) });
+  }
+
+  const effectiveCount = state.key === resetKey ? state.count : Math.min(total, initial);
+
   useEffect(() => {
-    if (total <= initial) {
-      setCount(total);
-      return;
-    }
-    setCount(initial);
+    if (total <= initial) return;
     let current = initial;
     let cancelled = false;
     const id = setInterval(() => {
       if (cancelled) return;
       current = Math.min(current + chunk, total);
-      setCount(current);
+      setState((prev) => (prev.key === resetKey ? { key: resetKey, count: current } : prev));
       if (current >= total) clearInterval(id);
     }, intervalMs);
     return () => {
@@ -31,7 +39,8 @@ function useProgressiveCount(
       clearInterval(id);
     };
   }, [total, resetKey, initial, chunk, intervalMs]);
-  return count;
+
+  return effectiveCount;
 }
 import {
   View,
