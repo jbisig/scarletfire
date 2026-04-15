@@ -188,7 +188,13 @@ export function SettingsScreen() {
   // Auth guard: show sign-in prompt for unauthenticated users
   if (!authState.user) {
     return (
-      <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.container,
+          isDesktop && styles.containerDesktop,
+          Platform.OS === 'web' ? { paddingTop: insets.top } : null,
+        ]}
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => {
             if (isDesktop) {
@@ -332,7 +338,15 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        isDesktop && styles.containerDesktop,
+        // Modal presentation on native gives us its own top inset; only pad
+        // on web where there's no system chrome above the header.
+        Platform.OS === 'web' ? { paddingTop: insets.top } : null,
+      ]}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
