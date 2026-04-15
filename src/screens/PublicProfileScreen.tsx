@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
-    marginTop: SPACING.sm,
+    marginTop: SPACING.lg,
   },
   followBtnActive: {
     backgroundColor: 'transparent',
