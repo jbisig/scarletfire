@@ -11,6 +11,7 @@ export interface Collection {
   createdAt: string;
   updatedAt: string;
   itemCount?: number;
+  saveCount?: number;
 }
 
 export interface ShowCollectionItemMetadata {

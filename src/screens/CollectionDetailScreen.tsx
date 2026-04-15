@@ -140,6 +140,7 @@ export function CollectionDetailScreen() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameText, setRenameText] = useState('');
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
+  const [saveCount, setSaveCount] = useState<number | null>(null);
   const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
   const [showSortModalVisible, setShowSortModalVisible] = useState(false);
   const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
@@ -184,8 +185,19 @@ export function CollectionDetailScreen() {
       setLoading(true);
       try {
         if (route.params?.collectionId) {
-          const items = await fetchItems(route.params.collectionId);
+          const collectionId = route.params.collectionId;
+          const items = await fetchItems(collectionId);
           if (!cancelled) setItems(items);
+          // Fallback for collections the viewer neither owns nor has saved
+          // (e.g. Popular Collections owned by another user). The sibling
+          // effect below only populates `collection` from owned/saved state.
+          const inLocalState =
+            collections.some((c) => c.id === collectionId) ||
+            liveSavedCollectionsById.has(collectionId);
+          if (!inLocalState) {
+            const fetched = await collectionsService.fetchCollectionById(collectionId);
+            if (fetched && !cancelled) setCollection(fetched);
+          }
         } else if (route.params?.username && route.params?.slug) {
           const owner = await profileService.getProfileIdByUsername(route.params.username);
           if (owner?.id && !cancelled) {
@@ -255,6 +267,27 @@ export function CollectionDetailScreen() {
   // A non-owner viewer (saved-collection view, public-link view, or logged-out viewer)
   const isNonOwnerViewer = !isOwner;
   const saved = !!collection && isSignedIn && isCollectionSaved(collection.id);
+
+  // Load the cross-user save count once we know the collection id. `saved`
+  // is included so toggling save locally refreshes the number.
+  useEffect(() => {
+    if (!collection) {
+      setSaveCount(null);
+      return;
+    }
+    let cancelled = false;
+    collectionsService
+      .fetchCollectionSaveCount(collection.id)
+      .then((n) => {
+        if (!cancelled) setSaveCount(n);
+      })
+      .catch(() => {
+        if (!cancelled) setSaveCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [collection?.id, saved]);
 
   const playlistQueue = useMemo(
     () =>
@@ -495,8 +528,10 @@ export function CollectionDetailScreen() {
     );
   }
 
-  const typeLabel = collection.type === 'playlist' ? 'Playlist' : 'Show Collection';
-  const itemCountLabel = `${items.length} item${items.length === 1 ? '' : 's'}`;
+  const typeLabel =
+    collection.type === 'playlist'
+      ? 'Playlist'
+      : `${items.length} show${items.length === 1 ? '' : 's'}`;
 
   const bgSource = getShareBackground(bgIndexFromId(collection.id));
 
@@ -526,8 +561,14 @@ export function CollectionDetailScreen() {
             <Text style={styles.webCollectionName} numberOfLines={2}>{collection.name}</Text>
             <View style={styles.webMetaRow}>
               <Text style={styles.webMetaText}>{typeLabel}</Text>
-              <Text style={styles.webMetaDot}>·</Text>
-              <Text style={styles.webMetaText}>{itemCountLabel}</Text>
+              {saveCount !== null && (
+                <>
+                  <Text style={styles.webMetaDot}>·</Text>
+                  <Text style={styles.webMetaText}>
+                    {saveCount} save{saveCount === 1 ? '' : 's'}
+                  </Text>
+                </>
+              )}
               {ownerUsername && (
                 <>
                   <Text style={styles.webMetaDot}>·</Text>
@@ -931,11 +972,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   webMetaText: {
-    color: COLORS.textTertiary,
+    color: COLORS.textPrimary,
     fontSize: 14,
   },
   webMetaDot: {
-    color: COLORS.textTertiary,
+    color: COLORS.textPrimary,
     fontSize: 14,
   },
   webDescription: {

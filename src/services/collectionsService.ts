@@ -30,7 +30,11 @@ interface CollectionItemRow {
   added_at: string;
 }
 
-function mapCollection(row: CollectionRow, itemCount?: number): Collection {
+function mapCollection(
+  row: CollectionRow,
+  itemCount?: number,
+  saveCount?: number,
+): Collection {
   return {
     id: row.id,
     userId: row.user_id,
@@ -42,6 +46,7 @@ function mapCollection(row: CollectionRow, itemCount?: number): Collection {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     itemCount,
+    saveCount,
   };
 }
 
@@ -314,9 +319,32 @@ class CollectionsService {
       logger.api.error('fetchPopularCollections failed', error);
       throw error;
     }
-    return (data ?? []).map((row: CollectionRow & { item_count: number | string }) =>
-      mapCollection(row, Number(row.item_count ?? 0)),
+    return (data ?? []).map(
+      (row: CollectionRow & { item_count: number | string; save_count: number | string }) =>
+        mapCollection(row, Number(row.item_count ?? 0), Number(row.save_count ?? 0)),
     );
+  }
+
+  async fetchCollectionSaveCount(collectionId: string): Promise<number> {
+    const { data, error } = await this.supabase.rpc('get_collection_save_count', {
+      p_collection_id: collectionId,
+    });
+    if (error) {
+      logger.api.error('fetchCollectionSaveCount failed', error);
+      return 0;
+    }
+    return Number(data ?? 0);
+  }
+
+  async fetchCollectionById(collectionId: string): Promise<Collection | null> {
+    const { data, error } = await this.supabase
+      .from('collections')
+      .select('*')
+      .eq('id', collectionId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return mapCollection(data as CollectionRow);
   }
 
   async fetchPublicCollectionByLink(

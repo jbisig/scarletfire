@@ -16,6 +16,12 @@ interface CollectionCarouselProps {
 const CARD_WIDTH = LAYOUT.horizontalCardWidth;
 const CARD_HEIGHT = LAYOUT.horizontalCardHeight;
 
+function formatCountLabel(c: Collection): string {
+  const n = c.itemCount ?? 0;
+  const noun = c.type === 'playlist' ? 'song' : 'show';
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
 export const CollectionCarousel = React.memo(function CollectionCarousel({
   title,
   collections,
@@ -48,7 +54,10 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
           {item.name}
         </Text>
         <Text style={styles.cardCount}>
-          {item.itemCount ?? 0} item{(item.itemCount ?? 0) === 1 ? '' : 's'}
+          {formatCountLabel(item)}
+          {item.saveCount !== undefined
+            ? ` · ${item.saveCount} save${item.saveCount === 1 ? '' : 's'}`
+            : ''}
         </Text>
       </TouchableOpacity>
     ),
@@ -99,7 +108,10 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
                     {c.name}
                   </Text>
                   <Text style={styles.cardCount}>
-                    {c.itemCount ?? 0} item{(c.itemCount ?? 0) === 1 ? '' : 's'}
+                    {formatCountLabel(c)}
+                    {c.saveCount !== undefined
+                      ? ` · ${c.saveCount} save${c.saveCount === 1 ? '' : 's'}`
+                      : ''}
                   </Text>
                 </TouchableOpacity>
               ))}
