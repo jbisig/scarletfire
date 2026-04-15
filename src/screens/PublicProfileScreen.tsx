@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
   },
   songItem: {
     paddingVertical: 8,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.xxl,
     ...(Platform.OS === 'web' ? {
       backgroundColor: 'transparent',
       paddingHorizontal: 16,
