@@ -254,7 +254,14 @@ class ProfileService {
       .eq('username', username.toLowerCase())
       .single();
 
-    if (profileError || !profile || !profile.is_public) return null;
+    if (profileError || !profile) return null;
+
+    // Allow the signed-in user to view their own profile even if private —
+    // gives private users a way to reach their followers/following lists.
+    if (!profile.is_public) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.id !== profile.id) return null;
+    }
 
     const [avatarResult, favResult, playResult, counts, viewerIsFollowing] = await Promise.all([
       supabase.storage

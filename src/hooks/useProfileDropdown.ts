@@ -113,7 +113,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
   }, [navigation]);
 
   const handleViewProfile = useCallback(() => {
-    if (!userProfile?.username || !userProfile.is_public) return;
+    if (!userProfile?.username) return;
     setIsVisible(false);
     navigation.navigate('PublicProfile' as any, { username: userProfile.username });
   }, [navigation, userProfile]);
@@ -127,7 +127,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     handleLogout,
     handleLogin,
     handleSettings,
-    handleViewProfile: userProfile?.is_public && userProfile?.username ? handleViewProfile : null,
+    handleViewProfile: userProfile?.username ? handleViewProfile : null,
     userProfile,
     closeDropdown,
   };
