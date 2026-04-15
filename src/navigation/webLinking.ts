@@ -95,6 +95,10 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
         path: 'profile/:username',
         parse: { username: (u: string) => decodeURIComponent(u) },
       },
+      FollowList: {
+        path: 'profile/:username/:mode',
+        parse: { username: (u: string) => decodeURIComponent(u) },
+      },
       CollectionDetail: collectionDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
@@ -127,6 +131,10 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
               ShowDetail: showDetailRoute,
               PublicProfile: {
                 path: 'profile/:username',
+                parse: { username: (u: string) => decodeURIComponent(u) },
+              },
+              FollowList: {
+                path: 'profile/:username/:mode',
                 parse: { username: (u: string) => decodeURIComponent(u) },
               },
               CollectionDetail: collectionDetailRoute,

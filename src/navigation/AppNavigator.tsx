@@ -13,6 +13,7 @@ import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { FollowListScreen } from '../screens/FollowListScreen';
 import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
@@ -63,6 +64,13 @@ const nativeLinking = Platform.OS !== 'web'
               username: (u: string) => decodeURIComponent(u),
             },
           },
+          FollowList: {
+            path: 'profile/:username/:mode',
+            parse: {
+              username: (u: string) => decodeURIComponent(u),
+              mode: (m: string) => (m === 'following' ? 'following' : 'followers') as 'followers' | 'following',
+            },
+          },
           CollectionDetail: {
             path: 'profile/:username/collection/:slug',
             parse: {
@@ -110,6 +118,7 @@ export type RootStackParamList = {
   Settings: undefined;
   PrivacyPolicy: undefined;
   PublicProfile: { username: string };
+  FollowList: { userId?: string; username: string; mode: 'followers' | 'following' };
   CollectionDetail: {
     collectionId?: string;
     username?: string;
@@ -195,6 +204,11 @@ function ShowsStack() {
         component={PublicProfileScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -238,6 +252,11 @@ function SongsStack() {
       <Stack.Screen
         name="PublicProfile"
         component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -286,6 +305,11 @@ function FavoritesStack() {
         component={PublicProfileScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -324,6 +348,11 @@ function DiscoverStack() {
       <Stack.Screen
         name="PublicProfile"
         component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -455,6 +484,11 @@ export function AppNavigator() {
               options={{
                 headerShown: false,
               }}
+            />
+            <RootStack.Screen
+              name="FollowList"
+              component={FollowListScreen}
+              options={{ headerShown: false }}
             />
             <RootStack.Screen
               name="PrivacyPolicy"
