@@ -1,9 +1,12 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 
 // Grow a rendered-count from `initial` up to `total` in `chunk`-size steps,
 // pacing with setTimeout so skeleton rows are visible while the list fills.
+// Pass a `resetKey` (e.g. the active tab) to restart the progression when
+// the consumer switches contexts.
 function useProgressiveCount(
   total: number,
+  resetKey: unknown,
   initial: number = 8,
   chunk: number = 8,
   intervalMs: number = 120,
@@ -27,7 +30,7 @@ function useProgressiveCount(
       cancelled = true;
       clearInterval(id);
     };
-  }, [total, initial, chunk, intervalMs]);
+  }, [total, resetKey, initial, chunk, intervalMs]);
   return count;
 }
 import {
@@ -178,9 +181,6 @@ export function PublicProfileScreen() {
   const [error, setError] = useState(false);
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('shows');
-  // Content renders against the deferred value so tab button style flips
-  // immediately on press, even while the heavy tab content re-renders.
-  const renderedTab = useDeferredValue(activeTab);
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
   const [showSortModal, setShowSortModal] = useState(false);
@@ -412,8 +412,8 @@ export function PublicProfileScreen() {
     });
   };
 
-  const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length);
-  const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length);
+  const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length, activeTab === 'shows');
+  const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length, activeTab === 'songs');
 
   const handleSongSortPress = () => {
     songSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
@@ -784,9 +784,9 @@ export function PublicProfileScreen() {
             </View>
 
             {/* Tab Content */}
-            {renderedTab === 'shows' ? (
+            {activeTab === 'shows' ? (
               renderShowsTab()
-            ) : renderedTab === 'songs' ? (
+            ) : activeTab === 'songs' ? (
               renderSongsTab()
             ) : (
               <CollectionsTab
