@@ -666,7 +666,8 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xxl,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.xxl,
   },
   sectionTitle: {
     ...TYPOGRAPHY.label,
