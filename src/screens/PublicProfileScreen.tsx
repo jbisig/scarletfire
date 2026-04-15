@@ -1,4 +1,33 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
+
+// Grow a rendered-count variable from an initial chunk up to `total`, one
+// requestAnimationFrame chunk at a time, so large lists paint progressively
+// instead of blocking the first frame.
+function useProgressiveCount(total: number, chunkSize: number = 12): number {
+  const [count, setCount] = useState(() => Math.min(total, chunkSize));
+  useEffect(() => {
+    if (total <= chunkSize) {
+      setCount(total);
+      return;
+    }
+    let current = chunkSize;
+    setCount(current);
+    let frame = 0;
+    let cancelled = false;
+    const step = () => {
+      if (cancelled) return;
+      current = Math.min(current + chunkSize, total);
+      setCount(current);
+      if (current < total) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [total, chunkSize]);
+  return count;
+}
 import {
   View,
   Text,
@@ -380,6 +409,9 @@ export function PublicProfileScreen() {
     });
   };
 
+  const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length);
+  const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length);
+
   const handleSongSortPress = () => {
     songSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
       setSongSortPosition({ top: pageY + h + 8, left: pageX });
@@ -496,7 +528,7 @@ export function PublicProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {sortedFavoriteShows.map(show => (
+          {sortedFavoriteShows.slice(0, visibleShowCount).map(show => (
             <ShowCard
               key={show.primaryIdentifier}
               show={show}
@@ -583,7 +615,7 @@ export function PublicProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {sortedFavoriteSongs.map(song => (
+          {sortedFavoriteSongs.slice(0, visibleSongCount).map(song => (
             <React.Fragment key={`fav-${song.trackId}-${song.showIdentifier}`}>
               {renderSongRow(song, <PlayCountBadge count={0} size="small" />)}
             </React.Fragment>
