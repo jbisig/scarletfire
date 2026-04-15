@@ -684,6 +684,14 @@ export function PublicProfileScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={isFollowing ? 'Unfollow' : 'Follow'}
                   >
+                    {isFollowing && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={COLORS.textPrimary}
+                        style={styles.followBtnIcon}
+                      />
+                    )}
                     <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
                       {isFollowing ? 'Following' : 'Follow'}
                     </Text>
@@ -879,11 +887,16 @@ const styles = StyleSheet.create({
   },
   followBtn: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
     marginTop: SPACING.lg,
+  },
+  followBtnIcon: {
+    marginRight: 4,
   },
   followBtnActive: {
     backgroundColor: 'transparent',
