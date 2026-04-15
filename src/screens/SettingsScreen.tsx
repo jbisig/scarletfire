@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService, UserProfile } from '../services/profileService';
+import { followService } from '../services/followService';
 import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { useResponsive } from '../hooks/useResponsive';
@@ -34,6 +35,19 @@ export function SettingsScreen() {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [ownFollowerCount, setOwnFollowerCount] = useState(0);
+  const [ownFollowingCount, setOwnFollowingCount] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    const userId = authState.user?.id;
+    if (!userId) return;
+    followService.getFollowCounts(userId)
+      .then((c) => {
+        setOwnFollowerCount(c.followers);
+        setOwnFollowingCount(c.following);
+      })
+      .catch(() => { /* ignore */ });
+  }, [authState.user?.id]));
 
   // Edit modal state — one of 'username' | 'displayName' at a time.
   const [editingField, setEditingField] = useState<'username' | 'displayName' | null>(null);
@@ -395,6 +409,35 @@ export function SettingsScreen() {
           <ActivityIndicator size="small" color={COLORS.textSecondary} />
         ) : (
           <>
+            {/* Follow counts */}
+            {authState.user?.id && username && (
+              <View style={styles.settingsCountsRow}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('FollowList' as never, {
+                    userId: authState.user!.id,
+                    username,
+                    mode: 'followers',
+                  } as never)}
+                >
+                  <Text style={styles.settingsCountText}>
+                    <Text style={styles.settingsCountNum}>{ownFollowerCount}</Text> Followers
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.settingsCountSep}>  ·  </Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('FollowList' as never, {
+                    userId: authState.user!.id,
+                    username,
+                    mode: 'following',
+                  } as never)}
+                >
+                  <Text style={styles.settingsCountText}>
+                    <Text style={styles.settingsCountNum}>{ownFollowingCount}</Text> Following
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Make Profile Public Toggle */}
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
@@ -799,6 +842,23 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     color: COLORS.textPrimary,
     fontWeight: '600',
+  },
+  settingsCountsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    flexWrap: 'wrap',
+  },
+  settingsCountText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  settingsCountNum: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  settingsCountSep: {
+    color: COLORS.textSecondary,
   },
   toggleRow: {
     flexDirection: 'row',
