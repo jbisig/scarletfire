@@ -846,7 +846,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.xs,
   },
   backButton: {
     width: 40,
@@ -891,7 +892,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.sm,
+    paddingTop: 0,
     paddingBottom: SPACING.xl,
   },
   contentContainerMobile: {
@@ -922,7 +923,6 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.cardBackground,
-    marginTop: SPACING.sm,
   },
   displayName: {
     ...TYPOGRAPHY.heading2,
