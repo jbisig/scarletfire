@@ -59,6 +59,7 @@ import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { PlayCountBadge } from '../components/PlayCountBadge';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
@@ -540,6 +541,12 @@ export function PublicProfileScreen() {
               hideSaveBadge
             />
           ))}
+          {visibleShowCount < sortedFavoriteShows.length && (
+            <SkeletonLoader
+              variant="showCard"
+              count={Math.min(sortedFavoriteShows.length - visibleShowCount, 6)}
+            />
+          )}
         </View>
       )}
 
@@ -620,6 +627,12 @@ export function PublicProfileScreen() {
               {renderSongRow(song, <PlayCountBadge count={0} size="small" />)}
             </React.Fragment>
           ))}
+          {visibleSongCount < sortedFavoriteSongs.length && (
+            <SkeletonLoader
+              variant="songItem"
+              count={Math.min(sortedFavoriteSongs.length - visibleSongCount, 6)}
+            />
+          )}
         </View>
       )}
 
