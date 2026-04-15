@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   },
   firstSection: {
     paddingTop: 0,
-    marginTop: -SPACING.sm,
+    marginTop: -SPACING.xxl,
   },
   sectionTitle: {
     ...TYPOGRAPHY.label,
