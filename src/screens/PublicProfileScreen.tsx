@@ -255,7 +255,12 @@ export function PublicProfileScreen() {
   }, [currentUser, data?.profile?.id, followBusy, isFollowing, followerCount, navigation]);
 
   useEffect(() => {
-    if (!data?.profile?.is_public) {
+    if (!data?.profile) {
+      setPublicCollections([]);
+      return;
+    }
+    const viewerOwnsProfile = currentUser?.id === data.profile.id;
+    if (!data.profile.is_public && !viewerOwnsProfile) {
       setPublicCollections([]);
       return;
     }
@@ -263,7 +268,7 @@ export function PublicProfileScreen() {
       .fetchCollections(data.profile.id)
       .then(setPublicCollections)
       .catch(() => setPublicCollections([]));
-  }, [data]);
+  }, [data, currentUser?.id]);
 
   // Compute top 10 shows by play count
   const topShows = useMemo(() => {
@@ -772,7 +777,7 @@ export function PublicProfileScreen() {
 
             {/* Tab Navigation */}
             <View style={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]} accessibilityRole="tablist">
-              {(data?.profile?.is_public
+              {((data?.profile?.is_public || isOwnProfile)
                 ? (['shows', 'songs', 'collections'] as const)
                 : (['shows', 'songs'] as const)
               ).map((tab) => (
