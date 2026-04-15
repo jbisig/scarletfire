@@ -613,9 +613,9 @@ export function PublicProfileScreen() {
           {data?.profile && (
             <View style={styles.visibilityBadge}>
               <Ionicons
-                name={data.profile.is_public ? 'globe-outline' : 'lock-closed-outline'}
-                size={12}
-                color={COLORS.textSecondary}
+                name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
+                size={14}
+                color={COLORS.textPrimary}
               />
               <Text style={styles.visibilityBadgeText}>
                 {data.profile.is_public ? 'Public' : 'Private'}
@@ -768,18 +768,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   visibilityBadge: {
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    gap: 6,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.full,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.surfaceMedium,
   },
   visibilityBadgeText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    ...TYPOGRAPHY.label,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
