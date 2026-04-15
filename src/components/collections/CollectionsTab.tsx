@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { Platform, View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   CollectionType,
   LibraryCollectionEntry,
 } from '../../types/collection.types';
 import { CollectionCard } from './CollectionCard';
-import { COLORS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/theme';
+
+const LIST_PADDING_HORIZONTAL = Platform.OS === 'web' ? 16 : SPACING.xxl;
 
 interface Props {
   entries: LibraryCollectionEntry[];
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: LIST_PADDING_HORIZONTAL,
     marginBottom: 4,
   },
   headerText: {
@@ -125,7 +127,7 @@ const styles = StyleSheet.create({
   empty: {
     color: COLORS.textSecondary,
     fontSize: 13,
-    paddingHorizontal: 16,
+    paddingHorizontal: LIST_PADDING_HORIZONTAL,
     paddingVertical: 12,
   },
 });
