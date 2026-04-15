@@ -16,7 +16,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
-import { normalizeTrackTitle } from '../utils/titleNormalization';
+import { matchTrackBySlug } from '../utils/trackMatching';
+import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { matchesDateQuery } from '../utils/formatters';
 import showsData from '../data/shows.json';
 import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
@@ -222,9 +223,10 @@ export function SongPerformancesScreen() {
   const handlePerformancePress = useCallback(async (performance: Performance) => {
     try {
       const showDetail = await getShowDetail(performance.identifier);
-      const normalizedSongTitle = normalizeTrackTitle(songTitle);
-      const matchedTrack = showDetail.tracks.find(
-        t => normalizeTrackTitle(t.title) === normalizedSongTitle
+      const matchedTrack = matchTrackBySlug(
+        songTitle,
+        showDetail.tracks,
+        SIMILARITY_THRESHOLDS.SEARCH_MATCH
       );
       if (matchedTrack) {
         loadTrack(matchedTrack, showDetail, showDetail.tracks);
@@ -232,7 +234,14 @@ export function SongPerformancesScreen() {
         if (Platform.OS === 'web') {
           navigation.setParams({ performanceDate: performance.date.substring(0, 10) });
         }
+        return;
       }
+      // No confident title match — fall through to ShowDetail so the user lands
+      // on the tracklist and can pick manually.
+      navigation.push('ShowDetail', {
+        identifier: performance.identifier,
+        trackTitle: songTitle,
+      });
     } catch {
       // Fallback: navigate to show if loading fails
       navigation.push('ShowDetail', {
