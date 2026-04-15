@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { User } from '@supabase/supabase-js';
 import { authService } from './authService';
+import { followService } from './followService';
 import { Alert } from 'react-native';
 import { logger } from '../utils/logger';
 import { GratefulDeadShow } from '../types/show.types';
@@ -23,6 +24,9 @@ export interface PublicProfileData {
     songs: FavoriteSong[];
   };
   playCounts: Array<{ trackId: string; trackTitle: string; showIdentifier: string; showDate: string; count: number; lastPlayedAt: number; firstPlayedAt: number }>;
+  followerCount: number;
+  followingCount: number;
+  viewerIsFollowing: boolean;
 }
 
 class ProfileService {
@@ -252,8 +256,7 @@ class ProfileService {
 
     if (profileError || !profile || !profile.is_public) return null;
 
-    // Fetch avatar, favorites, and play counts in parallel
-    const [avatarResult, favResult, playResult] = await Promise.all([
+    const [avatarResult, favResult, playResult, counts, viewerIsFollowing] = await Promise.all([
       supabase.storage
         .from('avatars')
         .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } }),
@@ -267,6 +270,8 @@ class ProfileService {
         .select('play_counts')
         .eq('user_id', profile.id)
         .single(),
+      followService.getFollowCounts(profile.id),
+      followService.isFollowing(profile.id),
     ]);
 
     let avatarUrl: string | null = null;
@@ -285,7 +290,15 @@ class ProfileService {
 
     const playCounts = playResult.data?.play_counts || [];
 
-    return { profile, avatarUrl, favorites, playCounts };
+    return {
+      profile,
+      avatarUrl,
+      favorites,
+      playCounts,
+      followerCount: counts.followers,
+      followingCount: counts.following,
+      viewerIsFollowing,
+    };
   }
 
   /**
