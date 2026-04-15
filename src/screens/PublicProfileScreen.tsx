@@ -1,31 +1,33 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 
-// Grow a rendered-count variable from an initial chunk up to `total`, one
-// requestAnimationFrame chunk at a time, so large lists paint progressively
-// instead of blocking the first frame.
-function useProgressiveCount(total: number, chunkSize: number = 12): number {
-  const [count, setCount] = useState(() => Math.min(total, chunkSize));
+// Grow a rendered-count from `initial` up to `total` in `chunk`-size steps,
+// pacing with setTimeout so skeleton rows are visible while the list fills.
+function useProgressiveCount(
+  total: number,
+  initial: number = 8,
+  chunk: number = 8,
+  intervalMs: number = 120,
+): number {
+  const [count, setCount] = useState(() => Math.min(total, initial));
   useEffect(() => {
-    if (total <= chunkSize) {
+    if (total <= initial) {
       setCount(total);
       return;
     }
-    let current = chunkSize;
-    setCount(current);
-    let frame = 0;
+    setCount(initial);
+    let current = initial;
     let cancelled = false;
-    const step = () => {
+    const id = setInterval(() => {
       if (cancelled) return;
-      current = Math.min(current + chunkSize, total);
+      current = Math.min(current + chunk, total);
       setCount(current);
-      if (current < total) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
+      if (current >= total) clearInterval(id);
+    }, intervalMs);
     return () => {
       cancelled = true;
-      cancelAnimationFrame(frame);
+      clearInterval(id);
     };
-  }, [total, chunkSize]);
+  }, [total, initial, chunk, intervalMs]);
   return count;
 }
 import {
