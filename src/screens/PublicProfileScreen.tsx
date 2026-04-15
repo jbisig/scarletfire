@@ -818,7 +818,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contentContainer: {
-    padding: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xl,
   },
   contentContainerMobile: {
     paddingHorizontal: 0,
