@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -123,11 +123,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <View style={[styles.container, { top: insets.top + SPACING.md }]} pointerEvents="box-none">
-        {toasts.map(toast => (
-          <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
-        ))}
-      </View>
+      {/* Host toasts inside a transparent Modal so they render in the same
+          portal layer as BottomSheet/picker Modals and sit above them (last
+          mounted wins). Without this, a plain View host is outranked by any
+          open Modal on both web (portal) and native. */}
+      <Modal
+        visible={toasts.length > 0}
+        transparent
+        animationType="none"
+        onRequestClose={() => {}}
+      >
+        <View style={[styles.container, { top: insets.top + SPACING.md }]} pointerEvents="box-none">
+          {toasts.map(toast => (
+            <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
+          ))}
+        </View>
+      </Modal>
     </ToastContext.Provider>
   );
 }
