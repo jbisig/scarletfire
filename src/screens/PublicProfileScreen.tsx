@@ -684,6 +684,9 @@ export function PublicProfileScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={isFollowing ? 'Unfollow' : 'Follow'}
                   >
+                    <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
                     {isFollowing && (
                       <Ionicons
                         name="checkmark"
@@ -692,9 +695,6 @@ export function PublicProfileScreen() {
                         style={styles.followBtnIcon}
                       />
                     )}
-                    <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   followBtnIcon: {
-    marginRight: 4,
+    marginLeft: 4,
   },
   followBtnActive: {
     backgroundColor: 'transparent',
