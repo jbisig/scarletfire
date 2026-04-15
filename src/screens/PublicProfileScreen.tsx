@@ -601,11 +601,27 @@ export function PublicProfileScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
-      {!isDesktop && navigation.canGoBack() && (
+      {!isDesktop && (navigation.canGoBack() || data?.profile) && (
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+          {navigation.canGoBack() ? (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
+          )}
+          {data?.profile && (
+            <View style={styles.visibilityBadge}>
+              <Ionicons
+                name={data.profile.is_public ? 'globe-outline' : 'lock-closed-outline'}
+                size={12}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.visibilityBadgeText}>
+                {data.profile.is_public ? 'Public' : 'Private'}
+              </Text>
+            </View>
+          )}
         </View>
       )}
       <FlatList
@@ -741,6 +757,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
   },
@@ -749,6 +766,20 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  visibilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  visibilityBadgeText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
   errorContainer: {
     flex: 1,
