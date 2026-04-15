@@ -923,6 +923,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.cardBackground,
+    marginTop: SPACING.xs,
   },
   displayName: {
     ...TYPOGRAPHY.heading2,

@@ -365,7 +365,7 @@ export function SettingsScreen() {
 
       <ScrollView>
       {/* Profile Section */}
-      <View style={[styles.section, styles.firstSection]}>
+      <View style={styles.section}>
         <View style={styles.profileContainer}>
           <View style={styles.avatarContainer}>
             <ProfileImage
@@ -666,11 +666,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xxl,
-  },
-  firstSection: {
-    paddingTop: 0,
-    marginTop: -SPACING.xxl,
+    paddingVertical: SPACING.xxl,
   },
   sectionTitle: {
     ...TYPOGRAPHY.label,
