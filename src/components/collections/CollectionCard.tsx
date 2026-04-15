@@ -31,13 +31,14 @@ export function CollectionCard({ variant, onPress, onLongPress }: Props) {
       ? variant.ownerUsername
       : null;
 
+  const itemNoun = type === 'playlist' ? 'Song' : 'Show';
+  const itemCount = variant.kind !== 'tombstone' ? variant.collection.itemCount ?? 0 : 0;
+  const itemCountLabel = `${itemCount} ${itemNoun}${itemCount === 1 ? '' : 's'}`;
   const subtitle = isTombstone
     ? 'No longer available'
     : variant.kind === 'saved'
-    ? `${typeLabel} · @${ownerUsername}`
-    : `${typeLabel} · ${variant.collection.itemCount ?? 0} item${
-        (variant.collection.itemCount ?? 0) === 1 ? '' : 's'
-      }`;
+    ? `${itemCountLabel} · @${ownerUsername}`
+    : itemCountLabel;
 
   return (
     <TouchableOpacity

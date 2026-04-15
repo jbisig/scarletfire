@@ -242,23 +242,27 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const [popularShowCollections, setPopularShowCollections] = useState<Collection[]>([]);
   const [popularPlaylists, setPopularPlaylists] = useState<Collection[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [shows, lists] = await Promise.all([
-          collectionsService.fetchPopularCollections('show_collection', 10),
-          collectionsService.fetchPopularCollections('playlist', 10),
-        ]);
-        if (cancelled) return;
-        setPopularShowCollections(shows);
-        setPopularPlaylists(lists);
-      } catch (err) {
-        logger.api.error('Failed to load popular collections', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const [shows, lists] = await Promise.all([
+            collectionsService.fetchPopularCollections('show_collection', 10),
+            collectionsService.fetchPopularCollections('playlist', 10),
+          ]);
+          if (cancelled) return;
+          setPopularShowCollections(shows);
+          setPopularPlaylists(lists);
+        } catch (err) {
+          logger.api.error('Failed to load popular collections', err);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   const handleCollectionPress = useCallback((collectionId: string) => {
     navigation.navigate('CollectionDetail', { collectionId });

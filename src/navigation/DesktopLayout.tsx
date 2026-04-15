@@ -46,6 +46,7 @@ const SCREEN_TO_TAB: Record<string, string> = {
   SongPerformances: 'SongsTab',
   Favorites: 'FavoritesTab',
   Settings: 'Settings',
+  PublicProfile: 'ProfileTab',
 };
 
 const SCROLLBAR_STYLES = ``;

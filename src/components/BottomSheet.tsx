@@ -169,6 +169,14 @@ export function BottomSheet({
               // the responder (TouchableOpacity/TextInput) still win because
               // bubble phase resolves deepest-first.
               onStartShouldSetResponder={() => true}
+              // Web only: RN-Web's Pressable fires on DOM click bubbling,
+              // which the responder system above doesn't stop. Explicitly
+              // halt click propagation so taps on TextInput and empty card
+              // area don't reach the backdrop.
+              {...(isWeb
+                ? // @ts-ignore web-only prop
+                  { onClick: (e: any) => e.stopPropagation() }
+                : {})}
             >
               {!isWeb && showGrabber && <View style={styles.grabber} />}
               {children}

@@ -116,6 +116,29 @@ export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: Si
             </TouchableOpacity>
           );
         })}
+        {authState.isAuthenticated && profile?.username && (
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={handleProfileNav}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconWrapper}>
+              <Ionicons
+                name={activeTab === 'ProfileTab' ? 'person' : 'person-outline'}
+                size={21}
+                color={activeTab === 'ProfileTab' ? COLORS.textPrimary : '#999'}
+              />
+            </View>
+            <Text
+              style={[
+                styles.navLabel,
+                activeTab === 'ProfileTab' && styles.navLabelActive,
+              ]}
+            >
+              My Profile
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.bottomSection}>

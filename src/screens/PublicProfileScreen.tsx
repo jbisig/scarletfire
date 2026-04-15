@@ -63,6 +63,7 @@ import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
 import { useResponsive } from '../hooks/useResponsive';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useCollections } from '../contexts/CollectionsContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
@@ -204,6 +205,7 @@ export function PublicProfileScreen() {
   const { state: authState } = useAuth();
   const currentUser = authState.user;
   const isOwnProfile = !!currentUser && currentUser.id === data?.profile?.id;
+  const { collections: ownedCollections } = useCollections();
   const showSortRef = useRef<View>(null);
   const songSortRef = useRef<View>(null);
 
@@ -762,6 +764,23 @@ export function PublicProfileScreen() {
                   </TouchableOpacity>
                 )}
               </View>
+              {isDesktop && isOwnProfile && data?.profile && (
+                <View
+                  style={[
+                    styles.visibilityBadge,
+                    { height: 40, backgroundColor: COLORS.cardBackground },
+                  ]}
+                >
+                  <Ionicons
+                    name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
+                    size={14}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.visibilityBadgeText}>
+                    {data.profile.is_public ? 'Public' : 'Private'}
+                  </Text>
+                </View>
+              )}
               {isDesktop && (
                 <TouchableOpacity
                   style={styles.shareButton}
@@ -804,7 +823,7 @@ export function PublicProfileScreen() {
               renderSongsTab()
             ) : (
               <CollectionsTab
-                entries={publicCollections.map((c) => ({
+                entries={(isOwnProfile ? ownedCollections : publicCollections).map((c) => ({
                   kind: 'owned' as const,
                   collection: c,
                   sortKey: c.updatedAt,
