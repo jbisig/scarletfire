@@ -73,8 +73,43 @@ class FollowService {
     return data !== null;
   }
 
-  async getFollowers(userId: string): Promise<FollowUser[]> { throw new Error('not implemented'); }
-  async getFollowing(userId: string): Promise<FollowUser[]> { throw new Error('not implemented'); }
+  private async resolveAvatarUrl(userId: string): Promise<string | null> {
+    const supabase = authService.getClient();
+    const { data: files } = await supabase.storage
+      .from('avatars')
+      .list(userId, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+    if (!files || files.length === 0) return null;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(`${userId}/${files[0].name}`);
+    return data.publicUrl || null;
+  }
+
+  async getFollowers(userId: string): Promise<FollowUser[]> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('follower:profiles!user_follows_follower_id_fkey(id, username, display_name, is_public)')
+      .eq('following_id', userId);
+    if (error) throw error;
+    const rows = (data ?? []).map((r: any) => r.follower).filter((p: any) => p && p.is_public);
+    return Promise.all(rows.map(async (p: any) => ({
+      id: p.id, username: p.username, display_name: p.display_name,
+      avatarUrl: await this.resolveAvatarUrl(p.id),
+    })));
+  }
+
+  async getFollowing(userId: string): Promise<FollowUser[]> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('following:profiles!user_follows_following_id_fkey(id, username, display_name, is_public)')
+      .eq('follower_id', userId);
+    if (error) throw error;
+    const rows = (data ?? []).map((r: any) => r.following).filter((p: any) => p && p.is_public);
+    return Promise.all(rows.map(async (p: any) => ({
+      id: p.id, username: p.username, display_name: p.display_name,
+      avatarUrl: await this.resolveAvatarUrl(p.id),
+    })));
+  }
 }
 
 export const followService = new FollowService();

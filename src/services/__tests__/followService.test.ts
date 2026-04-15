@@ -110,3 +110,32 @@ describe('followService reads', () => {
     await expect(followService.isFollowing('target-1')).resolves.toBe(false);
   });
 });
+
+describe('followService lists', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('getFollowers returns joined profile rows (public only)', async () => {
+    const joinRows = [
+      { follower: { id: 'a', username: 'alice', display_name: 'Alice', is_public: true } },
+      { follower: { id: 'b', username: 'bob', display_name: null, is_public: true } },
+    ];
+    const chain: any = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockResolvedValue({ data: joinRows, error: null }),
+    };
+    const storageList = jest.fn().mockResolvedValue({ data: [], error: null });
+    const getPublicUrl = jest.fn().mockReturnValue({ data: { publicUrl: '' } });
+    (authService.getClient as jest.Mock).mockReturnValue({
+      from: jest.fn().mockReturnValue(chain),
+      storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
+      auth: { getUser: jest.fn() },
+    });
+
+    const result = await followService.getFollowers('target-1');
+    expect(result).toEqual([
+      { id: 'a', username: 'alice', display_name: 'Alice', avatarUrl: null },
+      { id: 'b', username: 'bob', display_name: null, avatarUrl: null },
+    ]);
+    expect(chain.select).toHaveBeenCalledWith(expect.stringContaining('follower:profiles!user_follows_follower_id_fkey'));
+  });
+});
