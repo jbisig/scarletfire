@@ -610,18 +610,31 @@ export function PublicProfileScreen() {
           ) : (
             <View style={styles.backButton} />
           )}
-          {data?.profile && (
-            <View style={styles.visibilityBadge}>
-              <Ionicons
-                name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
-                size={14}
-                color={COLORS.textPrimary}
-              />
-              <Text style={styles.visibilityBadgeText}>
-                {data.profile.is_public ? 'Public' : 'Private'}
-              </Text>
-            </View>
-          )}
+          <View style={styles.headerRight}>
+            {data?.profile && (
+              <View style={styles.visibilityBadge}>
+                <Ionicons
+                  name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
+                  size={14}
+                  color={COLORS.textPrimary}
+                />
+                <Text style={styles.visibilityBadgeText}>
+                  {data.profile.is_public ? 'Public' : 'Private'}
+                </Text>
+              </View>
+            )}
+            {data?.profile && (
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={handleShareProfile}
+                accessibilityRole="button"
+                accessibilityLabel={`Share ${displayName}'s profile`}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="share-outline" size={22} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
       <FlatList
@@ -677,15 +690,17 @@ export function PublicProfileScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.shareButton}
-                onPress={handleShareProfile}
-                accessibilityRole="button"
-                accessibilityLabel={`Share ${displayName}'s profile`}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="share-outline" size={22} color={COLORS.textPrimary} />
-              </TouchableOpacity>
+              {isDesktop && (
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={handleShareProfile}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Share ${displayName}'s profile`}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="share-outline" size={22} color={COLORS.textPrimary} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Tab Navigation */}
@@ -766,6 +781,11 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   visibilityBadge: {
     height: 32,
