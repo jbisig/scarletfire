@@ -25,10 +25,9 @@ import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
-import { useCollections } from '../contexts/CollectionsContext';
-import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
 import { CollectionCarousel } from '../components/CollectionCarousel';
-import { CollectionType } from '../types/collection.types';
+import { Collection } from '../types/collection.types';
+import { collectionsService } from '../services/collectionsService';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
@@ -239,28 +238,31 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
       .slice(0, 25);
   }, [showsByYear]);
 
-  // Collections + playlists for the "Your ..." carousels
-  const { collections } = useCollections();
-  const [createModalVisible, setCreateModalVisible] = useState(false);
-  const [createType, setCreateType] = useState<CollectionType>('show_collection');
+  // Popular collections + playlists across all users with public profiles.
+  const [popularShowCollections, setPopularShowCollections] = useState<Collection[]>([]);
+  const [popularPlaylists, setPopularPlaylists] = useState<Collection[]>([]);
 
-  const showCollections = useMemo(
-    () => collections.filter(c => c.type === 'show_collection'),
-    [collections],
-  );
-  const playlists = useMemo(
-    () => collections.filter(c => c.type === 'playlist'),
-    [collections],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [shows, lists] = await Promise.all([
+          collectionsService.fetchPopularCollections('show_collection', 10),
+          collectionsService.fetchPopularCollections('playlist', 10),
+        ]);
+        if (cancelled) return;
+        setPopularShowCollections(shows);
+        setPopularPlaylists(lists);
+      } catch (err) {
+        logger.api.error('Failed to load popular collections', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleCollectionPress = useCallback((collectionId: string) => {
     navigation.navigate('CollectionDetail', { collectionId });
   }, [navigation]);
-
-  const handleCreatePress = useCallback((type: CollectionType) => {
-    setCreateType(type);
-    setCreateModalVisible(true);
-  }, []);
 
   // Determine which button label to use and whether to show it
   // While favorites are loading, assume there might be saved content to prevent layout shift
@@ -405,33 +407,22 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
           color="blue"
         />
 
-        {/* Your Show Collections */}
+        {/* Popular Show Collections */}
         <CollectionCarousel
-          title="Your Show Collections"
-          collections={showCollections}
+          title="Popular Show Collections"
+          collections={popularShowCollections}
           type="show_collection"
           onCollectionPress={handleCollectionPress}
-          onCreatePress={() => handleCreatePress('show_collection')}
         />
 
-        {/* Your Playlists */}
+        {/* Popular Playlists */}
         <CollectionCarousel
-          title="Your Playlists"
-          collections={playlists}
+          title="Popular Playlists"
+          collections={popularPlaylists}
           type="playlist"
           onCollectionPress={handleCollectionPress}
-          onCreatePress={() => handleCreatePress('playlist')}
         />
       </ScrollView>
-
-      <CreateCollectionModal
-        visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
-        initialType={createType}
-        onCreated={(id) => {
-          navigation.navigate('CollectionDetail', { collectionId: id });
-        }}
-      />
     </View>
   );
 });

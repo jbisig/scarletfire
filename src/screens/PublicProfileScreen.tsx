@@ -846,8 +846,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xs,
-    paddingBottom: SPACING.xs,
+    paddingTop: Platform.OS === 'web' ? SPACING.md : SPACING.xs,
+    paddingBottom: Platform.OS === 'web' ? SPACING.md : SPACING.xs,
   },
   backButton: {
     width: 40,
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: SPACING.xl,
-    paddingTop: 0,
+    paddingTop: Platform.OS === 'web' ? SPACING.lg : 0,
     paddingBottom: SPACING.xl,
   },
   contentContainerMobile: {

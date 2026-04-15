@@ -10,7 +10,7 @@ interface CollectionCarouselProps {
   collections: Collection[];
   type: CollectionType;
   onCollectionPress: (collectionId: string) => void;
-  onCreatePress: () => void;
+  onCreatePress?: () => void;
 }
 
 const CARD_WIDTH = LAYOUT.horizontalCardWidth;
@@ -55,7 +55,7 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
     [onCollectionPress],
   );
 
-  const createCard = (
+  const createCard = onCreatePress ? (
     <TouchableOpacity
       style={styles.card}
       onPress={onCreatePress}
@@ -70,7 +70,9 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
         {createLabel}
       </Text>
     </TouchableOpacity>
-  );
+  ) : null;
+
+  if (isEmpty && !createCard) return null;
 
   if (isDesktop) {
     return (

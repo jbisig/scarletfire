@@ -50,6 +50,9 @@ const SCREEN_TO_TAB: Record<string, string> = {
 
 const SCROLLBAR_STYLES = ``;
 
+const IS_ELECTRON =
+  typeof navigator !== 'undefined' && /Electron/i.test(navigator.userAgent);
+
 export function DesktopLayout() {
   const [activeTab, setActiveTab] = useState('DiscoverTab');
   useEffect(() => {
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: 40,
+    paddingTop: IS_ELECTRON ? 40 : WEB_LAYOUT.outerPadding,
     paddingRight: WEB_LAYOUT.outerPadding,
     paddingBottom: WEB_LAYOUT.outerPadding,
     paddingLeft: WEB_LAYOUT.outerPadding,

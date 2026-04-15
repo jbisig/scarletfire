@@ -297,6 +297,28 @@ class CollectionsService {
     return counts;
   }
 
+  /**
+   * Most-saved collections of a given type from users with public profiles.
+   * Backed by the `get_popular_collections` RPC so the cross-user save-count
+   * aggregation can run with elevated privileges (SECURITY DEFINER).
+   */
+  async fetchPopularCollections(
+    type: CollectionType,
+    limit = 10,
+  ): Promise<Collection[]> {
+    const { data, error } = await this.supabase.rpc('get_popular_collections', {
+      p_type: type,
+      p_limit: limit,
+    });
+    if (error) {
+      logger.api.error('fetchPopularCollections failed', error);
+      throw error;
+    }
+    return (data ?? []).map((row: CollectionRow & { item_count: number | string }) =>
+      mapCollection(row, Number(row.item_count ?? 0)),
+    );
+  }
+
   async fetchPublicCollectionByLink(
     userId: string,
     slug: string,
