@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: SPACING.lg,
     marginBottom: SPACING.lg,
   },
