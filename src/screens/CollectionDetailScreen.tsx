@@ -152,6 +152,8 @@ export function CollectionDetailScreen() {
   const [removeTarget, setRemoveTarget] = useState<CollectionItem | null>(null);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [signInPromptVisible, setSignInPromptVisible] = useState(false);
+  const pendingAuthActionRef = useRef<'save' | 'duplicate' | null>(null);
+  const wasSignedInRef = useRef(false);
 
   const handleShowSortPress = () => {
     showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
@@ -278,6 +280,7 @@ export function CollectionDetailScreen() {
   const handleToggleSave = useCallback(async () => {
     if (!collection) return;
     if (!isSignedIn) {
+      pendingAuthActionRef.current = 'save';
       if (Platform.OS === 'web') {
         openAuthModal('login');
       } else {
@@ -300,6 +303,7 @@ export function CollectionDetailScreen() {
   const handleDuplicate = useCallback(async () => {
     if (!collection) return;
     if (!isSignedIn) {
+      pendingAuthActionRef.current = 'duplicate';
       if (Platform.OS === 'web') {
         openAuthModal('login');
       } else {
@@ -317,6 +321,19 @@ export function CollectionDetailScreen() {
       Alert.alert('Could not duplicate collection', 'Please try again.');
     }
   }, [collection, isSignedIn, duplicateCollection, navigation, openAuthModal]);
+
+  // Resume a pending save/duplicate after the user signs in via the auth modal.
+  // Fires only on the signed-out → signed-in transition, not on initial mount.
+  useEffect(() => {
+    const wasSignedIn = wasSignedInRef.current;
+    wasSignedInRef.current = isSignedIn;
+    if (!wasSignedIn && isSignedIn && pendingAuthActionRef.current && collection) {
+      const action = pendingAuthActionRef.current;
+      pendingAuthActionRef.current = null;
+      if (action === 'save') handleToggleSave();
+      else if (action === 'duplicate') handleDuplicate();
+    }
+  }, [isSignedIn, collection, handleToggleSave, handleDuplicate]);
 
   const handleDelete = useCallback(() => {
     if (!collection) return;

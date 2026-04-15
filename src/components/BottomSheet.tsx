@@ -81,7 +81,10 @@ export function BottomSheet({
   useEffect(() => {
     if (isWeb) return;
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    // Use keyboardDidHide (not Will) so the sheet only animates back down
+    // after the keyboard is fully gone — otherwise mid-tap layout shifts
+    // can move buttons out from under the user's finger.
+    const hideEvent = 'keyboardDidHide';
     const onShow = (e: KeyboardEvent) => setKeyboardHeight(e.endCoordinates.height);
     const onHide = () => setKeyboardHeight(0);
     const s = Keyboard.addListener(showEvent, onShow);
@@ -155,13 +158,21 @@ export function BottomSheet({
             }
             {...(isWeb ? {} : panResponder.panHandlers)}
           >
-            <Pressable
-              style={[styles.card, isWeb && styles.cardWeb, cardStyle]}
-              onPress={() => {}}
+            <View
+              style={[
+                styles.card,
+                isWeb && styles.cardWeb,
+                cardStyle,
+              ]}
+              // Block taps on empty card area from bubbling to the backdrop
+              // Pressable (which would close the sheet). Children that claim
+              // the responder (TouchableOpacity/TextInput) still win because
+              // bubble phase resolves deepest-first.
+              onStartShouldSetResponder={() => true}
             >
               {!isWeb && showGrabber && <View style={styles.grabber} />}
               {children}
-            </Pressable>
+            </View>
           </Animated.View>
         </Pressable>
       </Animated.View>
@@ -191,6 +202,11 @@ const styles = StyleSheet.create({
   cardWeb: {
     paddingBottom: 16,
     borderRadius: 16,
+  },
+  cardKeyboardOpen: {
+    // When the keyboard is up, the sheet already sits flush above it — no
+    // need for the 80pt home-indicator buffer.
+    paddingBottom: 16,
   },
   grabber: {
     alignSelf: 'center',

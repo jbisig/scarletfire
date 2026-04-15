@@ -792,9 +792,9 @@ export function ShowDetailScreen() {
         show={show || undefined}
         onClose={() => setReleaseModalVisible(false)}
       />
-      {show && (
+      {show && addToCollectionVisible && (
         <AddToCollectionPicker
-          visible={addToCollectionVisible}
+          visible
           onClose={() => setAddToCollectionVisible(false)}
           type="show_collection"
           itemIdentifier={show.identifier}

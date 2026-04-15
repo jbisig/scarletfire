@@ -25,6 +25,10 @@ import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { useCollections } from '../contexts/CollectionsContext';
+import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
+import { CollectionCarousel } from '../components/CollectionCarousel';
+import { CollectionType } from '../types/collection.types';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
@@ -110,14 +114,12 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   // Refs for carousel scroll reset
   const jumpBackInRef = useRef<ShowCarouselRef>(null);
   const classicsRef = useRef<ShowCarouselRef>(null);
-  const gd101Ref = useRef<ShowCarouselRef>(null);
 
   // Reset all carousels to the beginning when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       jumpBackInRef.current?.scrollToStart();
       classicsRef.current?.scrollToStart();
-      gd101Ref.current?.scrollToStart();
     }, [])
   );
 
@@ -203,44 +205,62 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
     return shows;
   }, [playCounts, showsByYear]);
 
-  // Classic Shows: Filter shows with classicTier, sorted by rating (tier 1 = best)
-  // Excludes shows already in GD 101 to avoid duplicates
+  // Classic Shows: All classicTier shows merged with the curated Grateful Dead 101
+  // list. Deduped by primary identifier; sorted by tier (1 = best), then date.
   const classicShows = useMemo(() => {
-    const gd101DateSet = new Set(GRATEFUL_DEAD_101_DATES);
     const allClassics: GratefulDeadShow[] = [];
+    const seen = new Set<string>();
     for (const yearShows of Object.values(showsByYear)) {
       for (const s of yearShows) {
-        // Only include if it has a classic tier AND is not in GD 101
-        if (s.classicTier && !gd101DateSet.has(s.date.substring(0, 10))) {
+        if (s.classicTier && !seen.has(s.primaryIdentifier)) {
           allClassics.push(s);
+          seen.add(s.primaryIdentifier);
         }
       }
     }
-    // Sort by tier (1 is best), then by date
-    return allClassics
-      .sort((a, b) => {
-        const tierDiff = (a.classicTier || 4) - (b.classicTier || 4);
-        if (tierDiff !== 0) return tierDiff;
-        return a.date.localeCompare(b.date);
-      })
-      .slice(0, 15);
-  }, [showsByYear]);
-
-  // GD 101: Shows from the curated beginner list
-  const gd101Shows = useMemo(() => {
-    const shows: GratefulDeadShow[] = [];
     for (const date of GRATEFUL_DEAD_101_DATES) {
       for (const yearShows of Object.values(showsByYear)) {
-        // Compare just the date portion (handles ISO format with timestamp)
         const found = yearShows.find(s => s.date.substring(0, 10) === date);
-        if (found) {
-          shows.push(found);
+        if (found && !seen.has(found.primaryIdentifier)) {
+          allClassics.push(found);
+          seen.add(found.primaryIdentifier);
           break;
         }
       }
     }
-    return shows;
+    const topDownloads = (s: GratefulDeadShow) =>
+      s.versions.reduce((max, v) => Math.max(max, v.downloads || 0), 0);
+    return allClassics
+      .sort((a, b) => {
+        const diff = topDownloads(b) - topDownloads(a);
+        if (diff !== 0) return diff;
+        return a.date.localeCompare(b.date);
+      })
+      .slice(0, 25);
   }, [showsByYear]);
+
+  // Collections + playlists for the "Your ..." carousels
+  const { collections } = useCollections();
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [createType, setCreateType] = useState<CollectionType>('show_collection');
+
+  const showCollections = useMemo(
+    () => collections.filter(c => c.type === 'show_collection'),
+    [collections],
+  );
+  const playlists = useMemo(
+    () => collections.filter(c => c.type === 'playlist'),
+    [collections],
+  );
+
+  const handleCollectionPress = useCallback((collectionId: string) => {
+    navigation.navigate('CollectionDetail', { collectionId });
+  }, [navigation]);
+
+  const handleCreatePress = useCallback((type: CollectionType) => {
+    setCreateType(type);
+    setCreateModalVisible(true);
+  }, []);
 
   // Determine which button label to use and whether to show it
   // While favorites are loading, assume there might be saved content to prevent layout shift
@@ -385,15 +405,33 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
           color="blue"
         />
 
-        {/* Grateful Dead 101 Carousel */}
-        <ShowCarousel
-          ref={gd101Ref}
-          title="Grateful Dead 101"
-          shows={gd101Shows}
-          onShowPress={handleShowPress}
-          color="blue"
+        {/* Your Show Collections */}
+        <CollectionCarousel
+          title="Your Show Collections"
+          collections={showCollections}
+          type="show_collection"
+          onCollectionPress={handleCollectionPress}
+          onCreatePress={() => handleCreatePress('show_collection')}
+        />
+
+        {/* Your Playlists */}
+        <CollectionCarousel
+          title="Your Playlists"
+          collections={playlists}
+          type="playlist"
+          onCollectionPress={handleCollectionPress}
+          onCreatePress={() => handleCreatePress('playlist')}
         />
       </ScrollView>
+
+      <CreateCollectionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        initialType={createType}
+        onCreated={(id) => {
+          navigation.navigate('CollectionDetail', { collectionId: id });
+        }}
+      />
     </View>
   );
 });

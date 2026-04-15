@@ -7,6 +7,10 @@
           {
             "/": "/show/*",
             "comment": "Share links to show and song pages"
+          },
+          {
+            "/": "/profile/*/collection/*",
+            "comment": "Share links to collection and playlist pages"
           }
         ]
       }

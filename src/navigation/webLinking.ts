@@ -77,6 +77,9 @@ const prefixes = [typeof window !== 'undefined' ? window.location.origin : ''];
 export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   prefixes,
   config: {
+    // Seeds Home under any deep-linked screen so cold-loaded share links
+    // (ShowDetail, CollectionDetail, PublicProfile) have a working back target.
+    initialRouteName: 'Home',
     screens: {
       DiscoverLanding: 'discover',
       Home: {
@@ -100,19 +103,33 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
   },
 };
 
-// Mobile: tab navigator with nested stacks
+// Mobile: tab navigator with nested stacks.
+//
+// Share-link URLs (/show/*, /profile/*, /profile/*/collection/*) must resolve
+// to screens *inside* a tab stack so the bottom tab bar renders. To do that,
+// DiscoverTab uses an empty path and owns those screens — its children's
+// paths are matched directly against the root URL. /discover is kept alive by
+// moving the path onto DiscoverLanding itself.
 export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   prefixes,
   config: {
+    initialRouteName: 'MainTabs',
     screens: {
       MainTabs: {
         path: '',
+        initialRouteName: 'DiscoverTab',
         screens: {
           DiscoverTab: {
-            path: 'discover',
+            path: '',
+            initialRouteName: 'DiscoverLanding',
             screens: {
-              DiscoverLanding: '',
+              DiscoverLanding: 'discover',
               ShowDetail: showDetailRoute,
+              PublicProfile: {
+                path: 'profile/:username',
+                parse: { username: (u: string) => decodeURIComponent(u) },
+              },
+              CollectionDetail: collectionDetailRoute,
             },
           },
           ShowsTab: {
@@ -145,17 +162,10 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
             path: 'favorites',
             screens: {
               Favorites: '',
-              ShowDetail: showDetailRoute,
             },
           },
         },
       },
-      ShowDetail: showDetailRoute,
-      PublicProfile: {
-        path: 'profile/:username',
-        parse: { username: (u: string) => decodeURIComponent(u) },
-      },
-      CollectionDetail: collectionDetailRoute,
       Settings: 'settings',
       PrivacyPolicy: 'privacy-policy',
       ResetPassword: 'reset-password',

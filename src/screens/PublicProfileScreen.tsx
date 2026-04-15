@@ -20,6 +20,7 @@ import { ShowCard } from '../components/ShowCard';
 import { StarRating } from '../components/StarRating';
 import { useResponsive } from '../hooks/useResponsive';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useShareSheet } from '../contexts/ShareSheetContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -280,6 +281,18 @@ export function PublicProfileScreen() {
 
   const displayName = data?.profile.display_name || username;
 
+  const { openShareTray } = useShareSheet();
+  const handleShareProfile = useCallback(() => {
+    if (!data) return;
+    openShareTray({
+      kind: 'profile',
+      username: data.profile.username,
+      displayName,
+      showCount: data.favorites.shows.length,
+      songCount: data.favorites.songs.length,
+    });
+  }, [data, displayName, openShareTray]);
+
   // Sorted favorite shows
   const sortedFavoriteShows = useMemo(() => {
     if (!data) return [];
@@ -398,7 +411,6 @@ export function PublicProfileScreen() {
                   item.show.date,
                 )}
                 hideSaveBadge
-                trailingText={formatRecentDate(item.lastPlayedAt)}
               />
             )) : (
               <Text style={styles.emptyText}>No recent plays</Text>
@@ -418,7 +430,6 @@ export function PublicProfileScreen() {
                   item.show.date,
                 )}
                 hideSaveBadge
-                trailingText={`${item.totalPlays} plays`}
               />
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
@@ -493,7 +504,7 @@ export function PublicProfileScreen() {
             <Text style={styles.columnSectionTitle}>Recently Played</Text>
             {recentSongs.length > 0 ? recentSongs.map(item => (
               <React.Fragment key={`recent-${item.song.trackId}-${item.song.showIdentifier}`}>
-                {renderSongRow(item.song, <Text style={styles.recentTime}>{formatRecentDate(item.lastPlayedAt)}</Text>)}
+                {renderSongRow(item.song)}
               </React.Fragment>
             )) : (
               <Text style={styles.emptyText}>No recent plays</Text>
@@ -505,7 +516,7 @@ export function PublicProfileScreen() {
             <Text style={styles.columnSectionTitle}>Top 10</Text>
             {topSongs.length > 0 ? topSongs.map(item => (
               <React.Fragment key={`top-${item.song.trackId}-${item.song.showIdentifier}`}>
-                {renderSongRow(item.song, <Text style={styles.recentTime}>{item.plays} plays</Text>)}
+                {renderSongRow(item.song)}
               </React.Fragment>
             )) : (
               <Text style={styles.emptyText}>No plays yet</Text>
@@ -553,13 +564,20 @@ export function PublicProfileScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
+      {!isDesktop && navigation.canGoBack() && (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        </View>
+      )}
       <FlatList
         data={[]}
         renderItem={null}
         ListHeaderComponent={
-          <View style={styles.contentContainer}>
+          <View style={[styles.contentContainer, !isDesktop && styles.contentContainerMobile]}>
             {/* Profile Header */}
-            <View style={styles.profileHeader}>
+            <View style={[styles.profileHeader, !isDesktop && styles.mobileHorizontalPad]}>
               <ProfileImage
                 uri={data.avatarUrl}
                 style={styles.avatar}
@@ -568,10 +586,19 @@ export function PublicProfileScreen() {
                 <Text style={styles.displayName}>{displayName}</Text>
                 <Text style={styles.username}>@{data.profile.username}</Text>
               </View>
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={handleShareProfile}
+                accessibilityRole="button"
+                accessibilityLabel={`Share ${displayName}'s profile`}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="share-outline" size={22} color={COLORS.textPrimary} />
+              </TouchableOpacity>
             </View>
 
             {/* Tab Navigation */}
-            <View style={styles.tabContainer} accessibilityRole="tablist">
+            <View style={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]} accessibilityRole="tablist">
               {(data?.profile?.is_public
                 ? (['shows', 'songs', 'collections'] as const)
                 : (['shows', 'songs'] as const)
@@ -667,6 +694,12 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: SPACING.xl,
   },
+  contentContainerMobile: {
+    paddingHorizontal: 0,
+  },
+  mobileHorizontalPad: {
+    paddingHorizontal: SPACING.lg,
+  },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -675,6 +708,14 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
     width: 80,
@@ -744,6 +785,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textTertiary,
     paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   listSection: {
     marginBottom: SPACING.xxl,
@@ -754,7 +796,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
-    paddingLeft: SPACING.lg,
+    paddingHorizontal: Platform.OS === 'web' ? SPACING.lg : SPACING.xxl,
     marginBottom: SPACING.sm,
   },
   sectionTitle: {
@@ -772,7 +814,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
-    paddingLeft: SPACING.lg,
+    paddingLeft: Platform.OS === 'web' ? SPACING.lg : SPACING.xxl,
   },
   sortButton: {
     flexDirection: 'row',

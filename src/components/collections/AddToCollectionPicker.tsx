@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCollections } from '../../contexts/CollectionsContext';
-import { CreateCollectionModal } from './CreateCollectionModal';
+import { CreateCollectionForm } from './CreateCollectionForm';
 import {
   CollectionType,
   CollectionItemMetadata,
@@ -46,7 +46,10 @@ export function AddToCollectionPicker({
   const isWeb = Platform.OS === 'web';
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setCreateVisible(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       // One JOIN query per open, replacing the N+1 `fetchCollectionItems` loop.
@@ -86,70 +89,83 @@ export function AddToCollectionPicker({
   const title = type === 'playlist' ? 'Add to Playlist' : 'Add to Collection';
   const newLabel = type === 'playlist' ? 'New Playlist' : 'New Show Collection';
 
+  const handleNewPress = () => {
+    setCreateVisible(true);
+  };
+
+  const handleClose = () => {
+    setCreateVisible(false);
+    onClose();
+  };
+
   return (
-    <BottomSheet visible={visible} onClose={onClose} cardStyle={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{title}</Text>
-        {isWeb && (
-          <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+    <BottomSheet visible={visible} onClose={handleClose} cardStyle={styles.card}>
+      {createVisible ? (
+        <CreateCollectionForm
+          type={type}
+          onCancel={() => setCreateVisible(false)}
+          onCreated={async (createdId) => {
+            await addItem(createdId, itemIdentifier, itemMetadata);
+            setMemberships((prev) => ({ ...prev, [createdId]: true }));
+            setCreateVisible(false);
+          }}
+        />
+      ) : (
+        <>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>{title}</Text>
+            {isWeb && (
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <FlatList
+            data={filtered}
+            keyExtractor={(c) => c.id}
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                No {type === 'playlist' ? 'playlists' : 'collections'} yet.
+              </Text>
+            }
+            renderItem={({ item }) => {
+              const selected = !!memberships[item.id];
+              return (
+                <Pressable
+                  onPress={() => toggle(item.id)}
+                  style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                >
+                  {({ pressed }) => (
+                    <>
+                      <Text
+                        style={[
+                          styles.rowText,
+                          (selected || pressed) && styles.rowTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                      <View style={styles.checkSlot}>
+                        {(selected || pressed) && (
+                          <Ionicons name="checkmark" size={20} color={COLORS.accent} />
+                        )}
+                      </View>
+                    </>
+                  )}
+                </Pressable>
+              );
+            }}
+          />
+
+          <TouchableOpacity style={styles.newBtn} onPress={handleNewPress}>
+            <Ionicons name="add" size={20} color={COLORS.accent} />
+            <Text style={styles.newText}>{newLabel}</Text>
           </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
-        data={filtered}
-        keyExtractor={(c) => c.id}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            No {type === 'playlist' ? 'playlists' : 'collections'} yet.
-          </Text>
-        }
-        renderItem={({ item }) => {
-          const selected = !!memberships[item.id];
-          return (
-            <Pressable
-              onPress={() => toggle(item.id)}
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            >
-              {({ pressed }) => (
-                <>
-                  <Text
-                    style={[
-                      styles.rowText,
-                      (selected || pressed) && styles.rowTextSelected,
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                  <View style={styles.checkSlot}>
-                    {(selected || pressed) && (
-                      <Ionicons name="checkmark" size={20} color={COLORS.accent} />
-                    )}
-                  </View>
-                </>
-              )}
-            </Pressable>
-          );
-        }}
-      />
-
-      <TouchableOpacity style={styles.newBtn} onPress={() => setCreateVisible(true)}>
-        <Ionicons name="add" size={20} color={COLORS.accent} />
-        <Text style={styles.newText}>{newLabel}</Text>
-      </TouchableOpacity>
-
-      <CreateCollectionModal
-        visible={createVisible}
-        onClose={() => setCreateVisible(false)}
-        initialType={type}
-        onCreated={async (createdId) => {
-          await addItem(createdId, itemIdentifier, itemMetadata);
-          setMemberships((prev) => ({ ...prev, [createdId]: true }));
-        }}
-      />
+        </>
+      )}
     </BottomSheet>
   );
 }
@@ -204,7 +220,8 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'web' ? 12 : 32,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },

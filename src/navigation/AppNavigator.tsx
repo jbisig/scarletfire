@@ -190,6 +190,11 @@ function ShowsStack() {
           headerBackTitle: ' ',
         }}
       />
+      <Stack.Screen
+        name="PublicProfile"
+        component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -229,6 +234,11 @@ function SongsStack() {
           headerShown: Platform.OS !== 'web',
           headerBackTitle: ' ',
         }}
+      />
+      <Stack.Screen
+        name="PublicProfile"
+        component={PublicProfileScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
@@ -271,6 +281,11 @@ function FavoritesStack() {
         component={CollectionDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="PublicProfile"
+        component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -305,6 +320,16 @@ function DiscoverStack() {
           headerShown: Platform.OS !== 'web',
           headerBackTitle: ' ',
         }}
+      />
+      <Stack.Screen
+        name="PublicProfile"
+        component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CollectionDetail"
+        component={CollectionDetailScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
