@@ -31,6 +31,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { PlayCountBadge } from '../components/PlayCountBadge';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { followService } from '../services/followService';
+import { useAuth } from '../contexts/AuthContext';
 import showsData from '../data/shows.json';
 import { ShowsByYear } from '../types/show.types';
 
@@ -151,6 +153,13 @@ export function PublicProfileScreen() {
   const [showSortPosition, setShowSortPosition] = useState({ top: 0, left: 0 });
   const [songSortPosition, setSongSortPosition] = useState({ top: 0, left: 0 });
   const [publicCollections, setPublicCollections] = useState<Collection[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followBusy, setFollowBusy] = useState(false);
+  const { state: authState } = useAuth();
+  const currentUser = authState.user;
+  const isOwnProfile = !!currentUser && currentUser.id === data?.profile?.id;
   const showSortRef = useRef<View>(null);
   const songSortRef = useRef<View>(null);
 
@@ -167,11 +176,39 @@ export function PublicProfileScreen() {
           setError(true);
         } else {
           setData(result);
+          setIsFollowing(result.viewerIsFollowing);
+          setFollowerCount(result.followerCount);
+          setFollowingCount(result.followingCount);
         }
       })
       .catch(() => setError(true))
       .finally(() => setIsLoading(false));
   }, [username]);
+
+  const handleToggleFollow = useCallback(async () => {
+    if (!currentUser) {
+      navigation.navigate('Settings' as never);
+      return;
+    }
+    if (!data?.profile?.id || followBusy) return;
+    const prevFollowing = isFollowing;
+    const prevCount = followerCount;
+    setFollowBusy(true);
+    setIsFollowing(!prevFollowing);
+    setFollowerCount(prevCount + (prevFollowing ? -1 : 1));
+    try {
+      if (prevFollowing) {
+        await followService.unfollowUser(data.profile.id);
+      } else {
+        await followService.followUser(data.profile.id);
+      }
+    } catch {
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevCount);
+    } finally {
+      setFollowBusy(false);
+    }
+  }, [currentUser, data?.profile?.id, followBusy, isFollowing, followerCount, navigation]);
 
   useEffect(() => {
     if (!data?.profile?.is_public) {
@@ -585,6 +622,44 @@ export function PublicProfileScreen() {
               <View style={styles.profileInfo}>
                 <Text style={styles.displayName}>{displayName}</Text>
                 <Text style={styles.username}>@{data.profile.username}</Text>
+                <View style={styles.countsRow}>
+                  <TouchableOpacity
+                    onPress={() => navigation.push('FollowList', {
+                      userId: data.profile.id,
+                      username: data.profile.username,
+                      mode: 'followers',
+                    })}
+                  >
+                    <Text style={styles.countText}>
+                      <Text style={styles.countNum}>{followerCount}</Text> Followers
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.countSep}>  ·  </Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.push('FollowList', {
+                      userId: data.profile.id,
+                      username: data.profile.username,
+                      mode: 'following',
+                    })}
+                  >
+                    <Text style={styles.countText}>
+                      <Text style={styles.countNum}>{followingCount}</Text> Following
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {!isOwnProfile && (
+                  <TouchableOpacity
+                    style={[styles.followBtn, isFollowing && styles.followBtnActive]}
+                    onPress={handleToggleFollow}
+                    disabled={followBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel={isFollowing ? 'Unfollow' : 'Follow'}
+                  >
+                    <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity
                 style={styles.shareButton}
@@ -730,6 +805,43 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  countsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+    flexWrap: 'wrap',
+  },
+  countText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  countNum: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  countSep: {
+    color: COLORS.textSecondary,
+  },
+  followBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.accent,
+    marginTop: SPACING.sm,
+  },
+  followBtnActive: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  followBtnText: {
+    ...TYPOGRAPHY.labelLarge,
+    color: COLORS.textPrimary,
+  },
+  followBtnTextActive: {
+    color: COLORS.textPrimary,
   },
   tabContainer: {
     flexDirection: 'row',
