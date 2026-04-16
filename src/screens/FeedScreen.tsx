@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useResponsive } from '../hooks/useResponsive';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileImage } from '../components/ProfileImage';
@@ -51,6 +52,22 @@ export function FeedScreen() {
             )}
             <Text style={styles.headerTitle}>Feed</Text>
           </View>
+          {Platform.OS !== 'web' && (
+            <TouchableOpacity
+              style={styles.myProfileButton}
+              onPress={handleViewProfile}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="My Profile"
+            >
+              <Ionicons
+                name="person-outline"
+                size={14}
+                color={COLORS.textPrimary}
+              />
+              <Text style={styles.myProfileLabel}>My Profile</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -101,6 +118,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
@@ -117,6 +135,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   headerTitle: { ...TYPOGRAPHY.heading2 },
+  myProfileButton: {
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceMedium,
+  },
+  myProfileLabel: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: SPACING.xl,
