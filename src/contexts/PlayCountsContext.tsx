@@ -23,7 +23,12 @@ export interface PlayCount {
 interface PlayCountsContextType {
   playCounts: PlayCount[];
   getPlayCount: (trackTitle: string, showIdentifier: string) => number;
-  recordTrackPlay: (trackTitle: string, showIdentifier: string, showDate: string) => Promise<void>;
+  recordTrackPlay: (
+    trackTitle: string,
+    showIdentifier: string,
+    showDate: string,
+    totalTracks: number,
+  ) => Promise<void>;
   isLoading: boolean;
   hasShowBeenPlayed: (showIdentifier: string) => boolean;
   getShowPlayCount: (showIdentifier: string, totalTracks: number) => number;
@@ -167,7 +172,12 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     authStateRef.current = authState;
   }, [authState]);
 
-  const recordTrackPlay = useCallback(async (trackTitle: string, showIdentifier: string, showDate: string) => {
+  const recordTrackPlay = useCallback(async (
+    trackTitle: string,
+    showIdentifier: string,
+    showDate: string,
+    totalTracks: number, // reserved for Task 12: show-level listened_show event emission
+  ) => {
     const now = Date.now();
     const key = `${trackTitle}:${showIdentifier}`;
 
