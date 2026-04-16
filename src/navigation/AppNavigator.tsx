@@ -393,14 +393,14 @@ function MainTabsWithPlayer() {
           options={{ tabBarLabel: 'Songs' }}
         />
         <Tab.Screen
-          name="FeedTab"
-          component={FeedScreen}
-          options={{ tabBarLabel: 'Feed' }}
-        />
-        <Tab.Screen
           name="FavoritesTab"
           component={FavoritesStack}
           options={{ tabBarLabel: 'Favorites' }}
+        />
+        <Tab.Screen
+          name="FeedTab"
+          component={FeedScreen}
+          options={{ tabBarLabel: 'Feed' }}
         />
       </Tab.Navigator>
       <View style={styles.miniPlayerContainer}>
