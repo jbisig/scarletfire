@@ -35,7 +35,7 @@ export function FeedScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8.5 }]}>
         <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           <View style={styles.headerLeft}>
             {!isDesktop && (
