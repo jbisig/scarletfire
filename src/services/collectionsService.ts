@@ -1,4 +1,5 @@
 import { authService } from './authService';
+import { activityService } from './activityService';
 import { logger } from '../utils/logger';
 import {
   Collection,
@@ -138,7 +139,12 @@ class CollectionsService {
         .select('*')
         .single();
       if (!error) {
-        return mapCollection(data as CollectionRow, 0);
+        const created = data as CollectionRow;
+        activityService.emitEvent('created_collection', 'collection', created.id, {
+          name: created.name,
+          type: created.type,
+        }).catch(() => {});
+        return mapCollection(created, 0);
       }
       lastError = error;
       if ((error as { code?: string }).code !== '23505') break;
@@ -421,6 +427,11 @@ class CollectionsService {
       }
       throw error;
     }
+    activityService.emitEvent('saved_collection', 'collection', collectionId, {
+      name: col.name,
+      type: col.type,
+      creator_username: ownerProfile.username,
+    }).catch(() => {});
     return mapSavedCollection(data as SavedCollectionRow);
   }
 
