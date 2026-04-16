@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600', flex: 1 },
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingLeft: SPACING.md, paddingRight: SPACING.xs, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
+  pill: { flexDirection: 'row', alignItems: 'center', paddingLeft: SPACING.md, paddingRight: SPACING.sm, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
   pillIcon: { marginLeft: 4 },
   pillIdle: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
   pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
