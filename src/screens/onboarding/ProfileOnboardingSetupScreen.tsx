@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
@@ -70,6 +71,7 @@ export function ProfileOnboardingSetupScreen() {
       await refresh();
       // ProfileContext flips needsProfileSetup=false → AppNavigator shows MainTabs.
     } catch (err: unknown) {
+      console.error('[ProfileOnboardingSetup] completeProfileOnboarding failed:', err);
       const code = (err as { code?: string })?.code;
       if (code === '23505') {
         setSubmitError('That username was just taken — try another.');
@@ -173,10 +175,18 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
+    padding: Platform.OS === 'web' ? SPACING.xl : 0,
   },
   content: {
     paddingHorizontal: SPACING.xxxxl,
     paddingVertical: SPACING.xxxxl,
+    ...(Platform.OS === 'web' && {
+      width: '100%',
+      maxWidth: 440,
+      backgroundColor: COLORS.cardBackground,
+      borderRadius: 16,
+    }),
   },
   title: {
     ...TYPOGRAPHY.display,

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,18 +49,18 @@ export function ProfileOnboardingIntroScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Make it yours</Text>
         <Text style={styles.subtitle}>
-          Set up a public profile to share what you're listening to with other Heads.
+          Set up a public profile to share what you're listening to.
         </Text>
 
         <View style={styles.featureList}>
           <FeatureRow
             icon="link-outline"
             title="Get a shareable profile"
-            description="Your own URL like deadplayer.app/yourname"
+            description="Your own URL like scarletfire.app/username"
           />
           <FeatureRow
             icon="people-outline"
-            title="Follow other Heads"
+            title="Follow others"
             description="See what your friends are spinning"
           />
           <FeatureRow
@@ -116,10 +117,18 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
+    padding: Platform.OS === 'web' ? SPACING.xl : 0,
   },
   content: {
     paddingHorizontal: SPACING.xxxxl,
     paddingVertical: SPACING.xxxxl,
+    ...(Platform.OS === 'web' && {
+      width: '100%',
+      maxWidth: 440,
+      backgroundColor: COLORS.cardBackground,
+      borderRadius: 16,
+    }),
   },
   title: {
     ...TYPOGRAPHY.display,
