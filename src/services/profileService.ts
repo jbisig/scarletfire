@@ -13,6 +13,7 @@ export interface UserProfile {
   display_name: string | null;
   is_public: boolean;
   avatar_url: string | null;
+  profile_setup_dismissed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -195,6 +196,31 @@ class ProfileService {
         id: userId,
         username: username.toLowerCase(),
         avatar_url: metaAvatar,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Insert a fully-formed profile row from the onboarding flow. Sets the
+   * dismissal timestamp so the prompt never fires for this user again.
+   */
+  async completeProfileOnboarding(
+    userId: string,
+    input: { username: string; displayName?: string },
+  ): Promise<UserProfile> {
+    const supabase = authService.getClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        username: input.username.toLowerCase(),
+        display_name: input.displayName?.trim() ? input.displayName.trim() : null,
+        is_public: true,
+        profile_setup_dismissed_at: new Date().toISOString(),
       })
       .select()
       .single();
