@@ -1,5 +1,6 @@
 import React, { memo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ProfileImage } from '../ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 import type { PeopleRow as PeopleRowData } from '../../services/feedService';
@@ -54,6 +55,14 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
             onPress={handleToggle}
             disabled={busy}
           >
+            {following && (
+              <Ionicons
+                name="checkmark"
+                size={14}
+                color={COLORS.textPrimary}
+                style={styles.pillIcon}
+              />
+            )}
             <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
               {following ? 'Following' : '+ Follow'}
             </Text>
@@ -76,7 +85,8 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600', flex: 1 },
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  pill: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
+  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
+  pillIcon: { marginRight: 4 },
   pillIdle: { backgroundColor: COLORS.accent },
   pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
   pillText: { ...TYPOGRAPHY.caption, fontWeight: '600' },
