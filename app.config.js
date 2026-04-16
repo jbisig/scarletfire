@@ -25,7 +25,7 @@ export default ({ config }) => {
       ios: {
         supportsTablet: true,
         bundleIdentifier: "com.scarletfire.app",
-        buildNumber: "2",
+        buildNumber: "3",
         entitlements: {
           "com.apple.developer.applesignin": ["Default"]
         },

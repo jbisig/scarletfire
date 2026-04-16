@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { followService } from '../services/followService';
@@ -560,6 +561,10 @@ export function SettingsScreen() {
           This will permanently delete your account and all associated data.
         </Text>
       </View>
+
+      <Text style={styles.versionText}>
+        Version {Constants.expoConfig?.version ?? ''}
+      </Text>
       </ScrollView>
 
       <BottomSheet
@@ -757,6 +762,13 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
+  },
+  versionText: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.textHint,
+    textAlign: 'center',
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xl,
   },
   fieldContainer: {
     marginBottom: SPACING.lg,
