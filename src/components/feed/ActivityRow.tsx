@@ -70,9 +70,14 @@ function ActivityRowImpl({
   onPressActor,
   onPressTarget,
 }: ActivityRowProps) {
+  const handleActorPress = (e: any) => {
+    e?.stopPropagation?.();
+    onPressActor();
+  };
+
   return (
-    <View style={styles.row}>
-      <TouchableOpacity onPress={onPressActor} style={styles.actorRow}>
+    <TouchableOpacity style={styles.row} onPress={onPressTarget} activeOpacity={0.8}>
+      <TouchableOpacity onPress={handleActorPress} style={styles.actorRow} activeOpacity={0.7}>
         <ProfileImage uri={actorAvatarUrl} style={styles.avatar} />
         <View style={styles.actorText}>
           <Text style={styles.displayName} numberOfLines={1}>
@@ -83,11 +88,11 @@ function ActivityRowImpl({
         <Text style={styles.time}>{formatRelative(event.created_at)}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={onPressTarget} style={styles.headlineRow}>
+      <View style={styles.headlineRow}>
         <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} />
         <Text style={styles.headline} numberOfLines={2}>{buildHeadline(event)}</Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
