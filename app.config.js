@@ -101,6 +101,11 @@ export default ({ config }) => {
                 scheme: "https",
                 host: "www.scarletfire.app",
                 pathPattern: "/profile/.*/collection/.*"
+              },
+              {
+                scheme: "https",
+                host: "www.scarletfire.app",
+                pathPrefix: "/profile/"
               }
             ],
             category: ["BROWSABLE", "DEFAULT"]

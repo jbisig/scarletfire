@@ -11,6 +11,10 @@
           {
             "/": "/profile/*/collection/*",
             "comment": "Share links to collection and playlist pages"
+          },
+          {
+            "/": "/profile/*",
+            "comment": "Share links to public profile pages"
           }
         ]
       }
