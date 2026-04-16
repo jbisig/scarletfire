@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   headlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.xs,
+    marginTop: SPACING.md,
     paddingLeft: AVATAR_SIZE + SPACING.sm,
   },
   headline: {
