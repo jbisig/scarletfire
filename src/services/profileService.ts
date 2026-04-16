@@ -309,6 +309,32 @@ class ProfileService {
   }
 
   /**
+   * Fetch a minimal profile by user ID — used for activity feed actor lookups.
+   * Returns username, display_name, and avatarUrl without the is_public gate.
+   */
+  async getProfileById(
+    id: string,
+  ): Promise<{ username: string; display_name: string | null; avatarUrl: string | null } | null> {
+    const supabase = authService.getClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .eq('id', id)
+      .single();
+    if (!profile) return null;
+    // Avatar lookup mirrors the existing getPublicProfile logic
+    const { data: files } = await supabase.storage
+      .from('avatars')
+      .list(id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+    let avatarUrl: string | null = null;
+    if (files && files.length > 0) {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(`${id}/${files[0].name}`);
+      avatarUrl = data.publicUrl;
+    }
+    return { username: profile.username, display_name: profile.display_name, avatarUrl };
+  }
+
+  /**
    * Remove the user's custom avatar
    */
   async removeAvatar(userId: string): Promise<void> {
