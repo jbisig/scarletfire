@@ -164,7 +164,7 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingHorizontal: SPACING.md },
+  listContent: { paddingHorizontal: SPACING.xl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginBottom: SPACING.md },
   emptyBtn: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, backgroundColor: COLORS.accent, borderRadius: 24 },
