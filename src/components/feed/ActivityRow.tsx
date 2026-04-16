@@ -102,7 +102,7 @@ function ActivityRowImpl({
       </View>
 
       <View style={styles.headlineRow}>
-        <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} />
+        <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} style={styles.headlineIcon} />
         <Text style={styles.headline} numberOfLines={2}>{buildHeadline(event)}</Text>
       </View>
     </TouchableOpacity>
@@ -133,9 +133,12 @@ const styles = StyleSheet.create({
   underline: { textDecorationLine: 'underline' },
   headlineRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: SPACING.md,
     paddingLeft: AVATAR_SIZE + SPACING.sm,
+  },
+  headlineIcon: {
+    marginTop: 3,
   },
   headline: {
     ...TYPOGRAPHY.body,
