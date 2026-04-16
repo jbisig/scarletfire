@@ -7,6 +7,13 @@ import { logger } from '../utils/logger';
 import { GratefulDeadShow } from '../types/show.types';
 import { FavoriteSong } from './favoritesCloudService';
 
+function generatePlaceholderUsername(): string {
+  const hex = Array.from({ length: 8 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join('');
+  return `user_${hex}`;
+}
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -227,6 +234,32 @@ class ProfileService {
 
     if (error) throw error;
     return data;
+  }
+
+  /**
+   * Record that the user declined the profile-onboarding prompt.
+   * Writes a stub row with a generated placeholder username so the dismissal
+   * persists and syncs across devices. The user can rename the placeholder in
+   * Settings at any time.
+   */
+  async dismissProfileOnboarding(userId: string): Promise<void> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const supabase = authService.getClient();
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          username: generatePlaceholderUsername(),
+          is_public: false,
+          profile_setup_dismissed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (!error) return;
+      // 23505 = unique_violation. Retry once with a fresh random suffix.
+      if (error.code !== '23505' || attempt === 1) throw error;
+    }
   }
 
   async updateUsername(userId: string, username: string): Promise<UserProfile> {
