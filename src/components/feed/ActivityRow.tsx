@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     paddingLeft: AVATAR_SIZE + SPACING.sm,
   },
   headlineIcon: {
-    marginTop: 1.5,
+    marginTop: 1,
   },
   headline: {
     ...TYPOGRAPHY.body,
