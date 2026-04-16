@@ -18,9 +18,6 @@ import { profileService } from '../../services/profileService';
 import { useUsernameAvailability } from '../../hooks/useUsernameAvailability';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
-// COLORS.danger does not exist in theme.ts yet; fall back to a literal.
-const DANGER_COLOR: string = (COLORS as any).danger ?? '#f87171';
-
 function suggestUsername(email: string | undefined): string {
   const prefix = (email?.split('@')[0] ?? '').toLowerCase();
   return prefix.replace(/[^a-z0-9_-]/g, '').slice(0, 20);
@@ -51,7 +48,7 @@ export function ProfileOnboardingSetupScreen() {
 
   const statusColor = useMemo(() => {
     if (status.state === 'available') return COLORS.success ?? '#4ade80';
-    if (status.state === 'taken' || status.state === 'invalid') return DANGER_COLOR;
+    if (status.state === 'taken' || status.state === 'invalid') return COLORS.error;
     return COLORS.textTertiary;
   }, [status.state]);
 
@@ -230,7 +227,7 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     ...TYPOGRAPHY.body,
-    color: DANGER_COLOR,
+    color: COLORS.error,
     marginBottom: SPACING.lg,
   },
   primaryButton: {
