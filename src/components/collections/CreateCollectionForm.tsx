@@ -1,14 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { CollectionType } from '../../types/collection.types';
 import { useCollections } from '../../contexts/CollectionsContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { profileService } from '../../services/profileService';
 import { COLORS, TYPOGRAPHY, FONTS, SPACING, RADIUS } from '../../constants/theme';
 
 interface Props {
@@ -26,9 +29,11 @@ interface Props {
 export function CreateCollectionForm({ type, onCancel, onCreated }: Props) {
   const { createCollection } = useCollections();
   const { showToast } = useToast();
+  const { state: authState } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isProfilePublic, setIsProfilePublic] = useState(false);
   // Refs mirror the inputs so handleCreate always sees the latest value even
   // if React hasn't re-rendered between the last keystroke and the tap.
   const nameRef = useRef('');
@@ -37,12 +42,31 @@ export function CreateCollectionForm({ type, onCancel, onCreated }: Props) {
   const isPlaylist = type === 'playlist';
   const titleText = isPlaylist ? 'New Playlist' : 'New Show Collection';
   const namePlaceholder = isPlaylist ? 'e.g. Best Dark Stars' : 'e.g. Best 77 Shows';
+  const nounLower = isPlaylist ? 'playlist' : 'collection';
 
-  console.log('[CreateCollectionForm] rendered', { type });
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const userId = authState.user?.id;
+    if (!userId) {
+      setIsProfilePublic(false);
+      return;
+    }
+    let cancelled = false;
+    profileService
+      .getUserProfile(userId)
+      .then((p) => {
+        if (!cancelled) setIsProfilePublic(!!p?.is_public);
+      })
+      .catch(() => {
+        if (!cancelled) setIsProfilePublic(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authState.user?.id]);
 
   const handleCreate = async () => {
     const trimmed = nameRef.current.trim();
-    console.log('[CreateCollectionForm] handleCreate called', { trimmed, submitting: submittingRef.current });
     if (!trimmed || submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
@@ -64,6 +88,12 @@ export function CreateCollectionForm({ type, onCancel, onCreated }: Props) {
   return (
     <View style={styles.content}>
       <Text style={styles.title}>{titleText}</Text>
+
+      {Platform.OS === 'web' && isProfilePublic && (
+        <Text style={styles.publicNotice}>
+          Your profile is public. Other users will be able to see this {nounLower} on your profile.
+        </Text>
+      )}
 
       <Text style={styles.label}>Name</Text>
       <TextInput
@@ -93,40 +123,18 @@ export function CreateCollectionForm({ type, onCancel, onCreated }: Props) {
         maxLength={280}
       />
 
-      <View
-        style={styles.actions}
-        onTouchStart={() => console.log('[CreateCollectionForm] actions onTouchStart')}
-      >
-        {/* SWAPPED ORDER for diagnosis: Create left, Cancel right */}
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => {
-            console.log('[CreateCollectionForm] Create onPress fired');
-            handleCreate();
-          }}
-          onPressIn={() => {
-            console.log('[CreateCollectionForm] Create onPressIn fired');
-          }}
-          onTouchStart={() => console.log('[CreateCollectionForm] Create onTouchStart')}
-          onTouchEnd={() => console.log('[CreateCollectionForm] Create onTouchEnd')}
-          onLayout={(e) => console.log('[CreateCollectionForm] Create onLayout', e.nativeEvent.layout)}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          onPress={handleCreate}
           style={[
             styles.createBtn,
             (!name.trim() || submitting) && styles.disabledBtn,
           ]}
         >
           <Text style={styles.createText}>{submitting ? 'Creating…' : 'Create'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
-            console.log('[CreateCollectionForm] Cancel onPress');
-            onCancel();
-          }}
-          onTouchStart={() => console.log('[CreateCollectionForm] Cancel onTouchStart')}
-          onLayout={(e) => console.log('[CreateCollectionForm] Cancel onLayout', e.nativeEvent.layout)}
-          style={styles.cancelBtn}
-        >
-          <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -136,6 +144,12 @@ export function CreateCollectionForm({ type, onCancel, onCreated }: Props) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, gap: 8 },
   title: { ...TYPOGRAPHY.heading4, fontSize: 18, marginBottom: 8 },
+  publicNotice: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
   label: { color: COLORS.textSecondary, fontSize: 13, marginTop: 8 },
   input: {
     backgroundColor: COLORS.searchBackground,
