@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService } from '../services/profileService';
 import { ActivityList } from '../components/feed/ActivityList';
@@ -11,6 +14,7 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 type Segment = 'activity' | 'people';
 
 export function FeedScreen() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { state: authState, showLogin } = useAuth();
   const user = authState.user;
@@ -29,7 +33,9 @@ export function FeedScreen() {
       showLogin();
       return;
     }
-    // Navigation to PublicProfile is handled by the profile badge — only shown when myUsername is set
+    if (myUsername) {
+      navigation.navigate('PublicProfile', { username: myUsername });
+    }
   };
 
   return (
