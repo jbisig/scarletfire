@@ -79,23 +79,27 @@ function ActivityRowImpl({
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPressTarget} activeOpacity={0.8}>
-      <Pressable
-        onPress={handleActorPress}
-        style={styles.actorRow}
-        onHoverIn={() => setActorHovered(true)}
-        onHoverOut={() => setActorHovered(false)}
-      >
-        <ProfileImage uri={actorAvatarUrl} style={styles.avatar} />
+      <View style={styles.actorRow}>
+        <Pressable onPress={handleActorPress}>
+          <ProfileImage uri={actorAvatarUrl} style={styles.avatar} />
+        </Pressable>
         <View style={styles.actorText}>
-          <Text style={[styles.displayName, actorHovered && styles.underline]} numberOfLines={1}>
-            {actorDisplayName ?? actorUsername}
-          </Text>
-          <Text style={[styles.username, actorHovered && styles.underline]} numberOfLines={1}>
-            @{actorUsername}
-          </Text>
+          <Pressable
+            onPress={handleActorPress}
+            onHoverIn={() => setActorHovered(true)}
+            onHoverOut={() => setActorHovered(false)}
+            style={styles.actorTextPressable}
+          >
+            <Text style={[styles.displayName, actorHovered && styles.underline]} numberOfLines={1}>
+              {actorDisplayName ?? actorUsername}
+            </Text>
+            <Text style={[styles.username, actorHovered && styles.underline]} numberOfLines={1}>
+              @{actorUsername}
+            </Text>
+          </Pressable>
         </View>
         <Text style={styles.time}>{formatRelative(event.created_at)}</Text>
-      </Pressable>
+      </View>
 
       <View style={styles.headlineRow}>
         <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} />
@@ -123,6 +127,7 @@ const styles = StyleSheet.create({
   actorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
   actorText: { flex: 1, marginLeft: SPACING.sm },
+  actorTextPressable: { alignSelf: 'flex-start' },
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600' },
   username: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
   time: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
