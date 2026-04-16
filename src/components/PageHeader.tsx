@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading2,
   },
   headerSpacer: {
-    // Match the height of AnimatedSearchBar (headerButtonSize + 4) to maintain consistent header height
-    height: LAYOUT.headerButtonSize + 4,
+    // Match the height of AnimatedSearchBar (LAYOUT.headerButtonSize) to maintain consistent header height
+    height: LAYOUT.headerButtonSize,
     marginLeft: 'auto',
   },
   headerGradient: {
