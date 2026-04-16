@@ -18,6 +18,7 @@ import { ShareSheetProvider } from './src/contexts/ShareSheetContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { WebAuthModalProvider } from './src/components/web/WebAuthModal';
+import { ProfileProvider } from './src/contexts/ProfileContext';
 import { validateConfig } from './src/constants/config';
 
 // Validate environment configuration at startup
@@ -102,7 +103,8 @@ export default function App() {
           <ToastProvider>
             <AuthProvider>
               <WebAuthModalProvider>
-                <ShowsProvider>
+                <ProfileProvider>
+                  <ShowsProvider>
                   <ShowOfTheDayProvider>
                     <FavoritesProvider>
                       <CollectionsProvider>
@@ -121,7 +123,8 @@ export default function App() {
                       </CollectionsProvider>
                     </FavoritesProvider>
                   </ShowOfTheDayProvider>
-                </ShowsProvider>
+                  </ShowsProvider>
+                </ProfileProvider>
               </WebAuthModalProvider>
             </AuthProvider>
           </ToastProvider>
