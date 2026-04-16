@@ -97,10 +97,11 @@ const AVATAR_SIZE = 36;
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.xs,
+    padding: SPACING.md,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
   },
   actorRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
