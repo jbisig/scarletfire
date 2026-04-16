@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     maxWidth: 640,
-    marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     padding: SPACING.lg,
     backgroundColor: COLORS.cardBackground,

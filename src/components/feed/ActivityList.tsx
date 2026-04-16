@@ -133,6 +133,7 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
     <FlatList
       data={events}
       keyExtractor={(e) => e.id}
+      contentContainerStyle={styles.listContent}
       renderItem={({ item }) => {
         const actor = actors[item.actor_id];
         return (
@@ -163,6 +164,7 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
 }
 
 const styles = StyleSheet.create({
+  listContent: { paddingHorizontal: SPACING.md },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginBottom: SPACING.md },
   emptyBtn: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, backgroundColor: COLORS.accent, borderRadius: 24 },
