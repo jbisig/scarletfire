@@ -65,4 +65,13 @@ describe('useUsernameAvailability', () => {
     expect(profileService.checkUsernameAvailable).toHaveBeenCalledTimes(1);
     expect(profileService.checkUsernameAvailable).toHaveBeenCalledWith('jesseb');
   });
+
+  it('returns idle on network error', async () => {
+    (profileService.checkUsernameAvailable as jest.Mock).mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useUsernameAvailability('jesse'));
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(result.current.state).toBe('idle');
+  });
 });
