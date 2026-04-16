@@ -50,7 +50,8 @@ AS $$
            p.followers_count, p.following_count,
            true AS viewer_is_following,
            'following'::text AS section
-    FROM public.profiles p, q
+    FROM public.profiles p
+    CROSS JOIN q
     JOIN public.user_follows f ON f.following_id = p.id AND f.follower_id = viewer_id
     WHERE q.s IS NULL
       AND p.is_public = true
