@@ -113,9 +113,14 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
   }, [navigation]);
 
   const handleViewProfile = useCallback(() => {
-    if (!userProfile?.username) return;
     setIsVisible(false);
-    navigation.navigate('PublicProfile' as any, { username: userProfile.username });
+    if (userProfile?.username) {
+      navigation.navigate('PublicProfile' as any, { username: userProfile.username });
+    } else {
+      // User hasn't created a public profile yet — route to Settings so they
+      // can set a username and enable public visibility.
+      navigation.navigate('Settings' as any);
+    }
   }, [navigation, userProfile]);
 
   return {
@@ -127,7 +132,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     handleLogout,
     handleLogin,
     handleSettings,
-    handleViewProfile: userProfile?.username ? handleViewProfile : null,
+    handleViewProfile: authState.isAuthenticated ? handleViewProfile : null,
     userProfile,
     closeDropdown,
   };
