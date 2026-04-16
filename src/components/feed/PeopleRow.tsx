@@ -68,7 +68,7 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
 export const PeopleRow = memo(PeopleRowImpl);
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   text: { flex: 1, marginLeft: SPACING.sm },
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600' },
