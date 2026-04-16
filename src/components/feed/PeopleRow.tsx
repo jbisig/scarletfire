@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
   pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
   pillIcon: { marginLeft: 4 },
-  pillIdle: { backgroundColor: COLORS.accent },
+  pillIdle: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
   pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border, paddingRight: SPACING.sm },
   pillText: { ...TYPOGRAPHY.caption, fontWeight: '600' },
-  pillTextIdle: { color: COLORS.background },
+  pillTextIdle: { color: COLORS.textPrimary },
   pillTextActive: { color: COLORS.textPrimary },
 });
