@@ -109,10 +109,19 @@ class AudioPlayerModule: RCTEventEmitter {
 
     if reason == .oldDeviceUnavailable {
       // Audio route disconnected (CarPlay unplugged, headphones removed, etc.)
-      // AVQueuePlayer pauses automatically, but we need to sync the UI state
+      // Capture current position and explicitly pause + re-seek to preserve
+      // playhead position — AVQueuePlayer's auto-pause behavior can drop the
+      // current item's playhead when the output route disappears.
       DispatchQueue.main.async { [weak self] in
-        self?.sendEvent(withName: "playback-state", body: ["state": "paused"])
-        self?.updateNowPlayingInfo()
+        guard let self = self, let player = self.player else { return }
+        let position = CMTimeGetSeconds(player.currentTime())
+        player.pause()
+        if !position.isNaN && position > 0 {
+          let time = CMTime(seconds: position, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+          player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        self.sendEvent(withName: "playback-state", body: ["state": "paused"])
+        self.updateNowPlayingInfo()
       }
     }
   }
