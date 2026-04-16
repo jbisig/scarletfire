@@ -18,9 +18,10 @@ interface Props {
   variant: Variant;
   onPress: () => void;
   onLongPress?: () => void;
+  onRemove?: () => void;
 }
 
-export function CollectionCard({ variant, onPress, onLongPress }: Props) {
+export function CollectionCard({ variant, onPress, onLongPress, onRemove }: Props) {
   const isTombstone = variant.kind === 'tombstone';
   const type: CollectionType =
     variant.kind === 'tombstone' ? variant.type : variant.collection.type;
@@ -79,7 +80,18 @@ export function CollectionCard({ variant, onPress, onLongPress }: Props) {
           </Text>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+      {isTombstone && onRemove ? (
+        <TouchableOpacity
+          onPress={onRemove}
+          hitSlop={8}
+          style={styles.removeBtn}
+          accessibilityLabel="Remove"
+        >
+          <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -108,4 +120,5 @@ const styles = StyleSheet.create({
   subtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   ownerIcon: { marginRight: 4 },
   subtitle: { color: COLORS.textSecondary, fontSize: 13 },
+  removeBtn: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
 });

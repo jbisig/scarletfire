@@ -14,6 +14,7 @@ interface Props {
   entries: LibraryCollectionEntry[];
   onEntryPress: (entry: LibraryCollectionEntry) => void;
   onEntryLongPress?: (entry: LibraryCollectionEntry) => void;
+  onRemoveTombstone?: (savedId: string) => void;
   onCreate?: (type: CollectionType) => void;
   emptyMessage?: string;
 }
@@ -58,6 +59,7 @@ export function CollectionsTab({
   entries,
   onEntryPress,
   onEntryLongPress,
+  onRemoveTombstone,
   onCreate,
   emptyMessage = 'No collections yet.',
 }: Props) {
@@ -92,6 +94,7 @@ export function CollectionsTab({
             variant={variantForEntry(e)}
             onPress={() => onEntryPress(e)}
             onLongPress={onEntryLongPress ? () => onEntryLongPress(e) : undefined}
+            onRemove={e.kind === 'tombstone' && onRemoveTombstone ? () => onRemoveTombstone(e.savedId) : undefined}
           />
         ))
       )}

@@ -203,8 +203,7 @@ export function FavoritesScreen() {
     closeDropdown,
   } = useProfileDropdown();
 
-  const shareButtonWidth = isAuthenticated ? LAYOUT.headerButtonSize + LAYOUT.headerButtonGap : 0;
-  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap - shareButtonWidth;
+  const searchBarFullWidth = headerWidth - (padding * 2);
 
   const { openShareTray } = useShareSheet();
 
@@ -447,6 +446,15 @@ export function FavoritesScreen() {
         return shows;
     }
   }, [favoriteShows, showSortType, debouncedSearchQuery, appliedFilters]);
+
+  const filteredLibraryEntries = useMemo(() => {
+    if (!debouncedSearchQuery) return libraryEntries;
+    const lowerQuery = debouncedSearchQuery.toLowerCase();
+    return libraryEntries.filter((entry) => {
+      const name = entry.kind === 'tombstone' ? entry.name : entry.collection.name;
+      return name.toLowerCase().includes(lowerQuery);
+    });
+  }, [libraryEntries, debouncedSearchQuery]);
 
   const getSongSortLabel = (sortType: SongSortType): string => {
     switch (sortType) {
@@ -785,7 +793,7 @@ export function FavoritesScreen() {
           {/* Right side: Search and Filter buttons */}
           <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
             {/* Share Profile Button */}
-            {isAuthenticated && (
+            {isAuthenticated && !isSearchExpanded && (
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={handleShareProfile}
@@ -801,19 +809,8 @@ export function FavoritesScreen() {
               </TouchableOpacity>
             )}
 
-            {/* Animated Search Bar */}
-            <AnimatedSearchBar
-              isExpanded={isSearchExpanded}
-              onExpand={handleSearchExpand}
-              onClose={handleSearchClose}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search favorites"
-              expandedWidth={searchBarFullWidth}
-            />
-
-            {/* Filter button - always visible */}
-            <TouchableOpacity
+            {/* Filter button */}
+            {!isSearchExpanded && <TouchableOpacity
               style={[
                 styles.filterButton,
                 hasActiveFilters(appliedFilters) && styles.filterButtonActive,
@@ -829,7 +826,18 @@ export function FavoritesScreen() {
                 size={20}
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
-            </TouchableOpacity>
+            </TouchableOpacity>}
+
+            {/* Animated Search Bar */}
+            <AnimatedSearchBar
+              isExpanded={isSearchExpanded}
+              onExpand={handleSearchExpand}
+              onClose={handleSearchClose}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search favorites"
+              expandedWidth={searchBarFullWidth}
+            />
           </View>
         </View>
 
@@ -882,19 +890,10 @@ export function FavoritesScreen() {
       ) : (
         <>
           <CollectionsTab
-            entries={libraryEntries}
+            entries={filteredLibraryEntries}
+            onRemoveTombstone={removeTombstone}
             onEntryPress={(e: LibraryCollectionEntry) => {
-              if (e.kind === 'tombstone') {
-                Alert.alert(e.name, 'This collection is no longer available.', [
-                  {
-                    text: 'Remove',
-                    style: 'destructive',
-                    onPress: () => removeTombstone(e.savedId),
-                  },
-                  { text: 'Cancel', style: 'cancel' },
-                ]);
-                return;
-              }
+              if (e.kind === 'tombstone') return;
               navigation.navigate('CollectionDetail', { collectionId: e.collection.id });
             }}
             onEntryLongPress={(e: LibraryCollectionEntry) => {
@@ -1082,6 +1081,8 @@ const styles = StyleSheet.create({
   headerButton: {
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },

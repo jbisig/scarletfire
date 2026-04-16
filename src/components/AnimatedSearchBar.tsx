@@ -3,6 +3,7 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Animated,
   Easing,
@@ -58,7 +59,7 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
   // Animated interpolation for width
   const searchBarWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [LAYOUT.headerButtonSize + 4, expandedWidth],
+    outputRange: [LAYOUT.headerButtonSize, expandedWidth],
     extrapolate: 'clamp',
   });
 
@@ -66,7 +67,7 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
   useEffect(() => {
     Animated.timing(searchAnim, {
       toValue: isExpanded ? 1 : 0,
-      duration: LAYOUT.animationDuration,
+      duration: 200,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -136,8 +137,7 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
   }
 
   return (
-    <TouchableOpacity
-      activeOpacity={isExpanded ? 1 : 0.7}
+    <Pressable
       onPress={isExpanded ? undefined : onExpand}
       disabled={isExpanded}
     >
@@ -170,17 +170,15 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
           )}
         </View>
       </Animated.View>
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 
 const styles = StyleSheet.create({
   searchContainer: {
-    height: LAYOUT.headerButtonSize + 4,
+    height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
-    backgroundColor: COLORS.background,
-    padding: 2,
   },
   searchInputWrapper: {
     flex: 1,
@@ -188,7 +186,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.full,
     height: LAYOUT.headerButtonSize,
     overflow: 'hidden',
   },
