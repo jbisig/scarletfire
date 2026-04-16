@@ -178,7 +178,7 @@ export function PeopleList() {
 }
 
 const styles = StyleSheet.create({
-  searchWrap: { paddingHorizontal: SPACING.xl },
+  searchWrap: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.md },
   center: { padding: SPACING.lg, alignItems: 'center' },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary },
   sectionHeader: {
