@@ -84,4 +84,41 @@ describe('ProfileContext', () => {
     expect(getByTestId('needs').props.children).toBe('false');
     expect(profileService.getUserProfile).not.toHaveBeenCalled();
   });
+
+  it("ignores a stale load result after the auth user changes", async () => {
+    // First render: user 'u1', getUserProfile promise is held open
+    let resolveU1!: (value: any) => void;
+    const u1Promise = new Promise((resolve) => { resolveU1 = resolve; });
+
+    (profileService.getUserProfile as jest.Mock).mockImplementationOnce(() => u1Promise);
+
+    mockUseAuth.mockReturnValue({ state: { user: { id: 'u1' }, isAuthenticated: true } });
+    const { getByTestId, rerender } = render(
+      <ProfileProvider><Probe /></ProfileProvider>
+    );
+
+    // User switches to 'u2' before u1's fetch resolves.
+    (profileService.getUserProfile as jest.Mock).mockResolvedValueOnce({
+      id: 'u2',
+      username: 'userb',
+      display_name: null,
+      is_public: false,
+      profile_setup_dismissed_at: '2026-04-15T00:00:00Z',
+      created_at: '2026-04-15T00:00:00Z',
+      updated_at: '2026-04-15T00:00:00Z',
+    });
+    mockUseAuth.mockReturnValue({ state: { user: { id: 'u2' }, isAuthenticated: true } });
+    rerender(<ProfileProvider><Probe /></ProfileProvider>);
+
+    // Wait for u2's fetch to complete.
+    await waitFor(() => expect(getByTestId('username').props.children).toBe('userb'));
+
+    // Now u1's delayed response resolves. It must NOT overwrite u2's profile.
+    await act(async () => {
+      resolveU1(null); // A null response for u1 would have forced needsProfileSetup=true
+      await Promise.resolve();
+    });
+    expect(getByTestId('username').props.children).toBe('userb');
+    expect(getByTestId('needs').props.children).toBe('false');
+  });
 });

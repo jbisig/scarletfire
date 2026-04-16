@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { profileService, UserProfile } from '../services/profileService';
@@ -26,23 +27,29 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
 
+  const loadGenRef = useRef(0);
+
   const load = useCallback(async (id: string) => {
+    const gen = ++loadGenRef.current;
     setIsProfileLoading(true);
     try {
       const p = await profileService.getUserProfile(id);
+      if (gen !== loadGenRef.current) return;
       setProfile(p);
       setNeedsProfileSetup(p === null);
     } catch {
+      if (gen !== loadGenRef.current) return;
       // Transient error — never block the app. Fall through to MainTabs.
       setProfile(null);
       setNeedsProfileSetup(false);
     } finally {
-      setIsProfileLoading(false);
+      if (gen === loadGenRef.current) setIsProfileLoading(false);
     }
   }, []);
 
   useEffect(() => {
     if (!userId) {
+      loadGenRef.current++;
       setProfile(null);
       setNeedsProfileSetup(false);
       setIsProfileLoading(false);
