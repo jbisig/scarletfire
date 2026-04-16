@@ -1,6 +1,6 @@
 // src/components/feed/ActivityRow.tsx
-import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ProfileImage } from '../ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
@@ -70,6 +70,8 @@ function ActivityRowImpl({
   onPressActor,
   onPressTarget,
 }: ActivityRowProps) {
+  const [actorHovered, setActorHovered] = useState(false);
+
   const handleActorPress = (e: any) => {
     e?.stopPropagation?.();
     onPressActor();
@@ -77,16 +79,23 @@ function ActivityRowImpl({
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPressTarget} activeOpacity={0.8}>
-      <TouchableOpacity onPress={handleActorPress} style={styles.actorRow} activeOpacity={0.7}>
+      <Pressable
+        onPress={handleActorPress}
+        style={styles.actorRow}
+        onHoverIn={() => setActorHovered(true)}
+        onHoverOut={() => setActorHovered(false)}
+      >
         <ProfileImage uri={actorAvatarUrl} style={styles.avatar} />
         <View style={styles.actorText}>
-          <Text style={styles.displayName} numberOfLines={1}>
+          <Text style={[styles.displayName, actorHovered && styles.underline]} numberOfLines={1}>
             {actorDisplayName ?? actorUsername}
           </Text>
-          <Text style={styles.username} numberOfLines={1}>@{actorUsername}</Text>
+          <Text style={[styles.username, actorHovered && styles.underline]} numberOfLines={1}>
+            @{actorUsername}
+          </Text>
         </View>
         <Text style={styles.time}>{formatRelative(event.created_at)}</Text>
-      </TouchableOpacity>
+      </Pressable>
 
       <View style={styles.headlineRow}>
         <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} />
@@ -117,6 +126,7 @@ const styles = StyleSheet.create({
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600' },
   username: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
   time: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  underline: { textDecorationLine: 'underline' },
   headlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
