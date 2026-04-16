@@ -25,6 +25,8 @@ import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
+import { ProfileOnboardingNavigator } from './ProfileOnboardingNavigator';
+import { useProfile } from '../contexts/ProfileContext';
 import { COLORS, FONTS } from '../constants/theme';
 import { useResponsive } from '../hooks/useResponsive';
 
@@ -418,6 +420,7 @@ function MainTabsWithPlayer() {
 
 export function AppNavigator() {
   const { state: authState } = useAuth();
+  const { needsProfileSetup, isProfileLoading } = useProfile();
   const { isDesktop } = useResponsive();
 
   // Lock layout mode to initial value on web — switching between desktop/mobile
@@ -430,8 +433,8 @@ export function AppNavigator() {
     ? nativeLinking
     : initialLayoutRef.current ? desktopWebLinking : mobileWebLinking;
 
-  // Show loading while checking auth
-  if (authState.isLoading) {
+  // Show loading while checking auth or while fetching profile for a signed-in user
+  if (authState.isLoading || (authState.isAuthenticated && isProfileLoading)) {
     return (
       <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
         <View style={[styles.container, styles.loadingContainer]}>
@@ -450,7 +453,9 @@ export function AppNavigator() {
     return (
       <ErrorBoundary>
         <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
-          <DesktopLayout />
+          {authState.isAuthenticated && needsProfileSetup
+            ? <ProfileOnboardingNavigator />
+            : <DesktopLayout />}
         </NavigationContainer>
       </ErrorBoundary>
     );
@@ -461,6 +466,8 @@ export function AppNavigator() {
       <NavigationContainer ref={navigationRef} linking={linking} documentTitle={documentTitle}>
         {showAuthFlow ? (
           <AuthNavigator />
+        ) : authState.isAuthenticated && needsProfileSetup ? (
+          <ProfileOnboardingNavigator />
         ) : (
           <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: webCardStyle }}>
             <RootStack.Screen name="MainTabs" component={MainTabsWithPlayer} />
