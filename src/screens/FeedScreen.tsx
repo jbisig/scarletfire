@@ -11,6 +11,8 @@ import { PeopleList } from '../components/feed/PeopleList';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
+const HORIZONTAL_PADDING = SPACING.xl;
+
 type Segment = 'activity' | 'people';
 
 export function FeedScreen() {
@@ -39,8 +41,8 @@ export function FeedScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
         <Text style={styles.title}>Feed</Text>
         {!isDesktop && user && myUsername && (
           <TouchableOpacity onPress={goToMyProfile} style={styles.profileBadge}>
@@ -80,13 +82,15 @@ export function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  containerDesktop: { backgroundColor: COLORS.backgroundSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: HORIZONTAL_PADDING,
     paddingVertical: SPACING.sm,
   },
+  headerDesktop: { paddingHorizontal: 32 },
   title: { ...TYPOGRAPHY.heading2, color: COLORS.textPrimary },
   profileBadge: {
     paddingHorizontal: SPACING.md,
