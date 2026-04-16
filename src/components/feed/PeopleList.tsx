@@ -112,12 +112,14 @@ export function PeopleList() {
   );
 
   const header = (
-    <SearchBar
-      value={query}
-      onChangeText={setQuery}
-      placeholder="Search people..."
-      onClear={() => setQuery('')}
-    />
+    <View style={styles.searchWrap}>
+      <SearchBar
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search people..."
+        onClear={() => setQuery('')}
+      />
+    </View>
   );
 
   if (isLoading) {
@@ -176,6 +178,7 @@ export function PeopleList() {
 }
 
 const styles = StyleSheet.create({
+  searchWrap: { paddingHorizontal: SPACING.xl },
   center: { padding: SPACING.lg, alignItems: 'center' },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary },
   sectionHeader: {
