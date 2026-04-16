@@ -97,6 +97,9 @@ const AVATAR_SIZE = 36;
 
 const styles = StyleSheet.create({
   row: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 640,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.xs,
     padding: SPACING.md,
