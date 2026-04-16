@@ -56,16 +56,14 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
             disabled={busy}
           >
             <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
-              {following ? 'Following' : '+ Follow'}
+              {following ? 'Following' : 'Follow'}
             </Text>
-            {following && (
-              <Ionicons
-                name="checkmark"
-                size={14}
-                color={COLORS.textPrimary}
-                style={styles.pillIcon}
-              />
-            )}
+            <Ionicons
+              name={following ? 'checkmark' : 'add'}
+              size={14}
+              color={COLORS.textPrimary}
+              style={styles.pillIcon}
+            />
           </TouchableOpacity>
         </View>
         <Text style={styles.subline} numberOfLines={1}>
@@ -85,10 +83,10 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600', flex: 1 },
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
+  pill: { flexDirection: 'row', alignItems: 'center', paddingLeft: SPACING.md, paddingRight: SPACING.sm, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
   pillIcon: { marginLeft: 4 },
   pillIdle: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
-  pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border, paddingRight: SPACING.sm },
+  pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
   pillText: { ...TYPOGRAPHY.caption, fontWeight: '600' },
   pillTextIdle: { color: COLORS.textPrimary },
   pillTextActive: { color: COLORS.textPrimary },
