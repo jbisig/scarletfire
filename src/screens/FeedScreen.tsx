@@ -41,14 +41,16 @@ export function FeedScreen() {
   };
 
   return (
-    <View style={[styles.container, isDesktop && styles.containerDesktop, { paddingTop: insets.top }]}>
-      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-        <Text style={styles.title}>Feed</Text>
-        {!isDesktop && user && myUsername && (
-          <TouchableOpacity onPress={goToMyProfile} style={styles.profileBadge}>
-            <Text style={styles.profileBadgeText}>My Profile</Text>
-          </TouchableOpacity>
-        )}
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+          <Text style={styles.headerTitle}>Feed</Text>
+          {!isDesktop && user && myUsername && (
+            <TouchableOpacity onPress={goToMyProfile} style={styles.profileBadge}>
+              <Text style={styles.profileBadgeText}>My Profile</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.tabContainer} accessibilityRole="tablist">
@@ -83,15 +85,17 @@ export function FeedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   containerDesktop: { backgroundColor: COLORS.backgroundSecondary },
+  headerSection: { zIndex: 10, backgroundColor: COLORS.background },
+  headerSectionDesktop: { backgroundColor: COLORS.backgroundSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
-    paddingVertical: SPACING.sm,
+    paddingBottom: SPACING.lg,
   },
   headerDesktop: { paddingHorizontal: 32 },
-  title: { ...TYPOGRAPHY.heading2, color: COLORS.textPrimary },
+  headerTitle: { ...TYPOGRAPHY.heading2 },
   profileBadge: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
