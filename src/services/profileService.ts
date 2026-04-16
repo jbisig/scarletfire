@@ -12,6 +12,7 @@ export interface UserProfile {
   username: string;
   display_name: string | null;
   is_public: boolean;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,14 +87,23 @@ class ProfileService {
       .from('avatars')
       .getPublicUrl(fileName);
 
+    // Sync profiles.avatar_url so cross-user views pick it up.
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
     return urlData.publicUrl;
   }
 
   /**
-   * Update user metadata with new avatar URL
+   * Update user metadata with new avatar URL. Also syncs profiles.avatar_url
+   * so cross-user surfaces (public profile, activity feed) can display it.
    */
   async updateAvatarUrl(url: string | null): Promise<void> {
     const supabase = authService.getClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
 
     const { error } = await supabase.auth.updateUser({
       data: { avatar_url: url },
@@ -101,6 +111,13 @@ class ProfileService {
 
     if (error) {
       throw new Error(`Failed to update avatar: ${error.message}`);
+    }
+
+    if (userId) {
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: url, updated_at: new Date().toISOString() })
+        .eq('id', userId);
     }
   }
 
@@ -170,9 +187,15 @@ class ProfileService {
 
   async createProfile(userId: string, username: string): Promise<UserProfile> {
     const supabase = authService.getClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const metaAvatar = this.getAvatarUrl(userData?.user ?? null);
     const { data, error } = await supabase
       .from('profiles')
-      .insert({ id: userId, username: username.toLowerCase() })
+      .insert({
+        id: userId,
+        username: username.toLowerCase(),
+        avatar_url: metaAvatar,
+      })
       .select()
       .single();
 
@@ -263,10 +286,7 @@ class ProfileService {
       if (userData?.user?.id !== profile.id) return null;
     }
 
-    const [avatarResult, favResult, playResult, counts, viewerIsFollowing] = await Promise.all([
-      supabase.storage
-        .from('avatars')
-        .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } }),
+    const [favResult, playResult, counts, viewerIsFollowing] = await Promise.all([
       supabase
         .from('user_favorites')
         .select('shows, songs')
@@ -281,13 +301,19 @@ class ProfileService {
       followService.isFollowing(profile.id),
     ]);
 
-    let avatarUrl: string | null = null;
-    const avatarFiles = avatarResult.data;
-    if (avatarFiles && avatarFiles.length > 0) {
-      const { data: urlData } = supabase.storage
+    // Prefer profiles.avatar_url (covers OAuth + uploaded); fall back to
+    // Storage bucket lookup for pre-migration uploaders who haven't re-uploaded.
+    let avatarUrl: string | null = profile.avatar_url ?? null;
+    if (!avatarUrl) {
+      const { data: avatarFiles } = await supabase.storage
         .from('avatars')
-        .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
-      avatarUrl = urlData.publicUrl;
+        .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+      if (avatarFiles && avatarFiles.length > 0) {
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
+        avatarUrl = urlData.publicUrl;
+      }
     }
 
     const favorites = {
@@ -306,6 +332,37 @@ class ProfileService {
       followingCount: counts.following,
       viewerIsFollowing,
     };
+  }
+
+  /**
+   * Fetch a minimal profile by user ID — used for activity feed actor lookups.
+   * Returns username, display_name, and avatarUrl without the is_public gate.
+   */
+  async getProfileById(
+    id: string,
+  ): Promise<{ username: string; display_name: string | null; avatarUrl: string | null } | null> {
+    const supabase = authService.getClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .eq('id', id)
+      .maybeSingle();
+    if (!profile) return null;
+
+    // Prefer profiles.avatar_url; fall back to Storage bucket lookup for
+    // pre-migration uploaders who haven't re-uploaded yet.
+    let avatarUrl: string | null = profile.avatar_url ?? null;
+    if (!avatarUrl) {
+      const { data: files } = await supabase.storage
+        .from('avatars')
+        .list(id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+      if (files && files.length > 0) {
+        const { data } = supabase.storage.from('avatars').getPublicUrl(`${id}/${files[0].name}`);
+        avatarUrl = data.publicUrl;
+      }
+    }
+
+    return { username: profile.username, display_name: profile.display_name, avatarUrl };
   }
 
   /**

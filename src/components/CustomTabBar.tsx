@@ -11,6 +11,7 @@ const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inacti
   ShowsTab: { active: 'albums', inactive: 'albums-outline' },
   SongsTab: { active: 'musical-notes', inactive: 'musical-notes-outline' },
   DiscoverTab: { active: 'compass', inactive: 'compass-outline' },
+  FeedTab: { active: 'pulse', inactive: 'pulse-outline' },
   FavoritesTab: { active: 'heart', inactive: 'heart-outline' },
 };
 
@@ -18,6 +19,7 @@ const TAB_LABELS: Record<string, string> = {
   ShowsTab: 'Shows',
   SongsTab: 'Songs',
   DiscoverTab: 'Discover',
+  FeedTab: 'Feed',
   FavoritesTab: 'Favorites',
 };
 

@@ -672,7 +672,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           recordTrackPlay(
             currentTrackRef.current.title,
             currentShowRef.current.identifier,
-            currentShowRef.current.date
+            currentShowRef.current.date,
+            playlistLengthRef.current
           );
         }
 

@@ -7,6 +7,7 @@ import { favoritesCloudService } from '../services/favoritesCloudService';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { STORAGE_KEYS } from '../constants/registry';
 import { logger } from '../utils/logger';
+import { activityService } from '../services/activityService';
 
 const favoritesLogger = logger.create('Favorites');
 
@@ -347,6 +348,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       }
       return newFavorites;
     });
+    activityService.emitEvent('favorited_show', 'show', show.primaryIdentifier, {
+      date: show.date,
+      venue: show.venue,
+    }).catch(() => {});
   }, [showSyncErrorToast]);
 
   const removeFavoriteShow = useCallback(async (identifier: string) => {

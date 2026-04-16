@@ -16,6 +16,7 @@ import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
+import { FeedScreen } from '../screens/FeedScreen';
 import { MiniPlayer } from '../components/MiniPlayer';
 import { FullPlayer } from '../components/FullPlayer';
 import { CustomTabBar } from '../components/CustomTabBar';
@@ -395,6 +396,11 @@ function MainTabsWithPlayer() {
           name="FavoritesTab"
           component={FavoritesStack}
           options={{ tabBarLabel: 'Favorites' }}
+        />
+        <Tab.Screen
+          name="FeedTab"
+          component={FeedScreen}
+          options={{ tabBarLabel: 'Feed' }}
         />
       </Tab.Navigator>
       <View style={styles.miniPlayerContainer}>
