@@ -44,7 +44,8 @@ New component `SortableTrackList` with a platform split matching the existing `.
 
 - `src/components/collections/SortableTrackList.native.tsx`
 - `src/components/collections/SortableTrackList.web.tsx`
-- `src/components/collections/SortableTrackList.ts` — thin re-export module for type safety, if useful.
+
+Metro resolves these automatically by platform; no explicit re-export module is needed. Callers `import { SortableTrackList } from '../components/collections/SortableTrackList'`.
 
 ### Shared props
 
@@ -79,7 +80,7 @@ Generalize the existing `handleMove` into `handleReorder(nextOrder: CollectionIt
 1. Snapshot `prev = items`.
 2. Optimistically `setItems(nextOrder)`.
 3. `await reorderItems(collection.id, nextOrder.map(i => i.id))` via `CollectionsContext`. This API already supports full-list reorder; no schema or context changes are required.
-4. On error: refetch items via `fetchItems(collection.id)` to reconcile any partial DB writes. If refetch itself fails, restore `prev`. Log via `logger.player.error`. Surface a non-blocking notice: "Couldn't save new order. Please try again." (`Alert.alert` on native, existing toast/alert pattern on web.)
+4. On error: refetch items via `fetchItems(collection.id)` to reconcile any partial DB writes. If refetch itself fails, restore `prev`. Log via `logger.player.error`. Surface a non-blocking notice via `Alert.alert("Couldn't save new order", "Please try again.")` — matching the existing cross-platform error pattern elsewhere in this screen.
 
 The existing `handleMove(item, direction)` call-site is deleted along with the "Move up"/"Move down" options in the long-press Alert (see next section).
 
