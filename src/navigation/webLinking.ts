@@ -89,6 +89,7 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
       },
       SongList: 'songs',
       Favorites: 'favorites',
+      Feed: 'feed',
       SongPerformances: songPerformancesRoute,
       ShowDetail: showDetailRoute,
       PublicProfile: {
@@ -170,6 +171,12 @@ export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @t
             path: 'favorites',
             screens: {
               Favorites: '',
+            },
+          },
+          FeedTab: {
+            path: 'feed',
+            screens: {
+              Feed: '',
             },
           },
         },

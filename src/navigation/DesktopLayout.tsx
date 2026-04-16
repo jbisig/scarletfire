@@ -15,6 +15,7 @@ import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { CollectionDetailScreen } from '../screens/CollectionDetailScreen';
+import { FeedScreen } from '../screens/FeedScreen';
 import { Sidebar } from '../components/web/Sidebar';
 import { PlayerBar } from '../components/web/PlayerBar';
 import { COLORS, FONTS, WEB_LAYOUT } from '../constants/theme';
@@ -36,6 +37,7 @@ const TAB_ROOT_SCREENS: Record<string, string> = {
   ShowsTab: 'Home',
   SongsTab: 'SongList',
   FavoritesTab: 'Favorites',
+  FeedTab: 'Feed',
   Settings: 'Settings',
 };
 
@@ -45,6 +47,7 @@ const SCREEN_TO_TAB: Record<string, string> = {
   SongList: 'SongsTab',
   SongPerformances: 'SongsTab',
   Favorites: 'FavoritesTab',
+  Feed: 'FeedTab',
   Settings: 'Settings',
   PublicProfile: 'ProfileTab',
 };
@@ -110,6 +113,7 @@ export function DesktopLayout() {
             <Stack.Screen name="SongList" component={SongListScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SongPerformances" component={SongPerformancesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Feed" component={FeedScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ShowDetail" component={ShowDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
