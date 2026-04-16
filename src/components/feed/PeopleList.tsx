@@ -188,6 +188,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xs,
-    backgroundColor: COLORS.background,
   },
 });
