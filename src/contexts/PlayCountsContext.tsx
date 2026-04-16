@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { playCountsCloudService } from '../services/playCountsCloudService';
+import { activityService } from '../services/activityService';
 import { STORAGE_KEYS } from '../constants/registry';
 import { logger } from '../utils/logger';
 
@@ -35,6 +36,24 @@ interface PlayCountsContextType {
 }
 
 const PlayCountsContext = createContext<PlayCountsContextType | undefined>(undefined);
+
+export function computeShowPlayCount(
+  showPlayCounts: PlayCount[],
+  totalTracks: number,
+): number {
+  if (totalTracks === 0 || showPlayCounts.length === 0) return 0;
+  const threshold = Math.ceil(totalTracks * 0.5);
+  const maxCount = Math.max(...showPlayCounts.map(pc => pc.count));
+  for (let n = maxCount; n >= 1; n--) {
+    const tracksWithCountN = showPlayCounts.filter(pc => pc.count >= n).length;
+    if (tracksWithCountN >= threshold) return n;
+  }
+  return 0;
+}
+
+export function shouldEmitListenedShow(prev: number, next: number): boolean {
+  return next > prev;
+}
 
 export function PlayCountsProvider({ children }: { children: React.ReactNode }) {
   // Use Map for O(1) lookups and stable callback references
@@ -142,28 +161,8 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
   }, [showPlayCountsIndex]);
 
   const getShowPlayCount = useCallback((showIdentifier: string, totalTracks: number): number => {
-    if (totalTracks === 0) return 0;
-
-    // Use pre-computed index for O(1) lookup
-    const showPlayCounts = showPlayCountsIndex.get(showIdentifier);
-    if (!showPlayCounts || showPlayCounts.length === 0) return 0;
-
-    // Calculate threshold (50% of tracks)
-    const threshold = Math.ceil(totalTracks * 0.5);
-
-    // Find maximum N where at least 50% of tracks have count >= N
-    let maxPlayCount = 0;
-    const maxCount = Math.max(...showPlayCounts.map(pc => pc.count));
-
-    for (let n = maxCount; n >= 1; n--) {
-      const tracksWithCountN = showPlayCounts.filter(pc => pc.count >= n).length;
-      if (tracksWithCountN >= threshold) {
-        maxPlayCount = n;
-        break;
-      }
-    }
-
-    return maxPlayCount;
+    const showPlayCounts = showPlayCountsIndex.get(showIdentifier) ?? [];
+    return computeShowPlayCount(showPlayCounts, totalTracks);
   }, [showPlayCountsIndex]);
 
   // Keep auth state in a ref so recordTrackPlay doesn't need authState as a dependency
@@ -176,7 +175,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     trackTitle: string,
     showIdentifier: string,
     showDate: string,
-    totalTracks: number, // reserved for Task 12: show-level listened_show event emission
+    totalTracks: number,
   ) => {
     const now = Date.now();
     const key = `${trackTitle}:${showIdentifier}`;
@@ -186,25 +185,28 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       const newMap = new Map(prev);
 
       if (existing) {
-        newMap.set(key, {
-          ...existing,
-          count: existing.count + 1,
-          lastPlayedAt: now,
-        });
+        newMap.set(key, { ...existing, count: existing.count + 1, lastPlayedAt: now });
       } else {
         newMap.set(key, {
-          trackTitle,
-          showIdentifier,
-          showDate,
-          count: 1,
-          firstPlayedAt: now,
-          lastPlayedAt: now,
+          trackTitle, showIdentifier, showDate,
+          count: 1, firstPlayedAt: now, lastPlayedAt: now,
         });
+      }
+
+      // Compute show-level count BEFORE and AFTER this increment.
+      const prevShowCounts = Array.from(prev.values()).filter(pc => pc.showIdentifier === showIdentifier);
+      const nextShowCounts = Array.from(newMap.values()).filter(pc => pc.showIdentifier === showIdentifier);
+      const prevShowCount = computeShowPlayCount(prevShowCounts, totalTracks);
+      const nextShowCount = computeShowPlayCount(nextShowCounts, totalTracks);
+
+      if (shouldEmitListenedShow(prevShowCount, nextShowCount)) {
+        activityService.emitEvent('listened_show', 'show', showIdentifier, {
+          date: showDate,
+        }).catch(() => {});
       }
 
       savePlayCounts(newMap);
 
-      // Sync to cloud if authenticated
       const auth = authStateRef.current;
       if (auth.isAuthenticated && auth.user) {
         const playCounts = Array.from(newMap.values());
