@@ -60,7 +60,7 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
           </TouchableOpacity>
         </View>
         <Text style={styles.subline} numberOfLines={1}>
-          @{row.username} · {formatCount(row.followers_count)} followers · {formatCount(row.following_count)} following
+          @{row.username} · {formatCount(row.followers_count)} followers
         </Text>
       </View>
     </TouchableOpacity>
