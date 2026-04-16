@@ -43,10 +43,22 @@ CREATE TRIGGER trg_user_follows_counters
   FOR EACH ROW EXECUTE FUNCTION public.handle_user_follow_counters();
 
 -- One-shot backfill of initial counter values from existing rows.
-UPDATE public.profiles p SET
-  followers_count = COALESCE((
-    SELECT COUNT(*) FROM public.user_follows f WHERE f.following_id = p.id
-  ), 0),
-  following_count = COALESCE((
-    SELECT COUNT(*) FROM public.user_follows f WHERE f.follower_id = p.id
-  ), 0);
+-- Guarded so re-applications of this migration are no-ops once counters are set,
+-- preventing stale-overwrite races with the live trigger.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.user_follows)
+     AND NOT EXISTS (
+       SELECT 1 FROM public.profiles
+       WHERE followers_count > 0 OR following_count > 0
+     )
+  THEN
+    UPDATE public.profiles p SET
+      followers_count = COALESCE((
+        SELECT COUNT(*) FROM public.user_follows f WHERE f.following_id = p.id
+      ), 0),
+      following_count = COALESCE((
+        SELECT COUNT(*) FROM public.user_follows f WHERE f.follower_id = p.id
+      ), 0);
+  END IF;
+END $$;
