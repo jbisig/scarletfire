@@ -45,22 +45,24 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
     <TouchableOpacity style={styles.row} onPress={onPressRow}>
       <ProfileImage uri={avatarUrl} style={styles.avatar} />
       <View style={styles.text}>
-        <Text style={styles.displayName} numberOfLines={1}>
-          {row.display_name || row.username}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {row.display_name || row.username}
+          </Text>
+          <TouchableOpacity
+            style={[styles.pill, following ? styles.pillActive : styles.pillIdle]}
+            onPress={handleToggle}
+            disabled={busy}
+          >
+            <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
+              {following ? 'Following' : '+ Follow'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.subline} numberOfLines={1}>
           @{row.username} · {formatCount(row.followers_count)} followers · {formatCount(row.following_count)} following
         </Text>
       </View>
-      <TouchableOpacity
-        style={[styles.pill, following ? styles.pillActive : styles.pillIdle]}
-        onPress={handleToggle}
-        disabled={busy}
-      >
-        <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
-          {following ? 'Following' : '+ Follow'}
-        </Text>
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -71,7 +73,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   text: { flex: 1, marginLeft: SPACING.sm },
-  displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600' },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600', flex: 1 },
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
   pill: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
   pillIdle: { backgroundColor: COLORS.accent },
