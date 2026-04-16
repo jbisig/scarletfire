@@ -21,7 +21,7 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
   let tier: 1 | 2 | 3 | null = null;
 
   if (item.kind === 'profile') {
-    title = `${item.displayName}'s Favorites`;
+    title = `${item.displayName}'s Profile`;
     subtitle = `${item.showCount} shows · ${item.songCount} songs`;
   } else if (item.kind === 'collection') {
     const noun = item.type === 'playlist' ? 'tracks' : 'shows';
