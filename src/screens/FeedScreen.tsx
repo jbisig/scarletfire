@@ -42,7 +42,7 @@ export function FeedScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 32 }]}>
         <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           <Text style={styles.headerTitle}>Feed</Text>
           {!isDesktop && user && myUsername && (
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
-    paddingBottom: SPACING.xxxl,
+    paddingBottom: SPACING.lg,
   },
   headerDesktop: { paddingHorizontal: 32 },
   headerTitle: { ...TYPOGRAPHY.heading2 },
