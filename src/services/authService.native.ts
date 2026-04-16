@@ -163,7 +163,7 @@ class AuthService {
 
     if (rpcError) {
       logger.auth.error('Error deleting user:', rpcError);
-      throw new Error('Failed to delete account. Please contact support.');
+      throw new Error(`Failed to delete account: ${rpcError.message || 'unknown error'}`);
     }
 
     // Sign out the user (session cleanup)

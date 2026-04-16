@@ -297,6 +297,38 @@ export function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
+    const runDeletion = async () => {
+      setIsDeleting(true);
+      try {
+        await deleteAccount();
+        navigation.goBack();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to delete account. Please try again or contact support.';
+        if (Platform.OS === 'web') {
+          window.alert(message);
+        } else {
+          Alert.alert('Error', message);
+        }
+      } finally {
+        setIsDeleting(false);
+      }
+    };
+
+    // RN Alert.alert multi-button dialogs don't render reliably on web —
+    // fall back to native browser confirms for both safety gates.
+    if (Platform.OS === 'web') {
+      const first = window.confirm(
+        'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.'
+      );
+      if (!first) return;
+      const second = window.confirm(
+        'This will permanently delete your account and all associated data. Are you absolutely sure?'
+      );
+      if (!second) return;
+      void runDeletion();
+      return;
+    }
+
     Alert.alert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
@@ -315,20 +347,7 @@ export function SettingsScreen() {
                 {
                   text: 'Yes, Delete',
                   style: 'destructive',
-                  onPress: async () => {
-                    setIsDeleting(true);
-                    try {
-                      await deleteAccount();
-                      navigation.goBack();
-                    } catch (error) {
-                      Alert.alert(
-                        'Error',
-                        'Failed to delete account. Please try again or contact support.'
-                      );
-                    } finally {
-                      setIsDeleting(false);
-                    }
-                  },
+                  onPress: runDeletion,
                 },
               ]
             );

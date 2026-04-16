@@ -73,7 +73,7 @@ class AuthService {
     const { error: rpcError } = await this.supabase.rpc('delete_user');
     if (rpcError) {
       logger.auth.error('Error deleting user:', rpcError);
-      throw new Error('Failed to delete account. Please contact support.');
+      throw new Error(`Failed to delete account: ${rpcError.message || 'unknown error'}`);
     }
 
     await this.supabase.auth.signOut();
