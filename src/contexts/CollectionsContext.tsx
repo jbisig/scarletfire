@@ -65,6 +65,9 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const [itemCountsByIdentifier, setItemCountsByIdentifier] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // collectionIds flipped to "saved" optimistically while the server request
+  // is in flight, so the Save pill toggles instantly.
+  const [optimisticSavedIds, setOptimisticSavedIds] = useState<Set<string>>(new Set());
 
   const refreshCollections = useCallback(async () => {
     if (!user) {
@@ -208,9 +211,32 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const saveCollection: CollectionsContextValue['saveCollection'] = useCallback(
     async (collectionId) => {
       if (!user) throw new Error('Must be signed in to save a collection');
-      const saved = await collectionsService.saveCollection({ userId: user.id, collectionId });
-      if (!saved) return; // owner of the collection — no-op
-      await refreshCollections();
+      setOptimisticSavedIds((prev) => {
+        const next = new Set(prev);
+        next.add(collectionId);
+        return next;
+      });
+      try {
+        const saved = await collectionsService.saveCollection({ userId: user.id, collectionId });
+        if (!saved) return; // owner of the collection — no-op
+        await refreshCollections();
+      } catch (e) {
+        setOptimisticSavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(collectionId);
+          return next;
+        });
+        throw e;
+      } finally {
+        // After refresh hydrates savedCollections (or after owner no-op), drop
+        // the optimistic flag so the Set doesn't accumulate stale entries.
+        setOptimisticSavedIds((prev) => {
+          if (!prev.has(collectionId)) return prev;
+          const next = new Set(prev);
+          next.delete(collectionId);
+          return next;
+        });
+      }
     },
     [user, refreshCollections],
   );
@@ -230,8 +256,10 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   );
 
   const isCollectionSaved: CollectionsContextValue['isCollectionSaved'] = useCallback(
-    (collectionId) => savedCollections.some((s) => s.collectionId === collectionId),
-    [savedCollections],
+    (collectionId) =>
+      optimisticSavedIds.has(collectionId) ||
+      savedCollections.some((s) => s.collectionId === collectionId),
+    [savedCollections, optimisticSavedIds],
   );
 
   const removeTombstone: CollectionsContextValue['removeTombstone'] = useCallback(
