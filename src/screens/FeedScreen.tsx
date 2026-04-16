@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { profileService } from '../services/profileService';
 import { ActivityList } from '../components/feed/ActivityList';
 import { PeopleList } from '../components/feed/PeopleList';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 
 type Segment = 'activity' | 'people';
 
@@ -49,23 +49,23 @@ export function FeedScreen() {
         )}
       </View>
 
-      <View style={styles.segments}>
-        <TouchableOpacity
-          style={[styles.segment, segment === 'activity' && styles.segmentActive]}
-          onPress={() => setSegment('activity')}
-        >
-          <Text style={[styles.segmentText, segment === 'activity' && styles.segmentTextActive]}>
-            Activity
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segment, segment === 'people' && styles.segmentActive]}
-          onPress={() => setSegment('people')}
-        >
-          <Text style={[styles.segmentText, segment === 'people' && styles.segmentTextActive]}>
-            People
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.tabContainer} accessibilityRole="tablist">
+        {(['activity', 'people'] as const).map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, segment === tab ? styles.activeTab : styles.inactiveTab]}
+            onPress={() => setSegment(tab)}
+            activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel={`${tab === 'activity' ? 'Activity' : 'People'} tab`}
+            accessibilityState={{ selected: segment === tab }}
+            accessibilityHint={`Double tap to view ${tab}`}
+          >
+            <Text style={segment === tab ? styles.activeTabText : styles.inactiveTabText}>
+              {tab === 'activity' ? 'Activity' : 'People'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={{ flex: 1 }}>
@@ -96,21 +96,34 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   profileBadgeText: { ...TYPOGRAPHY.caption, color: COLORS.textPrimary, fontWeight: '600' },
-  segments: {
+  tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
   },
-  segment: {
+  tab: {
     flex: 1,
-    paddingVertical: SPACING.sm,
+    paddingTop: 6,
+    paddingBottom: 10,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    justifyContent: 'center',
+    borderRadius: RADIUS.xl,
   },
-  segmentActive: { borderBottomColor: COLORS.accent },
-  segmentText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, fontWeight: '600' },
-  segmentTextActive: { color: COLORS.textPrimary },
+  activeTab: { backgroundColor: COLORS.accent },
+  inactiveTab: { backgroundColor: COLORS.cardBackground },
+  activeTabText: {
+    fontSize: 16,
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    ...(Platform.OS === 'android' && { paddingTop: 2 }),
+  },
+  inactiveTabText: {
+    fontSize: 16,
+    fontFamily: 'FamiljenGrotesk',
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    ...(Platform.OS === 'android' && { paddingTop: 2 }),
+  },
 });
