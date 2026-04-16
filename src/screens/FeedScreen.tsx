@@ -42,7 +42,7 @@ export function FeedScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 32 }]}>
+      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 16 }]}>
         <View style={[styles.header, isDesktop && styles.headerDesktop]}>
           <Text style={styles.headerTitle}>Feed</Text>
           {!isDesktop && user && myUsername && (
