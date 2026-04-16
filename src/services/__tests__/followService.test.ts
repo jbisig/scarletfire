@@ -5,6 +5,13 @@ jest.mock('../authService', () => ({
   },
 }));
 
+// Mock activityService so the emit tests can spy on it
+jest.mock('../activityService', () => ({
+  activityService: {
+    emitEvent: jest.fn(),
+  },
+}));
+
 import { followService } from '../followService';
 import { authService } from '../authService';
 
@@ -109,6 +116,59 @@ describe('followService reads', () => {
       auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }) },
     });
     await expect(followService.isFollowing('target-1')).resolves.toBe(false);
+  });
+});
+
+describe('followService emits activity', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('followUser calls activityService.emitEvent for followed_user when target is public', async () => {
+    const { from, chain } = makeSupabaseMock();
+    chain.insert.mockReturnValue({ error: null });
+
+    // Mock target profile lookup
+    const profileChain: any = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { is_public: true, username: 'target', display_name: 'Target User' },
+        error: null,
+      }),
+    };
+    from.mockImplementation((table: string) => table === 'profiles' ? profileChain : chain);
+
+    const emitSpy = jest.spyOn(require('../activityService').activityService, 'emitEvent')
+      .mockResolvedValue(undefined);
+
+    await followService.followUser('target-1');
+
+    expect(emitSpy).toHaveBeenCalledWith(
+      'followed_user',
+      'user',
+      'target-1',
+      expect.objectContaining({ username: 'target', display_name: 'Target User' }),
+    );
+  });
+
+  it('followUser does NOT emit when target is private', async () => {
+    const { from, chain } = makeSupabaseMock();
+    chain.insert.mockReturnValue({ error: null });
+
+    const profileChain: any = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { is_public: false, username: 'priv', display_name: null },
+        error: null,
+      }),
+    };
+    from.mockImplementation((table: string) => table === 'profiles' ? profileChain : chain);
+
+    const emitSpy = jest.spyOn(require('../activityService').activityService, 'emitEvent')
+      .mockResolvedValue(undefined);
+
+    await followService.followUser('target-1');
+    expect(emitSpy).not.toHaveBeenCalled();
   });
 });
 

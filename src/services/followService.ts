@@ -1,5 +1,6 @@
 import { authService } from './authService';
 import { logger } from '../utils/logger';
+import { activityService } from './activityService';
 
 export interface FollowUser {
   id: string;
@@ -29,6 +30,20 @@ class FollowService {
       .from('user_follows')
       .insert({ follower_id: me, following_id: targetUserId });
     if (error) throw error;
+
+    // Look up the target's public status + display info for the event metadata.
+    const { data: target } = await supabase
+      .from('profiles')
+      .select('is_public, username, display_name')
+      .eq('id', targetUserId)
+      .single();
+
+    if (target?.is_public) {
+      await activityService.emitEvent('followed_user', 'user', targetUserId, {
+        username: target.username,
+        display_name: target.display_name,
+      });
+    }
   }
 
   async unfollowUser(targetUserId: string): Promise<void> {
