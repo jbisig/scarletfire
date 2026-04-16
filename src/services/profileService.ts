@@ -220,6 +220,8 @@ class ProfileService {
     input: { username: string; displayName?: string },
   ): Promise<UserProfile> {
     const supabase = authService.getClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const metaAvatar = this.getAvatarUrl(userData?.user ?? null);
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -227,6 +229,7 @@ class ProfileService {
         username: input.username.toLowerCase(),
         display_name: input.displayName?.trim() ? input.displayName.trim() : null,
         is_public: true,
+        avatar_url: metaAvatar,
         profile_setup_dismissed_at: new Date().toISOString(),
       })
       .select()
@@ -243,14 +246,17 @@ class ProfileService {
    * Settings at any time.
    */
   async dismissProfileOnboarding(userId: string): Promise<void> {
+    const supabase = authService.getClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const metaAvatar = this.getAvatarUrl(userData?.user ?? null);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const supabase = authService.getClient();
       const { error } = await supabase
         .from('profiles')
         .insert({
           id: userId,
           username: generatePlaceholderUsername(),
           is_public: false,
+          avatar_url: metaAvatar,
           profile_setup_dismissed_at: new Date().toISOString(),
         })
         .select()

@@ -6,7 +6,7 @@ jest.mock('../authService', () => ({
 import { profileService } from '../profileService';
 import { authService } from '../authService';
 
-function makeSupabaseMock() {
+function makeSupabaseMock(authUser: { user_metadata?: Record<string, unknown> } | null = null) {
   const chain = {
     insert: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
@@ -24,8 +24,9 @@ function makeSupabaseMock() {
     }),
   };
   const from = jest.fn().mockReturnValue(chain);
-  (authService.getClient as jest.Mock).mockReturnValue({ from });
-  return { from, chain };
+  const getUser = jest.fn().mockResolvedValue({ data: { user: authUser } });
+  (authService.getClient as jest.Mock).mockReturnValue({ from, auth: { getUser } });
+  return { from, chain, getUser };
 }
 
 describe('completeProfileOnboarding', () => {
@@ -64,6 +65,18 @@ describe('completeProfileOnboarding', () => {
     await expect(
       profileService.completeProfileOnboarding('u1', { username: 'jesse' }),
     ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('populates avatar_url from OAuth user metadata so cross-user surfaces can show it', async () => {
+    const { chain } = makeSupabaseMock({ user_metadata: { avatar_url: 'https://img/me.jpg' } });
+    await profileService.completeProfileOnboarding('u1', { username: 'jesse' });
+    expect((chain.insert as jest.Mock).mock.calls[0][0].avatar_url).toBe('https://img/me.jpg');
+  });
+
+  it('inserts avatar_url=null when the user has no avatar metadata', async () => {
+    const { chain } = makeSupabaseMock({ user_metadata: {} });
+    await profileService.completeProfileOnboarding('u1', { username: 'jesse' });
+    expect((chain.insert as jest.Mock).mock.calls[0][0].avatar_url).toBeNull();
   });
 });
 
@@ -124,5 +137,11 @@ describe('dismissProfileOnboarding', () => {
     await expect(profileService.dismissProfileOnboarding('u1')).rejects.toMatchObject({
       code: '23505',
     });
+  });
+
+  it('populates avatar_url from OAuth user metadata on the stub row', async () => {
+    const { chain } = makeSupabaseMock({ user_metadata: { avatar_url: 'https://img/me.jpg' } });
+    await profileService.dismissProfileOnboarding('u1');
+    expect((chain.insert as jest.Mock).mock.calls[0][0].avatar_url).toBe('https://img/me.jpg');
   });
 });
