@@ -27,8 +27,7 @@ STABLE
 SECURITY INVOKER
 SET search_path = public
 AS $$
-  WITH q AS (SELECT NULLIF(TRIM(query_text), '') AS s),
-  search_branch AS (
+  WITH search_branch AS (
     SELECT p.id, p.username, p.display_name,
            p.followers_count, p.following_count,
            EXISTS (
@@ -36,12 +35,13 @@ AS $$
              WHERE f.follower_id = viewer_id AND f.following_id = p.id
            ) AS viewer_is_following,
            'search'::text AS section
-    FROM public.profiles p, q
-    WHERE q.s IS NOT NULL
+    FROM public.profiles p
+    WHERE NULLIF(TRIM(query_text), '') IS NOT NULL
       AND p.is_public = true
       AND p.id <> viewer_id
-      AND (p.username ILIKE '%' || q.s || '%'
-           OR (p.display_name IS NOT NULL AND p.display_name ILIKE '%' || q.s || '%'))
+      AND (p.username ILIKE '%' || NULLIF(TRIM(query_text), '') || '%'
+           OR (p.display_name IS NOT NULL
+               AND p.display_name ILIKE '%' || NULLIF(TRIM(query_text), '') || '%'))
     ORDER BY p.followers_count DESC, p.username ASC
     LIMIT 50
   ),
@@ -51,9 +51,8 @@ AS $$
            true AS viewer_is_following,
            'following'::text AS section
     FROM public.profiles p
-    CROSS JOIN q
     JOIN public.user_follows f ON f.following_id = p.id AND f.follower_id = viewer_id
-    WHERE q.s IS NULL
+    WHERE NULLIF(TRIM(query_text), '') IS NULL
       AND p.is_public = true
     ORDER BY COALESCE(p.display_name, p.username) ASC
   ),
@@ -62,8 +61,8 @@ AS $$
            p.followers_count, p.following_count,
            false AS viewer_is_following,
            'discover'::text AS section
-    FROM public.profiles p, q
-    WHERE q.s IS NULL
+    FROM public.profiles p
+    WHERE NULLIF(TRIM(query_text), '') IS NULL
       AND p.is_public = true
       AND p.id <> viewer_id
       AND NOT EXISTS (
