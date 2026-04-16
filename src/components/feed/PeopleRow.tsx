@@ -55,6 +55,9 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
             onPress={handleToggle}
             disabled={busy}
           >
+            <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
+              {following ? 'Following' : '+ Follow'}
+            </Text>
             {following && (
               <Ionicons
                 name="checkmark"
@@ -63,9 +66,6 @@ function PeopleRowImpl({ row, avatarUrl, onPressRow, onFollowChange }: PeopleRow
                 style={styles.pillIcon}
               />
             )}
-            <Text style={[styles.pillText, following ? styles.pillTextActive : styles.pillTextIdle]}>
-              {following ? 'Following' : '+ Follow'}
-            </Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.subline} numberOfLines={1}>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600', flex: 1 },
   subline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
   pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: 20, marginLeft: SPACING.sm },
-  pillIcon: { marginRight: 4 },
+  pillIcon: { marginLeft: 4 },
   pillIdle: { backgroundColor: COLORS.accent },
   pillActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: COLORS.border },
   pillText: { ...TYPOGRAPHY.caption, fontWeight: '600' },
