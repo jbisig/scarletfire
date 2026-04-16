@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: HORIZONTAL_PADDING,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.xxxl,
   },
   headerDesktop: { paddingHorizontal: 32 },
   headerTitle: { ...TYPOGRAPHY.heading2 },
