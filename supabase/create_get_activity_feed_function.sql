@@ -29,6 +29,7 @@ AS $$
     JOIN public.profiles p
       ON p.id = e.actor_id AND p.is_public = true
     WHERE e.created_at < cursor_time
+      AND e.actor_id <> viewer_id
     ORDER BY e.created_at DESC
     LIMIT page_size
   ),
