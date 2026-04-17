@@ -467,6 +467,40 @@ export function CollectionDetailScreen() {
     startShuffleSongs(playlistQueue, 'playlist');
   }, [collection, playlistQueue, startShuffleSongs]);
 
+  const renderPlaylistRowContent = useCallback(
+    (item: CollectionItem, interactive: boolean) => {
+      const md = item.itemMetadata as PlaylistItemMetadata;
+      const song = {
+        trackId: md.trackId,
+        trackTitle: md.trackTitle,
+        showIdentifier: md.showIdentifier,
+        showDate: md.showDate,
+        venue: md.venue,
+        streamUrl: md.streamUrl,
+      };
+      return (
+        <SongCard
+          song={song}
+          onPress={interactive ? () => handleTrackPress(md) : () => {}}
+          onLongPress={
+            interactive && isOwner
+              ? () =>
+                  Alert.alert(md.trackTitle, undefined, [
+                    {
+                      text: 'Remove',
+                      style: 'destructive',
+                      onPress: () => confirmRemoveItem(item),
+                    },
+                    { text: 'Cancel', style: 'cancel' },
+                  ])
+              : undefined
+          }
+        />
+      );
+    },
+    [handleTrackPress, confirmRemoveItem, isOwner],
+  );
+
   // Sorted items for show collections.
   const displayItems = useMemo(() => {
     if (!collection || collection.type !== 'show_collection') return items;
@@ -700,39 +734,16 @@ export function CollectionDetailScreen() {
         </View>
       ) : (
         <View style={[styles.playlistBody, isDesktop && styles.listBodyDesktop]}>
-          {items.map((item, index) => {
-            const md = item.itemMetadata as PlaylistItemMetadata;
-            const song = {
-              trackId: md.trackId,
-              trackTitle: md.trackTitle,
-              showIdentifier: md.showIdentifier,
-              showDate: md.showDate,
-              venue: md.venue,
-              streamUrl: md.streamUrl,
-            };
-            return (
+          {reorderMode ? (
+            <SortableTrackList
+              items={items}
+              onReorder={handleReorder}
+              renderItem={(item: CollectionItem) => renderPlaylistRowContent(item, false)}
+            />
+          ) : (
+            items.map((item) => (
               <View key={item.id} style={styles.playlistRow}>
-                <View style={{ flex: 1 }}>
-                  <SongCard
-                    song={song}
-                    onPress={() => handleTrackPress(md)}
-                    onLongPress={
-                      isOwner
-                        ? () =>
-                            Alert.alert(md.trackTitle, undefined, [
-                              { text: 'Move up', onPress: () => handleMove(item, -1) },
-                              { text: 'Move down', onPress: () => handleMove(item, 1) },
-                              {
-                                text: 'Remove',
-                                style: 'destructive',
-                                onPress: () => confirmRemoveItem(item),
-                              },
-                              { text: 'Cancel', style: 'cancel' },
-                            ])
-                        : undefined
-                    }
-                  />
-                </View>
+                <View style={{ flex: 1 }}>{renderPlaylistRowContent(item, true)}</View>
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
@@ -743,8 +754,8 @@ export function CollectionDetailScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            );
-          })}
+            ))
+          )}
         </View>
       )}
 
