@@ -18,6 +18,8 @@ interface TrackItemProps {
   onToggleSave?: (track: Track) => void;
   /** Web only: callback to open Add-to-Playlist picker for this track */
   onAddToPlaylist?: (track: Track) => void;
+  /** Native only: callback for long-press — parent assembles the action menu */
+  onLongPress?: (track: Track) => void;
   /** Web only: number of playlists this track is currently in (for pill badge) */
   playlistCount?: number;
   /**
@@ -33,7 +35,7 @@ interface TrackItemProps {
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, onAddToPlaylist, playlistCount = 0, isSelected }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
@@ -58,6 +60,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         isDesktop && isHovered && !isPlaying && !isSelected && styles.hovered,
       ]}
       onPress={() => onPress(track)}
+      onLongPress={Platform.OS !== 'web' && onLongPress ? () => onLongPress(track) : undefined}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
