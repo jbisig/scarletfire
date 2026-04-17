@@ -37,6 +37,7 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
     handleLogout,
     handleLogin,
     handleSettings,
+    handleSupport,
     handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
@@ -82,6 +83,7 @@ export const PageHeader = React.memo(function PageHeader({ title }: PageHeaderPr
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onSupport={handleSupport}
         onViewProfile={handleViewProfile}
       />
     </>

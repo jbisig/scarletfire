@@ -10,6 +10,7 @@ import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { SupportScreen } from '../screens/SupportScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
@@ -115,6 +116,7 @@ export function DesktopLayout() {
             <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Feed" component={FeedScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Support" component={SupportScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ShowDetail" component={ShowDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />

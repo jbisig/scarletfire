@@ -198,6 +198,7 @@ export function FavoritesScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleSupport,
     handleViewProfile,
     userProfile,
     closeDropdown,
@@ -879,6 +880,7 @@ export function FavoritesScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onSupport={handleSupport}
         onViewProfile={handleViewProfile}
       />
 

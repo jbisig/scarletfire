@@ -27,6 +27,7 @@ export function FeedScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleSupport,
     handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
@@ -78,6 +79,7 @@ export function FeedScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onSupport={handleSupport}
         onViewProfile={handleViewProfile}
       />
 
