@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import {
   DndContext,
   DragEndEvent,
@@ -44,19 +44,21 @@ function SortableRow({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
+    cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   return (
     // @ts-ignore — dnd-kit uses DOM refs; this file is web-only.
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <TouchableOpacity
-        style={styles.handle}
-        // @ts-ignore — dnd-kit listeners are DOM event handlers.
-        {...listeners}
-        accessibilityLabel="Drag to reorder"
-      >
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      // @ts-ignore — dnd-kit listeners are DOM event handlers.
+      {...listeners}
+    >
+      <View style={styles.handle}>
         <Ionicons name="reorder-three" size={22} color={COLORS.textSecondary} />
-      </TouchableOpacity>
+      </View>
       <View style={{ flex: 1 }}>{children}</View>
     </div>
   );
@@ -100,7 +102,5 @@ export function SortableTrackList({ items, onReorder, renderItem }: Props) {
 const styles = StyleSheet.create({
   handle: {
     padding: 8,
-    // @ts-ignore — web only
-    cursor: 'grab',
   },
 });
