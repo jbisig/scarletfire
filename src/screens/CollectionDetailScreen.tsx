@@ -9,7 +9,6 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
-  ScrollView,
   ImageBackground,
   Modal,
 } from 'react-native';
@@ -39,6 +38,9 @@ import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortableTrackList } from '../components/collections/SortableTrackList';
+import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
+import { BlurBackground } from '../components/shared/BlurBackground';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -143,6 +145,7 @@ export function CollectionDetailScreen() {
   const [saveCount, setSaveCount] = useState<number | null>(null);
   const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
   const [showSortModalVisible, setShowSortModalVisible] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
   const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
   const showSortButtonRef = useRef<View>(null);
 
@@ -392,35 +395,35 @@ export function CollectionDetailScreen() {
     navigation.goBack();
   }, [collection, deleteCollection, navigation]);
 
-  const handleMove = useCallback(
-    async (item: CollectionItem, direction: -1 | 1) => {
+  const handleReorder = useCallback(
+    async (nextOrder: CollectionItem[]) => {
       if (!collection) return;
-      const idx = items.findIndex((i) => i.id === item.id);
-      const targetIdx = idx + direction;
-      if (idx < 0 || targetIdx < 0 || targetIdx >= items.length) return;
       const prev = items;
-      const next = [...items];
-      [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
-      setItems(next);
+      setItems(nextOrder);
       try {
         await reorderItems(
           collection.id,
-          next.map((i) => i.id),
+          nextOrder.map((i) => i.id),
         );
       } catch (e) {
-        logger.player.error('Reorder failed, refetching items', e);
-        // Partial DB update may have left inconsistent positions — refetch
-        // from server to reconcile, or fall back to the pre-move order.
+        logger.player.error('Reorder failed, reconciling with server', e);
         try {
           const fresh = await fetchItems(collection.id);
           setItems(fresh);
         } catch {
           setItems(prev);
         }
+        Alert.alert("Couldn't save new order", 'Please try again.');
       }
     },
     [collection, items, reorderItems, fetchItems],
   );
+
+  useEffect(() => {
+    if (reorderMode && (!isOwner || items.length < 2)) {
+      setReorderMode(false);
+    }
+  }, [reorderMode, isOwner, items.length]);
 
   const handleShowPress = useCallback(
     (show: GratefulDeadShow) => {
@@ -464,6 +467,41 @@ export function CollectionDetailScreen() {
     if (!collection || collection.type !== 'playlist' || playlistQueue.length === 0) return;
     startShuffleSongs(playlistQueue, 'playlist');
   }, [collection, playlistQueue, startShuffleSongs]);
+
+  const renderPlaylistRowContent = useCallback(
+    (item: CollectionItem, interactive: boolean) => {
+      const md = item.itemMetadata as PlaylistItemMetadata;
+      const song = {
+        trackId: md.trackId,
+        trackTitle: md.trackTitle,
+        showIdentifier: md.showIdentifier,
+        showDate: md.showDate,
+        venue: md.venue,
+        streamUrl: md.streamUrl,
+      };
+      return (
+        <SongCard
+          song={song}
+          containerStyle={interactive ? undefined : { backgroundColor: 'transparent' }}
+          onPress={interactive ? () => handleTrackPress(md) : undefined}
+          onLongPress={
+            interactive && isOwner
+              ? () =>
+                  Alert.alert(md.trackTitle, undefined, [
+                    {
+                      text: 'Remove',
+                      style: 'destructive',
+                      onPress: () => confirmRemoveItem(item),
+                    },
+                    { text: 'Cancel', style: 'cancel' },
+                  ])
+              : undefined
+          }
+        />
+      );
+    },
+    [handleTrackPress, confirmRemoveItem, isOwner],
+  );
 
   // Sorted items for show collections.
   const displayItems = useMemo(() => {
@@ -581,48 +619,67 @@ export function CollectionDetailScreen() {
             ) : null}
           </View>
 
-          <View style={styles.pillsRow}>
-            {collection.type === 'playlist' && items.length > 0 && (
-              <TouchableOpacity style={styles.pill} onPress={handleShuffle} activeOpacity={0.7}>
-                <Ionicons name="shuffle" size={17} color={COLORS.textPrimary} />
-                <Text style={styles.pillText}>Shuffle</Text>
-              </TouchableOpacity>
-            )}
-            {isNonOwnerViewer && collection && (
+          {reorderMode ? (
+            <View style={styles.pillsRow}>
               <TouchableOpacity
                 style={styles.pill}
-                onPress={handleToggleSave}
+                onPress={() => setReorderMode(false)}
                 activeOpacity={0.7}
-                accessibilityLabel={saved ? 'Unsave collection' : 'Save collection'}
+                accessibilityLabel="Exit reorder mode"
               >
-                <Ionicons
-                  name={saved ? 'bookmark' : 'bookmark-outline'}
-                  size={17}
-                  color={COLORS.textPrimary}
-                />
-                <Text style={styles.pillText}>{saved ? 'Saved' : 'Save'}</Text>
+                <BlurBackground intensity={25} tint="default" />
+                <Ionicons name="checkmark" size={17} color={COLORS.textPrimary} />
+                <Text style={styles.pillText}>Done</Text>
               </TouchableOpacity>
-            )}
-            {collection && ownerUsername && (
-              <TouchableOpacity style={styles.pill} onPress={handleShare} activeOpacity={0.7}>
-                <Ionicons name="share-outline" size={17} color={COLORS.textPrimary} />
-                <Text style={styles.pillText}>Share</Text>
-              </TouchableOpacity>
-            )}
-            {collection && (
-              <View ref={menuButtonRef} collapsable={false}>
-                <TouchableOpacity
-                  style={styles.menuCircleBtn}
-                  activeOpacity={0.7}
-                  onPress={handleMenuPress}
-                  accessibilityRole="button"
-                  accessibilityLabel="More actions"
-                >
-                  <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
+            </View>
+          ) : (
+            <View style={styles.pillsRow}>
+              {collection.type === 'playlist' && items.length > 0 && (
+                <TouchableOpacity style={styles.pill} onPress={handleShuffle} activeOpacity={0.7}>
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons name="shuffle" size={17} color={COLORS.textPrimary} />
+                  <Text style={styles.pillText}>Shuffle</Text>
                 </TouchableOpacity>
-              </View>
-            )}
-          </View>
+              )}
+              {isNonOwnerViewer && collection && (
+                <TouchableOpacity
+                  style={styles.pill}
+                  onPress={handleToggleSave}
+                  activeOpacity={0.7}
+                  accessibilityLabel={saved ? 'Unsave collection' : 'Save collection'}
+                >
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons
+                    name={saved ? 'bookmark' : 'bookmark-outline'}
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.pillText}>{saved ? 'Saved' : 'Save'}</Text>
+                </TouchableOpacity>
+              )}
+              {collection && ownerUsername && (
+                <TouchableOpacity style={styles.pill} onPress={handleShare} activeOpacity={0.7}>
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons name="share-outline" size={17} color={COLORS.textPrimary} />
+                  <Text style={styles.pillText}>Share</Text>
+                </TouchableOpacity>
+              )}
+              {collection && (
+                <View ref={menuButtonRef} collapsable={false}>
+                  <TouchableOpacity
+                    style={styles.menuCircleBtn}
+                    activeOpacity={0.7}
+                    onPress={handleMenuPress}
+                    accessibilityRole="button"
+                    accessibilityLabel="More actions"
+                  >
+                    <BlurBackground intensity={25} tint="default" />
+                    <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
 
         </View>
       </View>
@@ -649,7 +706,7 @@ export function CollectionDetailScreen() {
   ) : null;
 
   return (
-    <ScrollView
+    <ReorderableScrollView
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={{ paddingBottom: 120 }}
       keyboardShouldPersistTaps="handled"
@@ -684,39 +741,16 @@ export function CollectionDetailScreen() {
         </View>
       ) : (
         <View style={[styles.playlistBody, isDesktop && styles.listBodyDesktop]}>
-          {items.map((item, index) => {
-            const md = item.itemMetadata as PlaylistItemMetadata;
-            const song = {
-              trackId: md.trackId,
-              trackTitle: md.trackTitle,
-              showIdentifier: md.showIdentifier,
-              showDate: md.showDate,
-              venue: md.venue,
-              streamUrl: md.streamUrl,
-            };
-            return (
+          {reorderMode ? (
+            <SortableTrackList
+              items={items}
+              onReorder={handleReorder}
+              renderItem={(item: CollectionItem) => renderPlaylistRowContent(item, false)}
+            />
+          ) : (
+            items.map((item) => (
               <View key={item.id} style={styles.playlistRow}>
-                <View style={{ flex: 1 }}>
-                  <SongCard
-                    song={song}
-                    onPress={() => handleTrackPress(md)}
-                    onLongPress={
-                      isOwner
-                        ? () =>
-                            Alert.alert(md.trackTitle, undefined, [
-                              { text: 'Move up', onPress: () => handleMove(item, -1) },
-                              { text: 'Move down', onPress: () => handleMove(item, 1) },
-                              {
-                                text: 'Remove',
-                                style: 'destructive',
-                                onPress: () => confirmRemoveItem(item),
-                              },
-                              { text: 'Cancel', style: 'cancel' },
-                            ])
-                        : undefined
-                    }
-                  />
-                </View>
+                <View style={{ flex: 1 }}>{renderPlaylistRowContent(item, true)}</View>
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
@@ -727,8 +761,8 @@ export function CollectionDetailScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-            );
-          })}
+            ))
+          )}
         </View>
       )}
 
@@ -770,6 +804,19 @@ export function CollectionDetailScreen() {
                   <Text style={styles.menuItemText}>Rename</Text>
                 </TouchableOpacity>
               </>
+            )}
+
+            {isOwner && collection.type === 'playlist' && items.length >= 2 && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  setReorderMode(true);
+                }}
+              >
+                <Ionicons name="swap-vertical-outline" size={16} color={COLORS.textPrimary} />
+                <Text style={styles.menuItemText}>Reorder</Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity
@@ -887,7 +934,7 @@ export function CollectionDetailScreen() {
           </>
         )}
       </BottomSheet>
-    </ScrollView>
+    </ReorderableScrollView>
   );
 }
 
@@ -995,6 +1042,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: COLORS.surfaceMedium,
+    overflow: 'hidden',
+    ...(Platform.OS === 'web'
+      ? {
+          // @ts-ignore - web only
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }
+      : {}),
   },
   menuCircleBtn: {
     width: 36,
@@ -1003,6 +1058,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.surfaceMedium,
+    overflow: 'hidden',
+    ...(Platform.OS === 'web'
+      ? {
+          // @ts-ignore - web only
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }
+      : {}),
   },
   pillDestructive: {
     backgroundColor: COLORS.surfaceLight,

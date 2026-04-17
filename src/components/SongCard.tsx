@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, StyleProp, ViewStyle } from 'react-native';
 import { FavoriteSong } from '../contexts/FavoritesContext';
 import { formatDate } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
@@ -12,8 +12,12 @@ interface SongCardProps {
   song: FavoriteSong;
   playCount?: number;
   isLoading?: boolean;
-  onPress: (song: FavoriteSong) => void;
+  onPress?: (song: FavoriteSong) => void;
   onLongPress?: (song: FavoriteSong) => void;
+  /** Optional override for the outer Pressable's style. Lets callers (e.g.
+   * reorder mode) make the row transparent so a parent's pressed bg can
+   * show through. */
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 /**
@@ -27,6 +31,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
   isLoading = false,
   onPress,
   onLongPress,
+  containerStyle,
 }) {
   const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
@@ -39,8 +44,9 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
         styles.songItem,
         isDesktop && isHovered && styles.songItemHovered,
         pressed && styles.songItemPressed,
+        containerStyle,
       ]}
-      onPress={() => onPress(song)}
+      onPress={onPress ? () => onPress(song) : undefined}
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       disabled={isLoading}
       // @ts-ignore - web only mouse events
