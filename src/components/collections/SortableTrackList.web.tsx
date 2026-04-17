@@ -49,7 +49,6 @@ function SortableRow({
   return (
     // @ts-ignore — dnd-kit uses DOM refs; this file is web-only.
     <div ref={setNodeRef} style={style} {...attributes}>
-      <View style={{ flex: 1 }}>{children}</View>
       <TouchableOpacity
         style={styles.handle}
         // @ts-ignore — dnd-kit listeners are DOM event handlers.
@@ -58,6 +57,7 @@ function SortableRow({
       >
         <Ionicons name="reorder-three" size={22} color={COLORS.textSecondary} />
       </TouchableOpacity>
+      <View style={{ flex: 1 }}>{children}</View>
     </div>
   );
 }
