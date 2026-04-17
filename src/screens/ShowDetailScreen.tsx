@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -346,6 +347,23 @@ export function ShowDetailScreen() {
       addFavoriteSong(favoriteSong);
     }
   }, [show, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
+
+  const handleTrackLongPress = useCallback(
+    (track: Track) => {
+      if (Platform.OS === 'web') return;
+      if (!show) return;
+      const saved = isSongFavorite(track.id, show.identifier);
+      Alert.alert(track.title, undefined, [
+        { text: 'Add to Playlist', onPress: () => setPickerTrack(track) },
+        {
+          text: saved ? 'Remove from Favorites' : 'Add to Favorites',
+          onPress: () => handleToggleSaveSong(track),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    },
+    [show, isSongFavorite, handleToggleSaveSong],
+  );
 
   const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
     navigation.push('ShowDetail', {
@@ -736,6 +754,7 @@ export function ShowDetailScreen() {
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
             onAddToPlaylist={(t) => setPickerTrack(t)}
+            onLongPress={handleTrackLongPress}
             playlistCount={itemCountsByIdentifier[`${show.identifier}::${track.id}`] ?? 0}
             isSelected={track.id === selectedTrackId}
           />
