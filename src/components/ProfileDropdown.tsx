@@ -17,6 +17,7 @@ interface ProfileDropdownProps {
   onLogin: () => void;
   onLogout: () => void;
   onSettings: () => void;
+  onSupport: () => void;
   onViewProfile?: (() => void) | null;
 }
 
@@ -27,6 +28,7 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
   onLogin,
   onLogout,
   onSettings,
+  onSupport,
   onViewProfile,
 }) {
   return (
@@ -73,6 +75,17 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
               <View style={styles.divider} />
               <TouchableOpacity
                 style={styles.item}
+                onPress={onSupport}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Support"
+                accessibilityHint="Double tap to contact support"
+              >
+                <Text style={styles.itemText}>Support</Text>
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.item}
                 onPress={onLogout}
                 activeOpacity={0.7}
                 accessibilityRole="button"
@@ -83,16 +96,29 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity
-              style={styles.item}
-              onPress={onLogin}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Log In"
-              accessibilityHint="Double tap to log in to your account"
-            >
-              <Text style={styles.itemText}>Log In</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.item}
+                onPress={onLogin}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Log In"
+                accessibilityHint="Double tap to log in to your account"
+              >
+                <Text style={styles.itemText}>Log In</Text>
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.item}
+                onPress={onSupport}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Support"
+                accessibilityHint="Double tap to contact support"
+              >
+                <Text style={styles.itemText}>Support</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </Pressable>

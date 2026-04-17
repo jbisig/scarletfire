@@ -201,6 +201,7 @@ export function HomeScreen() {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleSupport,
     handleViewProfile,
     closeDropdown,
   } = useProfileDropdown();
@@ -422,6 +423,7 @@ export function HomeScreen() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onSupport={handleSupport}
         onViewProfile={handleViewProfile}
       />
 

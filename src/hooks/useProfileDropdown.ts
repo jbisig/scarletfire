@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { View, Platform, findNodeHandle } from 'react-native';
+import { View, Platform, findNodeHandle, Linking } from 'react-native';
+import { SUPPORT_URL } from '../constants/config';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +24,7 @@ export interface UseProfileDropdownReturn {
   handleLogout: () => Promise<void>;
   handleLogin: () => Promise<void>;
   handleSettings: () => void;
+  handleSupport: () => void;
   handleViewProfile: (() => void) | null;
   userProfile: UserProfile | null;
   closeDropdown: () => void;
@@ -112,6 +114,17 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     navigation.navigate('Settings');
   }, [navigation]);
 
+  const handleSupport = useCallback(() => {
+    setIsVisible(false);
+    if (Platform.OS === 'web') {
+      navigation.navigate('Support' as never);
+    } else {
+      Linking.openURL(SUPPORT_URL).catch(() => {
+        // No handler available; nothing we can do. Fail silently.
+      });
+    }
+  }, [navigation]);
+
   const handleViewProfile = useCallback(() => {
     setIsVisible(false);
     if (userProfile?.username) {
@@ -132,6 +145,7 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     handleLogout,
     handleLogin,
     handleSettings,
+    handleSupport,
     handleViewProfile: authState.isAuthenticated ? handleViewProfile : null,
     userProfile,
     closeDropdown,
