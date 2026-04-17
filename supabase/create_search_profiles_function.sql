@@ -17,6 +17,7 @@ RETURNS TABLE (
   id                  uuid,
   username            text,
   display_name        text,
+  avatar_url          text,
   followers_count     int,
   following_count     int,
   viewer_is_following boolean,
@@ -28,7 +29,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
   WITH search_branch AS (
-    SELECT p.id, p.username, p.display_name,
+    SELECT p.id, p.username, p.display_name, p.avatar_url,
            p.followers_count, p.following_count,
            EXISTS (
              SELECT 1 FROM public.user_follows f
@@ -46,7 +47,7 @@ AS $$
     LIMIT 50
   ),
   following_branch AS (
-    SELECT p.id, p.username, p.display_name,
+    SELECT p.id, p.username, p.display_name, p.avatar_url,
            p.followers_count, p.following_count,
            true AS viewer_is_following,
            'following'::text AS section
@@ -57,7 +58,7 @@ AS $$
     ORDER BY COALESCE(p.display_name, p.username) ASC
   ),
   discover_branch AS (
-    SELECT p.id, p.username, p.display_name,
+    SELECT p.id, p.username, p.display_name, p.avatar_url,
            p.followers_count, p.following_count,
            false AS viewer_is_following,
            'discover'::text AS section
