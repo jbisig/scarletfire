@@ -66,3 +66,9 @@ export function validateConfig(): void {
     // In production, continue with degraded functionality (auth features won't work)
   }
 }
+
+/**
+ * Public URL of the in-app support page on the web.
+ * Used by native clients to open the support form in the system browser.
+ */
+export const SUPPORT_URL = 'https://www.scarletfire.app/support';
