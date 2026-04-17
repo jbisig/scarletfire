@@ -73,6 +73,15 @@ export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: Si
     onNavigate('Settings');
   }, [onNavigate]);
 
+  const handleSupportNav = useCallback(() => {
+    setShowDropdown(false);
+    if (navigationRef.isReady()) {
+      navigationRef.dispatch(
+        CommonActions.navigate({ name: 'Support' })
+      );
+    }
+  }, []);
+
   const handleLogout = useCallback(async () => {
     setShowDropdown(false);
     await logout();
@@ -179,6 +188,10 @@ export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: Si
                   <Text style={styles.dropdownText}>Settings</Text>
                 </TouchableOpacity>
                 <View style={styles.dropdownDivider} />
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleSupportNav} activeOpacity={0.7}>
+                  <Text style={styles.dropdownText}>Support</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
                 <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout} activeOpacity={0.7}>
                   <Text style={styles.dropdownTextRed}>Log Out</Text>
                 </TouchableOpacity>
@@ -191,6 +204,10 @@ export const Sidebar = React.memo(function Sidebar({ activeTab, onNavigate }: Si
                 <View style={styles.dropdownDivider} />
                 <TouchableOpacity style={styles.dropdownItem} onPress={handleSignup} activeOpacity={0.7}>
                   <Text style={styles.dropdownText}>Sign Up</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity style={styles.dropdownItem} onPress={handleSupportNav} activeOpacity={0.7}>
+                  <Text style={styles.dropdownText}>Support</Text>
                 </TouchableOpacity>
               </>
             )}
