@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import {
   NestableDraggableFlatList,
   RenderItemParams,
@@ -19,18 +19,25 @@ export function SortableTrackList({ items, onReorder, renderItem }: Props) {
   const renderRow = ({ item, drag, isActive }: RenderItemParams<CollectionItem>) => {
     return (
       <ScaleDecorator>
-        <TouchableOpacity
-          style={[styles.row, isActive && styles.rowActive]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.row,
+            isActive && styles.rowActive,
+            pressed && styles.rowPressed,
+          ]}
           onLongPress={drag}
           disabled={isActive}
-          activeOpacity={0.85}
           accessibilityLabel="Long press to drag and reorder"
         >
           <View style={styles.handle}>
             <Ionicons name="reorder-three" size={22} color={COLORS.textSecondary} />
           </View>
-          <View style={{ flex: 1 }}>{renderItem(item)}</View>
-        </TouchableOpacity>
+          {/* pointerEvents="none" so the inner SongCard's own Pressable can't
+              steal touches away from the outer long-press-drag handler. */}
+          <View style={styles.content} pointerEvents="none">
+            {renderItem(item)}
+          </View>
+        </Pressable>
       </ScaleDecorator>
     );
   };
@@ -49,5 +56,7 @@ export function SortableTrackList({ items, onReorder, renderItem }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   rowActive: { opacity: 0.85 },
+  rowPressed: { backgroundColor: COLORS.cardBackground },
   handle: { padding: 8 },
+  content: { flex: 1 },
 });
