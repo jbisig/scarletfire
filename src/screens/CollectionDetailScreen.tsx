@@ -40,6 +40,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
+import { BlurBackground } from '../components/shared/BlurBackground';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -626,6 +627,7 @@ export function CollectionDetailScreen() {
                 activeOpacity={0.7}
                 accessibilityLabel="Exit reorder mode"
               >
+                <BlurBackground intensity={50} tint="default" />
                 <Ionicons name="checkmark" size={17} color={COLORS.textPrimary} />
                 <Text style={styles.pillText}>Done</Text>
               </TouchableOpacity>
@@ -634,6 +636,7 @@ export function CollectionDetailScreen() {
             <View style={styles.pillsRow}>
               {collection.type === 'playlist' && items.length > 0 && (
                 <TouchableOpacity style={styles.pill} onPress={handleShuffle} activeOpacity={0.7}>
+                  <BlurBackground intensity={50} tint="default" />
                   <Ionicons name="shuffle" size={17} color={COLORS.textPrimary} />
                   <Text style={styles.pillText}>Shuffle</Text>
                 </TouchableOpacity>
@@ -645,6 +648,7 @@ export function CollectionDetailScreen() {
                   activeOpacity={0.7}
                   accessibilityLabel={saved ? 'Unsave collection' : 'Save collection'}
                 >
+                  <BlurBackground intensity={50} tint="default" />
                   <Ionicons
                     name={saved ? 'bookmark' : 'bookmark-outline'}
                     size={17}
@@ -655,6 +659,7 @@ export function CollectionDetailScreen() {
               )}
               {collection && ownerUsername && (
                 <TouchableOpacity style={styles.pill} onPress={handleShare} activeOpacity={0.7}>
+                  <BlurBackground intensity={50} tint="default" />
                   <Ionicons name="share-outline" size={17} color={COLORS.textPrimary} />
                   <Text style={styles.pillText}>Share</Text>
                 </TouchableOpacity>
@@ -668,6 +673,7 @@ export function CollectionDetailScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="More actions"
                   >
+                    <BlurBackground intensity={50} tint="default" />
                     <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
                   </TouchableOpacity>
                 </View>
@@ -1036,9 +1042,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: COLORS.surfaceMedium,
+    overflow: 'hidden',
     ...(Platform.OS === 'web'
       ? {
-          overflow: 'hidden',
           // @ts-ignore - web only
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',
@@ -1052,9 +1058,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.surfaceMedium,
+    overflow: 'hidden',
     ...(Platform.OS === 'web'
       ? {
-          overflow: 'hidden',
           // @ts-ignore - web only
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',
