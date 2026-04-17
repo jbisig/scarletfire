@@ -12,7 +12,7 @@ interface SongCardProps {
   song: FavoriteSong;
   playCount?: number;
   isLoading?: boolean;
-  onPress: (song: FavoriteSong) => void;
+  onPress?: (song: FavoriteSong) => void;
   onLongPress?: (song: FavoriteSong) => void;
 }
 
@@ -40,7 +40,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
         isDesktop && isHovered && styles.songItemHovered,
         pressed && styles.songItemPressed,
       ]}
-      onPress={() => onPress(song)}
+      onPress={onPress ? () => onPress(song) : undefined}
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       disabled={isLoading}
       // @ts-ignore - web only mouse events

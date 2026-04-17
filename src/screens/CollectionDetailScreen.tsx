@@ -481,7 +481,7 @@ export function CollectionDetailScreen() {
       return (
         <SongCard
           song={song}
-          onPress={interactive ? () => handleTrackPress(md) : () => {}}
+          onPress={interactive ? () => handleTrackPress(md) : undefined}
           onLongPress={
             interactive && isOwner
               ? () =>
