@@ -1036,6 +1036,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: COLORS.surfaceMedium,
+    ...(Platform.OS === 'web'
+      ? {
+          overflow: 'hidden',
+          // @ts-ignore - web only
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }
+      : {}),
   },
   menuCircleBtn: {
     width: 36,
@@ -1044,6 +1052,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.surfaceMedium,
+    ...(Platform.OS === 'web'
+      ? {
+          overflow: 'hidden',
+          // @ts-ignore - web only
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }
+      : {}),
   },
   pillDestructive: {
     backgroundColor: COLORS.surfaceLight,
