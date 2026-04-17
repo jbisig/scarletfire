@@ -481,6 +481,7 @@ export function CollectionDetailScreen() {
       return (
         <SongCard
           song={song}
+          containerStyle={interactive ? undefined : { backgroundColor: 'transparent' }}
           onPress={interactive ? () => handleTrackPress(md) : undefined}
           onLongPress={
             interactive && isOwner
