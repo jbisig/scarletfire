@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useResponsive } from '../hooks/useResponsive';
 import { submitSupportRequest } from '../services/supportService';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../constants/theme';
 
@@ -22,6 +23,7 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
 
 export function SupportScreen() {
   const { state: authState } = useAuth();
+  const { isDesktop } = useResponsive();
   const initialEmail = authState.user?.email ?? '';
 
   const [email, setEmail] = useState(initialEmail);
@@ -87,7 +89,10 @@ export function SupportScreen() {
 
   if (status === 'success') {
     return (
-      <ScrollView contentContainerStyle={styles.outer}>
+      <ScrollView
+        style={[styles.flex, isDesktop && styles.containerDesktop]}
+        contentContainerStyle={styles.outer}
+      >
         <View style={styles.card}>
           <Text style={styles.title}>Thanks!</Text>
           <Text style={styles.body}>
@@ -103,7 +108,7 @@ export function SupportScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, isDesktop && styles.containerDesktop]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
@@ -198,7 +203,13 @@ export function SupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  flex: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  containerDesktop: {
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   outer: {
     padding: SPACING.xl,
     alignItems: 'center',
