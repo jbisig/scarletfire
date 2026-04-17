@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import DraggableFlatList, {
+import {
+  NestableDraggableFlatList,
   RenderItemParams,
   ScaleDecorator,
 } from 'react-native-draggable-flatlist';
@@ -18,29 +19,29 @@ export function SortableTrackList({ items, onReorder, renderItem }: Props) {
   const renderRow = ({ item, drag, isActive }: RenderItemParams<CollectionItem>) => {
     return (
       <ScaleDecorator>
-        <View style={[styles.row, isActive && styles.rowActive]}>
-          <View style={{ flex: 1 }}>{renderItem(item)}</View>
-          <TouchableOpacity
-            onLongPress={drag}
-            disabled={isActive}
-            style={styles.handle}
-            accessibilityLabel="Drag to reorder"
-          >
+        <TouchableOpacity
+          style={[styles.row, isActive && styles.rowActive]}
+          onLongPress={drag}
+          disabled={isActive}
+          activeOpacity={0.85}
+          accessibilityLabel="Long press to drag and reorder"
+        >
+          <View style={styles.handle}>
             <Ionicons name="reorder-three" size={22} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        </View>
+          </View>
+          <View style={{ flex: 1 }}>{renderItem(item)}</View>
+        </TouchableOpacity>
       </ScaleDecorator>
     );
   };
 
   return (
-    <DraggableFlatList
+    <NestableDraggableFlatList
       data={items}
       keyExtractor={(item) => item.id}
       renderItem={renderRow}
       onDragEnd={({ data }) => onReorder(data)}
       activationDistance={10}
-      scrollEnabled={false}
     />
   );
 }

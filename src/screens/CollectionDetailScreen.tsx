@@ -9,7 +9,6 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
-  ScrollView,
   ImageBackground,
   Modal,
 } from 'react-native';
@@ -40,6 +39,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
+import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -699,7 +699,7 @@ export function CollectionDetailScreen() {
   ) : null;
 
   return (
-    <ScrollView
+    <ReorderableScrollView
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={{ paddingBottom: 120 }}
       keyboardShouldPersistTaps="handled"
@@ -927,7 +927,7 @@ export function CollectionDetailScreen() {
           </>
         )}
       </BottomSheet>
-    </ScrollView>
+    </ReorderableScrollView>
   );
 }
 
