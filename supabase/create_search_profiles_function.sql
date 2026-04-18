@@ -7,6 +7,9 @@ CREATE INDEX IF NOT EXISTS idx_profiles_username_trgm
 CREATE INDEX IF NOT EXISTS idx_profiles_display_name_trgm
   ON public.profiles USING gin (display_name gin_trgm_ops);
 
+-- Drop the prior signature so CREATE OR REPLACE can change the RETURNS TABLE shape.
+DROP FUNCTION IF EXISTS public.search_profiles(text, uuid, int, int);
+
 CREATE OR REPLACE FUNCTION public.search_profiles(
   query_text text,
   viewer_id uuid,
