@@ -7,7 +7,6 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { SearchBar } from '../SearchBar';
 import { PeopleRow } from './PeopleRow';
 import { feedService, type PeopleRow as PeopleRowData } from '../../services/feedService';
-import { profileService } from '../../services/profileService';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 
@@ -20,9 +19,6 @@ export function PeopleList() {
   const [following, setFollowing] = useState<PeopleRowData[]>([]);
   const [discover, setDiscover] = useState<PeopleRowData[]>([]);
   const [search, setSearch] = useState<PeopleRowData[]>([]);
-  const [avatarUrls, setAvatarUrls] = useState<Record<string, string | null>>({});
-  const avatarUrlsRef = useRef<Record<string, string | null>>({});
-  useEffect(() => { avatarUrlsRef.current = avatarUrls; }, [avatarUrls]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -30,29 +26,11 @@ export function PeopleList() {
   const [discoverEnd, setDiscoverEnd] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounce the search input.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedQuery(query.trim()), 200);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
-
-  // Stable identity — reads `avatarUrlsRef` to avoid re-fetch loops.
-  const fetchAvatars = useCallback(async (rows: PeopleRowData[]) => {
-    const missing = rows.map(r => r.id).filter(id => !(id in avatarUrlsRef.current));
-    if (missing.length === 0) return;
-    const results = await Promise.all(
-      missing.map(async (id) => {
-        const p = await profileService.getProfileById(id);
-        return [id, p?.avatarUrl ?? null] as const;
-      }),
-    );
-    setAvatarUrls(prev => {
-      const next = { ...prev };
-      results.forEach(([id, url]) => { next[id] = url; });
-      return next;
-    });
-  }, []);
 
   const load = useCallback(async (refreshing: boolean) => {
     if (refreshing) setIsRefreshing(true); else setIsLoading(true);
@@ -67,12 +45,11 @@ export function PeopleList() {
       setSearch(result.search);
       setDiscoverCursor(result.discover.length);
       setDiscoverEnd(result.discover.length < PAGE_SIZE);
-      await fetchAvatars([...result.following, ...result.discover, ...result.search]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [debouncedQuery, fetchAvatars]);
+  }, [debouncedQuery]);
 
   useEffect(() => { load(false); }, [load]);
 
@@ -90,22 +67,20 @@ export function PeopleList() {
     setDiscover(prev => [...prev, ...result.discover]);
     setDiscoverCursor(c => c + result.discover.length);
     if (result.discover.length < PAGE_SIZE) setDiscoverEnd(true);
-    await fetchAvatars(result.discover);
-  }, [debouncedQuery, discoverCursor, discoverEnd, fetchAvatars]);
+  }, [debouncedQuery, discoverCursor, discoverEnd]);
 
   const handleRowPress = (row: PeopleRowData) => {
     navigation.navigate('PublicProfile', { username: row.username });
   };
 
   const handleFollowChange = (_rowId: string, _nowFollowing: boolean) => {
-    // Local visual reorder happens on next refresh; no need to mutate state here
-    // since PeopleRow keeps its own optimistic display state.
+    // PR 2 wires optimistic reorder here (M5).
   };
 
   const renderRow = (row: PeopleRowData) => (
     <PeopleRow
       row={row}
-      avatarUrl={avatarUrls[row.id] ?? null}
+      avatarUrl={row.avatarUrl}
       onPressRow={() => handleRowPress(row)}
       onFollowChange={(f) => handleFollowChange(row.id, f)}
     />
@@ -131,7 +106,6 @@ export function PeopleList() {
     );
   }
 
-  // Search mode → flat list of search results.
   if (debouncedQuery !== '') {
     return (
       <View style={{ flex: 1 }}>
@@ -152,7 +126,6 @@ export function PeopleList() {
     );
   }
 
-  // Default mode → sectioned list.
   const sections = [
     ...(following.length > 0 ? [{ title: 'FOLLOWING', data: following }] : []),
     { title: 'DISCOVER', data: discover },
