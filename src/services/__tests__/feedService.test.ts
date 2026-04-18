@@ -113,13 +113,13 @@ describe('feedService.getActivityFeed', () => {
 describe('feedService.searchProfiles', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('calls search_profiles RPC with empty query → returns sectioned rows', async () => {
+  it('empty query → returns sectioned rows with avatarUrl', async () => {
     const rpc = setupRpc({
       data: [
-        { id: 'a', username: 'alice', display_name: 'Alice', followers_count: 5,
-          following_count: 2, viewer_is_following: true, section: 'following' },
-        { id: 'b', username: 'bob', display_name: null, followers_count: 100,
-          following_count: 1, viewer_is_following: false, section: 'discover' },
+        { id: 'a', username: 'alice', display_name: 'Alice', avatar_url: 'a.png',
+          followers_count: 5, following_count: 2, viewer_is_following: true, section: 'following' },
+        { id: 'b', username: 'bob', display_name: null, avatar_url: null,
+          followers_count: 100, following_count: 1, viewer_is_following: false, section: 'discover' },
       ],
       error: null,
     });
@@ -132,22 +132,27 @@ describe('feedService.searchProfiles', () => {
       cursor_offset: 0,
       page_size: 20,
     });
-    expect(result.following).toHaveLength(1);
-    expect(result.discover).toHaveLength(1);
+    expect(result.following).toEqual([
+      expect.objectContaining({ id: 'a', username: 'alice', avatarUrl: 'a.png', viewer_is_following: true }),
+    ]);
+    expect(result.discover).toEqual([
+      expect.objectContaining({ id: 'b', username: 'bob', avatarUrl: null, viewer_is_following: false }),
+    ]);
     expect(result.search).toEqual([]);
   });
 
-  it('non-empty query → returns rows in `search` bucket', async () => {
-    const rpc = setupRpc({
+  it('non-empty query → returns rows in `search` bucket with avatarUrl', async () => {
+    setupRpc({
       data: [
-        { id: 'a', username: 'alice', display_name: 'Alice', followers_count: 5,
-          following_count: 2, viewer_is_following: false, section: 'search' },
+        { id: 'a', username: 'alice', display_name: 'Alice', avatar_url: 'a.png',
+          followers_count: 5, following_count: 2, viewer_is_following: false, section: 'search' },
       ],
       error: null,
     });
 
     const result = await feedService.searchProfiles({ query: 'al', cursor: 0, pageSize: 20 });
     expect(result.search).toHaveLength(1);
+    expect(result.search[0].avatarUrl).toBe('a.png');
     expect(result.following).toEqual([]);
     expect(result.discover).toEqual([]);
   });

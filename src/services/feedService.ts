@@ -5,10 +5,15 @@ export interface PeopleRow {
   id: string;
   username: string;
   display_name: string | null;
+  avatarUrl: string | null;
   followers_count: number;
   following_count: number;
   viewer_is_following: boolean;
   section: 'following' | 'discover' | 'search';
+}
+
+interface RawPeopleRow extends Omit<PeopleRow, 'avatarUrl'> {
+  avatar_url: string | null;
 }
 
 export interface SectionedPeople {
@@ -101,7 +106,17 @@ class FeedService {
     });
     if (error) throw error;
 
-    const rows = (data ?? []) as PeopleRow[];
+    const rows: PeopleRow[] = ((data ?? []) as RawPeopleRow[]).map(r => ({
+      id: r.id,
+      username: r.username,
+      display_name: r.display_name,
+      avatarUrl: r.avatar_url,
+      followers_count: r.followers_count,
+      following_count: r.following_count,
+      viewer_is_following: r.viewer_is_following,
+      section: r.section,
+    }));
+
     return {
       following: rows.filter(r => r.section === 'following'),
       discover:  rows.filter(r => r.section === 'discover'),
