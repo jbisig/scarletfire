@@ -5,10 +5,15 @@ export interface PeopleRow {
   id: string;
   username: string;
   display_name: string | null;
+  avatarUrl: string | null;
   followers_count: number;
   following_count: number;
   viewer_is_following: boolean;
   section: 'following' | 'discover' | 'search';
+}
+
+interface RawPeopleRow extends Omit<PeopleRow, 'avatarUrl'> {
+  avatar_url: string | null;
 }
 
 export interface SectionedPeople {
@@ -17,24 +22,70 @@ export interface SectionedPeople {
   search: PeopleRow[];
 }
 
+export interface GetActivityFeedArgs {
+  followingCursor: string | null;
+  publicCursor: string | null;
+  includeFollowing: boolean;
+  includePublic: boolean;
+  pageSize: number;
+}
+
+export interface GetActivityFeedResult {
+  events: ActivityEvent[];
+  nextFollowingCursor: string | null;
+  nextPublicCursor: string | null;
+  followingExhausted: boolean;
+  publicExhausted: boolean;
+}
+
 class FeedService {
-  async getActivityFeed(args: {
-    cursor: string | null;
-    pageSize: number;
-  }): Promise<ActivityEvent[]> {
+  async getActivityFeed(args: GetActivityFeedArgs): Promise<GetActivityFeedResult> {
     const supabase = authService.getClient();
     const { data: userData } = await supabase.auth.getUser();
     const me = userData?.user?.id;
-    if (!me) return [];
+    if (!me) {
+      return {
+        events: [],
+        nextFollowingCursor: null,
+        nextPublicCursor: null,
+        followingExhausted: false,
+        publicExhausted: false,
+      };
+    }
 
-    const cursor = args.cursor ?? new Date().toISOString();
     const { data, error } = await supabase.rpc('get_activity_feed', {
       viewer_id: me,
-      cursor_time: cursor,
+      following_cursor: args.followingCursor,
+      public_cursor: args.publicCursor,
+      include_following: args.includeFollowing,
+      include_public: args.includePublic,
       page_size: args.pageSize,
     });
     if (error) throw error;
-    return (data ?? []) as ActivityEvent[];
+
+    const events = (data ?? []) as ActivityEvent[];
+
+    const followingEvents = events.filter(e => e.source === 'following');
+    const publicEvents    = events.filter(e => e.source === 'public');
+
+    const oldest = (list: ActivityEvent[]): string | null =>
+      list.length === 0 ? null : list[list.length - 1].created_at;
+
+    // Exhaustion: we asked for rows from this stream (include=true AND cursor was non-null
+    // meaning "give me more") but got none. First-page (cursor=null) returning zero isn't
+    // exhaustion — it's just empty.
+    const followingExhausted =
+      args.includeFollowing && args.followingCursor !== null && followingEvents.length === 0;
+    const publicExhausted =
+      args.includePublic && args.publicCursor !== null && publicEvents.length === 0;
+
+    return {
+      events,
+      nextFollowingCursor: oldest(followingEvents),
+      nextPublicCursor: oldest(publicEvents),
+      followingExhausted,
+      publicExhausted,
+    };
   }
 
   async searchProfiles(args: {
@@ -55,7 +106,17 @@ class FeedService {
     });
     if (error) throw error;
 
-    const rows = (data ?? []) as PeopleRow[];
+    const rows: PeopleRow[] = ((data ?? []) as RawPeopleRow[]).map(r => ({
+      id: r.id,
+      username: r.username,
+      display_name: r.display_name,
+      avatarUrl: r.avatar_url,
+      followers_count: r.followers_count,
+      following_count: r.following_count,
+      viewer_is_following: r.viewer_is_following,
+      section: r.section,
+    }));
+
     return {
       following: rows.filter(r => r.section === 'following'),
       discover:  rows.filter(r => r.section === 'discover'),

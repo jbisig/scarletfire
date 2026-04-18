@@ -84,3 +84,38 @@ describe('shouldEmitListenedShow', () => {
     expect(shouldEmitListenedShow(2, 1)).toBe(false);
   });
 });
+
+import { diffNewlyListenedShows } from '../PlayCountsContext';
+
+describe('diffNewlyListenedShows', () => {
+  it('returns empty when sets are identical', () => {
+    expect(diffNewlyListenedShows(new Set(['s1']), new Set(['s1']))).toEqual([]);
+  });
+
+  it('returns only shows newly crossed (in next, not in prev)', () => {
+    expect(diffNewlyListenedShows(new Set(['s1']), new Set(['s1', 's2']))).toEqual(['s2']);
+  });
+
+  it('returns [] when next is a subset of prev (count decreased — never expected)', () => {
+    expect(diffNewlyListenedShows(new Set(['s1', 's2']), new Set(['s1']))).toEqual([]);
+  });
+
+  it('returns multiple new shows when several cross in one render', () => {
+    const result = diffNewlyListenedShows(new Set(['s1']), new Set(['s1', 's2', 's3']));
+    expect(result.sort()).toEqual(['s2', 's3']);
+  });
+});
+
+describe('diffNewlyListenedShows seed semantics', () => {
+  it('emits nothing when prev is seeded to current (first-mount semantics)', () => {
+    const initial = new Set(['s1', 's2', 's3']);
+    // Simulate seed: ref.current = initial; diff against same set
+    expect(diffNewlyListenedShows(initial, initial)).toEqual([]);
+  });
+
+  it('emits only post-seed additions, not historical ids', () => {
+    const seeded = new Set(['s1', 's2', 's3']);
+    const later  = new Set(['s1', 's2', 's3', 's4']);
+    expect(diffNewlyListenedShows(seeded, later)).toEqual(['s4']);
+  });
+});

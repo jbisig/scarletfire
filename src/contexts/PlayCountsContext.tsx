@@ -55,6 +55,21 @@ export function shouldEmitListenedShow(prev: number, next: number): boolean {
   return next > prev;
 }
 
+/**
+ * Returns the set of show IDs that are in `next` but not in `prev`.
+ * These are shows that just crossed the "listened" threshold during this render.
+ */
+export function diffNewlyListenedShows(
+  prev: ReadonlySet<string>,
+  next: ReadonlySet<string>,
+): string[] {
+  const newly: string[] = [];
+  for (const id of next) {
+    if (!prev.has(id)) newly.push(id);
+  }
+  return newly;
+}
+
 export function PlayCountsProvider({ children }: { children: React.ReactNode }) {
   // Use Map for O(1) lookups and stable callback references
   const [playCountsMap, setPlayCountsMap] = useState<Map<string, PlayCount>>(new Map());
@@ -127,6 +142,9 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
         }
       });
 
+      // Re-arm the listened-show seed so the post-merge set is treated as the
+      // new baseline, not as a delta to emit for historical shows.
+      hasInitializedListenedRef.current = false;
       setPlayCountsMap(mergedMap);
 
       // Save merged back to both local and cloud
@@ -155,6 +173,47 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     }
     return index;
   }, [playCountsMap]);
+
+  // Set of show IDs whose computeShowPlayCount is >= 1, using observed track
+  // count as the totalTracks denominator (best available approximation).
+  const listenedShowIds = useMemo<Set<string>>(() => {
+    const ids = new Set<string>();
+    for (const [showId, counts] of showPlayCountsIndex.entries()) {
+      const observedTracks = counts.length;
+      if (computeShowPlayCount(counts, observedTracks) >= 1) {
+        ids.add(showId);
+      }
+    }
+    return ids;
+  }, [showPlayCountsIndex]);
+
+  const prevListenedShowIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedListenedRef = useRef(false);
+
+  useEffect(() => {
+    // Guard against the initial cold-start cascade: the first time we observe
+    // listenedShowIds after the context finishes loading, seed the ref with the
+    // initial set rather than emitting for every historical listened show.
+    if (!hasInitializedListenedRef.current) {
+      if (!isLoading) {
+        prevListenedShowIdsRef.current = listenedShowIds;
+        hasInitializedListenedRef.current = true;
+      }
+      return;
+    }
+
+    const newlyListened = diffNewlyListenedShows(prevListenedShowIdsRef.current, listenedShowIds);
+    if (newlyListened.length > 0) {
+      for (const showId of newlyListened) {
+        const counts = showPlayCountsIndex.get(showId);
+        const showDate = counts && counts.length > 0 ? counts[0].showDate : undefined;
+        activityService.emitEvent('listened_show', 'show', showId, {
+          ...(showDate ? { date: showDate } : {}),
+        }).catch(() => {});
+      }
+    }
+    prevListenedShowIdsRef.current = listenedShowIds;
+  }, [listenedShowIds, isLoading]);
 
   const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
     return showPlayCountsIndex.has(showIdentifier);
@@ -191,18 +250,6 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
           trackTitle, showIdentifier, showDate,
           count: 1, firstPlayedAt: now, lastPlayedAt: now,
         });
-      }
-
-      // Compute show-level count BEFORE and AFTER this increment.
-      const prevShowCounts = Array.from(prev.values()).filter(pc => pc.showIdentifier === showIdentifier);
-      const nextShowCounts = Array.from(newMap.values()).filter(pc => pc.showIdentifier === showIdentifier);
-      const prevShowCount = computeShowPlayCount(prevShowCounts, totalTracks);
-      const nextShowCount = computeShowPlayCount(nextShowCounts, totalTracks);
-
-      if (shouldEmitListenedShow(prevShowCount, nextShowCount)) {
-        activityService.emitEvent('listened_show', 'show', showIdentifier, {
-          date: showDate,
-        }).catch(() => {});
       }
 
       savePlayCounts(newMap);
