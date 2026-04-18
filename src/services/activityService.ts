@@ -20,6 +20,9 @@ export interface ActivityEvent {
   metadata: Record<string, unknown> | null;
   created_at: string;
   source: 'following' | 'public';
+  actor_username: string;
+  actor_display_name: string | null;
+  actor_avatar_url: string | null;
 }
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
