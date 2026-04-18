@@ -185,8 +185,20 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
   }, [showPlayCountsIndex]);
 
   const prevListenedShowIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedListenedRef = useRef(false);
 
   useEffect(() => {
+    // Guard against the initial cold-start cascade: the first time we observe
+    // listenedShowIds after the context finishes loading, seed the ref with the
+    // initial set rather than emitting for every historical listened show.
+    if (!hasInitializedListenedRef.current) {
+      if (!isLoading) {
+        prevListenedShowIdsRef.current = listenedShowIds;
+        hasInitializedListenedRef.current = true;
+      }
+      return;
+    }
+
     const newlyListened = diffNewlyListenedShows(prevListenedShowIdsRef.current, listenedShowIds);
     if (newlyListened.length > 0) {
       for (const showId of newlyListened) {
@@ -198,7 +210,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       }
     }
     prevListenedShowIdsRef.current = listenedShowIds;
-  }, [listenedShowIds, showPlayCountsIndex]);
+  }, [listenedShowIds, showPlayCountsIndex, isLoading]);
 
   const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
     return showPlayCountsIndex.has(showIdentifier);

@@ -105,3 +105,17 @@ describe('diffNewlyListenedShows', () => {
     expect(result.sort()).toEqual(['s2', 's3']);
   });
 });
+
+describe('diffNewlyListenedShows seed semantics', () => {
+  it('emits nothing when prev is seeded to current (first-mount semantics)', () => {
+    const initial = new Set(['s1', 's2', 's3']);
+    // Simulate seed: ref.current = initial; diff against same set
+    expect(diffNewlyListenedShows(initial, initial)).toEqual([]);
+  });
+
+  it('emits only post-seed additions, not historical ids', () => {
+    const seeded = new Set(['s1', 's2', 's3']);
+    const later  = new Set(['s1', 's2', 's3', 's4']);
+    expect(diffNewlyListenedShows(seeded, later)).toEqual(['s4']);
+  });
+});
