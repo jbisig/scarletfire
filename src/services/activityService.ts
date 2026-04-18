@@ -93,7 +93,7 @@ class ActivityService {
 
       const { error } = await supabase
         .from('activity_events')
-        .insert(
+        .upsert(
           {
             actor_id: me,
             event_type: type,
@@ -101,12 +101,14 @@ class ActivityService {
             target_id: targetId,
             metadata,
           },
-          { onConflict: DEDUPE_CONFLICT_TARGET },
+          { onConflict: DEDUPE_CONFLICT_TARGET, ignoreDuplicates: true },
         );
       if (error) {
         // 23505 = unique_violation: duplicate event in the dedupe window. Expected.
+        // With ignoreDuplicates: true supabase-js returns { data: null, error: null }
+        // on conflict, so this branch is rarely reached — kept as defense in depth.
         if ((error as any).code !== '23505') {
-          activityLogger.error('emitEvent insert failed', error);
+          activityLogger.error('emitEvent upsert failed', error);
         }
       }
     } catch (err) {
