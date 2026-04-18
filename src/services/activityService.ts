@@ -25,9 +25,57 @@ export interface ActivityEvent {
   actor_avatar_url: string | null;
 }
 
-const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+const activityLogger = logger.create('activity');
+
+// Day-bucket unique index on (actor_id, event_type, target_id, date_trunc('day', created_at))
+// lets Postgres dedupe on insert via ON CONFLICT DO NOTHING.
+const DEDUPE_CONFLICT_TARGET =
+  'actor_id,event_type,target_id,date_trunc(\'day\'::text, created_at)';
 
 class ActivityService {
+  private isPublicCache: { userId: string; value: boolean } | null = null;
+  private unsubscribeAuth: (() => void) | null = null;
+
+  constructor() {
+    // Invalidate cache on auth state changes (sign-in / sign-out / user-switch).
+    if (typeof authService.onAuthStateChanged === 'function') {
+      this.unsubscribeAuth = authService.onAuthStateChanged(() => {
+        this.isPublicCache = null;
+      });
+    }
+  }
+
+  /**
+   * Test-only: reset the is_public cache between test cases and re-subscribe
+   * to auth state changes so the test can capture the callback. Not called in prod.
+   */
+  __resetCacheForTest(): void {
+    this.isPublicCache = null;
+    if (this.unsubscribeAuth) {
+      this.unsubscribeAuth();
+    }
+    if (typeof authService.onAuthStateChanged === 'function') {
+      this.unsubscribeAuth = authService.onAuthStateChanged(() => {
+        this.isPublicCache = null;
+      });
+    }
+  }
+
+  private async ensureIsPublic(userId: string): Promise<boolean> {
+    if (this.isPublicCache && this.isPublicCache.userId === userId) {
+      return this.isPublicCache.value;
+    }
+    const supabase = authService.getClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('is_public')
+      .eq('id', userId)
+      .single();
+    const value = Boolean(data?.is_public);
+    this.isPublicCache = { userId, value };
+    return value;
+  }
+
   async emitEvent(
     type: ActivityEventType,
     targetType: ActivityTargetType,
@@ -40,40 +88,29 @@ class ActivityService {
       const me = userData?.user?.id;
       if (!me) return;
 
-      // Privacy gate: skip emission if profile is not public.
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_public')
-        .eq('id', me)
-        .single();
-      if (!profile || !profile.is_public) return;
-
-      // Dedupe: skip if same (actor, type, target) exists in last 24h.
-      const cutoff = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
-      const { data: recent } = await supabase
-        .from('activity_events')
-        .select('id')
-        .eq('actor_id', me)
-        .eq('event_type', type)
-        .eq('target_id', targetId)
-        .gte('created_at', cutoff)
-        .limit(1);
-      if (recent && recent.length > 0) return;
+      const isPublic = await this.ensureIsPublic(me);
+      if (!isPublic) return;
 
       const { error } = await supabase
         .from('activity_events')
-        .insert({
-          actor_id: me,
-          event_type: type,
-          target_type: targetType,
-          target_id: targetId,
-          metadata,
-        });
+        .insert(
+          {
+            actor_id: me,
+            event_type: type,
+            target_type: targetType,
+            target_id: targetId,
+            metadata,
+          },
+          { onConflict: DEDUPE_CONFLICT_TARGET },
+        );
       if (error) {
-        logger.create('activity').error('emitEvent insert failed', error);
+        // 23505 = unique_violation: duplicate event in the dedupe window. Expected.
+        if ((error as any).code !== '23505') {
+          activityLogger.error('emitEvent insert failed', error);
+        }
       }
     } catch (err) {
-      logger.create('activity').error('emitEvent error', err);
+      activityLogger.error('emitEvent error', err);
     }
   }
 }
