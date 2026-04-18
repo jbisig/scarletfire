@@ -1,12 +1,11 @@
 // src/components/feed/ActivityList.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, FlatList, ActivityIndicator, RefreshControl, Text, StyleSheet, TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { feedService } from '../../services/feedService';
-import { profileService } from '../../services/profileService';
 import { ActivityRow } from './ActivityRow';
 import type { ActivityEvent } from '../../services/activityService';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
@@ -14,93 +13,72 @@ import type { RootStackParamList } from '../../navigation/AppNavigator';
 
 const PAGE_SIZE = 30;
 
-interface ActorInfo {
-  username: string;
-  display_name: string | null;
-  avatarUrl: string | null;
-}
-
 export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => void }) {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [actors, setActors] = useState<Record<string, ActorInfo>>({});
-  const actorsRef = useRef<Record<string, ActorInfo>>({});
-  useEffect(() => { actorsRef.current = actors; }, [actors]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [reachedEnd, setReachedEnd] = useState(false);
+  const [followingCursor, setFollowingCursor] = useState<string | null>(null);
+  const [publicCursor, setPublicCursor] = useState<string | null>(null);
+  const [followingExhausted, setFollowingExhausted] = useState(false);
+  const [publicExhausted, setPublicExhausted] = useState(false);
 
-  // Stable identity — reads `actorsRef` (not state) to avoid re-fetch loops.
-  const fetchActors = useCallback(async (newEvents: ActivityEvent[]) => {
-    const missingIds = Array.from(
-      new Set(newEvents.map(e => e.actor_id).filter(id => !(id in actorsRef.current))),
-    );
-    if (missingIds.length === 0) return;
-
-    const fetched = await Promise.all(
-      missingIds.map(async (id) => {
-        const profile = await profileService.getProfileById(id);
-        return [id, profile] as const;
-      }),
-    );
-
-    setActors(prev => {
-      const next = { ...prev };
-      fetched.forEach(([id, p]) => {
-        if (p) {
-          next[id] = {
-            username: p.username,
-            display_name: p.display_name ?? null,
-            avatarUrl: p.avatarUrl ?? null,
-          };
-        }
-      });
-      return next;
-    });
-  }, []); // EMPTY dependency array — stable identity; uses actorsRef to avoid re-fetch loops
+  const bothExhausted = followingExhausted && publicExhausted;
 
   const load = useCallback(async (refreshing: boolean) => {
     if (refreshing) setIsRefreshing(true); else setIsLoading(true);
     try {
-      const fresh = await feedService.getActivityFeed({
-        cursor: null,
+      const result = await feedService.getActivityFeed({
+        followingCursor: null,
+        publicCursor: null,
+        includeFollowing: true,
+        includePublic: true,
         pageSize: PAGE_SIZE,
       });
-      setEvents(fresh);
-      setReachedEnd(fresh.length < PAGE_SIZE);
-      setCursor(fresh.length > 0 ? fresh[fresh.length - 1].created_at : null);
-      await fetchActors(fresh);
+      setEvents(result.events);
+      setFollowingCursor(result.nextFollowingCursor);
+      setPublicCursor(result.nextPublicCursor);
+      setFollowingExhausted(false); // fresh load resets exhaustion
+      setPublicExhausted(false);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [fetchActors]);
+  }, []);
 
   const loadMore = useCallback(async () => {
-    if (isLoadingMore || reachedEnd || !cursor) return;
+    if (isLoadingMore || bothExhausted) return;
     setIsLoadingMore(true);
     try {
-      const more = await feedService.getActivityFeed({ cursor, pageSize: PAGE_SIZE });
-      if (more.length === 0) setReachedEnd(true);
-      else {
-        setEvents(prev => [...prev, ...more]);
-        setCursor(more[more.length - 1].created_at);
-        if (more.length < PAGE_SIZE) setReachedEnd(true);
-        await fetchActors(more);
+      const result = await feedService.getActivityFeed({
+        followingCursor,
+        publicCursor,
+        includeFollowing: !followingExhausted,
+        includePublic: !publicExhausted,
+        pageSize: PAGE_SIZE,
+      });
+      if (result.events.length === 0) {
+        // Both streams returned nothing — we're done.
+        setFollowingExhausted(true);
+        setPublicExhausted(true);
+      } else {
+        setEvents(prev => [...prev, ...result.events]);
+        if (result.nextFollowingCursor) setFollowingCursor(result.nextFollowingCursor);
+        if (result.nextPublicCursor) setPublicCursor(result.nextPublicCursor);
+        if (result.followingExhausted) setFollowingExhausted(true);
+        if (result.publicExhausted) setPublicExhausted(true);
       }
     } finally {
       setIsLoadingMore(false);
     }
-  }, [cursor, fetchActors, isLoadingMore, reachedEnd]);
+  }, [isLoadingMore, bothExhausted, followingCursor, publicCursor, followingExhausted, publicExhausted]);
 
   useEffect(() => { load(false); }, [load]);
 
   const handlePressActor = (event: ActivityEvent) => {
-    const a = actors[event.actor_id];
-    if (a) navigation.navigate('PublicProfile', { username: a.username });
+    navigation.navigate('PublicProfile', { username: event.actor_username });
   };
 
   const handlePressTarget = (event: ActivityEvent) => {
@@ -134,19 +112,16 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
       data={events}
       keyExtractor={(e) => e.id}
       contentContainerStyle={styles.listContent}
-      renderItem={({ item }) => {
-        const actor = actors[item.actor_id];
-        return (
-          <ActivityRow
-            event={item}
-            actorDisplayName={actor?.display_name ?? null}
-            actorUsername={actor?.username ?? '…'}
-            actorAvatarUrl={actor?.avatarUrl ?? null}
-            onPressActor={() => handlePressActor(item)}
-            onPressTarget={() => handlePressTarget(item)}
-          />
-        );
-      }}
+      renderItem={({ item }) => (
+        <ActivityRow
+          event={item}
+          actorDisplayName={item.actor_display_name}
+          actorUsername={item.actor_username}
+          actorAvatarUrl={item.actor_avatar_url}
+          onPressActor={() => handlePressActor(item)}
+          onPressTarget={() => handlePressTarget(item)}
+        />
+      )}
       onEndReachedThreshold={0.6}
       onEndReached={loadMore}
       refreshControl={
