@@ -142,6 +142,9 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
         }
       });
 
+      // Re-arm the listened-show seed so the post-merge set is treated as the
+      // new baseline, not as a delta to emit for historical shows.
+      hasInitializedListenedRef.current = false;
       setPlayCountsMap(mergedMap);
 
       // Save merged back to both local and cloud
@@ -210,7 +213,7 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
       }
     }
     prevListenedShowIdsRef.current = listenedShowIds;
-  }, [listenedShowIds, showPlayCountsIndex, isLoading]);
+  }, [listenedShowIds, isLoading]);
 
   const hasShowBeenPlayed = useCallback((showIdentifier: string): boolean => {
     return showPlayCountsIndex.has(showIdentifier);

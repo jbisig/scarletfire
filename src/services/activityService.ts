@@ -27,10 +27,8 @@ export interface ActivityEvent {
 
 const activityLogger = logger.create('activity');
 
-// Day-bucket unique index on (actor_id, event_type, target_id, date_trunc('day', created_at))
-// lets Postgres dedupe on insert via ON CONFLICT DO NOTHING.
-const DEDUPE_CONFLICT_TARGET =
-  'actor_id,event_type,target_id,date_trunc(\'day\'::text, created_at)';
+// Dedupe is enforced by the `activity_events_dedupe_day` unique index at the DB level.
+// Duplicate inserts return PG code 23505, which we swallow.
 
 class ActivityService {
   private isPublicCache: { userId: string; value: boolean } | null = null;
@@ -93,22 +91,18 @@ class ActivityService {
 
       const { error } = await supabase
         .from('activity_events')
-        .upsert(
-          {
-            actor_id: me,
-            event_type: type,
-            target_type: targetType,
-            target_id: targetId,
-            metadata,
-          },
-          { onConflict: DEDUPE_CONFLICT_TARGET, ignoreDuplicates: true },
-        );
+        .insert({
+          actor_id: me,
+          event_type: type,
+          target_type: targetType,
+          target_id: targetId,
+          metadata,
+        });
       if (error) {
-        // 23505 = unique_violation: duplicate event in the dedupe window. Expected.
-        // With ignoreDuplicates: true supabase-js returns { data: null, error: null }
-        // on conflict, so this branch is rarely reached — kept as defense in depth.
+        // 23505 = unique_violation: the activity_events_dedupe_day index fired —
+        // this is the primary dedupe path, not defense in depth. Swallow silently.
         if ((error as any).code !== '23505') {
-          activityLogger.error('emitEvent upsert failed', error);
+          activityLogger.error('emitEvent insert failed', error);
         }
       }
     } catch (err) {
