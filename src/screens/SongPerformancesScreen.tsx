@@ -79,7 +79,7 @@ export function SongPerformancesScreen() {
   const searchBarFullWidth = headerWidth - (padding * 2);
   const { loadTrack } = usePlayer();
   const { getShowDetail } = useShows();
-  const { getPlayCount } = usePlayCounts();
+  const { getPlayCountStable } = usePlayCounts();
   const [sortType, setSortType] = useState<SortType>('performanceDateOldest');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
@@ -254,13 +254,17 @@ export function SongPerformancesScreen() {
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
     const show = getShowByDate(item.date);
-    const songPlayCount = getPlayCount(songTitle, item.identifier);
+    // Stable getter — doesn't change identity when some other song/show's
+    // play count changes elsewhere in the app, so this callback (and the
+    // ~400 ShowCard rows relying on it) doesn't churn on every play.
+    const songPlayCount = getPlayCountStable(songTitle, item.identifier);
+    const onPress = () => handlePerformancePress(item);
 
     if (show) {
       return (
         <ShowCard
           show={show}
-          onPress={() => handlePerformancePress(item)}
+          onPress={onPress}
           overrideRating={item.rating}
           overridePlayCount={songPlayCount}
         />
@@ -270,13 +274,13 @@ export function SongPerformancesScreen() {
     return (
       <TouchableOpacity
         style={styles.performanceItem}
-        onPress={() => handlePerformancePress(item)}
+        onPress={onPress}
         activeOpacity={0.7}
       >
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
       </TouchableOpacity>
     );
-  }, [handlePerformancePress, getPlayCount, songTitle]);
+  }, [handlePerformancePress, getPlayCountStable, songTitle]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>

@@ -539,6 +539,28 @@ export function FavoritesScreen() {
     }
   }, [loadTrack]);
 
+  const handleSongLongPress = useCallback((song: FavoriteSong) => {
+    Alert.alert(song.trackTitle, undefined, [
+      { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, []);
+
+  const songKeyExtractor = useCallback(
+    (item: FavoriteSong) => `${item.trackId}-${item.showIdentifier}`,
+    []
+  );
+
+  const renderSongItem = useCallback(({ item }: { item: FavoriteSong }) => (
+    <SongItem
+      song={item}
+      isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
+      playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
+      onPress={handleSongPress}
+      onLongPress={handleSongLongPress}
+    />
+  ), [loadingSongId, getPlayCount, handleSongPress, handleSongLongPress]);
+
   // Shuffle handlers
   const handleShuffleShows = useCallback(() => {
     if (favoriteShows.length === 0) return;
@@ -730,21 +752,8 @@ export function FavoritesScreen() {
           <FlatList
             ref={songsListRef}
             data={sortedAndFilteredSongs}
-            keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
-            renderItem={({ item }) => (
-              <SongItem
-                song={item}
-                isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
-                playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
-                onPress={handleSongPress}
-                onLongPress={(song) =>
-                  Alert.alert(song.trackTitle, undefined, [
-                    { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
-                    { text: 'Cancel', style: 'cancel' },
-                  ])
-                }
-              />
-            )}
+            keyExtractor={songKeyExtractor}
+            renderItem={renderSongItem}
             contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -846,7 +855,7 @@ export function FavoritesScreen() {
         <View style={styles.tabContainer} accessibilityRole="tablist">
           {(['shows', 'songs', 'collections'] as const).map((tab) => (
             <TouchableOpacity
-              key={`${tab}-${activeTab}`}
+              key={tab}
               style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
               onPress={() => setActiveTab(tab)}
               activeOpacity={0.7}

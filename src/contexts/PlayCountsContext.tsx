@@ -24,6 +24,15 @@ export interface PlayCount {
 interface PlayCountsContextType {
   playCounts: PlayCount[];
   getPlayCount: (trackTitle: string, showIdentifier: string) => number;
+  /**
+   * Identity-stable variant of `getPlayCount` — reads the latest counts via a
+   * ref instead of closing over `playCountsMap`, so its reference never
+   * changes. Use this inside memoized `renderItem`/callback deps for large
+   * lists where depending on `getPlayCount` (which gets a new identity on
+   * every play, anywhere in the app) would defeat the memoization and force
+   * a full list re-render for an unrelated play count change.
+   */
+  getPlayCountStable: (trackTitle: string, showIdentifier: string) => number;
   recordTrackPlay: (
     trackTitle: string,
     showIdentifier: string,
@@ -143,6 +152,18 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     return playCountsMap.get(key)?.count || 0;
   }, [playCountsMap]);
 
+  // Ref mirror of playCountsMap so getPlayCountStable can read the latest
+  // counts without depending on (and changing identity with) playCountsMap.
+  const playCountsMapRef = useRef(playCountsMap);
+  useEffect(() => {
+    playCountsMapRef.current = playCountsMap;
+  }, [playCountsMap]);
+
+  const getPlayCountStable = useCallback((trackTitle: string, showIdentifier: string): number => {
+    const key = `${trackTitle}:${showIdentifier}`;
+    return playCountsMapRef.current.get(key)?.count || 0;
+  }, []);
+
   // Pre-compute show-level index for O(1) lookups
   // This is recalculated only when playCountsMap changes
   const showPlayCountsIndex = useMemo(() => {
@@ -227,11 +248,12 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
   const contextValue = useMemo(() => ({
     playCounts: playCountsArray,
     getPlayCount,
+    getPlayCountStable,
     recordTrackPlay,
     isLoading,
     hasShowBeenPlayed,
     getShowPlayCount,
-  }), [playCountsArray, getPlayCount, recordTrackPlay, isLoading, hasShowBeenPlayed, getShowPlayCount]);
+  }), [playCountsArray, getPlayCount, getPlayCountStable, recordTrackPlay, isLoading, hasShowBeenPlayed, getShowPlayCount]);
 
   return (
     <PlayCountsContext.Provider value={contextValue}>

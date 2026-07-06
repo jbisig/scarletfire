@@ -85,6 +85,16 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
 
   const lowerQuery = query.toLowerCase();
   const normalizedQuery = normalizeForSearch(query);
+
+  // Check if query matches a state name, and if so, search for abbreviation.
+  // Hoisted out of the per-show loop below — both only depend on the query,
+  // not on the individual show, so recomputing them for every show was
+  // pure waste (an O(states) scan repeated once per show in the list).
+  const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
+  const matchingStateAbbrs = Object.entries(STATE_ABBREVIATIONS)
+    .filter(([stateName]) => stateName.startsWith(lowerQuery))
+    .map(([, abbr]) => abbr);
+
   return shows.filter(show => {
     // Search in title
     if (show.title?.toLowerCase().includes(lowerQuery)) return true;
@@ -95,16 +105,11 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
     // Search in location (including state name to abbreviation conversion)
     if (show.location?.toLowerCase().includes(lowerQuery)) return true;
 
-    // Check if query matches a state name, and if so, search for abbreviation
-    const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
     if (stateAbbr && show.location?.toUpperCase().includes(stateAbbr)) return true;
 
     // Also check partial state name matches (e.g., "calif" matches "california" -> "CA")
-    const matchingStates = Object.entries(STATE_ABBREVIATIONS).filter(([stateName]) =>
-      stateName.startsWith(lowerQuery)
-    );
-    if (matchingStates.length > 0) {
-      for (const [, abbr] of matchingStates) {
+    if (matchingStateAbbrs.length > 0) {
+      for (const abbr of matchingStateAbbrs) {
         if (show.location?.toUpperCase().includes(abbr)) return true;
       }
     }

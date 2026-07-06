@@ -359,6 +359,10 @@ export function ShowDetailScreen() {
   const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
   const { itemCountsByIdentifier } = useCollections();
 
+  const handleAddToPlaylist = useCallback((track: Track) => {
+    setPickerTrack(track);
+  }, []);
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -715,7 +719,7 @@ export function ShowDetailScreen() {
             rating={trackRatings[track.id]}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
-            onAddToPlaylist={(t) => setPickerTrack(t)}
+            onAddToPlaylist={handleAddToPlaylist}
             onLongPress={handleTrackLongPress}
             playlistCount={itemCountsByIdentifier[`${show.identifier}::${track.id}`] ?? 0}
             isSelected={track.id === selectedTrackId}
