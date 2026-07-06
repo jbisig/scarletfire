@@ -11,6 +11,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { showDetailParams } from '../utils/showDetailParams';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { LoadingState, ErrorState } from '../components/StateViews';
@@ -23,13 +24,7 @@ export function SOTDScreen() {
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', {
-        identifier: show.primaryIdentifier,
-        venue: show.venue,
-        date: show.date,
-        location: show.location,
-        classicTier: show.classicTier,
-      });
+      navigation.navigate('ShowDetail', showDetailParams(show));
     }
   };
 

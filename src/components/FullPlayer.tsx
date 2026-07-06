@@ -19,11 +19,12 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { usePlayer } from '../contexts/PlayerContext';
-import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useShows } from '../contexts/ShowsContext';
 import { formatDate, formatTime, getVenueFromShow } from '../utils/formatters';
+import { toFavoriteSong } from '../utils/favoriteSong';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
@@ -262,15 +263,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     if (isSongFavorite(trackId, showIdentifier)) {
       removeFavoriteSong(trackId, showIdentifier);
     } else {
-      const favoriteSong: FavoriteSong = {
-        trackId: state.currentTrack.id,
-        trackTitle: state.currentTrack.title,
-        showIdentifier: state.currentShow.identifier,
-        showDate: state.currentShow.date,
-        venue: getVenueFromShow(state.currentShow),
-        streamUrl: state.currentTrack.streamUrl,
-      };
-      addFavoriteSong(favoriteSong);
+      addFavoriteSong(toFavoriteSong(state.currentTrack, state.currentShow));
     }
   };
 
@@ -675,14 +668,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           onClose={() => setAddToPlaylistVisible(false)}
           type="playlist"
           itemIdentifier={`${state.currentShow.identifier}::${state.currentTrack.id}`}
-          itemMetadata={{
-            trackId: state.currentTrack.id,
-            trackTitle: state.currentTrack.title,
-            showIdentifier: state.currentShow.identifier,
-            showDate: state.currentShow.date,
-            venue: state.currentShow.venue,
-            streamUrl: state.currentTrack.streamUrl,
-          }}
+          itemMetadata={toFavoriteSong(state.currentTrack, state.currentShow)}
         />
       )}
     </Animated.View>

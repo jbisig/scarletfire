@@ -26,6 +26,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ShowsByYear } from '../types/show.types';
+import { showDetailParams } from '../utils/showDetailParams';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -434,13 +435,7 @@ export function FavoritesScreen() {
   };
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: show.primaryIdentifier,
-      venue: show.venue,
-      date: show.date,
-      location: show.location,
-      classicTier: show.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(show));
   }, [navigation]);
 
   const handleSongPress = useCallback(async (song: FavoriteSong) => {
@@ -922,14 +917,10 @@ export function FavoritesScreen() {
           onClose={() => setPickerSong(null)}
           type="playlist"
           itemIdentifier={`${pickerSong.showIdentifier}::${pickerSong.trackId}`}
-          itemMetadata={{
-            trackId: pickerSong.trackId,
-            trackTitle: pickerSong.trackTitle,
-            showIdentifier: pickerSong.showIdentifier,
-            showDate: pickerSong.showDate,
-            venue: pickerSong.venue,
-            streamUrl: pickerSong.streamUrl,
-          }}
+          // pickerSong is already a FavoriteSong (not a track+show pair), so
+          // toFavoriteSong's signature doesn't apply here — it's already the
+          // exact shape itemMetadata needs.
+          itemMetadata={pickerSong}
         />
       )}
 

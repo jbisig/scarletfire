@@ -5,8 +5,9 @@ import { CommonActions } from '@react-navigation/native';
 import { navigationRef } from '../../navigation/navigationRef';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useVideoBackground } from '../../contexts/VideoBackgroundContext';
-import { useFavorites, FavoriteSong } from '../../contexts/FavoritesContext';
+import { useFavorites } from '../../contexts/FavoritesContext';
 import { formatDate, formatTime, getVenueFromShow } from '../../utils/formatters';
+import { toFavoriteSong } from '../../utils/favoriteSong';
 import { resolveVideoUri } from '../../utils/resolveVideoUri';
 import { WebVideoBackground } from '../shared/WebVideoBackground';
 import { COLORS, RADIUS, WEB_LAYOUT } from '../../constants/theme';
@@ -191,15 +192,7 @@ export function PlayerBar() {
     if (isSongFavorite(state.currentTrack.id, state.currentShow.identifier)) {
       removeFavoriteSong(state.currentTrack.id, state.currentShow.identifier);
     } else {
-      const song: FavoriteSong = {
-        trackId: state.currentTrack.id,
-        trackTitle: state.currentTrack.title,
-        showIdentifier: state.currentShow.identifier,
-        showDate: state.currentShow.date,
-        venue: getVenueFromShow(state.currentShow),
-        streamUrl: state.currentTrack.streamUrl,
-      };
-      addFavoriteSong(song);
+      addFavoriteSong(toFavoriteSong(state.currentTrack, state.currentShow));
     }
   }, [state.currentTrack, state.currentShow, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
 

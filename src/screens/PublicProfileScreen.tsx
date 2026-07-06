@@ -65,8 +65,9 @@ import { useResponsive } from '../hooks/useResponsive';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
-import { getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { showDetailParams } from '../utils/showDetailParams';
+import { GratefulDeadShow } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
@@ -401,8 +402,11 @@ export function PublicProfileScreen() {
     );
   }
 
-  const handleShowPress = (identifier: string, venue?: string, date?: string) => {
-    navigation.navigate('ShowDetail', { identifier, venue, date });
+  // Takes the full show (not just identifier/venue/date) so ShowDetail gets
+  // the full nav-param bundle — including location and classicTier — for
+  // its first paint, instead of waiting on a refetch.
+  const handleShowPress = (show: GratefulDeadShow) => {
+    navigation.navigate('ShowDetail', showDetailParams(show));
   };
 
   const formatRecentDate = (timestamp: number): string => {
@@ -430,11 +434,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={`recent-${item.show.primaryIdentifier}`}
                 show={item.show}
-                onPress={() => handleShowPress(
-                  item.show.primaryIdentifier,
-                  getVenueFromShow(item.show),
-                  item.show.date,
-                )}
+                onPress={() => handleShowPress(item.show)}
                 hideSaveBadge
               />
             )) : (
@@ -449,11 +449,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={item.show.primaryIdentifier}
                 show={item.show}
-                onPress={() => handleShowPress(
-                  item.show.primaryIdentifier,
-                  getVenueFromShow(item.show),
-                  item.show.date,
-                )}
+                onPress={() => handleShowPress(item.show)}
                 hideSaveBadge
               />
             )) : (
@@ -485,11 +481,7 @@ export function PublicProfileScreen() {
             <ShowCard
               key={show.primaryIdentifier}
               show={show}
-              onPress={() => handleShowPress(
-                show.primaryIdentifier,
-                getVenueFromShow(show),
-                show.date,
-              )}
+              onPress={() => handleShowPress(show)}
               hideSaveBadge
             />
           ))}

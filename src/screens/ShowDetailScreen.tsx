@@ -14,7 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { TrackItem } from '../components/TrackItem';
@@ -43,6 +43,8 @@ import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { getShowNotes } from '../utils/showNotes';
 import { SHOW_NOTES_CITATION } from '../data/showNotes';
+import { toFavoriteSong } from '../utils/favoriteSong';
+import { showDetailParams } from '../utils/showDetailParams';
 import { haptics } from '../services/hapticService';
 import { getAllShowsSorted, findShowIndexByDate, resolveIdentifierFromDate } from '../utils/showLookup';
 import { getClassicTier } from '../data/classicShowsTiers';
@@ -315,15 +317,7 @@ export function ShowDetailScreen() {
     if (isSongFavorite(track.id, show.identifier)) {
       removeFavoriteSong(track.id, show.identifier);
     } else {
-      const favoriteSong: FavoriteSong = {
-        trackId: track.id,
-        trackTitle: track.title,
-        showIdentifier: show.identifier,
-        showDate: show.date,
-        venue: getVenueFromShow(show),
-        streamUrl: track.streamUrl,
-      };
-      addFavoriteSong(favoriteSong);
+      addFavoriteSong(toFavoriteSong(track, show));
     }
   }, [show, isSongFavorite, removeFavoriteSong, addFavoriteSong]);
 
@@ -345,13 +339,7 @@ export function ShowDetailScreen() {
   );
 
   const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
-    navigation.push('ShowDetail', {
-      identifier: nextShow.primaryIdentifier,
-      venue: nextShow.venue,
-      date: nextShow.date,
-      location: nextShow.location,
-      classicTier: nextShow.classicTier,
-    });
+    navigation.push('ShowDetail', showDetailParams(nextShow));
   }, [navigation]);
 
   const handleShareShow = useCallback(() => {
@@ -805,14 +793,7 @@ export function ShowDetailScreen() {
           onClose={() => setPickerTrack(null)}
           type="playlist"
           itemIdentifier={`${show.identifier}::${pickerTrack.id}`}
-          itemMetadata={{
-            trackId: pickerTrack.id,
-            trackTitle: pickerTrack.title,
-            showIdentifier: show.identifier,
-            showDate: show.date,
-            venue: show.venue,
-            streamUrl: pickerTrack.streamUrl,
-          }}
+          itemMetadata={toFavoriteSong(pickerTrack, show)}
         />
       )}
     </ScrollView>

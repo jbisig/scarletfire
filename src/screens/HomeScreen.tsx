@@ -24,6 +24,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
@@ -314,13 +315,7 @@ export function HomeScreen() {
   }, [appliedFilters, debouncedSearchQuery, sortType]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: show.primaryIdentifier,
-      venue: show.venue,
-      date: show.date,
-      location: show.location,
-      classicTier: show.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(show));
   }, [navigation]);
 
   const handleApplyFilters = useCallback((filters: ShowsFilterState) => {

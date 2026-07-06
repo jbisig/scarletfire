@@ -20,6 +20,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
@@ -109,13 +110,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', {
-        identifier: show.primaryIdentifier,
-        venue: show.venue,
-        date: show.date,
-        location: show.location,
-        classicTier: show.classicTier,
-      });
+      navigation.navigate('ShowDetail', showDetailParams(show));
     }
   };
 
@@ -124,13 +119,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   };
 
   const handleShowPress = useCallback((selectedShow: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: selectedShow.primaryIdentifier,
-      venue: selectedShow.venue,
-      date: selectedShow.date,
-      location: selectedShow.location,
-      classicTier: selectedShow.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(selectedShow));
   }, [navigation]);
 
   // Jump Back In: Recently played shows sorted by most recent

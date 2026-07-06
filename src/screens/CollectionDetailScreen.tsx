@@ -46,6 +46,7 @@ import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 import { formatCount } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
 
 // Derive a stable background index (1-6) from the collection id so that
 // returning to a collection shows the same header image.
@@ -472,14 +473,9 @@ export function CollectionDetailScreen() {
     (show: GratefulDeadShow) => {
       // Use push (not navigate) so Back always returns to THIS collection,
       // even if ShowDetail already exists elsewhere in the nav stack.
-      navigation.dispatch(
-        StackActions.push('ShowDetail', {
-          identifier: show.primaryIdentifier,
-          date: show.date,
-          venue: show.venue,
-          location: show.location,
-        }),
-      );
+      // Full bundle (including classicTier) so ShowDetail's first-paint
+      // header — star rating included — doesn't have to wait on a refetch.
+      navigation.dispatch(StackActions.push('ShowDetail', showDetailParams(show)));
     },
     [navigation],
   );
