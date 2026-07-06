@@ -15,6 +15,22 @@ interface Logger {
   error: (message: string, ...args: unknown[]) => void;
 }
 
+type ErrorReporter = (message: string, ...args: unknown[]) => void;
+
+// Pluggable error reporter. Unset by default (no-op). Call setErrorReporter()
+// once at app startup to forward errors to a crash-reporting service.
+let errorReporter: ErrorReporter | null = null;
+
+/**
+ * Register (or clear, by passing null) a function that every `logger.*.error`
+ * call forwards `(message, ...args)` to, in addition to the console.error
+ * emission below. Fires in both development and production so the wiring is
+ * exercisable/testable in dev, not just discovered for the first time in prod.
+ */
+export function setErrorReporter(reporter: ErrorReporter | null): void {
+  errorReporter = reporter;
+}
+
 function createLogger(context: string): Logger {
   const formatMessage = (level: LogLevel, message: string) =>
     `[${context}] ${message}`;
@@ -36,11 +52,17 @@ function createLogger(context: string): Logger {
       }
     },
     error: (message: string, ...args: unknown[]) => {
-      // Errors are always logged (could be sent to error tracking service)
-      if (__DEV__) {
-        console.error(formatMessage('error', message), ...args);
+      // Unlike debug/info/warn, errors are always surfaced - in development
+      // AND in production - since production failures otherwise go entirely
+      // unobserved. console.error here is the one sanctioned console usage:
+      // it IS the logger.
+      const formatted = formatMessage('error', message);
+      console.error(formatted, ...args);
+
+      // TODO: wire Sentry here (needs DSN)
+      if (errorReporter) {
+        errorReporter(formatted, ...args);
       }
-      // In production, could send to Sentry/Crashlytics here
     },
   };
 }
