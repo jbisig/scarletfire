@@ -18,11 +18,13 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { followService } from '../services/followService';
 import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { useResponsive } from '../hooks/useResponsive';
+import { logger } from '../utils/logger';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -31,6 +33,7 @@ export function SettingsScreen() {
   const { isDesktop } = useResponsive();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
+  const { showToast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -40,6 +43,13 @@ export function SettingsScreen() {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [ownFollowerCount, setOwnFollowerCount] = useState(0);
   const [ownFollowingCount, setOwnFollowingCount] = useState(0);
+  // Bumped whenever we need to force the (controlled) public-profile Switch to
+  // remount and resync to its `value` prop. Needed for the "no profile yet"
+  // toggle-on failure path below, where `profile` stays null before and after
+  // the attempt — since the JS-side value never actually changes, the native
+  // Switch widget can be left showing "on" from the user's gesture even though
+  // the controlled value is false.
+  const [publicSwitchResetKey, setPublicSwitchResetKey] = useState(0);
 
   useFocusEffect(useCallback(() => {
     const userId = authState.user?.id;
@@ -170,8 +180,10 @@ export function SettingsScreen() {
       setProfile(prev => prev ? { ...prev, is_public: value } : null);
       try {
         await profileService.setProfilePublic(authState.user.id, value);
-      } catch {
+      } catch (error) {
+        logger.profile.error('Failed to update profile visibility', error);
         setProfile(prev => prev ? { ...prev, is_public: !value } : null);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     } else if (value) {
       // Create a new profile when toggling on for the first time
@@ -182,8 +194,13 @@ export function SettingsScreen() {
         setProfile({ ...created, is_public: true });
         setUsername(created.username);
         setDisplayName(created.display_name || '');
-      } catch {
-        // Failed to create profile
+      } catch (error) {
+        logger.profile.error('Failed to create profile', error);
+        // `profile` stays null here, so force the Switch to remount and
+        // resync to its (unchanged) false value rather than leaving it
+        // visually stuck "on" from the gesture.
+        setPublicSwitchResetKey(k => k + 1);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     }
   };
@@ -482,6 +499,7 @@ export function SettingsScreen() {
                 </Text>
               </View>
               <Switch
+                key={`public-switch-${publicSwitchResetKey}`}
                 value={profile?.is_public ?? false}
                 onValueChange={handlePublicToggle}
                 trackColor={{ false: COLORS.border, true: COLORS.accent }}

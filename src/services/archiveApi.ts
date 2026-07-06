@@ -370,6 +370,7 @@ class ArchiveApiService {
         .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
     } catch (error) {
       // Return empty array on error to allow graceful degradation
+      logger.api.error('getShowVersions failed', error);
       return [];
     }
   }

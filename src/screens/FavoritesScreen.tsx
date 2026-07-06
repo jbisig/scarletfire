@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
+import { useToast } from '../contexts/ToastContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
@@ -207,6 +208,7 @@ export function FavoritesScreen() {
   const searchBarFullWidth = headerWidth - (padding * 2);
 
   const { openShareTray } = useShareSheet();
+  const { showToast } = useToast();
 
   const handleShareProfile = useCallback(() => {
     if (!userProfile || !userProfile.is_public || !userProfile.username) {
@@ -534,10 +536,11 @@ export function FavoritesScreen() {
       }
     } catch (error) {
       logger.player.error('Failed to load song:', error);
+      showToast("Couldn't load that song", 'error');
     } finally {
       setLoadingSongId(null);
     }
-  }, [loadTrack]);
+  }, [loadTrack, showToast]);
 
   const handleSongLongPress = useCallback((song: FavoriteSong) => {
     Alert.alert(song.trackTitle, undefined, [

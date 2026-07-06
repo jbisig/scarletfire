@@ -36,6 +36,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ErrorState } from '../components/StateViews';
 import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
@@ -139,6 +140,10 @@ export function CollectionDetailScreen() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped by the ErrorState's Retry button to re-trigger the load effect
+  // below (which otherwise only depends on route params + fetchItems).
+  const [reloadKey, setReloadKey] = useState(0);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameText, setRenameText] = useState('');
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
@@ -186,6 +191,7 @@ export function CollectionDetailScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         if (route.params?.collectionId) {
           const collectionId = route.params.collectionId;
@@ -215,6 +221,9 @@ export function CollectionDetailScreen() {
             }
           }
         }
+      } catch (e) {
+        logger.api.error('Failed to load collection', e);
+        if (!cancelled) setLoadError("Couldn't load this collection.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -222,7 +231,13 @@ export function CollectionDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [route.params?.collectionId, route.params?.username, route.params?.slug, fetchItems]);
+  }, [
+    route.params?.collectionId,
+    route.params?.username,
+    route.params?.slug,
+    fetchItems,
+    reloadKey,
+  ]);
 
   // Keep `collection` in sync with the context for owner-edited collections
   // (rename, description change) without triggering the expensive items load.
@@ -247,19 +262,26 @@ export function CollectionDetailScreen() {
   useEffect(() => {
     (async () => {
       if (!collection || ownerUsername) return;
-      if (user && user.id === collection.userId) {
-        const me = await profileService.getUserProfile(user.id);
-        setOwnerUsername(me?.username ?? null);
-        return;
+      try {
+        if (user && user.id === collection.userId) {
+          const me = await profileService.getUserProfile(user.id);
+          setOwnerUsername(me?.username ?? null);
+          return;
+        }
+        const savedMatch = savedCollections.find((s) => s.collectionId === collection.id);
+        if (savedMatch) {
+          setOwnerUsername(savedMatch.lastKnownOwnerUsername);
+          return;
+        }
+        // Fallback: fetch the owner's profile by userId so the share/Owner fields populate.
+        const prof = await profileService.getUserProfile(collection.userId);
+        setOwnerUsername(prof?.username ?? null);
+      } catch (e) {
+        // Degrade gracefully: attribution is a nice-to-have, not worth an
+        // error state or toast. Leave ownerUsername null so the header/share
+        // UI simply omits the "by @username" attribution.
+        logger.api.error('Failed to load collection owner username', e);
       }
-      const savedMatch = savedCollections.find((s) => s.collectionId === collection.id);
-      if (savedMatch) {
-        setOwnerUsername(savedMatch.lastKnownOwnerUsername);
-        return;
-      }
-      // Fallback: fetch the owner's profile by userId so the share/Owner fields populate.
-      const prof = await profileService.getUserProfile(collection.userId);
-      setOwnerUsername(prof?.username ?? null);
     })();
   }, [collection, user, ownerUsername, savedCollections]);
 
@@ -538,6 +560,13 @@ export function CollectionDetailScreen() {
     return (
       <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
         <ActivityIndicator color={COLORS.accent} />
+      </View>
+    );
+  }
+  if (loadError) {
+    return (
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+        <ErrorState message={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
       </View>
     );
   }
