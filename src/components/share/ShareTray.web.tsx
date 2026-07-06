@@ -8,7 +8,7 @@ import {
   shareToWhatsApp,
   shareToMessages,
 } from '../../services/shareDestinations.web';
-import type { ShareTrayProps } from './ShareTray';
+import type { ShareTrayProps } from './shareTrayTypes';
 import type { ShareItem } from '../../services/shareService';
 
 type DestinationArgs = { item: ShareItem; bgIndex: number };

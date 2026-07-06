@@ -535,14 +535,16 @@ class CollectionsService {
             match.lastKnownOwnerUsername !== ownerUsername)
         ) {
           snapshotUpdates.push(
-            this.supabase
-              .from('saved_collections')
-              .update({
-                last_known_name: row.name,
-                last_known_type: row.type,
-                last_known_owner_username: ownerUsername,
-              })
-              .eq('id', match.id),
+            Promise.resolve(
+              this.supabase
+                .from('saved_collections')
+                .update({
+                  last_known_name: row.name,
+                  last_known_type: row.type,
+                  last_known_owner_username: ownerUsername,
+                })
+                .eq('id', match.id),
+            ),
           );
         }
       }

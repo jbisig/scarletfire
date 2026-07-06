@@ -14,7 +14,7 @@ import {
   shareToInstagramStory,
   shareToMessages,
 } from '../../services/shareDestinations.native';
-import type { ShareTrayProps } from './ShareTray';
+import type { ShareTrayProps } from './shareTrayTypes';
 
 type DestinationArgs = { item: ShareItem; bgIndex: number };
 type DestinationFn = (args: DestinationArgs) => void | Promise<void>;

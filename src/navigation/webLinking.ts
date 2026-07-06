@@ -116,7 +116,14 @@ export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @
 // DiscoverTab uses an empty path and owns those screens — its children's
 // paths are matched directly against the root URL. /discover is kept alive by
 // moving the path onto DiscoverLanding itself.
-export const mobileWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+// Note: intentionally untyped (not `LinkingOptions<any>`) — react-navigation's
+// `PathConfigMap` conditional type distributes over a naked `any` ParamList,
+// which produces a false-positive type error on nested `screens` configs that
+// combine `initialRouteName` with `screens` (e.g. MainTabs below). Letting the
+// object literal's shape be inferred avoids that TS quirk without losing any
+// real checking `LinkingOptions<any>` provided (its `keyof any` key type
+// already accepted arbitrary keys).
+export const mobileWebLinking = {
   prefixes,
   config: {
     initialRouteName: 'MainTabs',

@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Auto-expire password recovery state after 15 minutes
-  const recoveryTimeoutRef = useRef<NodeJS.Timeout>();
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (state.isPasswordRecovery) {
       recoveryTimeoutRef.current = setTimeout(() => {

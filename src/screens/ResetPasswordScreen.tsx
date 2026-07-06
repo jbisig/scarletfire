@@ -10,6 +10,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { webStyle } from '../utils/webStyle';
 
 export function ResetPasswordScreen() {
   const navigation = useNavigation();
@@ -211,8 +212,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
-    // @ts-ignore
-    outlineStyle: 'none',
+    // web only: remove the default focus outline
+    ...webStyle({ outlineStyle: 'none' }),
   },
   eyeButton: {
     paddingRight: SPACING.xl,

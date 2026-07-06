@@ -16,7 +16,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -536,8 +536,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             accessibilityLabel={castState === 'CONNECTED' ? 'Disconnect from Chromecast' : 'Cast to Chromecast'}
             accessibilityHint="Double tap to open cast device selection"
           >
-            <Ionicons
-              name={castState === 'CONNECTED' ? 'cast' : 'cast-outline'}
+            <MaterialIcons
+              name={castState === 'CONNECTED' ? 'cast-connected' : 'cast'}
               size={24}
               color={castState === 'CONNECTED' ? COLORS.accent : COLORS.textPrimary}
             />

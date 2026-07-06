@@ -56,7 +56,7 @@ export function FeedScreen() {
           {Platform.OS !== 'web' && (
             <TouchableOpacity
               style={styles.myProfileButton}
-              onPress={handleViewProfile}
+              onPress={handleViewProfile ?? undefined}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="My Profile"

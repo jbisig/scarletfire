@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image, ImageStyle, StyleProp, StyleSheet, Platform } from 'react-native';
+import { webStyle } from '../utils/webStyle';
 
 const DEFAULT_PROFILE = require('../../assets/images/logged-out-pfp.png');
 
@@ -33,8 +34,15 @@ export function ProfileImage({ uri, style }: ProfileImageProps) {
     );
   }
 
-  // On web, use a raw <img> for remote URLs to bypass RNW Image cross-origin issues
-  const flatStyle = StyleSheet.flatten(style) || {};
+  // On web, use a raw <img> for remote URLs to bypass RNW Image cross-origin issues.
+  // The flattened RN style is fed into a DOM element's `style` (CSSProperties),
+  // but RN's `ImageStyle` type allows values (OpaqueColorValue from
+  // PlatformColor, AnimatedNode from Animated.Value) that don't structurally
+  // match CSSProperties — those APIs are native-only and never actually
+  // appear in a style object on web, so `webStyle` is the correct escape
+  // hatch here, same as the RN-style-accepting-web-only-CSS case it's
+  // documented for.
+  const flatStyle = webStyle(StyleSheet.flatten(style) || {});
 
   return (
     // @ts-ignore — raw HTML img to bypass RNW Image issues with Google CDN

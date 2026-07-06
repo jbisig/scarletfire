@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
 import { profileService, UserProfile } from '../services/profileService';
@@ -23,11 +24,12 @@ import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -391,7 +393,6 @@ export function SettingsScreen() {
             <ProfileImage
               uri={avatarUrl}
               style={styles.avatar}
-              size={120}
             />
             {(isUploading || isRemoving) && (
               <View style={styles.avatarLoadingOverlay}>
@@ -447,11 +448,11 @@ export function SettingsScreen() {
             {authState.user?.id && username && (
               <View style={styles.settingsCountsRow}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('FollowList' as never, {
+                  onPress={() => navigation.navigate('FollowList', {
                     userId: authState.user!.id,
                     username,
                     mode: 'followers',
-                  } as never)}
+                  })}
                 >
                   <Text style={styles.settingsCountText}>
                     <Text style={styles.settingsCountNum}>{ownFollowerCount}</Text> Followers
@@ -459,11 +460,11 @@ export function SettingsScreen() {
                 </TouchableOpacity>
                 <Text style={styles.settingsCountSep}>  ·  </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('FollowList' as never, {
+                  onPress={() => navigation.navigate('FollowList', {
                     userId: authState.user!.id,
                     username,
                     mode: 'following',
-                  } as never)}
+                  })}
                 >
                   <Text style={styles.settingsCountText}>
                     <Text style={styles.settingsCountNum}>{ownFollowingCount}</Text> Following
@@ -537,7 +538,7 @@ export function SettingsScreen() {
                   <View style={styles.profileLinkSection}>
                     <TouchableOpacity
                       style={styles.viewProfileButton}
-                      onPress={() => navigation.navigate('PublicProfile' as never, { username: profile.username } as never)}
+                      onPress={() => navigation.navigate('PublicProfile', { username: profile.username })}
                       activeOpacity={0.7}
                     >
                       <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
@@ -671,6 +672,13 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Matches closeButton's footprint so the title stays centered in the
+  // auth-guard header, which has no headerLogout button on the right to
+  // balance it.
+  headerSpacer: {
+    width: 40,
+    height: 40,
   },
   headerTitle: {
     ...TYPOGRAPHY.bodyLarge,

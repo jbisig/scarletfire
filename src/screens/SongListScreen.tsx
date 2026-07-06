@@ -209,10 +209,8 @@ export function SongListScreen() {
     return <ErrorState message={error} onRetry={loadSongs} />;
   }
 
-  const Wrapper = Platform.OS === 'web' ? View : TouchableWithoutFeedback;
-
   return (
-    <Wrapper {...(Platform.OS !== 'web' ? { onPress: Keyboard.dismiss } : { style: { flex: 1 } })}>
+    <KeyboardDismissWrapper>
       <View style={[styles.container, isDesktop && styles.containerDesktop]}>
         {/* Header Section with Gradient Fade */}
         <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
@@ -296,11 +294,31 @@ export function SongListScreen() {
           onViewProfile={handleViewProfile}
         />
       </View>
-    </Wrapper>
+    </KeyboardDismissWrapper>
+  );
+}
+
+// Renders as a tap target that dismisses the keyboard on native (where
+// TouchableWithoutFeedback + a single child is the standard idiom), or a
+// plain View on web (no keyboard-dismiss gesture needed there). Split into
+// its own component — rather than picking a component reference at render
+// time — because `View` and `TouchableWithoutFeedback` take incompatible
+// prop shapes, which a single polymorphic JSX tag can't express safely.
+function KeyboardDismissWrapper({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'web') {
+    return <View style={styles.keyboardDismissWrapper}>{children}</View>;
+  }
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      {children}
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardDismissWrapper: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

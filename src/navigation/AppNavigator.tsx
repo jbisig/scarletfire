@@ -482,7 +482,6 @@ export function AppNavigator() {
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
                 headerBackTitle: ' ',
-                headerBackTitleVisible: false,
               }}
             />
             <RootStack.Screen

@@ -474,6 +474,7 @@ export function ShowDetailScreen() {
       }
     : ({
         identifier: route.params.identifier,
+        title: '',
         date: previewDate ?? '',
         venue: previewVenue ?? '',
         location: previewLocation ?? '',

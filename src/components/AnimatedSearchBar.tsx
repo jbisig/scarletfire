@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { webStyle } from '../utils/webStyle';
 
 interface AnimatedSearchBarProps {
   /** Whether the search bar is currently expanded */
@@ -212,8 +213,8 @@ const styles = StyleSheet.create({
       textAlignVertical: 'center',
       includeFontPadding: false,
     }),
-    // @ts-ignore - web only: remove outline and prevent iOS Safari auto-zoom on focus
-    ...(Platform.OS === 'web' && { outlineStyle: 'none', fontSize: 16 }),
+    // web only: remove outline and prevent iOS Safari auto-zoom on focus
+    ...(Platform.OS === 'web' && webStyle({ outlineStyle: 'none', fontSize: 16 })),
   },
   closeSearchButton: {
     padding: SPACING.xs,
