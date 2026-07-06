@@ -62,14 +62,11 @@ import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
 import { SongCard } from '../components/SongCard';
 import { useResponsive } from '../hooks/useResponsive';
-import { usePlayer } from '../contexts/PlayerContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { showDetailParams } from '../utils/showDetailParams';
 import { GratefulDeadShow } from '../types/show.types';
-import { archiveApi } from '../services/archiveApi';
-import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown } from '../components/SortDropdown';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -85,6 +82,7 @@ import {
   getSavedItemSortIcon,
 } from '../constants/sortOptions';
 import { useSortDropdown } from '../hooks/useSortDropdown';
+import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type ProfileRouteParams = {
@@ -100,13 +98,12 @@ export function PublicProfileScreen() {
   const route = useRoute<RouteProp<ProfileRouteParams, 'PublicProfile'>>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const { loadTrack } = usePlayer();
+  const { loadingSongId, playSong } = usePlaySavedSong();
 
   const username = route.params?.username ?? '';
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
@@ -264,21 +261,9 @@ export function PublicProfileScreen() {
       .slice(0, 10);
   }, [data]);
 
-  const handleSongPress = useCallback(async (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
-    const songKey = `${song.trackId}-${song.showIdentifier}`;
-    try {
-      setLoadingSongId(songKey);
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
-      const track = showDetail.tracks.find(t => t.id === song.trackId);
-      if (track) {
-        await loadTrack(track, showDetail, showDetail.tracks);
-      }
-    } catch (error) {
-      logger.player.error('Failed to load song:', error);
-    } finally {
-      setLoadingSongId(null);
-    }
-  }, [loadTrack]);
+  const handleSongPress = useCallback((song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
+    playSong(song.showIdentifier, song.trackId);
+  }, [playSong]);
 
   const displayName = data?.profile.display_name || username;
 

@@ -15,7 +15,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
-import { useToast } from '../contexts/ToastContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
@@ -31,7 +30,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
-import { archiveApi } from '../services/archiveApi';
 import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
 import { SongCard } from '../components/SongCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -56,6 +54,7 @@ import {
   getSavedItemSortIcon,
 } from '../constants/sortOptions';
 import { useSortDropdown } from '../hooks/useSortDropdown';
+import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
@@ -82,10 +81,10 @@ export function FavoritesScreen() {
   const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
-  const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
+  const { startShuffleSongs, startShuffleShows } = usePlayer();
   const { getPlayCountStable } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
-  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
+  const { loadingSongId, playSong } = usePlaySavedSong();
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,7 +119,6 @@ export function FavoritesScreen() {
   const searchBarFullWidth = headerWidth - (padding * 2);
 
   const { openShareTray } = useShareSheet();
-  const { showToast } = useToast();
 
   const handleShareProfile = useCallback(() => {
     if (!userProfile || !userProfile.is_public || !userProfile.username) {
@@ -337,26 +335,9 @@ export function FavoritesScreen() {
     navigation.navigate('ShowDetail', showDetailParams(show));
   }, [navigation]);
 
-  const handleSongPress = useCallback(async (song: FavoriteSong) => {
-    try {
-      setLoadingSongId(`${song.trackId}-${song.showIdentifier}`);
-
-      // Fetch the show details to get all tracks
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
-
-      // Find the matching track
-      const track = showDetail.tracks.find(t => t.id === song.trackId);
-
-      if (track) {
-        await loadTrack(track, showDetail, showDetail.tracks);
-      }
-    } catch (error) {
-      logger.player.error('Failed to load song:', error);
-      showToast("Couldn't load that song", 'error');
-    } finally {
-      setLoadingSongId(null);
-    }
-  }, [loadTrack, showToast]);
+  const handleSongPress = useCallback((song: FavoriteSong) => {
+    playSong(song.showIdentifier, song.trackId);
+  }, [playSong]);
 
   const handleSongLongPress = useCallback((song: FavoriteSong) => {
     Alert.alert(song.trackTitle, undefined, [
