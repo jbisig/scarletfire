@@ -23,6 +23,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useToast } from '../contexts/ToastContext';
 import { useWebAuthModal } from '../components/web/WebAuthModal';
 import { collectionsService } from '../services/collectionsService';
 import { profileService } from '../services/profileService';
@@ -133,6 +134,7 @@ export function CollectionDetailScreen() {
     duplicateCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
+  const { showToast } = useToast();
   const { openAuthModal } = useWebAuthModal();
   const { startSequentialSongs, startShuffleSongs } = usePlayer();
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
@@ -333,7 +335,26 @@ export function CollectionDetailScreen() {
       type: collection.type,
       itemCount: items.length,
     });
-  }, [collection, items.length, openShareTray, ownerUsername]);
+
+    // Flip the collection to shared the first time it's shared — this is
+    // what makes the public-link RLS policy allow anon reads. Fire-and-forget
+    // so a slow/failed network call never blocks opening the share tray;
+    // surface failures via a toast instead.
+    if (!collection.isShared) {
+      const sharedCollectionId = collection.id;
+      collectionsService
+        .markCollectionShared(sharedCollectionId)
+        .then(() => {
+          setCollection((prev) =>
+            prev && prev.id === sharedCollectionId ? { ...prev, isShared: true } : prev,
+          );
+        })
+        .catch((e) => {
+          logger.api.error('Failed to mark collection as shared', e);
+          showToast("Couldn't update sharing settings. Please try again.", 'error');
+        });
+    }
+  }, [collection, items.length, openShareTray, ownerUsername, showToast]);
 
   const handleToggleSave = useCallback(async () => {
     if (!collection) return;

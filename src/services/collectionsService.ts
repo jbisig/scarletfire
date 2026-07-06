@@ -20,6 +20,7 @@ interface CollectionRow {
   slug: string;
   created_at: string;
   updated_at: string;
+  is_shared?: boolean;
 }
 
 interface CollectionItemRow {
@@ -46,6 +47,10 @@ function mapCollection(
     slug: row.slug,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // `is_shared` is only present once the collections_sharing_flag migration
+    // has been applied — default to false so the client degrades gracefully
+    // (treats the collection as not-yet-shared) against an un-migrated DB.
+    isShared: row.is_shared ?? false,
     itemCount,
     saveCount,
   };
@@ -188,6 +193,22 @@ class CollectionsService {
 
   async deleteCollection(id: string): Promise<void> {
     const { error } = await this.supabase.from('collections').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  /**
+   * Flip a collection's `is_shared` flag on once the owner shares it — this is
+   * what makes the collection (and its items) readable via the public-link
+   * RLS policy. Idempotent: safe to call again on an already-shared collection.
+   * Callers are expected to only invoke this when the collection isn't already
+   * marked shared, and to treat it as fire-and-forget (surface failures via a
+   * toast rather than blocking the share action).
+   */
+  async markCollectionShared(collectionId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('collections')
+      .update({ is_shared: true })
+      .eq('id', collectionId);
     if (error) throw error;
   }
 

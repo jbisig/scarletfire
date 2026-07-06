@@ -28,8 +28,10 @@ class FeedService {
     if (!me) return [];
 
     const cursor = args.cursor ?? new Date().toISOString();
+    // viewer_id is no longer passed — the RPC derives it from auth.uid()
+    // internally (see supabase/migrations/20260706120300_get_activity_feed_auth_uid.sql).
+    // `me` above is still used for the early "not signed in" return.
     const { data, error } = await supabase.rpc('get_activity_feed', {
-      viewer_id: me,
       cursor_time: cursor,
       page_size: args.pageSize,
     });
@@ -47,9 +49,10 @@ class FeedService {
     const me = userData?.user?.id;
     if (!me) return { following: [], discover: [], search: [] };
 
+    // viewer_id is no longer passed — the RPC derives it from auth.uid()
+    // internally (see supabase/migrations/20260706120400_search_profiles_auth_uid.sql).
     const { data, error } = await supabase.rpc('search_profiles', {
       query_text: args.query,
-      viewer_id: me,
       cursor_offset: args.cursor,
       page_size: args.pageSize,
     });

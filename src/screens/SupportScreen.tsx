@@ -21,6 +21,9 @@ const LOGO = require('../../assets/images/sign-in-logo.png');
 
 const SUBJECT_MAX = 200;
 const MESSAGE_MAX = 5000;
+// Mirrors the support_requests CHECK constraints added in
+// supabase/migrations/20260706120100_support_requests_limits.sql — keep in sync.
+const EMAIL_MAX = 320;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -50,6 +53,7 @@ export function SupportScreen() {
 
   const emailError = useMemo(() => {
     if (!email.trim()) return 'Email is required.';
+    if (email.trim().length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`;
     if (!EMAIL_RE.test(email.trim())) return 'Enter a valid email address.';
     return null;
   }, [email]);
@@ -166,6 +170,7 @@ export function SupportScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
+              maxLength={EMAIL_MAX}
               editable={status !== 'submitting'}
             />
             {attempted && emailError && <Text style={styles.fieldError}>{emailError}</Text>}

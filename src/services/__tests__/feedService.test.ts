@@ -35,7 +35,6 @@ describe('feedService.getActivityFeed', () => {
     });
 
     expect(rpc).toHaveBeenCalledWith('get_activity_feed', {
-      viewer_id: 'me',
       cursor_time: '2026-04-15T01:00:00Z',
       page_size: 30,
     });
@@ -71,7 +70,6 @@ describe('feedService.searchProfiles', () => {
 
     expect(rpc).toHaveBeenCalledWith('search_profiles', {
       query_text: '',
-      viewer_id: 'me',
       cursor_offset: 0,
       page_size: 20,
     });
