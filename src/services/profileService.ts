@@ -15,21 +15,35 @@ function generatePlaceholderUsername(): string {
 }
 
 /**
- * Thrown when the picked avatar image's file extension isn't on the
- * allowlist. `expo-image-picker` can hand back jpg/jpeg (the universal
- * output when `allowsEditing` crops the image), png, webp, or heic (iOS,
- * when editing is skipped) — anything else is rejected rather than trusted
- * to build a `contentType` header from.
+ * Thrown when the picked avatar image's MIME type (or, as a fallback, its
+ * file extension) isn't on the allowlist. `expo-image-picker` can hand back
+ * jpeg (the universal output when `allowsEditing` crops the image), png,
+ * webp, or heic (iOS, when editing is skipped) — anything else is rejected
+ * rather than trusted to build a `contentType` header from.
  */
 export class UnsupportedAvatarImageTypeError extends Error {
-  constructor(public readonly extension: string) {
-    super(`Unsupported avatar image type: .${extension || '(none)'}`);
+  constructor(public readonly received: string) {
+    super(`Unsupported avatar image type: ${received || '(none)'}`);
     this.name = 'UnsupportedAvatarImageTypeError';
   }
 }
 
-// Maps an allowed file extension to its image/<subtype> contentType. `jpg`
-// is normalized to the `jpeg` MIME subtype; `heic` keeps `image/heic`.
+// Allowlist of MIME types `uploadAvatar` will accept, mapped to the file
+// extension used for the Storage object path. This is the PRIMARY type
+// source: `expo-image-picker` returns `asset.mimeType` on both web and
+// native, and on web the picked `uri` is a `blob:` URL with no file
+// extension at all, so the URI can't be trusted to carry type information.
+const AVATAR_MIME_TO_EXTENSION: Readonly<Record<string, string>> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+};
+
+// Maps an allowed file extension to its image/<subtype> contentType. Used
+// ONLY as a fallback when no mimeType is available (older native-only call
+// sites). `jpg` is normalized to the `jpeg` MIME subtype; `heic` keeps
+// `image/heic`.
 const AVATAR_EXTENSION_TO_MIME_SUBTYPE: Readonly<Record<string, string>> = {
   jpg: 'jpeg',
   jpeg: 'jpeg',
@@ -84,18 +98,47 @@ class ProfileService {
   }
 
   /**
-   * Upload an avatar image to Supabase Storage
+   * Upload an avatar image to Supabase Storage.
+   *
+   * `mimeType` (from `expo-image-picker`'s asset result, available on both
+   * web and native) is the PRIMARY source of truth for the file type. This
+   * matters on web: `expo-image-picker` there returns `uri: "blob:https://
+   * host/uuid"` with no file extension, so parsing an extension out of the
+   * URI silently yields garbage (and previously threw on every web upload).
+   * The URI-extension parse is used ONLY when no mimeType is supplied
+   * (older native-only call sites).
    */
-  async uploadAvatar(userId: string, imageUri: string): Promise<string> {
+  async uploadAvatar(userId: string, imageUri: string, mimeType?: string | null): Promise<string> {
     const supabase = authService.getClient();
 
     // Create a unique filename using timestamp
     const timestamp = Date.now();
-    const fileExt = imageUri.split('.').pop()?.toLowerCase() || '';
-    const mimeSubtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[fileExt];
-    if (!mimeSubtype) {
-      throw new UnsupportedAvatarImageTypeError(fileExt);
+
+    let fileExt: string;
+    let mimeSubtype: string;
+
+    const normalizedMimeType = mimeType?.split(';')[0]?.trim().toLowerCase();
+    if (normalizedMimeType) {
+      const mappedExt = AVATAR_MIME_TO_EXTENSION[normalizedMimeType];
+      if (!mappedExt) {
+        throw new UnsupportedAvatarImageTypeError(normalizedMimeType);
+      }
+      fileExt = mappedExt;
+      mimeSubtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[fileExt];
+    } else {
+      // Fallback: no mimeType available. Strip any query/fragment before
+      // splitting on '.' so e.g. "file:///tmp/photo.jpg?ts=1" doesn't parse
+      // as extension "jpg?ts=1".
+      const pathOnly = imageUri.split(/[?#]/)[0];
+      const uriExt = pathOnly.split('.').pop()?.toLowerCase() || '';
+      const subtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[uriExt];
+      if (!subtype) {
+        throw new UnsupportedAvatarImageTypeError(uriExt);
+      }
+      fileExt = uriExt;
+      mimeSubtype = subtype;
     }
+
     const fileName = `${userId}/avatar-${timestamp}.${fileExt}`;
 
     // Fetch the image and convert to blob
@@ -186,10 +229,11 @@ class ProfileService {
     }
 
     const imageUri = result.assets[0].uri;
+    const mimeType = result.assets[0].mimeType;
 
     try {
       // Upload to storage
-      const publicUrl = await this.uploadAvatar(userId, imageUri);
+      const publicUrl = await this.uploadAvatar(userId, imageUri, mimeType);
 
       // Update user metadata
       await this.updateAvatarUrl(publicUrl);

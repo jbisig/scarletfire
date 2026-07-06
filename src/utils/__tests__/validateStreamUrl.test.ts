@@ -77,5 +77,28 @@ describe('isAllowedStreamUrl', () => {
       expect(isAllowedStreamUrl('archive.org/track.mp3')).toBe(false);
       expect(isAllowedStreamUrl('//archive.org/track.mp3')).toBe(false);
     });
+
+    it('rejects the backslash authority-terminator bypass (WHATWG treats \\ as / for https)', () => {
+      // Browsers (and the web <audio> element that ultimately consumes this
+      // URL) parse this as host "evil.com" with path "\.archive.org/x.mp3"
+      // normalized to "/.archive.org/x.mp3" — NOT as a subdomain of
+      // archive.org. A parser that only terminates the authority on
+      // '/', '?', '#' would incorrectly swallow the backslash-prefixed
+      // suffix into the authority string and see "archive.org" in it.
+      expect(isAllowedStreamUrl('https://evil.com\\.archive.org/x.mp3')).toBe(false);
+    });
+
+    it('rejects IP-literal hosts', () => {
+      expect(isAllowedStreamUrl('https://93.184.216.34/x.mp3')).toBe(false);
+    });
+
+    it('rejects a trailing-dot FQDN host (browsers normalize it to archive.org, but this guard does not rely on that)', () => {
+      expect(isAllowedStreamUrl('https://archive.org./x.mp3')).toBe(false);
+    });
+
+    it('rejects percent-encoded characters in the authority', () => {
+      expect(isAllowedStreamUrl('https://archive%2Eorg/x.mp3')).toBe(false);
+      expect(isAllowedStreamUrl('https://archive.org%2F@evil.com/x.mp3')).toBe(false);
+    });
   });
 });
