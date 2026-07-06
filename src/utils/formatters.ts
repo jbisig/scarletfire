@@ -124,6 +124,17 @@ export function formatDownloadsLabel(downloads?: number): string {
 }
 
 /**
+ * Format a count with a regular (bare `s`) singular/plural noun label, e.g.
+ * `formatCount(1, 'play')` -> "1 play", `formatCount(2, 'play')` -> "2 plays".
+ * Consolidates the hand-rolled `{n} {n === 1 ? 'play' : 'plays'}` ternaries
+ * that were duplicated across ShowDetailScreen and CollectionDetailScreen in
+ * Task 17. Not suitable for irregular plurals (e.g. "person"/"people").
+ */
+export function formatCount(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+/**
  * Normalize a string for fuzzy matching — removes apostrophes, punctuation, and extra spaces.
  */
 export function normalizeForSearch(str: string): string {

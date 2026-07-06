@@ -31,9 +31,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 import { STATE_ABBREVIATIONS } from '../constants/states';
 
@@ -145,7 +142,7 @@ export function HomeScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const flatListRef = useRef<FlatList<GratefulDeadShow>>(null);
@@ -535,7 +532,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
@@ -546,7 +543,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     position: 'absolute',
-    left: HORIZONTAL_PADDING,
+    left: LAYOUT.HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
     zIndex: 20,
@@ -603,12 +600,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingTop: SPACING.sm + 4,
     paddingBottom: SPACING.md,
   },
   actionRowDesktop: {
-    paddingLeft: HORIZONTAL_PADDING + 8,
+    paddingLeft: LAYOUT.HORIZONTAL_PADDING + 8,
   },
   sortLabelButton: {
     flexDirection: 'row',

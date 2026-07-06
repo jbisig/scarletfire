@@ -14,9 +14,6 @@ import { ProfileDropdown } from './ProfileDropdown';
 import { ProfileImage } from './ProfileImage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
-// Match HomeScreen's horizontal padding
-const HORIZONTAL_PADDING = SPACING.xl;
-
 interface PageHeaderProps {
   title: string;
 }
@@ -102,7 +99,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
@@ -113,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     position: 'absolute',
-    left: HORIZONTAL_PADDING,
+    left: LAYOUT.HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
   },

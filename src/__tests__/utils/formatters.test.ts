@@ -9,6 +9,7 @@ import {
   formatDuration,
   formatDownloads,
   formatDownloadsLabel,
+  formatCount,
   getVenueFromShow,
   matchesDateQuery,
 } from '../../utils/formatters';
@@ -167,5 +168,28 @@ describe('matchesDateQuery', () => {
   it('returns false for non-matching dates', () => {
     expect(matchesDateQuery(date, '1978-05-08')).toBe(false);
     expect(matchesDateQuery(date, '5/9/77')).toBe(false);
+  });
+});
+
+// Characterization tests for the shared count-pluralization helper that
+// replaced the hand-rolled `{n} {n === 1 ? 'play' : 'plays'}` ternaries
+// duplicated across ShowDetailScreen (play counts) and CollectionDetailScreen
+// (show counts, save counts). See Task 17.
+describe('formatCount', () => {
+  it('uses the bare noun for a count of 1', () => {
+    expect(formatCount(1, 'play')).toBe('1 play');
+  });
+
+  it('appends "s" for counts other than 1', () => {
+    expect(formatCount(0, 'play')).toBe('0 plays');
+    expect(formatCount(2, 'play')).toBe('2 plays');
+    expect(formatCount(12, 'play')).toBe('12 plays');
+  });
+
+  it('works with any regular-plural noun', () => {
+    expect(formatCount(1, 'show')).toBe('1 show');
+    expect(formatCount(3, 'show')).toBe('3 shows');
+    expect(formatCount(1, 'save')).toBe('1 save');
+    expect(formatCount(5, 'save')).toBe('5 saves');
   });
 });

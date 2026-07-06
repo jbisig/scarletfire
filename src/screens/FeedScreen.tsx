@@ -8,9 +8,7 @@ import { ProfileImage } from '../components/ProfileImage';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ActivityList } from '../components/feed/ActivityList';
 import { PeopleList } from '../components/feed/PeopleList';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
-
-const HORIZONTAL_PADDING = SPACING.xl;
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 
 type Segment = 'activity' | 'people';
 
@@ -121,7 +119,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: { paddingHorizontal: 32 },

@@ -73,6 +73,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { ErrorState } from '../components/StateViews';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -391,13 +392,11 @@ export function PublicProfileScreen() {
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
         </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="person-circle-outline" size={64} color={COLORS.textTertiary} />
-          <Text style={styles.errorTitle}>Profile not found</Text>
-          <Text style={styles.errorSubtitle}>
-            This profile doesn't exist or is private.
-          </Text>
-        </View>
+        <ErrorState
+          icon="person-circle-outline"
+          title="Profile not found"
+          message="This profile doesn't exist or is private."
+        />
       </View>
     );
   }
@@ -826,22 +825,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     color: COLORS.textPrimary,
     fontWeight: '600',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    gap: SPACING.md,
-  },
-  errorTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginTop: SPACING.md,
-  },
-  errorSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
   },
   contentContainer: {
     paddingHorizontal: SPACING.xl,

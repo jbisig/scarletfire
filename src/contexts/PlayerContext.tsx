@@ -228,6 +228,10 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
       };
 
     case 'SHUFFLE_NEXT':
+      // shuffleNext() (below) only ever dispatches this action when the next
+      // index is within bounds — when the queue is exhausted it dispatches
+      // SET_SHUFFLE_QUEUE with a reshuffled queue instead. So the "queue
+      // exhausted" case can't reach this reducer; no branch for it here.
       const nextShuffleIndex = state.shuffleQueueIndex + 1;
       if (nextShuffleIndex < state.shuffleQueue.length) {
         return {
@@ -236,12 +240,7 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
           isShuffleLoading: true,
         };
       }
-      // Queue exhausted - will be handled by the effect to reshuffle
-      return {
-        ...state,
-        shuffleQueueIndex: -1, // Signal to reshuffle
-        isShuffleLoading: true,
-      };
+      return state;
 
     case 'SHUFFLE_PREVIOUS':
       const prevShuffleIndex = state.shuffleQueueIndex - 1;

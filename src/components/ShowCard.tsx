@@ -14,7 +14,7 @@ import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, GLASS_PILL } from '../constants/theme';
 
 interface ShowCardProps {
   show: GratefulDeadShow;
@@ -313,10 +313,7 @@ const styles = StyleSheet.create({
   savePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 342,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    ...GLASS_PILL,
     paddingVertical: 8,
     paddingHorizontal: 16,
     gap: 6,

@@ -46,9 +46,7 @@ import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
 import { CollectionType, LibraryCollectionEntry } from '../types/collection.types';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
+import { EmptyState } from '../components/StateViews';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
@@ -78,7 +76,7 @@ export function FavoritesScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const {
     deleteCollection,
@@ -535,10 +533,11 @@ export function FavoritesScreen() {
     if (favoriteShows.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No favorites yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the save button on any show{'\n'}to add it to your favorites.
-          </Text>
+          <EmptyState
+            icon={null}
+            title="No favorites yet"
+            message={"Tap the save button on any show\nto add it to your favorites."}
+          />
         </View>
       );
     }
@@ -624,10 +623,11 @@ export function FavoritesScreen() {
     if (favoriteSongs.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No favorites yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the save button on any song to{'\n'}add it to your favorites.
-          </Text>
+          <EmptyState
+            icon={null}
+            title="No favorites yet"
+            message={"Tap the save button on any song to\nadd it to your favorites."}
+          />
         </View>
       );
     }
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     position: 'absolute',
-    left: HORIZONTAL_PADDING,
+    left: LAYOUT.HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
     zIndex: 20,
@@ -1028,16 +1028,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerGradient: {
-    position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 30,
-  },
-  headerGradientDesktop: {
-    display: 'none',
-  },
   actionBarSection: {
     backgroundColor: COLORS.background,
     zIndex: 10,
@@ -1060,7 +1050,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingTop: SPACING.sm + 4,
     paddingBottom: SPACING.md,
   },
@@ -1127,11 +1117,6 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' && {
       marginBottom: 80,
     }),
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading3,
-    marginBottom: SPACING.md,
-    textAlign: 'center',
   },
   emptyText: {
     ...TYPOGRAPHY.body,

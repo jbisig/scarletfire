@@ -7,7 +7,6 @@ import {
   Alert,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   Platform,
   ImageBackground,
   Modal,
@@ -37,7 +36,7 @@ import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { ErrorState } from '../components/StateViews';
+import { ErrorState, LoadingState } from '../components/StateViews';
 import { BottomSheet } from '../components/BottomSheet';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
@@ -46,6 +45,7 @@ import { BlurBackground } from '../components/shared/BlurBackground';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { formatCount } from '../utils/formatters';
 
 // Derive a stable background index (1-6) from the collection id so that
 // returning to a collection shows the same header image.
@@ -580,7 +580,7 @@ export function CollectionDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
-        <ActivityIndicator color={COLORS.accent} />
+        <LoadingState size="small" />
       </View>
     );
   }
@@ -617,9 +617,7 @@ export function CollectionDetailScreen() {
   }
 
   const typeLabel =
-    collection.type === 'playlist'
-      ? 'Playlist'
-      : `${items.length} show${items.length === 1 ? '' : 's'}`;
+    collection.type === 'playlist' ? 'Playlist' : formatCount(items.length, 'show');
 
   const bgSource = getShareBackground(bgIndexFromId(collection.id));
 
@@ -653,7 +651,7 @@ export function CollectionDetailScreen() {
                 <>
                   <Text style={styles.webMetaDot}>·</Text>
                   <Text style={styles.webMetaText}>
-                    {saveCount} save{saveCount === 1 ? '' : 's'}
+                    {formatCount(saveCount, 'save')}
                   </Text>
                 </>
               )}
@@ -996,16 +994,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
-  description: {
-    color: COLORS.textSecondary,
-    padding: 16,
-    fontSize: 14,
-  },
-  attribution: {
-    color: COLORS.textSecondary,
-    paddingHorizontal: 16,
-    fontSize: 13,
-  },
   empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
 
   // Web header
@@ -1117,9 +1105,6 @@ const styles = StyleSheet.create({
         }
       : {}),
   },
-  pillDestructive: {
-    backgroundColor: COLORS.surfaceLight,
-  },
   pillText: {
     color: COLORS.textPrimary,
     fontSize: 13,
@@ -1171,24 +1156,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  toolbar: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-  toolbarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: COLORS.cardBackground,
-  },
-  toolbarText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-
   // List bodies. Native cards (ShowCard/SongCard) already have their own
   // horizontal padding (SPACING.xxl), so we don't add any on native. On web,
   // ShowCard uses 16px internal padding and we offset the wrapper by 8/24
@@ -1204,13 +1171,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  trackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
   },
   playlistBody: {
     paddingTop: 8,

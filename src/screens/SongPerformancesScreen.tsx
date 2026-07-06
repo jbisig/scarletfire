@@ -30,8 +30,6 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
 
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
 // Pre-compute song lookup Map for O(1) access
 const songsByTitle: Map<string, typeof GRATEFUL_DEAD_SONGS[number]> = new Map(
   GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
@@ -62,7 +60,7 @@ export function SongPerformancesScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
   const { loadTrack } = usePlayer();
   const { getShowDetail } = useShows();
@@ -365,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
   },

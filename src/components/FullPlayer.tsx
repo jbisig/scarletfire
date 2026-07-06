@@ -788,19 +788,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  saveButton: {
-    width: 33,
-    height: 33,
-    borderRadius: RADIUS.full,
-    borderWidth: 2,
-    borderColor: COLORS.textPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
   trackActionsGroup: {
     flexDirection: 'row',
     alignItems: 'center',

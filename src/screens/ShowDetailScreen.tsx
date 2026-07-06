@@ -28,12 +28,13 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
 import {
   getVenueFromShow,
   formatDateMMDDYYYY,
   formatDateMDYY,
   formatDownloadsLabel,
+  formatCount,
 } from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
@@ -49,6 +50,8 @@ import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
 import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { ErrorState } from '../components/StateViews';
+import { webStyle } from '../utils/webStyle';
 
 // Default profile image for logged out users (web header)
 
@@ -424,11 +427,7 @@ export function ShowDetailScreen() {
   }
 
   if (error || (!show && !isLoading)) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'Show not found'}</Text>
-      </View>
-    );
+    return <ErrorState message={error || 'Show not found'} />;
   }
 
   // Use real show data once loaded, but prefer preview values for
@@ -516,7 +515,7 @@ export function ShowDetailScreen() {
                     {!isDesktop && playCount > 0 && (
                       <View style={styles.playCountPillWeb}>
                         <Text style={styles.playCountPillText}>
-                          {playCount} {playCount === 1 ? 'play' : 'plays'}
+                          {formatCount(playCount, 'play')}
                         </Text>
                       </View>
                     )}
@@ -615,7 +614,7 @@ export function ShowDetailScreen() {
               {isDesktop && playCount > 0 && (
                 <View style={[styles.playCountPillWeb, styles.pillsRightSlot]}>
                   <Text style={styles.playCountPillText}>
-                    {playCount} {playCount === 1 ? 'play' : 'plays'}
+                    {formatCount(playCount, 'play')}
                   </Text>
                 </View>
               )}
@@ -686,7 +685,7 @@ export function ShowDetailScreen() {
               {playCount > 0 && (
                 <View style={styles.playCountBadge}>
                   <Text style={styles.playCountText}>
-                    {playCount} {playCount === 1 ? 'play' : 'plays'}
+                    {formatCount(playCount, 'play')}
                   </Text>
                 </View>
               )}
@@ -897,15 +896,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 342,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    ...GLASS_PILL,
     paddingHorizontal: SPACING.lg,
     height: 35,
-    // @ts-ignore
-    backdropFilter: 'blur(34px)',
-    WebkitBackdropFilter: 'blur(34px)',
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
   },
   playCountPillText: {
     ...TYPOGRAPHY.label,
@@ -923,30 +917,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveButton: {
-    width: 33,
-    height: 33,
-    borderRadius: RADIUS.full,
-    borderWidth: 2,
-    borderColor: COLORS.textPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-  },
   pillsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  pillsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
-    marginLeft: 'auto',
   },
   pillsRightSlot: {
     marginLeft: 'auto',
@@ -981,31 +955,21 @@ const styles = StyleSheet.create({
   sourceInfoPillWeb: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 342,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    ...GLASS_PILL,
     paddingHorizontal: SPACING.lg,
     height: 35,
     gap: 6,
-    // @ts-ignore
-    backdropFilter: 'blur(34px)',
-    WebkitBackdropFilter: 'blur(34px)',
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
   },
   savePillWeb: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 342,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    ...GLASS_PILL,
     paddingHorizontal: SPACING.lg,
     height: 35,
     gap: 6,
-    // @ts-ignore
-    backdropFilter: 'blur(34px)',
-    WebkitBackdropFilter: 'blur(34px)',
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
   },
   savePillText: {
     ...TYPOGRAPHY.label,
