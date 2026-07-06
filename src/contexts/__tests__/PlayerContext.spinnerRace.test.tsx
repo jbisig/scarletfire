@@ -76,7 +76,9 @@ function makeShow(identifier: string): ShowDetail {
 }
 
 function makeTrack(id: string): Track {
-  return { id, title: id, format: 'VBR MP3', streamUrl: `https://example.com/${id}.mp3` };
+  // Must be an archive.org URL — PlayerContext's loadTrack now rejects
+  // (Task 13's cross-user streamUrl guard) anything else before dispatching.
+  return { id, title: id, format: 'VBR MP3', streamUrl: `https://archive.org/download/show/${id}.mp3` };
 }
 
 let probeApi: ReturnType<typeof usePlayer> | null = null;

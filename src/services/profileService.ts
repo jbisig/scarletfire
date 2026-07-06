@@ -14,6 +14,30 @@ function generatePlaceholderUsername(): string {
   return `user_${hex}`;
 }
 
+/**
+ * Thrown when the picked avatar image's file extension isn't on the
+ * allowlist. `expo-image-picker` can hand back jpg/jpeg (the universal
+ * output when `allowsEditing` crops the image), png, webp, or heic (iOS,
+ * when editing is skipped) — anything else is rejected rather than trusted
+ * to build a `contentType` header from.
+ */
+export class UnsupportedAvatarImageTypeError extends Error {
+  constructor(public readonly extension: string) {
+    super(`Unsupported avatar image type: .${extension || '(none)'}`);
+    this.name = 'UnsupportedAvatarImageTypeError';
+  }
+}
+
+// Maps an allowed file extension to its image/<subtype> contentType. `jpg`
+// is normalized to the `jpeg` MIME subtype; `heic` keeps `image/heic`.
+const AVATAR_EXTENSION_TO_MIME_SUBTYPE: Readonly<Record<string, string>> = {
+  jpg: 'jpeg',
+  jpeg: 'jpeg',
+  png: 'png',
+  webp: 'webp',
+  heic: 'heic',
+};
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -67,7 +91,11 @@ class ProfileService {
 
     // Create a unique filename using timestamp
     const timestamp = Date.now();
-    const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileExt = imageUri.split('.').pop()?.toLowerCase() || '';
+    const mimeSubtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[fileExt];
+    if (!mimeSubtype) {
+      throw new UnsupportedAvatarImageTypeError(fileExt);
+    }
     const fileName = `${userId}/avatar-${timestamp}.${fileExt}`;
 
     // Fetch the image and convert to blob
@@ -81,7 +109,7 @@ class ProfileService {
     const { data, error } = await supabase.storage
       .from('avatars')
       .upload(fileName, arrayBuffer, {
-        contentType: `image/${fileExt}`,
+        contentType: `image/${mimeSubtype}`,
         upsert: true,
       });
 
@@ -169,11 +197,10 @@ class ProfileService {
       return publicUrl;
     } catch (error) {
       logger.profile.error('Error changing profile picture:', error);
-      Alert.alert(
-        'Upload Failed',
-        'There was a problem uploading your profile picture. Please try again.',
-        [{ text: 'OK' }]
-      );
+      const message = error instanceof UnsupportedAvatarImageTypeError
+        ? 'That image type is not supported. Please choose a JPG, PNG, WEBP, or HEIC photo.'
+        : 'There was a problem uploading your profile picture. Please try again.';
+      Alert.alert('Upload Failed', message, [{ text: 'OK' }]);
       throw error;
     }
   }

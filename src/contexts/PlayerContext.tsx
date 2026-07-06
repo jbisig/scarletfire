@@ -9,6 +9,8 @@ import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import { shuffleArray } from '../utils/shuffle';
 import { logger } from '../utils/logger';
+import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
+import { useOptionalToast } from './ToastContext';
 import showsData from '../data/shows.json';
 
 // Load shows data for finding next chronological show
@@ -342,6 +344,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentLoadingTrackIdRef = useRef<string | null>(null);
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
+  // Optional: some tests mount PlayerProvider without a ToastProvider
+  // ancestor. Falls back to a silent no-op so warnings are still logged.
+  const toast = useOptionalToast();
 
   // Progress tracking via refs to avoid re-renders on every position update
   const progressRef = useRef<PlaybackProgress>({ position: 0, duration: 0 });
@@ -721,6 +726,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [recordTrackPlay]); // progressAnim excluded — only used for setValue(), not conditional logic
 
   const loadTrack = useCallback(async (track: Track, show: ShowDetail, playlist: Track[]) => {
+    // Screens pass tracks sourced from favorites/collections/public
+    // profiles — any of which can be synced from ANOTHER user — so the
+    // streamUrl must be confirmed to point at archive.org before we ever
+    // hand it to the native player. This is a user-initiated action (tapping
+    // a track), so surface a toast in addition to the logged warning.
+    if (!isAllowedStreamUrl(track.streamUrl)) {
+      logger.player.warn('Skipped track with disallowed streamUrl:', track.streamUrl);
+      toast?.showToast("Couldn't play that track", 'error');
+      return;
+    }
+
     // If in radio mode, stop radio first
     if (state.playbackMode === 'radio') {
       dispatch({ type: 'STOP_RADIO' });
@@ -731,7 +747,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'EXIT_SHUFFLE' });
     }
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
-  }, [state.playbackMode]);
+  }, [state.playbackMode, toast]);
 
   const play = useCallback(async () => {
     try {
@@ -903,6 +919,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Find the matching track
       const track = showDetail.tracks.find(t => t.id === song.trackId);
 
+      if (track && !isAllowedStreamUrl(track.streamUrl)) {
+        // `song` came from a shuffle queue that can be sourced from favorites
+        // or a synced/shared collection — i.e. from ANOTHER user. Even
+        // though the track itself was just freshly fetched from archive.org,
+        // validate defensively before it reaches the native player.
+        logger.player.warn('Skipped shuffle song with disallowed streamUrl:', track.streamUrl);
+        toast?.showToast("Couldn't play that track", 'error');
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+        return;
+      }
+
       if (track) {
         // Set up native player with just this track (not the full show playlist)
         const nativeTrack = {
@@ -931,7 +958,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       logger.player.error('Failed to load shuffle song:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
-  }, []);
+  }, [toast]);
 
   // Helper to load and play a show from shuffle queue
   const loadShuffleShow = useCallback(async (show: GratefulDeadShow) => {
@@ -941,9 +968,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Fetch the show details
       const showDetail = await archiveApi.getShowDetail(show.primaryIdentifier);
 
-      if (showDetail.tracks.length > 0) {
+      // `show` can come from a shuffle queue sourced from favorites or a
+      // synced/shared collection (another user). Drop any tracks whose
+      // streamUrl isn't archive.org rather than trusting the fetched list
+      // wholesale — defensive, since the fetch itself is keyed by an
+      // identifier that ultimately traces back to that foreign data.
+      const validTracks = showDetail.tracks.filter(t => isAllowedStreamUrl(t.streamUrl));
+      if (validTracks.length < showDetail.tracks.length) {
+        logger.player.warn(
+          `Skipped ${showDetail.tracks.length - validTracks.length} track(s) with disallowed streamUrl in show:`,
+          show.primaryIdentifier,
+        );
+        toast?.showToast('Skipped some tracks with an invalid link', 'error');
+      }
+
+      if (validTracks.length > 0) {
         // Set up native player queue with all tracks
-        const nativeTracks = showDetail.tracks.map(t => ({
+        const nativeTracks = validTracks.map(t => ({
           id: t.id,
           url: t.streamUrl,
           title: t.title,
@@ -955,10 +996,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await nativeAudioPlayer.setQueue(nativeTracks, 0);
 
         // Store playlist length in ref for skip detection
-        shuffleShowPlaylistLengthRef.current = showDetail.tracks.length;
+        shuffleShowPlaylistLengthRef.current = validTracks.length;
 
         // Update state
-        dispatch({ type: 'LOAD_TRACK', track: showDetail.tracks[0], show: showDetail, playlist: showDetail.tracks });
+        dispatch({ type: 'LOAD_TRACK', track: validTracks[0], show: showDetail, playlist: validTracks });
         dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
 
         // Start playback
@@ -972,7 +1013,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       logger.player.error('Failed to load shuffle show:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
-  }, []);
+  }, [toast]);
 
   // Start shuffle mode for songs. `source` distinguishes favorites shuffle
   // from a playlist shuffle so the UI can show a distinct badge.

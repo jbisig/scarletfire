@@ -26,6 +26,15 @@ export function useToast() {
   return context;
 }
 
+/**
+ * Non-throwing variant for code that may render outside a ToastProvider
+ * (e.g. unit tests that mount PlayerProvider on its own). Returns undefined
+ * instead of throwing so callers can no-op when there's no toast host.
+ */
+export function useOptionalToast(): ToastContextValue | undefined {
+  return useContext(ToastContext);
+}
+
 interface ToastItemProps {
   toast: Toast;
   onDismiss: (id: string) => void;
