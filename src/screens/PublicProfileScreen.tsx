@@ -60,25 +60,21 @@ import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { Collection } from '../types/collection.types';
 import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
-import { StarRating } from '../components/StarRating';
+import { SongCard } from '../components/SongCard';
 import { useResponsive } from '../hooks/useResponsive';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { archiveApi } from '../services/archiveApi';
-import { FavoriteSong } from '../contexts/FavoritesContext';
 import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown, SortOption } from '../components/SortDropdown';
-import { PlayCountBadge } from '../components/PlayCountBadge';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
-import { getCorrectVenue } from '../utils/showLookup';
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };
@@ -115,54 +111,6 @@ function getSortLabel(sortType: ShowSortType | SongSortType): string {
 
 function getSortIcon(sortType: ShowSortType | SongSortType): 'arrow-up' | 'arrow-down' {
   return sortType === 'dateSavedOldest' || sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
-}
-
-function SongRow({ song, trailingContent, loadingSongId, isDesktop, onPress }: {
-  song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string };
-  trailingContent?: React.ReactNode;
-  loadingSongId: string | null;
-  isDesktop: boolean;
-  onPress: (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = getCorrectVenue(song.showDate) || song.venue;
-  const songKey = `${song.trackId}-${song.showIdentifier}`;
-  const isSongLoading = loadingSongId === songKey;
-
-  return (
-    <TouchableOpacity
-      style={[styles.songItem, isSongLoading && styles.songItemLoading, isDesktop && isHovered && styles.songItemHovered]}
-      onPress={() => onPress(song)}
-      activeOpacity={0.7}
-      disabled={isSongLoading}
-      // @ts-ignore - web only mouse events
-      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
-      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
-    >
-      <View style={styles.songContentRow}>
-        <View style={styles.songInfo}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {song.trackTitle}
-          </Text>
-          <View style={styles.songDateRow}>
-            <Text style={styles.songDate}>
-              {formatDate(song.showDate)}
-            </Text>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={14} />
-            )}
-          </View>
-          {venue && (
-            <Text style={styles.songVenue} numberOfLines={1}>
-              {venue}
-            </Text>
-          )}
-        </View>
-        {trailingContent}
-      </View>
-    </TouchableOpacity>
-  );
 }
 
 export function PublicProfileScreen() {
@@ -566,14 +514,13 @@ export function PublicProfileScreen() {
     </>
   );
 
-  const renderSongRow = (song: typeof data.favorites.songs[0], trailingContent?: React.ReactNode) => {
+  const renderSongRow = (song: typeof data.favorites.songs[0]) => {
     return (
-      <SongRow
+      <SongCard
         song={song}
-        trailingContent={trailingContent}
-        loadingSongId={loadingSongId}
-        isDesktop={isDesktop}
+        isLoading={loadingSongId === `${song.trackId}-${song.showIdentifier}`}
         onPress={handleSongPress}
+        correctVenue
       />
     );
   };
@@ -629,7 +576,7 @@ export function PublicProfileScreen() {
           </View>
           {sortedFavoriteSongs.slice(0, visibleSongCount).map(song => (
             <React.Fragment key={`fav-${song.trackId}-${song.showIdentifier}`}>
-              {renderSongRow(song, <PlayCountBadge count={0} size="small" />)}
+              {renderSongRow(song)}
             </React.Fragment>
           ))}
           {visibleSongCount < sortedFavoriteSongs.length && (
@@ -1105,48 +1052,5 @@ const styles = StyleSheet.create({
   recentTime: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
-  },
-  songItemHovered: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  songItemLoading: {
-    opacity: 0.5,
-  },
-  songItem: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.xxl,
-    ...(Platform.OS === 'web' ? {
-      backgroundColor: 'transparent',
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      marginVertical: 2,
-    } : {}),
-  },
-  songContentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  songInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  songTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginBottom: SPACING.xs,
-  },
-  songDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 2,
-  },
-  songDate: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-  },
-  songVenue: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
   },
 });

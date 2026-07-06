@@ -25,18 +25,14 @@ import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFil
 import { GratefulDeadShow } from '../types/show.types';
 import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate } from '../utils/formatters';
-import { getCorrectVenue } from '../utils/showLookup';
 import { ShowsByYear } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
 import { archiveApi } from '../services/archiveApi';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
-import { StarRating } from '../components/StarRating';
-import { PlayCountBadge } from '../components/PlayCountBadge';
+import { SongCard } from '../components/SongCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
@@ -53,62 +49,6 @@ import { AddToCollectionPicker } from '../components/collections/AddToCollection
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
-
-// Memoized song item component to prevent unnecessary re-renders
-interface SongItemProps {
-  song: FavoriteSong;
-  isLoading: boolean;
-  playCount: number;
-  onPress: (song: FavoriteSong) => void;
-  onLongPress?: (song: FavoriteSong) => void;
-}
-
-const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress, onLongPress }) => {
-  const { isDesktop } = useResponsive();
-  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = getCorrectVenue(song.showDate) || song.venue;
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <TouchableOpacity
-      style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
-      onPress={() => onPress(song)}
-      onLongPress={onLongPress ? () => onLongPress(song) : undefined}
-      activeOpacity={0.7}
-      disabled={isLoading}
-      // @ts-ignore - web only mouse events
-      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
-      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
-    >
-      <View style={styles.songContentRow}>
-        <View style={styles.songInfo}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {song.trackTitle}
-          </Text>
-
-          <View style={styles.songDateRow}>
-            <Text style={styles.songDate}>
-              {formatDate(song.showDate)}
-            </Text>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={14} />
-            )}
-          </View>
-
-          {venue && (
-            <Text style={styles.songVenue} numberOfLines={1}>
-              {venue}
-            </Text>
-          )}
-        </View>
-
-        <PlayCountBadge count={playCount} size="small" />
-      </View>
-    </TouchableOpacity>
-  );
-});
-
-SongItem.displayName = 'SongItem';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
@@ -539,7 +479,7 @@ export function FavoritesScreen() {
   );
 
   const renderSongItem = useCallback(({ item }: { item: FavoriteSong }) => (
-    <SongItem
+    <SongCard
       song={item}
       isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
       // Stable getter — doesn't change identity when some other song/show's
@@ -548,6 +488,7 @@ export function FavoritesScreen() {
       playCount={getPlayCountStable(item.trackTitle, item.showIdentifier)}
       onPress={handleSongPress}
       onLongPress={handleSongLongPress}
+      correctVenue
     />
   ), [loadingSongId, getPlayCountStable, handleSongPress, handleSongLongPress]);
 
@@ -1204,48 +1145,6 @@ const styles = StyleSheet.create({
   },
   listContentDesktop: {
     padding: 16,
-  },
-  songItem: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.xxl,
-    backgroundColor: COLORS.background,
-    ...(Platform.OS === 'web' ? {
-      backgroundColor: 'transparent',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      marginVertical: 2,
-    } : {}),
-  },
-  songItemHovered: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  songContentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  songInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  songTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginBottom: SPACING.xs,
-  },
-  songDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 2,
-  },
-  songDate: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-  },
-  songVenue: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
   },
   tabContentContainer: {
     flex: 1,
