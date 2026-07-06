@@ -29,7 +29,12 @@ import { AddToCollectionPicker } from '../components/collections/AddToCollection
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, WEB_LAYOUT } from '../constants/theme';
-import { getVenueFromShow } from '../utils/formatters';
+import {
+  getVenueFromShow,
+  formatDateMMDDYYYY,
+  formatDateMDYY,
+  formatDownloadsLabel,
+} from '../utils/formatters';
 import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
@@ -233,11 +238,6 @@ export function ShowDetailScreen() {
     }
   }, [trackTitle, show, selectTrack]);
 
-  const formatDateMMDDYYYY = (date: string) => {
-    const [year, month, day] = date.slice(0, 10).split('-');
-    return `${month}/${day}/${year}`;
-  };
-
   const loadShowDetail = async (identifier: string) => {
     // Claim a new generation token for this call. Any earlier in-flight call
     // whose response arrives after this point will see a mismatch below and
@@ -277,7 +277,7 @@ export function ShowDetailScreen() {
 
       // Update navigation title (also drives browser tab title via documentTitle formatter)
       const webTitle = detail.date
-        ? (() => { const [y, m, d] = detail.date.split('-'); return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)} - ${getVenueFromShow(detail)}`; })()
+        ? `${formatDateMDYY(detail.date)} - ${getVenueFromShow(detail)}`
         : '';
       navigation.setOptions({
         title: Platform.OS === 'web' ? webTitle : '',
@@ -416,14 +416,6 @@ export function ShowDetailScreen() {
         addFavoriteShow(showToSave);
       }
     }
-  };
-
-  const formatDownloads = (downloads: number | undefined) => {
-    if (!downloads) return '';
-    if (downloads >= 1000) {
-      return `${(downloads / 1000).toFixed(1)}k downloads`;
-    }
-    return `${downloads} downloads`;
   };
 
   if (isLoading && !previewVenue) {
@@ -615,7 +607,7 @@ export function ShowDetailScreen() {
                     </Text>
                     <View style={styles.webDownloadsWrap}>
                       <Text style={styles.webDownloadsText} numberOfLines={1}>
-                        {formatDownloads(displayShow.allVersions?.[0]?.downloads)}
+                        {formatDownloadsLabel(displayShow.allVersions?.[0]?.downloads)}
                       </Text>
                     </View>
                   </View>
@@ -717,7 +709,7 @@ export function ShowDetailScreen() {
                 {displayShow.allVersions?.[0]?.source || 'Unknown source'}
               </Text>
               <Text style={styles.downloadsText}>
-                {formatDownloads(displayShow.allVersions?.[0]?.downloads)}
+                {formatDownloadsLabel(displayShow.allVersions?.[0]?.downloads)}
               </Text>
             </View>
           ) : null}

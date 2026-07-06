@@ -2,6 +2,10 @@
 // Used by ShareTray, the destination handlers, and is also safe to import
 // from web code. Platform-specific destinations live in the .native.ts /
 // .web.ts siblings (added in later plan tasks).
+// formatDateMMDDYYYY is imported from utils/formatters (also pure TS/date-fns,
+// no RN/Expo imports) rather than defined here — see Task 14.
+
+import { formatDateMMDDYYYY } from '../utils/formatters';
 
 export const WEB_ORIGIN = 'https://www.scarletfire.app';
 
@@ -99,16 +103,6 @@ export function buildShareText(item: ShareItem): string {
  */
 export function pickRandomBackground(): number {
   return Math.floor(Math.random() * 6) + 1;
-}
-
-/**
- * Format an ISO date ("1982-08-06" or "1982-08-06T...") as MM/DD/YYYY with slashes.
- * Shared by shareService.buildShareText and the ShareCard preview component so
- * the in-tray card and the chat message body always render the same string.
- */
-export function formatDateMMDDYYYY(iso: string): string {
-  const [y, m, d] = iso.slice(0, 10).split('-');
-  return `${m}/${d}/${y}`;
 }
 
 /**
