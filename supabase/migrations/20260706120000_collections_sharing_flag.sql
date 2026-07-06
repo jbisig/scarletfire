@@ -39,7 +39,17 @@ alter table public.collections
 
 -- Grandfather existing rows so already-distributed share links don't break.
 -- See TRADEOFF above.
+--
+-- The blanket UPDATE below touches every row in public.collections, which
+-- would otherwise fire the `collections_set_updated_at` trigger
+-- (supabase/create_collections_tables.sql:46-47) and stamp every existing
+-- collection's `updated_at` to "now" — scrambling recency ordering (e.g.
+-- get_popular_collections' `order by ... c.updated_at desc`) for every
+-- pre-existing collection. Disable the trigger for just this statement so
+-- the grandfathering is invisible to updated_at, then re-enable it.
+alter table public.collections disable trigger collections_set_updated_at;
 update public.collections set is_shared = true;
+alter table public.collections enable trigger collections_set_updated_at;
 
 drop policy if exists "collections_public_select_by_link" on public.collections;
 create policy "collections_public_select_by_link" on public.collections

@@ -30,7 +30,9 @@
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint where conname = 'support_requests_message_length'
+    select 1 from pg_constraint
+    where conname = 'support_requests_message_length'
+      and conrelid = 'public.support_requests'::regclass
   ) then
     alter table public.support_requests
       add constraint support_requests_message_length
@@ -38,7 +40,9 @@ begin
   end if;
 
   if not exists (
-    select 1 from pg_constraint where conname = 'support_requests_subject_length'
+    select 1 from pg_constraint
+    where conname = 'support_requests_subject_length'
+      and conrelid = 'public.support_requests'::regclass
   ) then
     alter table public.support_requests
       add constraint support_requests_subject_length
@@ -46,7 +50,9 @@ begin
   end if;
 
   if not exists (
-    select 1 from pg_constraint where conname = 'support_requests_email_length_and_shape'
+    select 1 from pg_constraint
+    where conname = 'support_requests_email_length_and_shape'
+      and conrelid = 'public.support_requests'::regclass
   ) then
     alter table public.support_requests
       add constraint support_requests_email_length_and_shape
