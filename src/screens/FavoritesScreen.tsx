@@ -19,7 +19,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
@@ -48,28 +48,21 @@ import { CreateCollectionModal } from '../components/collections/CreateCollectio
 import { CollectionType, LibraryCollectionEntry } from '../types/collection.types';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { EmptyState } from '../components/StateViews';
+import {
+  SavedItemSortType,
+  SAVED_SHOW_SORT_OPTIONS,
+  SAVED_SONG_SORT_OPTIONS,
+  getSavedItemSortLabel,
+  getSavedItemSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
 type TabType = 'shows' | 'songs' | 'collections';
-type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
-type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
-
-const SONG_SORT_OPTIONS: SortOption<SongSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
-];
-
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-];
+type SongSortType = SavedItemSortType;
+type ShowSortType = SavedItemSortType;
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -95,17 +88,13 @@ export function FavoritesScreen() {
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
-  const [showSongSortModal, setShowSongSortModal] = useState(false);
-  const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
-  const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, left: 0 });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const showSortButtonRef = useRef<View>(null);
-  const songSortButtonRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
+  const songSortDropdown = useSortDropdown();
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
 
@@ -194,20 +183,6 @@ export function FavoritesScreen() {
     setIsSearchExpanded(false);
   }, []);
 
-  const handleShowSortPress = () => {
-    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowShowSortModal(true);
-    });
-  };
-
-  const handleSongSortPress = () => {
-    songSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSongSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSongSortModal(true);
-    });
-  };
-
   // Scroll to top when sort type changes
   React.useEffect(() => {
     showsListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -267,29 +242,19 @@ export function FavoritesScreen() {
     // Sort based on selected sort type
     switch (songSortType) {
       case 'alphabetical':
-        return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
+        return songs.sort((a, b) => compareAlphabetical(a.trackTitle, b.trackTitle));
 
       case 'dateSavedNewest':
-        return songs.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return 1;
-          if (!b.savedAt) return -1;
-          return b.savedAt - a.savedAt;
-        });
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
 
       case 'dateSavedOldest':
-        return songs.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return -1;
-          if (!b.savedAt) return 1;
-          return a.savedAt - b.savedAt;
-        });
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
 
       case 'performanceDateOldest':
-        return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'oldest'));
 
       case 'performanceDateNewest':
-        return songs.sort((a, b) => b.showDate.localeCompare(a.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'newest'));
 
       default:
         return songs;
@@ -340,33 +305,19 @@ export function FavoritesScreen() {
     // Sort based on selected sort type
     switch (showSortType) {
       case 'alphabetical':
-        return shows.sort((a, b) => {
-          const venueA = a.venue || '';
-          const venueB = b.venue || '';
-          return venueA.localeCompare(venueB);
-        });
+        return shows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
 
       case 'dateSavedNewest':
-        return shows.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return 1;
-          if (!b.savedAt) return -1;
-          return b.savedAt - a.savedAt;
-        });
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
 
       case 'dateSavedOldest':
-        return shows.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return -1;
-          if (!b.savedAt) return 1;
-          return a.savedAt - b.savedAt;
-        });
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
 
       case 'performanceDateOldest':
-        return shows.sort((a, b) => a.date.localeCompare(b.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
 
       case 'performanceDateNewest':
-        return shows.sort((a, b) => b.date.localeCompare(a.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
 
       default:
         return shows;
@@ -381,58 +332,6 @@ export function FavoritesScreen() {
       return name.toLowerCase().includes(lowerQuery);
     });
   }, [libraryEntries, debouncedSearchQuery]);
-
-  const getSongSortLabel = (sortType: SongSortType): string => {
-    switch (sortType) {
-      case 'alphabetical':
-        return 'Alphabetical';
-      case 'dateSavedNewest':
-      case 'dateSavedOldest':
-        return 'Date Saved';
-      case 'performanceDateOldest':
-      case 'performanceDateNewest':
-        return 'Perform. Date';
-      default:
-        return 'Sort';
-    }
-  };
-
-  const getSongSortIcon = (sortType: SongSortType): 'arrow-up' | 'arrow-down' => {
-    switch (sortType) {
-      case 'dateSavedOldest':
-      case 'performanceDateOldest':
-        return 'arrow-up';
-      default:
-        return 'arrow-down';
-    }
-  };
-
-  const getShowSortLabel = (sortType: ShowSortType): string => {
-    switch (sortType) {
-      case 'alphabetical':
-        return 'Alphabetical';
-      case 'dateSavedNewest':
-      case 'dateSavedOldest':
-        return 'Date Saved';
-      case 'performanceDateOldest':
-      case 'performanceDateNewest':
-        return 'Perform. Date';
-      default:
-        return 'Sort';
-    }
-  };
-
-  const getShowSortIcon = (sortType: ShowSortType): 'arrow-up' | 'arrow-down' => {
-    switch (sortType) {
-      case 'dateSavedOldest':
-      case 'performanceDateOldest':
-        return 'arrow-up';
-      case 'alphabetical':
-        return 'arrow-down';
-      default:
-        return 'arrow-down';
-    }
-  };
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
     navigation.navigate('ShowDetail', showDetailParams(show));
@@ -544,17 +443,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={showSortButtonRef} collapsable={false}>
+            <View ref={showSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={handleShowSortPress}
+                onPress={showSortDropdown.open}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel={`Sort shows by ${getShowSortLabel(showSortType)}`}
+                accessibilityLabel={`Sort shows by ${getSavedItemSortLabel(showSortType, 'show')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getShowSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
-                <Text style={styles.sortLabelText}>{getShowSortLabel(showSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -635,17 +534,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={songSortButtonRef} collapsable={false}>
+            <View ref={songSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={handleSongSortPress}
+                onPress={songSortDropdown.open}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel={`Sort songs by ${getSongSortLabel(songSortType)}`}
+                accessibilityLabel={`Sort songs by ${getSavedItemSortLabel(songSortType, 'song')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getSongSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
-                <Text style={styles.sortLabelText}>{getSongSortLabel(songSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -926,20 +825,20 @@ export function FavoritesScreen() {
 
       {/* Song Sort Dropdown */}
       <SortDropdown
-        visible={showSongSortModal}
-        onClose={() => setShowSongSortModal(false)}
-        position={songSortButtonPosition}
-        options={SONG_SORT_OPTIONS}
+        visible={songSortDropdown.visible}
+        onClose={songSortDropdown.close}
+        position={songSortDropdown.position}
+        options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
       />
 
       {/* Show Sort Dropdown */}
       <SortDropdown
-        visible={showShowSortModal}
-        onClose={() => setShowShowSortModal(false)}
-        position={showSortButtonPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}
       />

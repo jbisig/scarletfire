@@ -38,7 +38,7 @@ import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorState, LoadingState } from '../components/StateViews';
 import { BottomSheet } from '../components/BottomSheet';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { BlurBackground } from '../components/shared/BlurBackground';
@@ -47,6 +47,14 @@ import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 import { formatCount } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
+import {
+  CollectionSortType,
+  COLLECTION_SHOW_SORT_OPTIONS,
+  getCollectionSortLabel,
+  getCollectionSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 // Derive a stable background index (1-6) from the collection id so that
 // returning to a collection shows the same header image.
@@ -63,42 +71,7 @@ function bgIndexFromId(id: string): number {
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
 
-type ShowSortType =
-  | 'alphabetical'
-  | 'dateAddedOldest'
-  | 'dateAddedNewest'
-  | 'performanceDateOldest'
-  | 'performanceDateNewest';
-
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateAddedOldest', label: 'Date Added (Oldest First)' },
-  { value: 'dateAddedNewest', label: 'Date Added (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-];
-
-function getShowSortLabel(s: ShowSortType): string {
-  switch (s) {
-    case 'alphabetical': return 'Alphabetical';
-    case 'dateAddedOldest':
-    case 'dateAddedNewest': return 'Date Added';
-    case 'performanceDateOldest':
-    case 'performanceDateNewest': return 'Show Date';
-  }
-}
-
-function getShowSortIcon(s: ShowSortType): 'arrow-up' | 'arrow-down' {
-  switch (s) {
-    case 'dateAddedOldest':
-    case 'performanceDateOldest':
-      return 'arrow-up';
-    case 'alphabetical':
-      return 'arrow-down';
-    default:
-      return 'arrow-down';
-  }
-}
+type ShowSortType = CollectionSortType;
 
 // Map a stored show metadata blob to the GratefulDeadShow shape that ShowCard expects.
 function toGratefulDeadShow(md: ShowCollectionItemMetadata): GratefulDeadShow {
@@ -152,10 +125,8 @@ export function CollectionDetailScreen() {
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
   const [saveCount, setSaveCount] = useState<number | null>(null);
   const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
-  const [showSortModalVisible, setShowSortModalVisible] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
-  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
-  const showSortButtonRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -166,13 +137,6 @@ export function CollectionDetailScreen() {
   const [signInPromptVisible, setSignInPromptVisible] = useState(false);
   const pendingAuthActionRef = useRef<'save' | 'duplicate' | null>(null);
   const wasSignedInRef = useRef(false);
-
-  const handleShowSortPress = () => {
-    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSortModalVisible(true);
-    });
-  };
 
   const handleMenuPress = () => {
     menuButtonRef.current?.measure((_x, _y, _width, height, pageX, pageY) => {
@@ -552,19 +516,19 @@ export function CollectionDetailScreen() {
       (i.itemMetadata as ShowCollectionItemMetadata).date ?? '';
     switch (showSort) {
       case 'alphabetical':
-        sorted.sort((a, b) => title(a).localeCompare(title(b)));
+        sorted.sort((a, b) => compareAlphabetical(title(a), title(b)));
         break;
       case 'dateAddedOldest':
-        sorted.sort((a, b) => (a.addedAt < b.addedAt ? -1 : 1));
+        sorted.sort((a, b) => compareByDate(a.addedAt, b.addedAt, 'oldest'));
         break;
       case 'dateAddedNewest':
-        sorted.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
+        sorted.sort((a, b) => compareByDate(a.addedAt, b.addedAt, 'newest'));
         break;
       case 'performanceDateOldest':
-        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? -1 : 1));
+        sorted.sort((a, b) => compareByDate(perfDate(a), perfDate(b), 'oldest'));
         break;
       case 'performanceDateNewest':
-        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? 1 : -1));
+        sorted.sort((a, b) => compareByDate(perfDate(a), perfDate(b), 'newest'));
         break;
     }
     return sorted;
@@ -733,17 +697,17 @@ export function CollectionDetailScreen() {
   // Sort bar rendered directly above the list for show collections.
   const sortBar = collection.type === 'show_collection' && items.length > 0 ? (
     <View style={[styles.sortBar, isDesktop && styles.sortBarDesktop]}>
-      <View ref={showSortButtonRef} collapsable={false}>
+      <View ref={showSortDropdown.buttonRef} collapsable={false}>
         <TouchableOpacity
           style={styles.sortLabelButton}
-          onPress={handleShowSortPress}
+          onPress={showSortDropdown.open}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={`Sort shows by ${getShowSortLabel(showSort)}`}
+          accessibilityLabel={`Sort shows by ${getCollectionSortLabel(showSort)}`}
           accessibilityHint="Double tap to change sort order"
         >
-          <Ionicons name={getShowSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
-          <Text style={styles.sortLabelText}>{getShowSortLabel(showSort)}</Text>
+          <Ionicons name={getCollectionSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
+          <Text style={styles.sortLabelText}>{getCollectionSortLabel(showSort)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -811,10 +775,10 @@ export function CollectionDetailScreen() {
       )}
 
       <SortDropdown
-        visible={showSortModalVisible}
-        onClose={() => setShowSortModalVisible(false)}
-        position={showSortButtonPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={COLLECTION_SHOW_SORT_OPTIONS}
         selectedValue={showSort}
         onSelect={setShowSort}
       />

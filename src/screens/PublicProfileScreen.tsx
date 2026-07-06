@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 
 // Grow a rendered-count from `initial` up to `total` in `chunk`-size steps,
 // pacing with setTimeout so skeleton rows are visible while the list fills.
@@ -71,49 +71,29 @@ import { GratefulDeadShow } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { Ionicons } from '@expo/vector-icons';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { ErrorState } from '../components/StateViews';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SavedItemSortType,
+  SAVED_SHOW_SORT_OPTIONS,
+  SAVED_SONG_SORT_OPTIONS,
+  getSavedItemSortLabel,
+  getSavedItemSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };
 };
 
 type TabType = 'shows' | 'songs' | 'collections';
-type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
-type SongSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
-
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-];
-
-const SONG_SORT_OPTIONS: SortOption<SongSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
-];
-
-function getSortLabel(sortType: ShowSortType | SongSortType): string {
-  switch (sortType) {
-    case 'alphabetical': return 'Alphabetical';
-    case 'dateSavedNewest': case 'dateSavedOldest': return 'Date Saved';
-    case 'performanceDateOldest': case 'performanceDateNewest': return 'Date';
-    default: return 'Sort';
-  }
-}
-
-function getSortIcon(sortType: ShowSortType | SongSortType): 'arrow-up' | 'arrow-down' {
-  return sortType === 'dateSavedOldest' || sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
-}
+type ShowSortType = SavedItemSortType;
+type SongSortType = SavedItemSortType;
 
 export function PublicProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -130,10 +110,6 @@ export function PublicProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [songSortModal, setSongSortModal] = useState(false);
-  const [showSortPosition, setShowSortPosition] = useState({ top: 0, left: 0 });
-  const [songSortPosition, setSongSortPosition] = useState({ top: 0, left: 0 });
   const [publicCollections, setPublicCollections] = useState<Collection[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -143,8 +119,8 @@ export function PublicProfileScreen() {
   const currentUser = authState.user;
   const isOwnProfile = !!currentUser && currentUser.id === data?.profile?.id;
   const { collections: ownedCollections } = useCollections();
-  const showSortRef = useRef<View>(null);
-  const songSortRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
+  const songSortDropdown = useSortDropdown();
 
   useEffect(() => {
     if (!username) {
@@ -318,62 +294,51 @@ export function PublicProfileScreen() {
     });
   }, [data, displayName, openShareTray]);
 
-  // Sorted favorite shows
+  // Sorted favorite shows. Missing-savedAt policy intentionally matches
+  // FavoritesScreen's canonical tri-state (see compareBySavedAt) instead of
+  // the previous `(a.savedAt || 0)` behavior, which treated an absent
+  // savedAt as if it were saved at the Unix epoch.
   const sortedFavoriteShows = useMemo(() => {
     if (!data) return [];
     const shows = [...data.favorites.shows];
     switch (showSortType) {
       case 'alphabetical':
-        return shows.sort((a, b) => (a.venue || '').localeCompare(b.venue || ''));
+        return shows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
       case 'dateSavedNewest':
-        return shows.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
       case 'dateSavedOldest':
-        return shows.sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
       case 'performanceDateOldest':
-        return shows.sort((a, b) => a.date.localeCompare(b.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
       case 'performanceDateNewest':
-        return shows.sort((a, b) => b.date.localeCompare(a.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
       default:
         return shows;
     }
   }, [data, showSortType]);
 
-  // Sorted favorite songs
+  // Sorted favorite songs. Same canonical savedAt policy as shows above.
   const sortedFavoriteSongs = useMemo(() => {
     if (!data) return [];
     const songs = [...data.favorites.songs];
     switch (songSortType) {
       case 'alphabetical':
-        return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
+        return songs.sort((a, b) => compareAlphabetical(a.trackTitle, b.trackTitle));
       case 'dateSavedNewest':
-        return songs.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
       case 'dateSavedOldest':
-        return songs.sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
       case 'performanceDateOldest':
-        return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'oldest'));
       case 'performanceDateNewest':
-        return songs.sort((a, b) => b.showDate.localeCompare(a.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'newest'));
       default:
         return songs;
     }
   }, [data, songSortType]);
 
-  const handleShowSortPress = () => {
-    showSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
-      setShowSortPosition({ top: pageY + h + 8, left: pageX });
-      setShowSortModal(true);
-    });
-  };
-
   const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length, activeTab === 'shows');
   const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length, activeTab === 'songs');
-
-  const handleSongSortPress = () => {
-    songSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
-      setSongSortPosition({ top: pageY + h + 8, left: pageX });
-      setSongSortModal(true);
-    });
-  };
 
   if (isLoading) {
     return (
@@ -466,14 +431,14 @@ export function PublicProfileScreen() {
             <Text style={styles.sectionTitle}>
               Favorites ({data.favorites.shows.length})
             </Text>
-            <View ref={showSortRef} collapsable={false}>
+            <View ref={showSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortButton}
-                onPress={handleShowSortPress}
+                onPress={showSortDropdown.open}
                 activeOpacity={0.7}
               >
-                <Ionicons name={getSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSortLabel(showSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
+                <Text style={styles.sortButtonText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -495,10 +460,10 @@ export function PublicProfileScreen() {
       )}
 
       <SortDropdown
-        visible={showSortModal}
-        onClose={() => setShowSortModal(false)}
-        position={showSortPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}
       />
@@ -554,14 +519,14 @@ export function PublicProfileScreen() {
             <Text style={styles.sectionTitle}>
               Favorites ({data.favorites.songs.length})
             </Text>
-            <View ref={songSortRef} collapsable={false}>
+            <View ref={songSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortButton}
-                onPress={handleSongSortPress}
+                onPress={songSortDropdown.open}
                 activeOpacity={0.7}
               >
-                <Ionicons name={getSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSortLabel(songSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
+                <Text style={styles.sortButtonText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -580,10 +545,10 @@ export function PublicProfileScreen() {
       )}
 
       <SortDropdown
-        visible={songSortModal}
-        onClose={() => setSongSortModal(false)}
-        position={songSortPosition}
-        options={SONG_SORT_OPTIONS}
+        visible={songSortDropdown.visible}
+        onClose={songSortDropdown.close}
+        position={songSortDropdown.position}
+        options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
       />

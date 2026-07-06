@@ -27,54 +27,32 @@ import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 import { STATE_ABBREVIATIONS } from '../constants/states';
+import {
+  HomeSortType,
+  HOME_SORT_VALID_TYPES,
+  HOME_SORT_OPTIONS,
+  getHomeSortLabel,
+  getHomeSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
 
-type ShowSortType = 'default' | 'alphabetical' | 'performanceDateNewest' | 'mostPopular';
-const VALID_SORT_TYPES: ShowSortType[] = ['default', 'alphabetical', 'performanceDateNewest', 'mostPopular'];
-
-const SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'default', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-  { value: 'mostPopular', label: 'Most Popular' },
-  { value: 'alphabetical', label: 'Alphabetical' },
-];
+type ShowSortType = HomeSortType;
+const VALID_SORT_TYPES = HOME_SORT_VALID_TYPES;
 
 function getPrimaryDownloads(show: GratefulDeadShow): number {
   const primaryVersion = show.versions.find(v => v.identifier === show.primaryIdentifier);
   return primaryVersion?.downloads ?? 0;
-}
-
-function getSortLabel(sortType: ShowSortType): string {
-  switch (sortType) {
-    case 'default':
-      return 'Show Date';
-    case 'performanceDateNewest':
-      return 'Show Date';
-    case 'mostPopular':
-      return 'Most Popular';
-    case 'alphabetical':
-      return 'Alphabetical';
-    default:
-      return 'Sort';
-  }
-}
-
-function getSortIcon(sortType: ShowSortType): 'arrow-up' | 'arrow-down' {
-  switch (sortType) {
-    case 'default':
-      return 'arrow-up';
-    default:
-      return 'arrow-down';
-  }
 }
 
 // Pure filter function - moved outside component to avoid recreation on each render
@@ -157,9 +135,7 @@ export function HomeScreen() {
       ? (urlSort as ShowSortType)
       : 'mostPopular';
   });
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
-  const sortButtonRef = useRef<View>(null);
+  const sortDropdown = useSortDropdown();
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(() => {
     const urlYears = route.params?.years;
     const urlSeries = route.params?.series;
@@ -218,13 +194,6 @@ export function HomeScreen() {
     setSearchQuery('');
     setIsSearchExpanded(false);
   }, []);
-
-  const handleSortPress = () => {
-    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSortModal(true);
-    });
-  };
 
   // Memoize available years - only recalculate when showsByYear changes
   const availableYears = useMemo(() => {
@@ -289,9 +258,9 @@ export function HomeScreen() {
       case 'mostPopular':
         return allShows.sort((a, b) => getPrimaryDownloads(b) - getPrimaryDownloads(a));
       case 'alphabetical':
-        return allShows.sort((a, b) => (a.venue || '').localeCompare(b.venue || ''));
+        return allShows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
       case 'performanceDateNewest':
-        return allShows.sort((a, b) => b.date.localeCompare(a.date));
+        return allShows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
       default:
         return allShows;
     }
@@ -427,17 +396,17 @@ export function HomeScreen() {
       {/* Action Bar Section with Sort */}
       <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
         <View style={[styles.actionRow, isDesktop && styles.actionRowDesktop]}>
-          <View ref={sortButtonRef} collapsable={false}>
+          <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabelButton}
-              onPress={handleSortPress}
+              onPress={sortDropdown.open}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={`Sort shows by ${getSortLabel(sortType)}`}
+              accessibilityLabel={`Sort shows by ${getHomeSortLabel(sortType)}`}
               accessibilityHint="Double tap to change sort order"
             >
-              <Ionicons name={getSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
-              <Text style={styles.sortLabelText}>{getSortLabel(sortType)}</Text>
+              <Ionicons name={getHomeSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Text style={styles.sortLabelText}>{getHomeSortLabel(sortType)}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -497,10 +466,10 @@ export function HomeScreen() {
 
       {/* Sort Dropdown */}
       <SortDropdown
-        visible={showSortModal}
-        onClose={() => setShowSortModal(false)}
-        position={sortButtonPosition}
-        options={SORT_OPTIONS}
+        visible={sortDropdown.visible}
+        onClose={sortDropdown.close}
+        position={sortDropdown.position}
+        options={HOME_SORT_OPTIONS}
         selectedValue={sortType}
         onSelect={setSortType}
       />
