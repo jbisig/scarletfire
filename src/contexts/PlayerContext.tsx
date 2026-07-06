@@ -52,6 +52,7 @@ const initialState: PlayerState = {
   playbackMode: 'show',
   radioQueue: [],
   radioQueueIndex: -1,
+  radioQueueOffset: 0,
   isRadioLoading: false,
   // Shuffle mode state
   shuffleQueue: [],
@@ -60,7 +61,7 @@ const initialState: PlayerState = {
   isShuffleLoading: false,
 };
 
-function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
+export function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case 'LOAD_TRACK':
       const trackIndex = action.playlist.findIndex(t => t.id === action.track.id);
@@ -126,6 +127,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         playbackMode: 'radio',
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
         isRadioLoading: true,
       };
 
@@ -135,6 +137,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         playbackMode: 'show',
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
         isRadioLoading: false,
         currentTrack: null,
         currentShow: null,
@@ -161,6 +164,11 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         ...state,
         radioQueue: newRadioQueue,
         radioQueueIndex: newRadioIndex,
+        // Cumulative count of tracks ever trimmed - the native queue is
+        // append-only, so native absolute indices keep growing even though
+        // radioQueue itself is capped. Track the running total so absolute
+        // indices can be translated back to radioQueue indices.
+        radioQueueOffset: state.radioQueueOffset + indexAdjustment,
         currentTrack: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.track : state.currentTrack,
         currentShow: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.show : state.currentShow,
         isRadioLoading: false,
@@ -193,17 +201,22 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       }
       return state;
 
-    case 'SYNC_RADIO_TRACK_INDEX':
-      if (action.index >= 0 && action.index < state.radioQueue.length) {
-        const radioTrack = state.radioQueue[action.index];
+    case 'SYNC_RADIO_TRACK_INDEX': {
+      // action.index is the ABSOLUTE index from the native player's
+      // append-only queue. Translate it to a radioQueue index by removing
+      // the count of tracks already trimmed from the front of radioQueue.
+      const translatedIndex = action.index - state.radioQueueOffset;
+      if (translatedIndex >= 0 && translatedIndex < state.radioQueue.length) {
+        const radioTrack = state.radioQueue[translatedIndex];
         return {
           ...state,
-          radioQueueIndex: action.index,
+          radioQueueIndex: translatedIndex,
           currentTrack: radioTrack.track,
           currentShow: radioTrack.show,
         };
       }
       return state;
+    }
 
     // Shuffle mode actions
     case 'START_SHUFFLE':
@@ -217,6 +230,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         // Clear radio state
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
       };
 
     case 'STOP_SHUFFLE':

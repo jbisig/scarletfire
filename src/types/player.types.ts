@@ -48,6 +48,13 @@ export interface PlayerState {
   playbackMode: PlaybackMode;
   radioQueue: RadioTrack[];
   radioQueueIndex: number;
+  // Cumulative count of tracks trimmed from the front of radioQueue so far.
+  // The native player queue is append-only during a radio session, so native
+  // event indices are absolute (relative to the full, untrimmed queue).
+  // Subtract this offset from a native absolute index to get the index into
+  // the (trimmed) radioQueue array. Reset to 0 whenever the native queue is
+  // rebuilt from scratch (radio start/stop, mode switch away from radio).
+  radioQueueOffset: number;
   isRadioLoading: boolean;
   // Shuffle mode state
   shuffleQueue: ShuffleSongItem[] | GratefulDeadShow[];
