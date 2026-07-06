@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 export interface UsePlaySavedSongResult {
   /** `${trackId}-${showIdentifier}` of the song currently being loaded, or null. Drives a row's spinner/`isLoading` prop — expected to change identity on every press. */
   loadingSongId: string | null;
-  /** Fetches the show, finds the matching track by id, and loads it into the player. Referentially stable (only depends on the stable `loadTrack`/`showToast` from context), so it's safe in memoized renderItem dependency arrays. */
+  /** Fetches the show, finds the matching track by id, and loads it into the player. playSong's identity follows loadTrack's (re-created on playback-mode changes); stable enough for renderItem dep arrays in practice — full ref-stabilization is planned in the PlayerContext state/actions split. */
   playSong: (showIdentifier: string, trackId: string) => Promise<void>;
 }
 
