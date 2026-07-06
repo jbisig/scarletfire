@@ -119,8 +119,10 @@ export function useProfileDropdown(): UseProfileDropdownReturn {
     if (Platform.OS === 'web') {
       navigation.navigate('Support' as never);
     } else {
+      // Apple requires the support entry point to open a website (not an
+      // in-app form). The web build renders SupportScreen at SUPPORT_URL.
       Linking.openURL(SUPPORT_URL).catch(() => {
-        // No handler available; nothing we can do. Fail silently.
+        // No handler available; fail silently.
       });
     }
   }, [navigation]);

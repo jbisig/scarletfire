@@ -11,6 +11,7 @@ import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { SupportScreen } from '../screens/SupportScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
@@ -119,6 +120,7 @@ export type RootStackParamList = {
     performanceDate?: string;
   };
   Settings: undefined;
+  Support: undefined;
   PrivacyPolicy: undefined;
   PublicProfile: { username: string };
   FollowList: { userId?: string; username: string; mode: 'followers' | 'following' };
@@ -490,6 +492,14 @@ export function AppNavigator() {
                 presentation: 'modal',
                 gestureEnabled: true,
               }}
+            />
+            {/* Support screen is only navigated to on web (mobile web).
+                On native, the avatar dropdown opens SUPPORT_URL in Safari
+                per App Store guidelines. */}
+            <RootStack.Screen
+              name="Support"
+              component={SupportScreen}
+              options={{ headerShown: false }}
             />
             <RootStack.Screen
               name="PublicProfile"
