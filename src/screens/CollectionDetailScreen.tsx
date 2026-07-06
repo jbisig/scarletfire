@@ -580,7 +580,7 @@ export function CollectionDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
-        <LoadingState size="small" />
+        <LoadingState size="small" transparentBackground />
       </View>
     );
   }

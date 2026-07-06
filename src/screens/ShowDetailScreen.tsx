@@ -834,10 +834,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingBottom: 100,
   },
-  errorText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-  },
   scrollContent: {
     paddingBottom: LAYOUT.listBottomPadding,
   },

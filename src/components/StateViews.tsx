@@ -16,6 +16,14 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 export interface LoadingStateProps {
   message?: string;
   size?: 'small' | 'large';
+  /**
+   * Skip painting the container's own `COLORS.background` fill. Use this when
+   * the parent wrapper already paints its own background (e.g. a desktop
+   * `COLORS.backgroundSecondary` shell) and this view is cross-axis
+   * shrink-wrapped inside it — otherwise the two backgrounds create a visible
+   * two-tone seam around the shrunk content column.
+   */
+  transparentBackground?: boolean;
 }
 
 /**
@@ -24,9 +32,10 @@ export interface LoadingStateProps {
 export const LoadingState = React.memo<LoadingStateProps>(function LoadingState({
   message,
   size = 'large',
+  transparentBackground,
 }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, transparentBackground && styles.containerTransparent]}>
       <ActivityIndicator size={size} color={COLORS.accent} />
       {message && <Text style={styles.loadingText}>{message}</Text>}
     </View>
@@ -46,6 +55,14 @@ export interface EmptyStateProps {
     label: string;
     onPress: () => void;
   };
+  /**
+   * Skip painting the container's own `COLORS.background` fill. Use this when
+   * the parent wrapper already paints its own background (e.g. a desktop
+   * `COLORS.backgroundSecondary` shell) and this view is cross-axis
+   * shrink-wrapped inside it — otherwise the two backgrounds create a visible
+   * two-tone seam around the shrunk content column.
+   */
+  transparentBackground?: boolean;
 }
 
 /**
@@ -56,9 +73,10 @@ export const EmptyState = React.memo<EmptyStateProps>(function EmptyState({
   title,
   message,
   action,
+  transparentBackground,
 }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, transparentBackground && styles.containerTransparent]}>
       {icon && <Ionicons name={icon} size={48} color={COLORS.textMuted} />}
       {title && <Text style={styles.emptyTitle}>{title}</Text>}
       <Text style={styles.emptyMessage}>{message}</Text>
@@ -158,6 +176,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.background,
     padding: SPACING.xxxxl,
+  },
+  containerTransparent: {
+    backgroundColor: 'transparent',
   },
   loadingText: {
     ...TYPOGRAPHY.body,

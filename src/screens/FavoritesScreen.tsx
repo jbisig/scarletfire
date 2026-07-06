@@ -537,6 +537,7 @@ export function FavoritesScreen() {
             icon={null}
             title="No favorites yet"
             message={"Tap the save button on any show\nto add it to your favorites."}
+            transparentBackground
           />
         </View>
       );
@@ -627,6 +628,7 @@ export function FavoritesScreen() {
             icon={null}
             title="No favorites yet"
             message={"Tap the save button on any song to\nadd it to your favorites."}
+            transparentBackground
           />
         </View>
       );
