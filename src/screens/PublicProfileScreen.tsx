@@ -78,20 +78,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
-import showsData from '../data/shows.json';
-import { ShowsByYear } from '../types/show.types';
-
-const allShowsByYear = showsData as ShowsByYear;
-
-function getCorrectVenue(showDate: string): string | undefined {
-  const normalizedDate = showDate.substring(0, 10);
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-  if (show) return getVenueFromShow(show);
-  return undefined;
-}
+import { getCorrectVenue } from '../utils/showLookup';
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };

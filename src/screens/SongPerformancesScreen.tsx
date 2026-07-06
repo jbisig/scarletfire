@@ -20,8 +20,7 @@ import { matchTrackBySlug } from '../utils/trackMatching';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { matchesDateQuery } from '../utils/formatters';
-import showsData from '../data/shows.json';
-import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
+import { findShowByDate } from '../utils/showLookup';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
 import { ShowCard } from '../components/ShowCard';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
@@ -55,18 +54,6 @@ interface Performance {
   venue?: string;
   rating?: 1 | 2 | 3 | null;
 }
-
-const allShowsByYear = showsData as ShowsByYear;
-
-// Look up show details by performance date
-function getShowByDate(performanceDate: string) {
-  const normalizedDate = performanceDate.substring(0, 10);
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-  return yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-}
-
 
 export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
@@ -253,7 +240,7 @@ export function SongPerformancesScreen() {
   }, [songTitle, navigation, getShowDetail, loadTrack]);
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
-    const show = getShowByDate(item.date);
+    const show = findShowByDate(item.date);
     // Stable getter — doesn't change identity when some other song/show's
     // play count changes elsewhere in the app, so this callback (and the
     // ~400 ShowCard rows relying on it) doesn't churn on every play.
@@ -280,7 +267,7 @@ export function SongPerformancesScreen() {
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
       </TouchableOpacity>
     );
-  }, [handlePerformancePress, getPlayCountStable, songTitle, getShowByDate]);
+  }, [handlePerformancePress, getPlayCountStable, songTitle, findShowByDate]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>

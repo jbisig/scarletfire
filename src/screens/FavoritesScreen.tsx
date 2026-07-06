@@ -25,8 +25,8 @@ import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFil
 import { GratefulDeadShow } from '../types/show.types';
 import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
-import showsData from '../data/shows.json';
+import { formatDate } from '../utils/formatters';
+import { getCorrectVenue } from '../utils/showLookup';
 import { ShowsByYear } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -53,22 +53,6 @@ import { AddToCollectionPicker } from '../components/collections/AddToCollection
 
 // Layout constants
 const HORIZONTAL_PADDING = SPACING.xl;
-
-const allShowsByYear = showsData as ShowsByYear;
-
-// Look up correct venue by show date
-function getCorrectVenue(showDate: string): string | undefined {
-  const normalizedDate = showDate.substring(0, 10); // YYYY-MM-DD
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-
-  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-  if (show) {
-    return getVenueFromShow(show);
-  }
-  return undefined;
-}
 
 // Memoized song item component to prevent unnecessary re-renders
 interface SongItemProps {

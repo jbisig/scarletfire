@@ -43,6 +43,8 @@ import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { getShowNotes } from '../utils/showNotes';
 import { SHOW_NOTES_CITATION } from '../data/showNotes';
 import { haptics } from '../services/hapticService';
+import { getAllShowsSorted, findShowIndexByDate, resolveIdentifierFromDate } from '../utils/showLookup';
+import { getClassicTier } from '../data/classicShowsTiers';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
@@ -142,39 +144,34 @@ export function ShowDetailScreen() {
     return getShowNotes(show.date);
   }, [show?.date]);
 
-  // Find the next 3 shows after the current show's date
+  // Find the next 3 shows after the current show's date — O(log n) via the
+  // shared sorted catalog + binary search (src/utils/showLookup.ts) instead
+  // of flattening and sorting the ~2,300-show catalog on every visit.
+  //
+  // The shared catalog (built from raw shows.json) doesn't carry the
+  // classicTier enrichment that ShowsContext's `showsByYear` adds, so each
+  // result is enriched here the same way ShowsContext does — otherwise a
+  // classic show appearing in "Next Tour Stops" would silently lose its
+  // star rating (both in this list and in the preview passed to the next
+  // ShowDetailScreen via handleNextShowPress).
   const nextTourStops = useMemo(() => {
-    if (!show || !showsByYear) return [];
+    if (!show) return [];
 
-    const currentDate = show.date;
-    const allShows: GratefulDeadShow[] = [];
-
-    // Collect all shows from all years
-    Object.values(showsByYear).forEach(yearShows => {
-      allShows.push(...yearShows);
-    });
-
-    // Filter shows that are after the current date (excluding current show) and sort by date
-    const futureShows = allShows
-      .filter(s => s.date > currentDate && s.primaryIdentifier !== show.identifier)
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    // Return the first 3
-    return futureShows.slice(0, 3);
-  }, [show?.date, showsByYear]);
+    const sorted = getAllShowsSorted();
+    const startIndex = findShowIndexByDate(show.date);
+    const stops: GratefulDeadShow[] = [];
+    for (let i = startIndex; i < sorted.length && stops.length < 3; i++) {
+      const candidate = sorted[i];
+      const tier = getClassicTier(candidate.date);
+      stops.push(tier ? { ...candidate, classicTier: tier } : candidate);
+    }
+    return stops;
+  }, [show?.date]);
 
   // Resolve identifier: if it's a date (YYYY-MM-DD), look up the primaryIdentifier
   const resolveIdentifier = useCallback((id: string): string => {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(id) && showsByYear) {
-      const year = id.substring(0, 4);
-      const yearShows = showsByYear[year];
-      if (yearShows) {
-        const match = yearShows.find(s => s.date.substring(0, 10) === id);
-        if (match) return match.primaryIdentifier;
-      }
-    }
-    return id;
-  }, [showsByYear]);
+    return resolveIdentifierFromDate(id);
+  }, []);
 
   /**
    * Mark a track as "selected" — used when the user arrives on this screen via

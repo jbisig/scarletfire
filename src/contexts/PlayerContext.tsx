@@ -2,7 +2,7 @@ import React, { createContext, useReducer, useContext, useEffect, useRef, useSta
 import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
-import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
+import { Track, ShowDetail, GratefulDeadShow } from '../types/show.types';
 import { audioService, appIconUri } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { radioService } from '../services/radioService';
@@ -11,34 +11,7 @@ import { shuffleArray } from '../utils/shuffle';
 import { logger } from '../utils/logger';
 import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import { useOptionalToast } from './ToastContext';
-import showsData from '../data/shows.json';
-
-// Load shows data for finding next chronological show
-const allShowsByYear = showsData as ShowsByYear;
-
-// Pre-compute sorted show list once at module level (avoids O(n) per lookup)
-const allShowsSorted: GratefulDeadShow[] = Object.values(allShowsByYear)
-  .flat()
-  .sort((a, b) => a.date.substring(0, 10).localeCompare(b.date.substring(0, 10)));
-
-// Helper function to find the next show after a given date (binary search)
-function findNextShow(currentDate: string): GratefulDeadShow | null {
-  const target = currentDate.substring(0, 10);
-  let low = 0;
-  let high = allShowsSorted.length - 1;
-
-  while (low <= high) {
-    const mid = (low + high) >>> 1;
-    const midDate = allShowsSorted[mid].date.substring(0, 10);
-    if (midDate <= target) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return low < allShowsSorted.length ? allShowsSorted[low] : null;
-}
+import { findNextShow } from '../utils/showLookup';
 
 const initialState: PlayerState = {
   currentTrack: null,
