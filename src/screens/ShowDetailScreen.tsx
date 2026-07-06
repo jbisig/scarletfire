@@ -89,6 +89,15 @@ export function ShowDetailScreen() {
 
   const hasSelectedFromUrl = useRef(false);
 
+  // Request-generation token for loadShowDetail. Both the route-param effect
+  // and handleVersionChange call loadShowDetail, and neither cancels the
+  // other's in-flight request. Without this, a slow response for a version
+  // the user has since navigated away from can land after a newer request
+  // and overwrite its (more current) state. Every call captures the token at
+  // increment time; only the call whose token still matches the ref when its
+  // response arrives may apply setShow/setSelectedVersion/setLoading(false).
+  const loadRequestTokenRef = useRef(0);
+
   // Video background for web header
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const videoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
@@ -230,6 +239,10 @@ export function ShowDetailScreen() {
   };
 
   const loadShowDetail = async (identifier: string) => {
+    // Claim a new generation token for this call. Any earlier in-flight call
+    // whose response arrives after this point will see a mismatch below and
+    // no-op instead of clobbering state with stale data.
+    const requestToken = ++loadRequestTokenRef.current;
     setIsLoading(true);
     setError(null);
 
@@ -245,6 +258,10 @@ export function ShowDetailScreen() {
         : detailPromise.then(d => (d.date ? getShowVersions(d.date) : []));
 
       const [detail, versions] = await Promise.all([detailPromise, versionsPromise]);
+
+      // A newer loadShowDetail call started (and thus advanced the token)
+      // while this one was in flight — this response is stale, discard it.
+      if (loadRequestTokenRef.current !== requestToken) return;
 
       setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
       setSelectedVersion(identifier);
@@ -269,9 +286,10 @@ export function ShowDetailScreen() {
         },
       });
     } catch (err) {
+      if (loadRequestTokenRef.current !== requestToken) return;
       setError(err instanceof Error ? err.message : 'Failed to load show');
     } finally {
-      setIsLoading(false);
+      if (loadRequestTokenRef.current === requestToken) setIsLoading(false);
     }
   };
 

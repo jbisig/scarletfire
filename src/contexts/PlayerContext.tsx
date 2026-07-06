@@ -384,12 +384,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         state.currentShow || undefined,
         state.playlist  // Pass full playlist for gapless playback
       ).then(() => {
-        dispatch({ type: 'SET_LOADING', isLoading: false });
-
-        // Only play if we're still on the same track (prevent race condition)
+        // Only clear the spinner / play if we're still on the same track. A
+        // previous (slower) load resolving after a newer track has already
+        // started loading must not touch loading state — otherwise it
+        // clears the spinner for the newer track that is still in flight.
         if (currentLoadingTrackIdRef.current !== trackId) {
           return;
         }
+
+        dispatch({ type: 'SET_LOADING', isLoading: false });
 
         if (shouldPlay) {
           audioService.play().then(() => {
@@ -400,6 +403,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
       }).catch((error) => {
         logger.player.error('Track load failed:', error.message);
+        // Same staleness guard as the success path — a stale failure must not
+        // clear loading state for a newer, still-loading track.
+        if (currentLoadingTrackIdRef.current !== trackId) {
+          return;
+        }
         dispatch({ type: 'SET_LOADING', isLoading: false });
       });
     }
