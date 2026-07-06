@@ -84,6 +84,21 @@ describe('logger', () => {
       expect(() => logger.video.error('render failed')).not.toThrow();
     });
 
+    it('catches errors from a throwing reporter and still emits console.error', () => {
+      const throwingReporter = jest.fn(() => {
+        throw new Error('Reporter crashed');
+      });
+      setErrorReporter(throwingReporter);
+
+      // Should not throw even though the reporter does.
+      expect(() => logger.profile.error('sync failed')).not.toThrow();
+
+      // Both the reporter and console.error should have been called.
+      expect(throwingReporter).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[Profile] sync failed');
+    });
+
     it('suppresses debug, info, and warn', () => {
       logger.config.debug('debug message');
       logger.config.info('info message');

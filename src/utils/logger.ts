@@ -60,8 +60,12 @@ function createLogger(context: string): Logger {
       console.error(formatted, ...args);
 
       // TODO: wire Sentry here (needs DSN)
-      if (errorReporter) {
-        errorReporter(formatted, ...args);
+      try {
+        if (errorReporter) {
+          errorReporter(formatted, ...args);
+        }
+      } catch {
+        // Never let error reporting crash the app — logger.error runs inside catch blocks app-wide.
       }
     },
   };
