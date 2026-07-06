@@ -22045,6 +22045,26 @@ const ALL_RATED_SONG_PERFORMANCES: RatedSongPerformance[] = [
   ...COMMUNITY_RATINGS,
 ];
 
+// Lazily-built index from `${normalizedTitle}|${showDate}` to tier.
+// Built once, on first lookup, from ALL_RATED_SONG_PERFORMANCES in its
+// existing order so that duplicate keys resolve the same way the old
+// linear .find() did: first occurrence wins.
+let ratingByTitleAndDateMap: Map<string, PerformanceRatingTier> | null = null;
+
+function getRatingByTitleAndDateMap(): Map<string, PerformanceRatingTier> {
+  if (!ratingByTitleAndDateMap) {
+    const map = new Map<string, PerformanceRatingTier>();
+    for (const perf of ALL_RATED_SONG_PERFORMANCES) {
+      const key = `${normalizeSongTitleForLookup(perf.songTitle)}|${perf.showDate}`;
+      if (!map.has(key)) {
+        map.set(key, perf.tier);
+      }
+    }
+    ratingByTitleAndDateMap = map;
+  }
+  return ratingByTitleAndDateMap;
+}
+
 /**
  * Get performance rating for a song + show combination
  */
@@ -22055,13 +22075,8 @@ export function getSongPerformanceRating(
   const normalizedSongTitle = normalizeSongTitleForLookup(songTitle);
   const dateOnly = showDate.split('T')[0];
 
-  const rating = ALL_RATED_SONG_PERFORMANCES.find(
-    perf =>
-      normalizeSongTitleForLookup(perf.songTitle) === normalizedSongTitle &&
-      perf.showDate === dateOnly
-  );
-
-  return rating?.tier || null;
+  const key = `${normalizedSongTitle}|${dateOnly}`;
+  return getRatingByTitleAndDateMap().get(key) ?? null;
 }
 
 /**
