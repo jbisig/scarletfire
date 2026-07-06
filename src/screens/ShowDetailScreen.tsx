@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
-  Image,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,48 +40,10 @@ import { SHOW_NOTES_CITATION } from '../data/showNotes';
 import { haptics } from '../services/hapticService';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
+import { resolveVideoUri } from '../utils/resolveVideoUri';
+import { WebVideoBackground } from '../components/shared/WebVideoBackground';
 
 // Default profile image for logged out users (web header)
-
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
-
-// HTML5 video background for web header
-function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
-  return React.createElement('video', {
-    key: `show-header-video-${videoId}`,
-    src: uri,
-    autoPlay: true,
-    loop: true,
-    muted: true,
-    playsInline: true,
-    ref: (el: HTMLVideoElement | null) => {
-      if (!el) return;
-      el.playbackRate = 0.5;
-      if (onError) {
-        el.onerror = () => onError();
-        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
-        el.onloadeddata = () => clearTimeout(t);
-      }
-    },
-    style: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-    },
-  });
-}
 
 // Pre-compute song lookup Map for O(1) access instead of O(n) find() on each track
 const songsByTitle: Map<string, Song> = new Map(

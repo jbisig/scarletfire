@@ -12,7 +12,6 @@ import {
   AppState,
   AppStateStatus,
   Platform,
-  Image,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,17 +35,8 @@ import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlay
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { slugifyTrackTitle, type ShareItem } from '../services/shareService';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
-
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
+import { resolveVideoUri } from '../utils/resolveVideoUri';
+import { WebVideoBackground } from './shared/WebVideoBackground';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -464,22 +454,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         {Platform.OS === 'web' ? (
-          webVideoUri ? React.createElement('video', {
-            key: `fullplayer-video-${videoId}`,
-            src: webVideoUri,
-            autoPlay: true,
-            loop: true,
-            muted: true,
-            playsInline: true,
-            ref: (el: HTMLVideoElement | null) => {
-              if (!el) return;
-              el.playbackRate = 0.5;
-              el.onerror = () => resetToFallback();
-              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
-              el.onloadeddata = () => clearTimeout(t);
-            },
-            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
-          }) : null
+          webVideoUri ? (
+            <WebVideoBackground uri={webVideoUri} videoId={videoId} onError={resetToFallback} />
+          ) : null
         ) : (
           videoMounted && (() => {
             const { Video: ExpoVideo, ResizeMode: ExpoResizeMode } = require('expo-av');

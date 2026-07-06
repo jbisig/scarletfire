@@ -9,6 +9,7 @@ import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { StarRating } from './StarRating';
 import { BlurBackground } from './shared/BlurBackground';
+import { WebVideoBackground } from './shared/WebVideoBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
@@ -96,22 +97,9 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
       >
         {/* Video Background */}
         {Platform.OS === 'web' ? (
-          webVideoUri ? React.createElement('video', {
-            key: `mini-video-${videoId}`,
-            src: webVideoUri,
-            autoPlay: true,
-            loop: true,
-            muted: true,
-            playsInline: true,
-            ref: (el: HTMLVideoElement | null) => {
-              if (!el) return;
-              el.playbackRate = 0.5;
-              el.onerror = () => resetToFallback();
-              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
-              el.onloadeddata = () => clearTimeout(t);
-            },
-            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
-          }) : null
+          webVideoUri ? (
+            <WebVideoBackground uri={webVideoUri} videoId={videoId} onError={resetToFallback} />
+          ) : null
         ) : (
           videoMounted && (() => {
             const { Video, ResizeMode } = require('expo-av');

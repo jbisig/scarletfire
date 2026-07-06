@@ -8,35 +8,8 @@ import { useVideoBackground } from '../../contexts/VideoBackgroundContext';
 import { useFavorites, FavoriteSong } from '../../contexts/FavoritesContext';
 import { formatDate, formatTime, getVenueFromShow } from '../../utils/formatters';
 import { resolveVideoUri } from '../../utils/resolveVideoUri';
+import { WebVideoBackground } from '../shared/WebVideoBackground';
 import { COLORS, RADIUS, WEB_LAYOUT } from '../../constants/theme';
-
-// HTML5 video element rendered via React.createElement for React Native Web compatibility
-function VideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
-  return React.createElement('video', {
-    key: `player-bar-video-${videoId}`,
-    src: uri,
-    autoPlay: true,
-    loop: true,
-    muted: true,
-    playsInline: true,
-    ref: (el: HTMLVideoElement | null) => {
-      if (!el) return;
-      if (onError) {
-        el.onerror = () => onError();
-        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
-        el.onloadeddata = () => clearTimeout(t);
-      }
-    },
-    style: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-    },
-  });
-}
 
 /**
  * Self-contained progress row: time display + seekable progress bar.
@@ -250,7 +223,7 @@ export function PlayerBar() {
       {/* Video background */}
       {videoUri ? (
         <View style={styles.videoContainer}>
-          <VideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
+          <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
         </View>
       ) : null}
 

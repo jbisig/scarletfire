@@ -10,10 +10,10 @@ import {
   AppState,
   AppStateStatus,
   Platform,
-  Image,
 } from 'react-native';
 import { logger } from '../utils/logger';
 import { BlurBackground } from '../components/shared/BlurBackground';
+import { WebVideoBackground } from '../components/shared/WebVideoBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -37,49 +37,10 @@ import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
+import { resolveVideoUri } from '../utils/resolveVideoUri';
 
 // Default screen width — components should use useWindowDimensions for responsive sizing
 const SOTD_CARD_PADDING = SPACING.xl * 2;
-
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
-
-// HTML5 video background for web SOTD card
-function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
-  return React.createElement('video', {
-    key: `sotd-video-${videoId}`,
-    src: uri,
-    autoPlay: true,
-    loop: true,
-    muted: true,
-    playsInline: true,
-    ref: (el: HTMLVideoElement | null) => {
-      if (!el) return;
-      el.playbackRate = 0.5;
-      if (onError) {
-        el.onerror = () => onError();
-        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
-        el.onloadeddata = () => clearTimeout(t);
-      }
-    },
-    style: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-    },
-  });
-}
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
