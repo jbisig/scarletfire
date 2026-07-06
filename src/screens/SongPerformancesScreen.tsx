@@ -280,7 +280,7 @@ export function SongPerformancesScreen() {
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
       </TouchableOpacity>
     );
-  }, [handlePerformancePress, getPlayCountStable, songTitle]);
+  }, [handlePerformancePress, getPlayCountStable, songTitle, getShowByDate]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>

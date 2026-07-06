@@ -166,7 +166,7 @@ export function FavoritesScreen() {
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
   const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
-  const { getPlayCount } = usePlayCounts();
+  const { getPlayCountStable } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
@@ -555,11 +555,14 @@ export function FavoritesScreen() {
     <SongItem
       song={item}
       isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
-      playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
+      // Stable getter — doesn't change identity when some other song/show's
+      // play count changes elsewhere in the app, so this callback (and the
+      // memoized song rows relying on it) doesn't churn on every play.
+      playCount={getPlayCountStable(item.trackTitle, item.showIdentifier)}
       onPress={handleSongPress}
       onLongPress={handleSongLongPress}
     />
-  ), [loadingSongId, getPlayCount, handleSongPress, handleSongLongPress]);
+  ), [loadingSongId, getPlayCountStable, handleSongPress, handleSongLongPress]);
 
   // Shuffle handlers
   const handleShuffleShows = useCallback(() => {
