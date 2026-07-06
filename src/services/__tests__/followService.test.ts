@@ -215,4 +215,86 @@ describe('followService lists', () => {
       { id: 'c', username: null, display_name: null, avatarUrl: null, isPrivate: true },
     ]);
   });
+
+  it('uses profiles.avatar_url directly and skips the Storage call when present', async () => {
+    const followRows = [{ follower_id: 'a', created_at: '2026-01-02' }];
+    const publicProfiles = [
+      { id: 'a', username: 'alice', display_name: 'Alice', avatar_url: 'https://cdn.example/a.png' },
+    ];
+
+    const followChain: any = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: followRows, error: null }),
+    };
+    const profilesChain: any = {
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({ data: publicProfiles, error: null }),
+    };
+
+    const storageList = jest.fn().mockResolvedValue({ data: [], error: null });
+    const getPublicUrl = jest.fn().mockReturnValue({ data: { publicUrl: '' } });
+
+    (authService.getClient as jest.Mock).mockReturnValue({
+      from: jest.fn((table: string) =>
+        table === 'user_follows' ? followChain : profilesChain,
+      ),
+      storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
+      auth: { getUser: jest.fn() },
+    });
+
+    const result = await followService.getFollowers('target-1');
+
+    expect(result).toEqual([
+      { id: 'a', username: 'alice', display_name: 'Alice', avatarUrl: 'https://cdn.example/a.png', isPrivate: false },
+    ]);
+    // avatar_url came back on the batch SELECT, so no per-user Storage round-trip.
+    expect(storageList).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a Storage list() lookup only for rows missing avatar_url', async () => {
+    const followRows = [
+      { follower_id: 'a', created_at: '2026-01-02' },
+      { follower_id: 'b', created_at: '2026-01-01' },
+    ];
+    // 'a' has avatar_url on the row; 'b' doesn't and needs the Storage fallback.
+    const publicProfiles = [
+      { id: 'a', username: 'alice', display_name: 'Alice', avatar_url: 'https://cdn.example/a.png' },
+      { id: 'b', username: 'bob', display_name: null, avatar_url: null },
+    ];
+
+    const followChain: any = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: followRows, error: null }),
+    };
+    const profilesChain: any = {
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({ data: publicProfiles, error: null }),
+    };
+
+    const storageList = jest.fn().mockResolvedValue({
+      data: [{ name: 'avatar-123.jpg' }],
+      error: null,
+    });
+    const getPublicUrl = jest.fn().mockReturnValue({ data: { publicUrl: 'https://cdn.example/b-fallback.jpg' } });
+
+    (authService.getClient as jest.Mock).mockReturnValue({
+      from: jest.fn((table: string) =>
+        table === 'user_follows' ? followChain : profilesChain,
+      ),
+      storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
+      auth: { getUser: jest.fn() },
+    });
+
+    const result = await followService.getFollowers('target-1');
+
+    expect(result).toEqual([
+      { id: 'a', username: 'alice', display_name: 'Alice', avatarUrl: 'https://cdn.example/a.png', isPrivate: false },
+      { id: 'b', username: 'bob', display_name: null, avatarUrl: 'https://cdn.example/b-fallback.jpg', isPrivate: false },
+    ]);
+    // Only the row missing avatar_url triggers the per-row Storage fallback.
+    expect(storageList).toHaveBeenCalledTimes(1);
+    expect(storageList).toHaveBeenCalledWith('b', { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
+  });
 });

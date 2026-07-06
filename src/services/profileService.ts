@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { User } from '@supabase/supabase-js';
 import { authService } from './authService';
 import { followService } from './followService';
+import { resolveAvatarUrl } from './avatarResolver';
 import { Alert } from 'react-native';
 import { logger } from '../utils/logger';
 import { GratefulDeadShow } from '../types/show.types';
@@ -439,18 +440,7 @@ class ProfileService {
 
     // Prefer profiles.avatar_url (covers OAuth + uploaded); fall back to
     // Storage bucket lookup for pre-migration uploaders who haven't re-uploaded.
-    let avatarUrl: string | null = profile.avatar_url ?? null;
-    if (!avatarUrl) {
-      const { data: avatarFiles } = await supabase.storage
-        .from('avatars')
-        .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-      if (avatarFiles && avatarFiles.length > 0) {
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
-        avatarUrl = urlData.publicUrl;
-      }
-    }
+    const avatarUrl = await resolveAvatarUrl(profile);
 
     const favorites = {
       shows: favResult.data?.shows || [],
@@ -487,16 +477,7 @@ class ProfileService {
 
     // Prefer profiles.avatar_url; fall back to Storage bucket lookup for
     // pre-migration uploaders who haven't re-uploaded yet.
-    let avatarUrl: string | null = profile.avatar_url ?? null;
-    if (!avatarUrl) {
-      const { data: files } = await supabase.storage
-        .from('avatars')
-        .list(id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-      if (files && files.length > 0) {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(`${id}/${files[0].name}`);
-        avatarUrl = data.publicUrl;
-      }
-    }
+    const avatarUrl = await resolveAvatarUrl(profile);
 
     return { username: profile.username, display_name: profile.display_name, avatarUrl };
   }
