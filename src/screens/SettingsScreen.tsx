@@ -43,13 +43,11 @@ export function SettingsScreen() {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [ownFollowerCount, setOwnFollowerCount] = useState(0);
   const [ownFollowingCount, setOwnFollowingCount] = useState(0);
-  // Bumped whenever we need to force the (controlled) public-profile Switch to
-  // remount and resync to its `value` prop. Needed for the "no profile yet"
-  // toggle-on failure path below, where `profile` stays null before and after
-  // the attempt — since the JS-side value never actually changes, the native
-  // Switch widget can be left showing "on" from the user's gesture even though
-  // the controlled value is false.
-  const [publicSwitchResetKey, setPublicSwitchResetKey] = useState(0);
+  // Optimistic state for the public-profile Switch while `profile` is still
+  // null (i.e. before a profile row exists). The Switch's `value` falls back
+  // to this so the toggle can move and revert purely through state, without
+  // remounting the (controlled) native widget.
+  const [pendingPublic, setPendingPublic] = useState<boolean | null>(null);
 
   useFocusEffect(useCallback(() => {
     const userId = authState.user?.id;
@@ -186,20 +184,35 @@ export function SettingsScreen() {
         showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     } else if (value) {
-      // Create a new profile when toggling on for the first time
+      // Create a new profile when toggling on for the first time. `profile`
+      // is null here, so drive the Switch optimistically via `pendingPublic`
+      // until the profile itself lands in state (or the attempt fails).
+      setPendingPublic(true);
+      let created: UserProfile;
       try {
         const defaultUsername = (authState.user.email?.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20);
-        const created = await profileService.createProfile(authState.user.id, defaultUsername || 'user');
-        await profileService.setProfilePublic(authState.user.id, true);
-        setProfile({ ...created, is_public: true });
-        setUsername(created.username);
-        setDisplayName(created.display_name || '');
+        created = await profileService.createProfile(authState.user.id, defaultUsername || 'user');
       } catch (error) {
         logger.profile.error('Failed to create profile', error);
-        // `profile` stays null here, so force the Switch to remount and
-        // resync to its (unchanged) false value rather than leaving it
-        // visually stuck "on" from the gesture.
-        setPublicSwitchResetKey(k => k + 1);
+        setPendingPublic(false);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
+        return;
+      }
+
+      // The profile row now exists server-side — land it in state right
+      // away so a retry after a visibility-update failure below takes the
+      // "existing profile" branch above instead of calling createProfile
+      // again (which would conflict with the row we just created).
+      setProfile(created);
+      setUsername(created.username);
+      setDisplayName(created.display_name || '');
+      setPendingPublic(null);
+
+      try {
+        await profileService.setProfilePublic(authState.user.id, true);
+        setProfile(prev => prev ? { ...prev, is_public: true } : prev);
+      } catch (error) {
+        logger.profile.error('Failed to update profile visibility', error);
         showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     }
@@ -499,8 +512,7 @@ export function SettingsScreen() {
                 </Text>
               </View>
               <Switch
-                key={`public-switch-${publicSwitchResetKey}`}
-                value={profile?.is_public ?? false}
+                value={profile?.is_public ?? pendingPublic ?? false}
                 onValueChange={handlePublicToggle}
                 trackColor={{ false: COLORS.border, true: COLORS.accent }}
                 thumbColor="#FFFFFF"
