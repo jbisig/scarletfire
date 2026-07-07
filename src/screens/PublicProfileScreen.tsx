@@ -1,47 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-
-// Grow a rendered-count from `initial` up to `total` in `chunk`-size steps,
-// pacing with setTimeout so skeleton rows are visible while the list fills.
-// Pass a `resetKey` (e.g. the active tab) to restart the progression when
-// the consumer switches contexts.
-function useProgressiveCount(
-  total: number,
-  resetKey: unknown,
-  initial: number = 0,
-  chunk: number = 8,
-  intervalMs: number = 120,
-): number {
-  const [state, setState] = useState<{ key: unknown; count: number }>(() => ({
-    key: resetKey,
-    count: Math.min(total, initial),
-  }));
-
-  // Render-phase reset so the new tab paints skeletons on the first frame
-  // instead of waiting for the post-render effect to clear the stale count.
-  if (state.key !== resetKey) {
-    setState({ key: resetKey, count: Math.min(total, initial) });
-  }
-
-  const effectiveCount = state.key === resetKey ? state.count : Math.min(total, initial);
-
-  useEffect(() => {
-    if (total <= initial) return;
-    let current = initial;
-    let cancelled = false;
-    const id = setInterval(() => {
-      if (cancelled) return;
-      current = Math.min(current + chunk, total);
-      setState((prev) => (prev.key === resetKey ? { key: resetKey, count: current } : prev));
-      if (current >= total) clearInterval(id);
-    }, intervalMs);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [total, resetKey, initial, chunk, intervalMs]);
-
-  return effectiveCount;
-}
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -70,7 +27,6 @@ import { GratefulDeadShow } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown } from '../components/SortDropdown';
 import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { ErrorState } from '../components/StateViews';
 import { followService } from '../services/followService';
@@ -93,6 +49,14 @@ type ProfileRouteParams = {
 type TabType = 'shows' | 'songs' | 'collections';
 type ShowSortType = SavedItemSortType;
 type SongSortType = SavedItemSortType;
+type ProfileFavoriteSong = PublicProfileData['favorites']['songs'][number];
+
+// Discriminated union so the single FlatList backing the shows/songs tabs can
+// hold either row type. keyExtractor below is type-prefixed so a show's
+// primaryIdentifier can never collide with a song's trackId/showIdentifier.
+type ProfileListRow =
+  | { kind: 'show'; show: GratefulDeadShow }
+  | { kind: 'song'; song: ProfileFavoriteSong };
 
 const PUBLIC_PROFILE_TABS: SegmentedTabItem<TabType>[] = [
   { key: 'shows', label: 'Shows' },
@@ -333,8 +297,62 @@ export function PublicProfileScreen() {
     }
   }, [data, songSortType]);
 
-  const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length, activeTab === 'shows');
-  const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length, activeTab === 'songs');
+  // Takes the full show (not just identifier/venue/date) so ShowDetail gets
+  // the full nav-param bundle — including location and classicTier — for
+  // its first paint, instead of waiting on a refetch.
+  const handleShowPress = useCallback((show: GratefulDeadShow) => {
+    navigation.navigate('ShowDetail', showDetailParams(show));
+  }, [navigation]);
+
+  const renderSongRow = useCallback((song: ProfileFavoriteSong) => (
+    <SongCard
+      song={song}
+      isLoading={loadingSongId === `${song.trackId}-${song.showIdentifier}`}
+      onPress={handleSongPress}
+      correctVenue
+    />
+  ), [loadingSongId, handleSongPress]);
+
+  // Single FlatList backs both the shows and songs tabs (collections has its
+  // own ScrollView inside CollectionsTab — see the header below). Switching
+  // `data`/`renderItem` on the same FlatList instance — rather than swapping
+  // in a differently-keyed FlatList per tab — keeps one mounted list so tab
+  // switches don't remount/re-measure it.
+  const listData = useMemo<ProfileListRow[]>(() => {
+    if (activeTab === 'shows') {
+      return sortedFavoriteShows.map((show) => ({ kind: 'show' as const, show }));
+    }
+    if (activeTab === 'songs') {
+      return sortedFavoriteSongs.map((song) => ({ kind: 'song' as const, song }));
+    }
+    return [];
+  }, [activeTab, sortedFavoriteShows, sortedFavoriteSongs]);
+
+  const keyExtractor = useCallback((row: ProfileListRow) => (
+    row.kind === 'show'
+      ? `show-${row.show.primaryIdentifier}`
+      : `song-${row.song.trackId}-${row.song.showIdentifier}`
+  ), []);
+
+  const renderItem = useCallback(({ item }: { item: ProfileListRow }) => (
+    item.kind === 'show'
+      ? <ShowCard show={item.show} onPress={handleShowPress} hideSaveBadge />
+      : renderSongRow(item.song)
+  ), [handleShowPress, renderSongRow]);
+
+  const listRef = useRef<FlatList<ProfileListRow>>(null);
+
+  // Tab switches change which array backs the same FlatList instance, so the
+  // prior scroll offset doesn't correspond to anything meaningful in the new
+  // tab's content. Old behavior (everything in ListHeaderComponent) kept a
+  // single scroll container, so switching tabs preserved whatever offset the
+  // user was at — but the content below the header changed instantly. With
+  // real virtualization that's no longer sound (row heights/positions differ
+  // per tab), so we adopt FavoritesScreen's convention: reset to top on tab
+  // change instead of trying to preserve a now-meaningless offset.
+  useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [activeTab]);
 
   if (isLoading) {
     return (
@@ -363,13 +381,6 @@ export function PublicProfileScreen() {
     );
   }
 
-  // Takes the full show (not just identifier/venue/date) so ShowDetail gets
-  // the full nav-param bundle — including location and classicTier — for
-  // its first paint, instead of waiting on a refetch.
-  const handleShowPress = (show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', showDetailParams(show));
-  };
-
   const formatRecentDate = (timestamp: number): string => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -383,7 +394,11 @@ export function PublicProfileScreen() {
     return `${Math.floor(diffDays / 30)}mo ago`;
   };
 
-  const renderShowsTab = () => (
+  // Header content for the shows tab: the bounded (max-10) two-column
+  // "Recently Played"/"Top 10" rundown, plus the "Favorites (N)" section
+  // title and sort control. The actual favorite show rows are the FlatList's
+  // real `data` (rendered below this header) so they virtualize.
+  const renderShowsTabHeader = () => (
     <>
       {/* Two-column: Recently Played + Most Listened */}
       {(recentShows.length > 0 || topShows.length > 0) && (
@@ -395,7 +410,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={`recent-${item.show.primaryIdentifier}`}
                 show={item.show}
-                onPress={() => handleShowPress(item.show)}
+                onPress={handleShowPress}
                 hideSaveBadge
               />
             )) : (
@@ -410,7 +425,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={item.show.primaryIdentifier}
                 show={item.show}
-                onPress={() => handleShowPress(item.show)}
+                onPress={handleShowPress}
                 hideSaveBadge
               />
             )) : (
@@ -420,38 +435,22 @@ export function PublicProfileScreen() {
         </View>
       )}
 
-      {/* Favorite Shows */}
+      {/* Favorite Shows section title (rows render as FlatList data) */}
       {data.favorites.shows.length > 0 && (
-        <View style={styles.listSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Favorites ({data.favorites.shows.length})
-            </Text>
-            <View ref={showSortDropdown.buttonRef} collapsable={false}>
-              <TouchableOpacity
-                style={styles.sortButton}
-                onPress={showSortDropdown.open}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={getSavedItemSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.shows.length})
+          </Text>
+          <View ref={showSortDropdown.buttonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={showSortDropdown.open}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={getSavedItemSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
+              <Text style={styles.sortButtonText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
+            </TouchableOpacity>
           </View>
-          {sortedFavoriteShows.slice(0, visibleShowCount).map(show => (
-            <ShowCard
-              key={show.primaryIdentifier}
-              show={show}
-              onPress={() => handleShowPress(show)}
-              hideSaveBadge
-            />
-          ))}
-          {visibleShowCount < sortedFavoriteShows.length && (
-            <SkeletonLoader
-              variant="showCard"
-              count={Math.min(sortedFavoriteShows.length - visibleShowCount, 6)}
-            />
-          )}
         </View>
       )}
 
@@ -466,18 +465,9 @@ export function PublicProfileScreen() {
     </>
   );
 
-  const renderSongRow = (song: typeof data.favorites.songs[0]) => {
-    return (
-      <SongCard
-        song={song}
-        isLoading={loadingSongId === `${song.trackId}-${song.showIdentifier}`}
-        onPress={handleSongPress}
-        correctVenue
-      />
-    );
-  };
-
-  const renderSongsTab = () => (
+  // Same idea for the songs tab — bounded two-column rundown + section title
+  // here; the favorite song rows are the FlatList's real `data`.
+  const renderSongsTabHeader = () => (
     <>
       {/* Two-column: Recently Played + Top 10 */}
       {(recentSongs.length > 0 || topSongs.length > 0) && (
@@ -508,35 +498,22 @@ export function PublicProfileScreen() {
         </View>
       )}
 
-      {/* Favorite Songs */}
+      {/* Favorite Songs section title (rows render as FlatList data) */}
       {data.favorites.songs.length > 0 && (
-        <View style={styles.listSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Favorites ({data.favorites.songs.length})
-            </Text>
-            <View ref={songSortDropdown.buttonRef} collapsable={false}>
-              <TouchableOpacity
-                style={styles.sortButton}
-                onPress={songSortDropdown.open}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={getSavedItemSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.songs.length})
+          </Text>
+          <View ref={songSortDropdown.buttonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={songSortDropdown.open}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={getSavedItemSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
+              <Text style={styles.sortButtonText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
+            </TouchableOpacity>
           </View>
-          {sortedFavoriteSongs.slice(0, visibleSongCount).map(song => (
-            <React.Fragment key={`fav-${song.trackId}-${song.showIdentifier}`}>
-              {renderSongRow(song)}
-            </React.Fragment>
-          ))}
-          {visibleSongCount < sortedFavoriteSongs.length && (
-            <SkeletonLoader
-              variant="songItem"
-              count={Math.min(sortedFavoriteSongs.length - visibleSongCount, 6)}
-            />
-          )}
         </View>
       )}
 
@@ -590,10 +567,19 @@ export function PublicProfileScreen() {
         </View>
       )}
       <FlatList
-        data={[]}
-        renderItem={null}
+        ref={listRef}
+        data={listData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        // Performance tuning consistent with FavoritesScreen's per-tab lists.
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={activeTab === 'songs' ? 15 : 10}
+        updateCellsBatchingPeriod={50}
+        windowSize={11}
+        initialNumToRender={activeTab === 'songs' ? 15 : 10}
+        contentContainerStyle={[styles.listContentContainer, isDesktop && styles.listContentContainerDesktop]}
         ListHeaderComponent={
-          <View style={[styles.contentContainer, !isDesktop && styles.contentContainerMobile]}>
+          <View style={styles.contentContainer}>
             {/* Profile Header */}
             <View style={[styles.profileHeader, !isDesktop && styles.mobileHorizontalPad]}>
               <ProfileImage
@@ -692,11 +678,13 @@ export function PublicProfileScreen() {
               containerStyle={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]}
             />
 
-            {/* Tab Content */}
+            {/* Tab Content (header portion — bounded top-10/recent-10 rundown
+                and the section title; the actual favorite rows are the
+                FlatList's real `data`, rendered below this header) */}
             {activeTab === 'shows' ? (
-              renderShowsTab()
+              renderShowsTabHeader()
             ) : activeTab === 'songs' ? (
-              renderSongsTab()
+              renderSongsTabHeader()
             ) : (
               <CollectionsTab
                 entries={(isOwnProfile ? ownedCollections : publicCollections).map((c) => ({
@@ -717,7 +705,6 @@ export function PublicProfileScreen() {
             )}
           </View>
         }
-        keyExtractor={() => 'profile'}
       />
     </View>
   );
@@ -769,13 +756,18 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: '600',
   },
+  // Header-only wrapper (profile info/stats/tabs). Horizontal padding now
+  // lives on the FlatList's contentContainerStyle (listContentContainer*)
+  // so it applies uniformly to the header AND the virtualized rows below it
+  // — previously everything (including rows) was inside this View.
   contentContainer: {
-    paddingHorizontal: SPACING.xl,
     paddingTop: Platform.OS === 'web' ? SPACING.lg : 0,
+  },
+  listContentContainer: {
     paddingBottom: SPACING.xl,
   },
-  contentContainerMobile: {
-    paddingHorizontal: 0,
+  listContentContainerDesktop: {
+    paddingHorizontal: SPACING.xl,
   },
   mobileHorizontalPad: {
     paddingHorizontal: SPACING.lg,
@@ -875,9 +867,6 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-  },
-  listSection: {
-    marginBottom: SPACING.xxl,
   },
   sectionHeader: {
     flexDirection: 'row',
