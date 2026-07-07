@@ -82,3 +82,37 @@ as $$
 $$;
 
 grant execute on function public.get_activity_feed(timestamptz, int) to authenticated;
+
+-- TRANSITION SHIM: already-shipped native binaries call the old 3-arg
+--   signature `get_activity_feed(viewer_id uuid, cursor_time timestamptz,
+--   page_size int)`. That signature was just dropped above, so old clients
+--   would start getting "function does not exist" errors the moment this
+--   migration lands, well before every install has updated. Recreate the old
+--   signature as a thin SECURITY INVOKER wrapper that ignores the caller-
+--   supplied viewer_id (auth.uid() is authoritative, per the WHY note above)
+--   and delegates to the new 2-arg function. Drop this shim in a future
+--   migration once old binaries have aged out of the install base.
+create or replace function public.get_activity_feed(
+  viewer_id uuid,
+  cursor_time timestamptz default now(),
+  page_size int default 30
+)
+returns table (
+  id          uuid,
+  actor_id    uuid,
+  event_type  text,
+  target_type text,
+  target_id   text,
+  metadata    jsonb,
+  created_at  timestamptz,
+  source      text
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select * from public.get_activity_feed(cursor_time, page_size);
+$$;
+
+grant execute on function public.get_activity_feed(uuid, timestamptz, int) to authenticated;

@@ -2,11 +2,14 @@
 --
 -- WHAT: CREATE OR REPLACE public.get_popular_collections(text, int) with an
 --   added `and c.is_shared = true` gate on the collections/profiles join.
---   `CREATE OR REPLACE FUNCTION` preserves the function's existing
---   ownership, SECURITY DEFINER setting, `set search_path = public` pin, and
---   the `grant execute ... to anon, authenticated` from
---   supabase/create_popular_collections_function.sql — none of that is
---   restated or changed here, only the query body.
+--   `CREATE OR REPLACE FUNCTION` requires the full function definition to be
+--   restated, so the SECURITY DEFINER setting and `set search_path = public`
+--   pin below are deliberately restated exactly as they appear in
+--   supabase/create_popular_collections_function.sql — unchanged, just
+--   carried forward. The existing `grant execute ... to anon, authenticated`
+--   from that file is untouched by this migration (CREATE OR REPLACE
+--   preserves existing grants without needing to restate them). Only the
+--   query body (the added is_shared gate) is new.
 --
 -- WHY: supabase/create_popular_collections_function.sql is SECURITY DEFINER
 --   and granted to anon + authenticated, and its WHERE/JOIN gate only checks

@@ -96,3 +96,38 @@ as $$
 $$;
 
 grant execute on function public.search_profiles(text, int, int) to authenticated;
+
+-- TRANSITION SHIM: already-shipped native binaries call the old 4-arg
+--   signature `search_profiles(query_text text, viewer_id uuid,
+--   cursor_offset int, page_size int)`. That signature was just dropped
+--   above, so old clients would start getting "function does not exist"
+--   errors the moment this migration lands, well before every install has
+--   updated. Recreate the old signature as a thin SECURITY INVOKER wrapper
+--   that ignores the caller-supplied viewer_id (auth.uid() is authoritative,
+--   per the WHY note above) and delegates to the new 3-arg function. Drop
+--   this shim in a future migration once old binaries have aged out of the
+--   install base.
+create or replace function public.search_profiles(
+  query_text text,
+  viewer_id uuid,
+  cursor_offset int default 0,
+  page_size int default 20
+)
+returns table (
+  id                  uuid,
+  username            text,
+  display_name        text,
+  followers_count     int,
+  following_count     int,
+  viewer_is_following boolean,
+  section             text
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select * from public.search_profiles(query_text, cursor_offset, page_size);
+$$;
+
+grant execute on function public.search_profiles(text, uuid, int, int) to authenticated;
