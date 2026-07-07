@@ -52,6 +52,7 @@ import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
 import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { GlassHeader } from '../components/web/GlassHeader';
 import { ErrorState } from '../components/StateViews';
 import { webStyle } from '../utils/webStyle';
 
@@ -452,29 +453,13 @@ export function ShowDetailScreen() {
     >
       {/* Web: Header with video background + blur */}
       {Platform.OS === 'web' ? (
-        <View style={styles.webHeaderWrapper}>
-          {/* Video background */}
-          {videoUri ? (
-            <View style={styles.webHeaderVideo}>
-              <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
-            </View>
-          ) : null}
-          {/* Blur overlay */}
-          <View style={styles.webHeaderBlur} />
-
-          {/* Header content */}
-          <View style={[styles.webHeaderContent, isDesktop && styles.webHeaderContentDesktop]}>
-            {/* Back button + Avatar row */}
-            <View style={styles.webNavRow}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                activeOpacity={0.7}
-                style={styles.webBackButton}
-              >
-                <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-              </TouchableOpacity>
-            </View>
-
+        <GlassHeader
+          background={videoUri ? (
+            <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
+          ) : undefined}
+          onBackPress={() => navigation.goBack()}
+          isDesktop={isDesktop}
+        >
             {/* Show info section */}
             <View style={styles.webInfoSection}>
               {/* Venue + Details */}
@@ -608,8 +593,7 @@ export function ShowDetailScreen() {
               )}
             </View>
             </View>
-          </View>
-        </View>
+        </GlassHeader>
       ) : (
         /* Native: Original header */
         <View style={styles.headerContainer}>
@@ -962,51 +946,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textSecondary,
   },
-  // Web header styles
-  webHeaderWrapper: {
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  webHeaderVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.68,
-  },
-  webHeaderBlur: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    // @ts-ignore - web only
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
-    zIndex: 1,
-  },
-  webHeaderContent: {
-    position: 'relative',
-    zIndex: 2,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 24,
-  },
-  webHeaderContentDesktop: {
-    paddingHorizontal: 40,
-  },
-  webNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  webBackButton: {
-    // @ts-ignore
-    cursor: 'pointer',
-  },
+  // Web header shell (wrapper/background/blur/nav row) now lives in <GlassHeader>.
   webInfoSection: {
     gap: 16,
   },

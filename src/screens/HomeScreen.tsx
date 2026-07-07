@@ -18,6 +18,7 @@ import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -309,28 +310,18 @@ export function HomeScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
-          {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
-            {!isDesktop && (
-              <TouchableOpacity
-                ref={profileButtonRef}
-                onPress={handleProfilePress}
-                activeOpacity={0.8}
-              >
-                <ProfileImage
-                  uri={isAuthenticated ? avatarUrl : null}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.headerTitle}>Shows</Text>
-          </View>
-
-          {/* Right side: Search and Filter buttons */}
-          <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+      <ScreenHeader
+        title="Shows"
+        isDesktop={isDesktop}
+        topPadding={insets.top + 8}
+        onHeaderLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
+        isSearchExpanded={isSearchExpanded}
+        profileButtonRef={profileButtonRef}
+        avatarUrl={avatarUrl}
+        isAuthenticated={isAuthenticated}
+        onProfilePress={handleProfilePress}
+        rightContent={
+          <>
             {/* Animated Search Bar */}
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
@@ -360,17 +351,9 @@ export function HomeScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Gradient fade overlay */}
-        <LinearGradient
-          colors={[COLORS.background, COLORS.background + '00']}
-          locations={[0, 1]}
-          style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
-          pointerEvents="none"
-        />
-      </View>
+          </>
+        }
+      />
 
       {/* Filter Tray Modal */}
       <ShowsFilterTray
@@ -485,13 +468,9 @@ const styles = StyleSheet.create({
   containerDesktop: {
     backgroundColor: COLORS.backgroundSecondary,
   },
-  headerSection: {
-    zIndex: 10,
-    backgroundColor: COLORS.background,
-  },
-  headerSectionDesktop: {
-    backgroundColor: COLORS.backgroundSecondary,
-  },
+  // Kept for the isLoading skeleton header below (a simpler, non-absolute layout
+  // that doesn't go through <ScreenHeader>). ScreenHeader owns its own copies
+  // of these for the real header.
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -502,19 +481,6 @@ const styles = StyleSheet.create({
   headerDesktop: {
     paddingHorizontal: 32,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    position: 'absolute',
-    left: LAYOUT.HORIZONTAL_PADDING,
-    top: 0,
-    bottom: SPACING.lg,
-    zIndex: 20,
-  },
-  headerLeftDesktop: {
-    left: 32,
-  },
   avatar: {
     width: 39,
     height: 39,
@@ -523,24 +489,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.heading2,
-  },
-  headerRight: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: LAYOUT.headerButtonGap,
-    zIndex: 10,
-  },
-  headerGradient: {
-    position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 30,
-  },
-  headerGradientDesktop: {
-    display: 'none',
   },
   actionBarSection: {
     backgroundColor: COLORS.background,

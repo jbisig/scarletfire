@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown } from '../components/SortDropdown';
 import { ShowCard } from '../components/ShowCard';
@@ -62,6 +64,12 @@ type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Fa
 type TabType = 'shows' | 'songs' | 'collections';
 type SongSortType = SavedItemSortType;
 type ShowSortType = SavedItemSortType;
+
+const FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
+  { key: 'collections', label: 'Collections' },
+];
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -587,29 +595,19 @@ export function FavoritesScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-        {/* Custom Header: Avatar + Title + Search + Filter */}
-        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
-          {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
-            {!isDesktop && (
-              <TouchableOpacity
-                ref={profileButtonRef}
-                onPress={handleProfilePress}
-                activeOpacity={0.8}
-              >
-                <ProfileImage
-                  uri={isAuthenticated ? avatarUrl : null}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.headerTitle}>Favorites</Text>
-          </View>
-
-          {/* Right side: Search and Filter buttons */}
-          <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+      <ScreenHeader
+        title="Favorites"
+        isDesktop={isDesktop}
+        topPadding={insets.top + 8}
+        onHeaderLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
+        isSearchExpanded={isSearchExpanded}
+        profileButtonRef={profileButtonRef}
+        avatarUrl={avatarUrl}
+        isAuthenticated={isAuthenticated}
+        onProfilePress={handleProfilePress}
+        showGradient={false}
+        rightContent={
+          <>
             {/* Share Profile Button */}
             {isAuthenticated && !isSearchExpanded && (
               <TouchableOpacity
@@ -656,29 +654,18 @@ export function FavoritesScreen() {
               placeholder="Search favorites"
               expandedWidth={searchBarFullWidth}
             />
-          </View>
-        </View>
-
+          </>
+        }
+      >
         {/* Tab Navigation */}
-        <View style={styles.tabContainer} accessibilityRole="tablist">
-          {(['shows', 'songs', 'collections'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
-              accessibilityState={{ selected: activeTab === tab }}
-              accessibilityHint={`Double tap to view ${tab}`}
-            >
-              <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+        <SegmentedTabs
+          tabs={FAVORITES_TABS}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          containerStyle={styles.tabContainer}
+          getAccessibilityHint={(tab) => `Double tap to view ${tab}`}
+        />
+      </ScreenHeader>
 
       {/* Filter Tray Modal */}
       <ShowsFilterTray
@@ -874,14 +861,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...TYPOGRAPHY.heading2,
   },
-  headerRight: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: LAYOUT.headerButtonGap,
-    zIndex: 10,
-  },
   filterButton: {
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
@@ -937,43 +916,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
+  // Margins only — the shared row/gap/tab/active/inactive styling lives in <SegmentedTabs>.
   tabContainer: {
-    flexDirection: 'row',
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.sm,
-    gap: SPACING.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.xl,
-  },
-  activeTab: {
-    backgroundColor: COLORS.accent,
-  },
-  inactiveTab: {
-    backgroundColor: COLORS.cardBackground,
-  },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
-  },
-  inactiveTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
   },
   centerContainer: {
     flex: 1,

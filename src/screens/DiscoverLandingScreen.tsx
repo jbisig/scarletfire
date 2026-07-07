@@ -12,6 +12,7 @@ import {
 import { logger } from '../utils/logger';
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { GlassBlurOverlay } from '../components/web/GlassHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -267,7 +268,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                 );
               })()}
               {/* Overlay */}
-              {Platform.OS === 'web' && <View style={styles.sotdWebBlur} />}
+              {Platform.OS === 'web' && <GlassBlurOverlay />}
               <View style={styles.sotdBlurOverlay}>
                 {Platform.OS !== 'web' && <BlurBackground intensity={30} tint="dark" />}
                 {isLoading ? (
@@ -421,18 +422,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.68,
-  },
-  sotdWebBlur: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    // @ts-ignore - web only
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
-    zIndex: 1,
   },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,

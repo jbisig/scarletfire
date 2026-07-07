@@ -42,6 +42,7 @@ import { SortDropdown } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { BlurBackground } from '../components/shared/BlurBackground';
+import { GlassHeader } from '../components/web/GlassHeader';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -582,26 +583,13 @@ export function CollectionDetailScreen() {
   const bgSource = getShareBackground(bgIndexFromId(collection.id));
 
   const header = (
-    <View style={styles.webHeaderWrapper}>
-      <ImageBackground source={bgSource} style={styles.webHeaderBg} imageStyle={styles.webHeaderBgImage} />
-      <View style={styles.webHeaderBlur} />
-      <View
-        style={[
-          styles.webHeaderContent,
-          isDesktop && styles.webHeaderContentDesktop,
-          Platform.OS !== 'web' && { paddingTop: insets.top + 8 },
-        ]}
-      >
-        <View style={styles.webNavRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            style={styles.webBackButton}
-          >
-            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
+    <GlassHeader
+      background={<ImageBackground source={bgSource} style={styles.webHeaderBg} />}
+      onBackPress={() => navigation.goBack()}
+      isDesktop={isDesktop}
+      contentGap={20}
+      contentStyle={Platform.OS !== 'web' && { paddingTop: insets.top + 8 }}
+    >
         <View style={styles.webInfoSection}>
           <View style={styles.webTitleBlock}>
             <Text style={styles.webCollectionName} numberOfLines={2}>{collection.name}</Text>
@@ -690,8 +678,7 @@ export function CollectionDetailScreen() {
           )}
 
         </View>
-      </View>
-    </View>
+    </GlassHeader>
   );
 
   // Sort bar rendered directly above the list for show collections.
@@ -956,44 +943,10 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
   empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
 
-  // Web header
-  webHeaderWrapper: {
-    position: 'relative',
-    overflow: 'hidden',
-  },
+  // Web header shell (wrapper/opacity/blur/nav row) now lives in <GlassHeader>;
+  // this just needs to fill the background layer <GlassHeader> provides.
   webHeaderBg: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    opacity: 0.68,
-  },
-  webHeaderBgImage: {},
-  webHeaderBlur: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    // @ts-ignore - web only
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
-    zIndex: 1,
-  },
-  webHeaderContent: {
-    position: 'relative',
-    zIndex: 2,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 20,
-  },
-  webHeaderContentDesktop: {
-    paddingHorizontal: 40,
-  },
-  webNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  webBackButton: {
-    // @ts-ignore
-    cursor: 'pointer',
+    flex: 1,
   },
   webInfoSection: {
     gap: 16,

@@ -69,6 +69,7 @@ import { showDetailParams } from '../utils/showDetailParams';
 import { GratefulDeadShow } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
 import { SortDropdown } from '../components/SortDropdown';
+import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { ErrorState } from '../components/StateViews';
@@ -92,6 +93,16 @@ type ProfileRouteParams = {
 type TabType = 'shows' | 'songs' | 'collections';
 type ShowSortType = SavedItemSortType;
 type SongSortType = SavedItemSortType;
+
+const PUBLIC_PROFILE_TABS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
+  { key: 'collections', label: 'Collections' },
+];
+const PUBLIC_PROFILE_TABS_NO_COLLECTIONS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
+];
 
 export function PublicProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -670,26 +681,16 @@ export function PublicProfileScreen() {
             </View>
 
             {/* Tab Navigation */}
-            <View style={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]} accessibilityRole="tablist">
-              {((data?.profile?.is_public || isOwnProfile)
-                ? (['shows', 'songs', 'collections'] as const)
-                : (['shows', 'songs'] as const)
-              ).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
-                  onPress={() => setActiveTab(tab)}
-                  activeOpacity={0.7}
-                  accessibilityRole="tab"
-                  accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
-                  accessibilityState={{ selected: activeTab === tab }}
-                >
-                  <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                    {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <SegmentedTabs
+              tabs={
+                (data?.profile?.is_public || isOwnProfile)
+                  ? PUBLIC_PROFILE_TABS
+                  : PUBLIC_PROFILE_TABS_NO_COLLECTIONS
+              }
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              containerStyle={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]}
+            />
 
             {/* Tab Content */}
             {activeTab === 'shows' ? (
@@ -852,43 +853,10 @@ const styles = StyleSheet.create({
   followBtnTextActive: {
     color: COLORS.textPrimary,
   },
+  // Margins only — the shared row/gap/tab/active/inactive styling lives in <SegmentedTabs>.
   tabContainer: {
-    flexDirection: 'row',
     marginTop: SPACING.md,
     marginBottom: SPACING.xl,
-    gap: SPACING.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.xl,
-  },
-  activeTab: {
-    backgroundColor: COLORS.accent,
-  },
-  inactiveTab: {
-    backgroundColor: COLORS.cardBackground,
-  },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
-  },
-  inactiveTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
   },
   twoColumnRow: {
     flexDirection: 'row',
