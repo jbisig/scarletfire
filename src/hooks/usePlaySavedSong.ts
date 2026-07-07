@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { useToast } from '../contexts/ToastContext';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 export interface UsePlaySavedSongResult {
   /** `${trackId}-${showIdentifier}` of the song currently being loaded, or null. Drives a row's spinner/`isLoading` prop — expected to change identity on every press. */
   loadingSongId: string | null;
-  /** Fetches the show, finds the matching track by id, and loads it into the player. playSong's identity follows loadTrack's (re-created on playback-mode changes); stable enough for renderItem dep arrays in practice — full ref-stabilization is planned in the PlayerContext state/actions split. */
+  /** Fetches the show, finds the matching track by id, and loads it into the player. `loadTrack` now comes from the referentially stable `usePlayerActions()` object (PlayerContext's state/actions split), so playSong's identity is stable across renders — safe for renderItem dep arrays. */
   playSong: (showIdentifier: string, trackId: string) => Promise<void>;
 }
 
@@ -25,7 +25,7 @@ export interface UsePlaySavedSongResult {
  * fit for this hook and is left as-is.
  */
 export function usePlaySavedSong(): UsePlaySavedSongResult {
-  const { loadTrack } = usePlayer();
+  const { loadTrack } = usePlayerActions();
   const { showToast } = useToast();
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
 

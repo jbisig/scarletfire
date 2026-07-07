@@ -13,7 +13,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { matchTrackBySlug } from '../utils/trackMatching';
@@ -63,7 +63,7 @@ export function SongPerformancesScreen() {
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
-  const { loadTrack } = usePlayer();
+  const { loadTrack } = usePlayerActions();
   const { getShowDetail } = useShows();
   const { getPlayCountStable } = usePlayCounts();
   const [sortType, setSortType] = useState<SortType>('performanceDateOldest');

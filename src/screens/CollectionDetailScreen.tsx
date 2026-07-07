@@ -18,7 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useAuth } from '../contexts/AuthContext';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
@@ -111,7 +111,7 @@ export function CollectionDetailScreen() {
   const { openShareTray } = useShareSheet();
   const { showToast } = useToast();
   const { openAuthModal } = useWebAuthModal();
-  const { startSequentialSongs, startShuffleSongs } = usePlayer();
+  const { startSequentialSongs, startShuffleSongs } = usePlayerActions();
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
 
   const [collection, setCollection] = useState<Collection | null>(null);

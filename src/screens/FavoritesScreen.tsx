@@ -29,7 +29,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { ShowsByYear } from '../types/show.types';
 import { showDetailParams } from '../utils/showDetailParams';
 import { Ionicons } from '@expo/vector-icons';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
 import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
@@ -89,7 +89,7 @@ export function FavoritesScreen() {
   const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
-  const { startShuffleSongs, startShuffleShows } = usePlayer();
+  const { startShuffleSongs, startShuffleShows } = usePlayerActions();
   const { getPlayCountStable } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const { loadingSongId, playSong } = usePlaySavedSong();

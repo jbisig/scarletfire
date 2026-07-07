@@ -278,8 +278,20 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
   }
 }
 
-interface PlayerContextType {
+// Playback state + values derived from it. Changes on every dispatch — this is
+// what state-reading consumers subscribe to.
+interface PlayerStateContextValue {
   state: PlayerState;
+  // Derived values
+  isRadioMode: boolean;
+  currentRadioTrack: RadioTrack | null;
+  isShuffleMode: boolean;
+}
+
+// Imperative actions. This object is REFERENTIALLY STABLE across all renders
+// (see the actions useMemo below) so consumers that only call actions never
+// re-render on a state dispatch.
+interface PlayerActionsContextValue {
   loadTrack: (track: Track, show: ShowDetail, playlist: Track[]) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
@@ -293,8 +305,6 @@ interface PlayerContextType {
   // Radio mode functions
   startRadio: () => Promise<void>;
   stopRadio: () => Promise<void>;
-  isRadioMode: boolean;
-  currentRadioTrack: RadioTrack | null;
   // Shuffle mode functions
   startShuffleSongs: (
     songs: ShuffleSongItem[],
@@ -303,13 +313,18 @@ interface PlayerContextType {
   startShuffleShows: (shows: GratefulDeadShow[]) => Promise<void>;
   startSequentialSongs: (songs: ShuffleSongItem[], startIndex?: number) => Promise<void>;
   stopShuffle: () => Promise<void>;
-  isShuffleMode: boolean;
-  // Full player visibility
+}
+
+// Full-player visibility isolated into its own tiny context so the navigator
+// shell can subscribe to it WITHOUT subscribing to playback state.
+interface FullPlayerVisibilityContextValue {
   isFullPlayerVisible: boolean;
   setFullPlayerVisible: (visible: boolean) => void;
 }
 
-const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
+const PlayerStateContext = createContext<PlayerStateContextValue | undefined>(undefined);
+const PlayerActionsContext = createContext<PlayerActionsContextValue | undefined>(undefined);
+const FullPlayerVisibilityContext = createContext<FullPlayerVisibilityContextValue | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
@@ -1179,6 +1194,56 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     previousTrackRef.current = previousTrack;
   }, [previousTrack]);
 
+  // ---------------------------------------------------------------------------
+  // Referentially stable public actions
+  //
+  // Several action callbacks above are re-created across renders because they
+  // close over slices of state (e.g. loadTrack over state.playbackMode). To
+  // keep the actions context value referentially stable — so consumers that
+  // only call actions never re-render on a state dispatch — each such action is
+  // mirrored into a ref and exposed through a stable wrapper. Actions that are
+  // already stable (empty-dep useCallbacks) are passed through directly.
+  //
+  // Stabilizing loadTrack in particular makes usePlaySavedSong's playSong
+  // genuinely stable — previously it followed loadTrack's identity, which
+  // changed on every playback-mode change. (nextTrack/previousTrack are already
+  // mirrored into nextTrackRef/previousTrackRef above for the lock-screen
+  // remote handlers; those refs are reused here.)
+  const loadTrackImplRef = useRef(loadTrack);
+  const startRadioImplRef = useRef(startRadio);
+  const startShuffleSongsImplRef = useRef(startShuffleSongs);
+  const startShuffleShowsImplRef = useRef(startShuffleShows);
+  const startSequentialSongsImplRef = useRef(startSequentialSongs);
+  useEffect(() => {
+    loadTrackImplRef.current = loadTrack;
+    startRadioImplRef.current = startRadio;
+    startShuffleSongsImplRef.current = startShuffleSongs;
+    startShuffleShowsImplRef.current = startShuffleShows;
+    startSequentialSongsImplRef.current = startSequentialSongs;
+  }, [loadTrack, startRadio, startShuffleSongs, startShuffleShows, startSequentialSongs]);
+
+  const stableLoadTrack = useCallback(
+    (track: Track, show: ShowDetail, playlist: Track[]) => loadTrackImplRef.current(track, show, playlist),
+    [],
+  );
+  const stableNextTrack = useCallback(() => nextTrackRef.current(), []);
+  const stablePreviousTrack = useCallback(() => previousTrackRef.current(), []);
+  const stableStartRadio = useCallback(() => startRadioImplRef.current(), []);
+  const stableStartShuffleSongs = useCallback(
+    (songs: ShuffleSongItem[], source?: 'favorites' | 'playlist') =>
+      startShuffleSongsImplRef.current(songs, source),
+    [],
+  );
+  const stableStartShuffleShows = useCallback(
+    (shows: GratefulDeadShow[]) => startShuffleShowsImplRef.current(shows),
+    [],
+  );
+  const stableStartSequentialSongs = useCallback(
+    (songs: ShuffleSongItem[], startIndex?: number) =>
+      startSequentialSongsImplRef.current(songs, startIndex),
+    [],
+  );
+
   // Derived values
   const isRadioMode = state.playbackMode === 'radio';
   const isShuffleMode = state.playbackMode === 'shuffle';
@@ -1186,62 +1251,98 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ? state.radioQueue[state.radioQueueIndex]
     : null;
 
-  // Memoize context value to prevent unnecessary re-renders of consumers
-  const contextValue = useMemo(() => ({
-    state,
-    loadTrack,
+  // Referentially stable actions object — every member is stable (empty-dep
+  // callbacks, the stable wrappers above, or refs), so this identity never
+  // changes and PlayerActionsContext consumers never re-render on a dispatch.
+  const actions = useMemo<PlayerActionsContextValue>(() => ({
+    loadTrack: stableLoadTrack,
     play,
     pause,
     stop,
-    nextTrack,
-    previousTrack,
+    nextTrack: stableNextTrack,
+    previousTrack: stablePreviousTrack,
     seekTo,
     progressRef,
     progressAnim,
-    startRadio,
+    startRadio: stableStartRadio,
     stopRadio,
-    isRadioMode,
-    currentRadioTrack,
-    startShuffleSongs,
-    startShuffleShows,
-    startSequentialSongs,
+    startShuffleSongs: stableStartShuffleSongs,
+    startShuffleShows: stableStartShuffleShows,
+    startSequentialSongs: stableStartSequentialSongs,
     stopShuffle,
-    isShuffleMode,
-    isFullPlayerVisible,
-    setFullPlayerVisible,
   }), [
-    state,
-    loadTrack,
+    stableLoadTrack,
     play,
     pause,
     stop,
-    nextTrack,
-    previousTrack,
+    stableNextTrack,
+    stablePreviousTrack,
     seekTo,
     progressAnim,
-    startRadio,
+    stableStartRadio,
     stopRadio,
-    isRadioMode,
-    currentRadioTrack,
-    startShuffleSongs,
-    startShuffleShows,
-    startSequentialSongs,
+    stableStartShuffleSongs,
+    stableStartShuffleShows,
+    stableStartSequentialSongs,
     stopShuffle,
-    isShuffleMode,
-    isFullPlayerVisible,
   ]);
 
+  // State context value — changes on every dispatch (that is the point).
+  const stateValue = useMemo<PlayerStateContextValue>(() => ({
+    state,
+    isRadioMode,
+    currentRadioTrack,
+    isShuffleMode,
+  }), [state, isRadioMode, currentRadioTrack, isShuffleMode]);
+
+  // Visibility context value — changes only when the full player opens/closes.
+  const visibilityValue = useMemo<FullPlayerVisibilityContextValue>(() => ({
+    isFullPlayerVisible,
+    setFullPlayerVisible,
+  }), [isFullPlayerVisible]);
+
   return (
-    <PlayerContext.Provider value={contextValue}>
-      {children}
-    </PlayerContext.Provider>
+    <PlayerActionsContext.Provider value={actions}>
+      <PlayerStateContext.Provider value={stateValue}>
+        <FullPlayerVisibilityContext.Provider value={visibilityValue}>
+          {children}
+        </FullPlayerVisibilityContext.Provider>
+      </PlayerStateContext.Provider>
+    </PlayerActionsContext.Provider>
   );
 }
 
-export function usePlayer() {
-  const context = useContext(PlayerContext);
+export function usePlayerState() {
+  const context = useContext(PlayerStateContext);
   if (!context) {
-    throw new Error('usePlayer must be used within PlayerProvider');
+    throw new Error('usePlayerState must be used within PlayerProvider');
   }
   return context;
+}
+
+export function usePlayerActions() {
+  const context = useContext(PlayerActionsContext);
+  if (!context) {
+    throw new Error('usePlayerActions must be used within PlayerProvider');
+  }
+  return context;
+}
+
+export function useFullPlayerVisibility() {
+  const context = useContext(FullPlayerVisibilityContext);
+  if (!context) {
+    throw new Error('useFullPlayerVisibility must be used within PlayerProvider');
+  }
+  return context;
+}
+
+// Backwards-compatible hook returning the combined state + actions shape so
+// consumers that read both (FullPlayer, MiniPlayer, PlayerBar, etc.) don't have
+// to migrate. Because the actions object is referentially stable, also
+// subscribing to it adds no re-renders beyond the state subscription. Does NOT
+// include full-player visibility — that now lives in useFullPlayerVisibility.
+export function usePlayer() {
+  const state = usePlayerState();
+  const actions = usePlayerActions();
+  return { ...state, ...actions };
 }
