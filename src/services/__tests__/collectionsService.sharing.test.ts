@@ -10,6 +10,8 @@ jest.mock('../../utils/logger', () => ({
     api: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     player: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     profile: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    // activityService (imported transitively) builds its logger at module scope
+    create: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
   },
 }));
 

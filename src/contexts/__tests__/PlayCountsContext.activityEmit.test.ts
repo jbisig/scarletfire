@@ -25,7 +25,7 @@ jest.mock('../../services/activityService', () => ({
 
 // Pure unit test of the increment-detection helper that PlayCountsContext
 // will export (see Step 2 for the helper definition).
-import { computeShowPlayCount, shouldEmitListenedShow } from '../PlayCountsContext';
+import { computeShowPlayCount, diffNewlyListenedShows } from '../PlayCountsContext';
 import type { PlayCount } from '../PlayCountsContext';
 
 describe('computeShowPlayCount', () => {
@@ -70,17 +70,35 @@ describe('computeShowPlayCount', () => {
   });
 });
 
-describe('shouldEmitListenedShow', () => {
-  it('emits when count goes 0 -> 1', () => {
-    expect(shouldEmitListenedShow(0, 1)).toBe(true);
+describe('diffNewlyListenedShows', () => {
+  it('returns empty when sets are identical', () => {
+    expect(diffNewlyListenedShows(new Set(['s1']), new Set(['s1']))).toEqual([]);
   });
-  it('emits when count goes 1 -> 2', () => {
-    expect(shouldEmitListenedShow(1, 2)).toBe(true);
+
+  it('returns only shows newly crossed (in next, not in prev)', () => {
+    expect(diffNewlyListenedShows(new Set(['s1']), new Set(['s1', 's2']))).toEqual(['s2']);
   });
-  it('does not emit when count stays the same', () => {
-    expect(shouldEmitListenedShow(1, 1)).toBe(false);
+
+  it('returns [] when next is a subset of prev (count decreased — never expected)', () => {
+    expect(diffNewlyListenedShows(new Set(['s1', 's2']), new Set(['s1']))).toEqual([]);
   });
-  it('does not emit when count decreases (never expected)', () => {
-    expect(shouldEmitListenedShow(2, 1)).toBe(false);
+
+  it('returns multiple new shows when several cross in one render', () => {
+    const result = diffNewlyListenedShows(new Set(['s1']), new Set(['s1', 's2', 's3']));
+    expect(result.sort()).toEqual(['s2', 's3']);
+  });
+});
+
+describe('diffNewlyListenedShows seed semantics', () => {
+  it('emits nothing when prev is seeded to current (first-mount semantics)', () => {
+    const initial = new Set(['s1', 's2', 's3']);
+    // Simulate seed: ref.current = initial; diff against same set
+    expect(diffNewlyListenedShows(initial, initial)).toEqual([]);
+  });
+
+  it('emits only post-seed additions, not historical ids', () => {
+    const seeded = new Set(['s1', 's2', 's3']);
+    const later  = new Set(['s1', 's2', 's3', 's4']);
+    expect(diffNewlyListenedShows(seeded, later)).toEqual(['s4']);
   });
 });

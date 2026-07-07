@@ -115,3 +115,5 @@ all other findings pre-date these migrations).
 The transition shims (old `get_activity_feed`/`search_profiles` signatures)
 should be dropped in a future migration once pre-2026-07 native binaries have
 aged out.
+
+**2026-07-06 (merge of punch-list → main)** — `20260706130000_feed_streams_search_avatar_auth_uid.sql` applied to production. Fuses main's PR #8 feed/search rework (per-stream cursors, actor denorm, avatar_url — whose function SQL had never been applied) with the auth.uid() hardening. Drops the short-lived 2-arg `get_activity_feed`; recreates both legacy shims with widened (superset) return shapes. Verified: all four function paths execute; PR #8's other SQL (dedupe index, self-follow check, activity_events RLS) confirmed already present in production.
