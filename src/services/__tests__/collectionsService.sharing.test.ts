@@ -5,11 +5,20 @@ jest.mock('../authService', () => ({
   },
 }));
 
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    api: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    player: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    profile: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  },
+}));
+
 import { collectionsService } from '../collectionsService';
 import { authService } from '../authService';
+import { logger } from '../../utils/logger';
 
 function mockClient(overrides: {
-  updateError?: { message: string } | null;
+  updateError?: { message: string; code?: string } | null;
   isShared?: boolean;
 } = {}) {
   const { updateError = null, isShared } = overrides;
@@ -58,6 +67,15 @@ describe('collectionsService.markCollectionShared', () => {
     await expect(collectionsService.markCollectionShared('c1')).rejects.toEqual({
       message: 'boom',
     });
+  });
+
+  it('silently no-ops on Postgres 42703 (is_shared column not yet migrated)', async () => {
+    mockClient({ updateError: { message: 'column "is_shared" does not exist', code: '42703' } });
+    await expect(collectionsService.markCollectionShared('c1')).resolves.toBeUndefined();
+    expect(logger.api.warn).toHaveBeenCalledWith(
+      expect.stringContaining('is_shared column not yet migrated'),
+      expect.objectContaining({ code: '42703' }),
+    );
   });
 });
 

@@ -209,7 +209,18 @@ class CollectionsService {
       .from('collections')
       .update({ is_shared: true })
       .eq('id', collectionId);
-    if (error) throw error;
+    if (error) {
+      // Postgres 42703 = undefined_column. If the live DB predates migration
+      // 20260706120000_collections_sharing_flag.sql, the `is_shared` column
+      // doesn't exist yet and this update fails on every share attempt.
+      // Degrade gracefully during the transition window instead of surfacing
+      // an error toast to the user for something they can't act on.
+      if (error.code === '42703') {
+        logger.api.warn('markCollectionShared: is_shared column not yet migrated', error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async fetchCollectionItems(collectionId: string): Promise<CollectionItem[]> {
