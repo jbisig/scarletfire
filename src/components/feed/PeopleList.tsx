@@ -7,13 +7,18 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { SearchBar } from '../SearchBar';
 import { PeopleRow } from './PeopleRow';
 import { feedService, type PeopleRow as PeopleRowData } from '../../services/feedService';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../constants/theme';
+import { useResponsive } from '../../hooks/useResponsive';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 
 const PAGE_SIZE = 20;
 
 export function PeopleList() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { isDesktop } = useResponsive();
+  // Clear the overlaying mini player + tab bar on mobile; the desktop
+  // PlayerBar is docked (not an overlay), so a normal inset suffices.
+  const listBottomInset = isDesktop ? styles.listBottomDesktop : styles.listBottomMobile;
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [following, setFollowing] = useState<PeopleRowData[]>([]);
@@ -119,6 +124,7 @@ export function PeopleList() {
             data={search}
             keyExtractor={(r) => r.id}
             renderItem={({ item }) => renderRow(item)}
+            contentContainerStyle={listBottomInset}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} tintColor={COLORS.accent} />}
           />
         )}
@@ -138,6 +144,7 @@ export function PeopleList() {
         sections={sections}
         keyExtractor={(r) => r.id}
         renderItem={({ item }) => renderRow(item)}
+        contentContainerStyle={listBottomInset}
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionHeader}>{section.title}</Text>
         )}
@@ -152,6 +159,8 @@ export function PeopleList() {
 
 const styles = StyleSheet.create({
   searchWrap: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.md },
+  listBottomMobile: { paddingBottom: LAYOUT.listBottomPadding },
+  listBottomDesktop: { paddingBottom: SPACING.xl },
   center: { padding: SPACING.lg, alignItems: 'center' },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary },
   sectionHeader: {

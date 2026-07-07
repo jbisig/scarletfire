@@ -8,13 +8,15 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { feedService } from '../../services/feedService';
 import { ActivityRow } from './ActivityRow';
 import type { ActivityEvent } from '../../services/activityService';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../constants/theme';
+import { useResponsive } from '../../hooks/useResponsive';
 import type { RootStackParamList } from '../../navigation/AppNavigator';
 
 const PAGE_SIZE = 30;
 
 export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => void }) {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { isDesktop } = useResponsive();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +113,10 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
     <FlatList
       data={events}
       keyExtractor={(e) => e.id}
-      contentContainerStyle={styles.listContent}
+      contentContainerStyle={[
+        styles.listContent,
+        isDesktop ? styles.listBottomDesktop : styles.listBottomMobile,
+      ]}
       renderItem={({ item }) => (
         <ActivityRow
           event={item}
@@ -140,6 +145,10 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
 
 const styles = StyleSheet.create({
   listContent: { paddingHorizontal: SPACING.xl },
+  // Clear the overlaying mini player + tab bar on mobile; the desktop
+  // PlayerBar is docked (not an overlay), so a normal inset suffices.
+  listBottomMobile: { paddingBottom: LAYOUT.listBottomPadding },
+  listBottomDesktop: { paddingBottom: SPACING.xl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
   emptyText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginBottom: SPACING.md },
   emptyBtn: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, backgroundColor: COLORS.accent, borderRadius: 24 },
