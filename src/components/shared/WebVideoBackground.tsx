@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 
 interface WebVideoBackgroundProps {
   /** Resolved HTML5 video src URL (see src/utils/resolveVideoUri.ts). */
@@ -27,6 +27,31 @@ const DEFAULT_STYLE: React.CSSProperties = {
  * with `Platform.OS === 'web'` before rendering this.
  */
 export function WebVideoBackground({ uri, videoId, onError, playbackRate = 0.5, style }: WebVideoBackgroundProps) {
+  // Tracks the pending 5s readyState-check timeout so it can be cleared not
+  // just on `onloadeddata`, but also if the ref callback runs again with
+  // `null` (unmount, or remount via the `key` change below) before the
+  // video ever loads — otherwise the timeout fires after teardown and can
+  // call `onError` for a video element that's already gone.
+  const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingTimeout = () => {
+    if (pendingTimeoutRef.current) {
+      clearTimeout(pendingTimeoutRef.current);
+      pendingTimeoutRef.current = null;
+    }
+  };
+
+  const refCallback = useCallback((el: HTMLVideoElement | null) => {
+    clearPendingTimeout();
+    if (!el) return;
+    el.playbackRate = playbackRate;
+    if (onError) {
+      el.onerror = () => onError();
+      pendingTimeoutRef.current = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
+      el.onloadeddata = () => clearPendingTimeout();
+    }
+  }, [onError, playbackRate]);
+
   return React.createElement('video', {
     key: `video-${videoId}`,
     src: uri,
@@ -34,15 +59,7 @@ export function WebVideoBackground({ uri, videoId, onError, playbackRate = 0.5, 
     loop: true,
     muted: true,
     playsInline: true,
-    ref: (el: HTMLVideoElement | null) => {
-      if (!el) return;
-      el.playbackRate = playbackRate;
-      if (onError) {
-        el.onerror = () => onError();
-        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
-        el.onloadeddata = () => clearTimeout(t);
-      }
-    },
+    ref: refCallback,
     style: style ?? DEFAULT_STYLE,
   });
 }

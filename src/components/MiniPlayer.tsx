@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
-import { useShows } from '../contexts/ShowsContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
+import { useAppActiveState } from '../hooks/useAppActiveState';
+import { useVideoRemount } from '../hooks/useVideoRemount';
 import { StarRating } from './StarRating';
 import { BlurBackground } from './shared/BlurBackground';
 import { WebVideoBackground } from './shared/WebVideoBackground';
@@ -23,48 +24,21 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   const { state, play, pause, isRadioMode, isShuffleMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
-  const { getShowDetail } = useShows();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
-  const [appState, setAppState] = useState<AppStateStatus>(
-    Platform.OS !== 'web' ? AppState.currentState : 'active'
-  );
+  const appState = useAppActiveState();
 
   // Force video remount when source changes by briefly unmounting
-  const [videoMounted, setVideoMounted] = useState(true);
-  const prevVideoIdRef = useRef(videoId);
-
-  useEffect(() => {
-    if (videoId !== prevVideoIdRef.current) {
-      prevVideoIdRef.current = videoId;
-      // Briefly unmount video to force clean reload
-      setVideoMounted(false);
-      const timer = setTimeout(() => setVideoMounted(true), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [videoId]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
+  const videoMounted = useVideoRemount(videoId);
 
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('MiniPlayer video failed to load:', error);
     resetToFallback();
   }, [resetToFallback]);
 
-  // Prefetch show details in background so navigation is instant when user taps show
-  useEffect(() => {
-    if (state.currentShow?.identifier) {
-      // Fire and forget - preloads into cache
-      getShowDetail(state.currentShow.identifier).catch(() => {
-        // Ignore errors - this is just prefetching
-      });
-    }
-  }, [state.currentShow?.identifier, getShowDetail]);
+  // Prefetch-show-detail effect now lives once in PlayerContext (was
+  // duplicated identically here and in FullPlayer).
 
   // Get performance rating from shared hook
   const performanceRating = usePerformanceRating();

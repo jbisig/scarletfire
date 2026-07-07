@@ -5,6 +5,7 @@ import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongIte
 import { Track, ShowDetail, GratefulDeadShow } from '../types/show.types';
 import { audioService, appIconUri } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
+import { useOptionalShows } from './ShowsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import { shuffleArray } from '../utils/shuffle';
@@ -316,6 +317,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentLoadingTrackIdRef = useRef<string | null>(null);
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
+  // Optional: some tests mount PlayerProvider without a ShowsProvider
+  // ancestor. Falls back to a no-op so the prefetch effect below is skipped.
+  const shows = useOptionalShows();
   // Optional: some tests mount PlayerProvider without a ToastProvider
   // ancestor. Falls back to a silent no-op so warnings are still logged.
   const toast = useOptionalToast();
@@ -341,6 +345,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
     });
   }, []);
+
+  // Prefetch show details in background so navigation to the current show is
+  // instant. Single instance here — FullPlayer and MiniPlayer both used to
+  // run this identical effect, which meant it fired twice (redundantly) any
+  // time both were mounted at once.
+  useEffect(() => {
+    if (state.currentShow?.identifier) {
+      // Fire and forget - preloads into cache
+      shows?.getShowDetail(state.currentShow.identifier).catch(() => {
+        // Ignore errors - this is just prefetching
+      });
+    }
+  }, [state.currentShow?.identifier, shows?.getShowDetail]);
 
   // Auto-load track when currentTrack changes
   // Skip in shuffle mode - loadShuffleSong/loadShuffleShow handle loading directly

@@ -95,3 +95,12 @@ export function useShows() {
   }
   return context;
 }
+
+/**
+ * Optional variant for consumers that may be mounted without a ShowsProvider
+ * ancestor (e.g. PlayerProvider unit tests that isolate it from the rest of
+ * the provider tree — mirrors `useOptionalToast` in ToastContext).
+ */
+export function useOptionalShows() {
+  return useContext(ShowsContext);
+}

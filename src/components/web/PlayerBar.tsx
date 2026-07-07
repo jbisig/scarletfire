@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { formatDate, formatTime, getVenueFromShow } from '../../utils/formatters
 import { toFavoriteSong } from '../../utils/favoriteSong';
 import { resolveVideoUri } from '../../utils/resolveVideoUri';
 import { WebVideoBackground } from '../shared/WebVideoBackground';
+import { usePlayerProgress } from '../../hooks/usePlayerProgress';
 import { COLORS, RADIUS, WEB_LAYOUT } from '../../constants/theme';
 
 /**
@@ -30,37 +31,27 @@ const ProgressRow = React.memo(function ProgressRow({
   trackId: string;
 }) {
   const progressBarRef = useRef<View>(null);
-  const timeDisplayRef = useRef({ position: 0, duration: 0 });
-  const [, forceTimeUpdate] = useState(0);
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPosition, setDragPosition] = useState(0);
-  const isDraggingRef = useRef(false);
   const [isProgressHovered, setIsProgressHovered] = useState(false);
 
   const trackDurationMs = trackDurationSec ? trackDurationSec * 1000 : 0;
 
-  const getDurationMs = useCallback(() => {
-    const refDuration = progressRef.current.duration;
-    return refDuration > 0 ? refDuration : trackDurationMs;
-  }, [progressRef, trackDurationMs]);
-
-  useEffect(() => {
-    timeDisplayRef.current = { ...progressRef.current };
-    forceTimeUpdate(n => n + 1);
-
-    const interval = setInterval(() => {
-      if (!isDraggingRef.current) {
-        const prev = timeDisplayRef.current;
-        const next = progressRef.current;
-        if (Math.abs(next.position - prev.position) >= 1000 || prev.duration !== next.duration) {
-          timeDisplayRef.current = { ...next };
-          forceTimeUpdate(n => n + 1);
-        }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [progressRef, trackId]);
+  const {
+    displayPosition,
+    displayDuration,
+    isDragging,
+    progressWidth,
+    thumbLeft,
+    beginDrag,
+    moveDrag,
+    endDrag,
+  } = usePlayerProgress({
+    progressRef,
+    progressAnim,
+    seekTo,
+    trackDurationMs,
+    resetKey: trackId,
+    freezeDurationForDrag: true,
+  });
 
   const handleMouseDown = useCallback(
     (e: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -74,35 +65,15 @@ const ProgressRow = React.memo(function ProgressRow({
 
       const barLeft = rect.left;
       const barWidth = rect.width;
-      const durationMs = getDurationMs();
 
-      const calcPosition = (cx: number) => {
-        const pct = Math.max(0, Math.min(1, (cx - barLeft) / barWidth));
-        return pct * durationMs;
-      };
-
-      const position = calcPosition(clientX);
-      isDraggingRef.current = true;
-      setIsDragging(true);
-      setDragPosition(position);
+      beginDrag(clientX, barLeft, barWidth);
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        setDragPosition(calcPosition(moveEvent.clientX));
+        moveDrag(moveEvent.clientX, barLeft, barWidth);
       };
 
       const handleMouseUp = (upEvent: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        const pos = calcPosition(upEvent.clientX);
-        setDragPosition(pos);
-        seekTo(pos);
-        timeDisplayRef.current = { position: pos, duration: durationMs };
-        forceTimeUpdate(n => n + 1);
-        setTimeout(() => {
-          setIsDragging(false);
-          isDraggingRef.current = false;
-          setIsProgressHovered(false);
-        }, 200);
+        endDrag(upEvent.clientX, barLeft, barWidth, () => setIsProgressHovered(false));
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
@@ -110,42 +81,25 @@ const ProgressRow = React.memo(function ProgressRow({
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     },
-    [seekTo, getDurationMs]
+    [beginDrag, moveDrag, endDrag]
   );
-
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  const thumbLeft = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  const timeDisplay = timeDisplayRef.current;
-  const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDurationMs;
-  const currentPosition = isDragging ? dragPosition : timeDisplay.position;
-  const dragProgress = duration > 0 ? Math.max(0, Math.min(1, dragPosition / duration)) : 0;
 
   return (
     <View style={styles.progressRow}>
-      <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
+      <Text style={styles.timeText}>{formatTime(displayPosition)}</Text>
       <View
         ref={progressBarRef}
         style={styles.progressBarWrapper}
         // @ts-ignore - web mouse events
         onMouseDown={handleMouseDown}
         onMouseEnter={() => setIsProgressHovered(true)}
-        onMouseLeave={() => { if (!isDraggingRef.current) setIsProgressHovered(false); }}
+        onMouseLeave={() => { if (!isDragging) setIsProgressHovered(false); }}
       >
         <View style={styles.progressBarBackground}>
           <Animated.View
             style={[
               styles.progressBarFill,
-              { width: isDragging ? `${dragProgress * 100}%` : progressWidth },
+              { width: progressWidth },
             ]}
           />
         </View>
@@ -153,14 +107,14 @@ const ProgressRow = React.memo(function ProgressRow({
           <Animated.View
             style={[
               styles.progressThumb,
-              { left: isDragging ? `${dragProgress * 100}%` : thumbLeft },
+              { left: thumbLeft },
               isDragging && styles.progressThumbActive,
             ]}
             pointerEvents="none"
           />
         )}
       </View>
-      <Text style={styles.timeText}>{formatTime(duration)}</Text>
+      <Text style={styles.timeText}>{formatTime(displayDuration)}</Text>
     </View>
   );
 });

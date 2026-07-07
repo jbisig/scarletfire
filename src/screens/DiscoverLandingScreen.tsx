@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  AppState,
-  AppStateStatus,
   Platform,
 } from 'react-native';
 import { logger } from '../utils/logger';
@@ -37,6 +35,7 @@ import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useResponsive } from '../hooks/useResponsive';
+import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
 
@@ -57,20 +56,12 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
-  const [appState, setAppState] = useState<AppStateStatus>(
-    Platform.OS !== 'web' ? AppState.currentState : 'active'
-  );
+  const appState = useAppActiveState();
 
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('Video background failed to load:', error);
     resetToFallback();
   }, [resetToFallback]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
 
   // Refs for carousel scroll reset
   const jumpBackInRef = useRef<ShowCarouselRef>(null);
