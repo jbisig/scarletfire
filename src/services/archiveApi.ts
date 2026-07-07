@@ -14,6 +14,23 @@ import {
 } from '../constants/api';
 import { normalizeSongTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/** Persistent show-detail cache keys (AsyncStorage — proven on both platforms here). */
+const PERSIST_PREFIX = 'showDetail:';
+const PERSIST_INDEX_KEY = 'showDetail:index';
+const PERSIST_MAX_ENTRIES = 200;
+/**
+ * Show metadata is historical, but the direct datanode stream URLs baked into
+ * cached tracks can go stale when archive.org rebalances items — 14 days
+ * bounds that, and playback falls back + invalidates on error regardless.
+ */
+const PERSIST_TTL = 14 * 24 * 60 * 60 * 1000;
+
+interface PersistedShowDetail {
+  data: ShowDetail;
+  timestamp: number;
+}
 
 /**
  * Service for interacting with the Internet Archive API
@@ -105,14 +122,15 @@ class ArchiveApiService {
   private async fetchWithRetry(
     url: string,
     maxRetries: number = ARCHIVE_CONFIG.MAX_RETRIES,
-    baseDelayMs: number = 1000
+    baseDelayMs: number = 1000,
+    timeoutMs: number = ARCHIVE_CONFIG.TIMEOUT
   ): Promise<Response> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         // Use dedup fetch to prevent duplicate concurrent requests
-        const response = await this.fetchWithDedup(url);
+        const response = await this.fetchWithDedup(url, timeoutMs);
 
         // Retry on server errors (5xx)
         if (response.status >= 500) {
@@ -501,6 +519,77 @@ class ArchiveApiService {
   }
 
   /**
+   * Read a show detail from the persistent cache (null on miss/expiry/error).
+   */
+  private async readPersistedShowDetail(identifier: string): Promise<ShowDetail | null> {
+    try {
+      const raw = await AsyncStorage.getItem(`${PERSIST_PREFIX}${identifier}`);
+      if (!raw) return null;
+      const entry = JSON.parse(raw) as PersistedShowDetail;
+      if (!entry?.data || typeof entry.timestamp !== 'number') return null;
+      if (Date.now() - entry.timestamp > PERSIST_TTL) return null;
+      return entry.data;
+    } catch (error) {
+      logger.api.debug('Persistent show-detail read failed', error);
+      return null;
+    }
+  }
+
+  /**
+   * Write a show detail to the persistent cache, maintaining an LRU index
+   * capped at PERSIST_MAX_ENTRIES. Fire-and-forget from the fetch path —
+   * persistence is best-effort and playback must never depend on it.
+   */
+  private async writePersistedShowDetail(identifier: string, data: ShowDetail): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        `${PERSIST_PREFIX}${identifier}`,
+        JSON.stringify({ data, timestamp: Date.now() } satisfies PersistedShowDetail)
+      );
+      const rawIndex = await AsyncStorage.getItem(PERSIST_INDEX_KEY);
+      const index: string[] = rawIndex ? JSON.parse(rawIndex) : [];
+      const next = index.filter(id => id !== identifier);
+      next.push(identifier);
+      const evictedKeys: string[] = [];
+      while (next.length > PERSIST_MAX_ENTRIES) {
+        const evicted = next.shift();
+        if (evicted) evictedKeys.push(`${PERSIST_PREFIX}${evicted}`);
+      }
+      if (evictedKeys.length > 0) {
+        await AsyncStorage.multiRemove(evictedKeys);
+      }
+      await AsyncStorage.setItem(PERSIST_INDEX_KEY, JSON.stringify(next));
+    } catch (error) {
+      logger.api.debug('Persistent show-detail write failed', error);
+    }
+  }
+
+  /**
+   * Drop a show from both cache tiers. Called when playback of its cached
+   * direct-datanode URLs fails, so the next fetch gets fresh server info.
+   * Persistent removal is async best-effort; the in-memory tier clears
+   * synchronously so an immediate refetch can't be served stale data.
+   */
+  invalidateShowDetail(identifier: string): void {
+    this.showDetailCache.delete(identifier);
+    (async () => {
+      try {
+        await AsyncStorage.removeItem(`${PERSIST_PREFIX}${identifier}`);
+        const rawIndex = await AsyncStorage.getItem(PERSIST_INDEX_KEY);
+        const index: string[] = rawIndex ? JSON.parse(rawIndex) : [];
+        if (index.includes(identifier)) {
+          await AsyncStorage.setItem(
+            PERSIST_INDEX_KEY,
+            JSON.stringify(index.filter(id => id !== identifier))
+          );
+        }
+      } catch (error) {
+        logger.api.debug('Persistent show-detail invalidation failed', error);
+      }
+    })();
+  }
+
+  /**
    * Get detailed metadata for a specific show
    */
   async getShowDetail(identifier: string): Promise<ShowDetail> {
@@ -509,7 +598,7 @@ class ArchiveApiService {
       throw new Error('Invalid show identifier');
     }
 
-    // Always check cache first
+    // Tier 1: in-memory cache
     const cached = this.showDetailCache.get(identifier);
     const cacheIsValid = cached && Date.now() - cached.timestamp < this.CACHE_TTL;
 
@@ -517,9 +606,21 @@ class ArchiveApiService {
       return cached.data;
     }
 
+    // Tier 2: persistent cache (survives cold start) — hydrate memory on hit
+    const persisted = await this.readPersistedShowDetail(identifier);
+    if (persisted) {
+      this.showDetailCache.set(identifier, { data: persisted, timestamp: Date.now() });
+      return persisted;
+    }
+
     // Cache miss - fetch fresh data
     try {
-      const response = await this.fetchWithRetry(`${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`);
+      const response = await this.fetchWithRetry(
+        `${ARCHIVE_ENDPOINTS.METADATA}/${identifier}`,
+        ARCHIVE_CONFIG.MAX_RETRIES,
+        1000,
+        ARCHIVE_CONFIG.METADATA_TIMEOUT
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -532,16 +633,27 @@ class ArchiveApiService {
       const { metadata, files } = data;
       const audioFiles = this.selectAudioFiles(files);
 
+      // Direct datanode base skips /download's 302 redirect (~1s saved per
+      // play, measured). The durable /download URL rides along as a fallback
+      // for when datanode assignments get rebalanced.
+      const directBase = data.server && data.dir
+        ? `https://${data.server}${data.dir}`
+        : null;
+
       const tracks: Track[] = audioFiles
         .map((file, index) => {
           const duration = this.parseDuration(file.length);
+          const downloadUrl = `${ARCHIVE_ENDPOINTS.DOWNLOAD}/${identifier}/${encodeURIComponent(file.name)}`;
 
           return {
             id: file.name,
             title: file.title || file.name.replace(/\.\w+$/, ''),
             duration,
             format: file.format,
-            streamUrl: `${ARCHIVE_ENDPOINTS.DOWNLOAD}/${identifier}/${encodeURIComponent(file.name)}`,
+            streamUrl: directBase
+              ? `${directBase}/${encodeURIComponent(file.name)}`
+              : downloadUrl,
+            ...(directBase ? { fallbackStreamUrl: downloadUrl } : {}),
             trackNumber: parseInt(file.track || String(index + 1))
           };
         })
@@ -560,6 +672,7 @@ class ArchiveApiService {
 
       // Cache the base show detail (without versions to keep cache entries small)
       this.showDetailCache.set(identifier, { data: baseShowDetail, timestamp: Date.now() });
+      void this.writePersistedShowDetail(identifier, baseShowDetail);
 
       return baseShowDetail;
     } catch (error) {

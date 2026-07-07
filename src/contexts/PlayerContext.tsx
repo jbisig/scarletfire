@@ -498,6 +498,47 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Direct-datanode stream URLs (see archiveApi.getShowDetail) skip the
+  // /download 302 hop but can go stale when archive.org rebalances an item.
+  // On playback error, retry the current show once via the durable /download
+  // URLs and drop the cached (stale) detail so the next fetch is fresh.
+  const fallbackAttemptedForTrackRef = useRef<string | null>(null);
+  useEffect(() => {
+    const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackError, (data) => {
+      // Radio queues are built incrementally from fresh fetches and rebuilt
+      // constantly — swapping the whole native queue mid-radio isn't worth
+      // the complexity, so radio keeps its existing error behavior.
+      if (playbackModeRef.current === 'radio') return;
+
+      const track = currentTrackRef.current;
+      const show = currentShowRef.current;
+      // Without a show we can't meaningfully reload; loadTrack requires it.
+      if (!track || !show) return;
+      if (!track.fallbackStreamUrl || track.fallbackStreamUrl === track.streamUrl) return;
+      // One fallback attempt per track — if /download also fails, surface
+      // the error like before instead of looping.
+      if (fallbackAttemptedForTrackRef.current === track.id) return;
+      fallbackAttemptedForTrackRef.current = track.id;
+
+      logger.player.warn(
+        'Direct stream failed; retrying via archive.org/download',
+        data?.error
+      );
+      archiveApi.invalidateShowDetail(show.identifier);
+
+      const toFallback = (t: Track): Track =>
+        t.fallbackStreamUrl ? { ...t, streamUrl: t.fallbackStreamUrl } : t;
+      const fallbackPlaylist = playlistRef.current.map(toFallback);
+      loadTrackImplRef.current(
+        toFallback(track),
+        show,
+        fallbackPlaylist.length > 0 ? fallbackPlaylist : [toFallback(track)]
+      );
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   // Track the last index where we triggered a replenish to avoid duplicate fetches
   const lastReplenishIndexRef = useRef(-1);
   // Promise ref to allow callers to wait for ongoing replenish
@@ -651,7 +692,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentShowRef = useRef(state.currentShow);
   const isPlayingRef = useRef(state.isPlaying);
   const currentTrackIndexRef = useRef(state.currentTrackIndex);
-  const playlistLengthRef = useRef(state.playlist.length);
+  const playlistRef = useRef(state.playlist);
   const hasTriggeredEndOfShowRef = useRef(false);
 
   // Keep refs in sync with state
@@ -660,8 +701,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     currentShowRef.current = state.currentShow;
     isPlayingRef.current = state.isPlaying;
     currentTrackIndexRef.current = state.currentTrackIndex;
-    playlistLengthRef.current = state.playlist.length;
-  }, [state.currentTrack, state.currentShow, state.isPlaying, state.currentTrackIndex, state.playlist.length]);
+    playlistRef.current = state.playlist;
+  }, [state.currentTrack, state.currentShow, state.isPlaying, state.currentTrackIndex, state.playlist]);
 
   // Reset end-of-show trigger when show changes
   useEffect(() => {
@@ -704,14 +745,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             currentTrackRef.current.title,
             currentShowRef.current.identifier,
             currentShowRef.current.date,
-            playlistLengthRef.current
+            playlistRef.current.length
           );
         }
 
         // Check for end of last track in shuffle shows mode
         // Trigger next show when we're within 1 second of the end
-        const isLastTrack = playlistLengthRef.current > 0 &&
-                            currentTrackIndexRef.current === playlistLengthRef.current - 1;
+        const isLastTrack = playlistRef.current.length > 0 &&
+                            currentTrackIndexRef.current === playlistRef.current.length - 1;
         if (
           !hasTriggeredEndOfShowRef.current &&
           playbackModeRef.current === 'shuffle' &&

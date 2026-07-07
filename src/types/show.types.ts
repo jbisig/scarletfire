@@ -37,6 +37,12 @@ export interface Track {
   duration?: number; // seconds
   format: string;
   streamUrl: string;
+  /**
+   * Durable archive.org/download URL used if `streamUrl` (a direct datanode
+   * URL that skips the /download 302 hop) fails — datanode assignments can
+   * be rebalanced over time. Absent when streamUrl already IS the /download URL.
+   */
+  fallbackStreamUrl?: string;
   trackNumber?: number;
 }
 

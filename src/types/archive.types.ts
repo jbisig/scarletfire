@@ -25,6 +25,8 @@ export interface ArchiveMetadataResponse {
   d1: string;
   d2: string;
   dir: string;
+  /** Primary datanode host currently serving this item (e.g. "ia600106.us.archive.org") */
+  server?: string;
   files: ArchiveFile[];
   metadata: ArchiveMetadata;
 }

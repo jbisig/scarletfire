@@ -4,7 +4,10 @@
 
 export const ARCHIVE_CONFIG = {
   BASE_URL: 'https://archive.org',
-  TIMEOUT: 60000, // 60 seconds
+  TIMEOUT: 60000, // 60 seconds — searches can legitimately be slow
+  // Show-metadata fetches sit on the tap-to-play path: fail over to the
+  // retry ladder quickly instead of pinning a spinner for a minute.
+  METADATA_TIMEOUT: 12000,
   MAX_RETRIES: 3,
 } as const;
 

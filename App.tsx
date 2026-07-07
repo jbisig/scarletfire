@@ -82,6 +82,12 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, []);
 
+  // Warm the connection to archive.org (DNS + TLS, ~250ms) so the first
+  // tap-to-play metadata fetch doesn't pay it. Fire-and-forget.
+  useEffect(() => {
+    fetch('https://archive.org/metadata/', { method: 'HEAD' }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded || fontError || fontTimeout) {
       if (Platform.OS !== 'web') {
