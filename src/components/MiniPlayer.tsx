@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -8,7 +8,6 @@ import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { useVideoRemount } from '../hooks/useVideoRemount';
-import { StarRating } from './StarRating';
 import { BlurBackground } from './shared/BlurBackground';
 import { WebVideoBackground } from './shared/WebVideoBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -170,9 +169,6 @@ const styles = StyleSheet.create({
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
-  },
-  androidOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   contentOverlay: {
     flex: 1,

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   Platform,
 } from 'react-native';
 import { logger } from '../utils/logger';
@@ -39,9 +38,6 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
-
-// Default screen width — components should use useWindowDimensions for responsive sizing
-const SOTD_CARD_PADDING = SPACING.xl * 2;
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -428,9 +424,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     position: 'relative',
     zIndex: 2,
-  },
-  androidOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sotdLoading: {
     paddingVertical: SPACING.xxl,

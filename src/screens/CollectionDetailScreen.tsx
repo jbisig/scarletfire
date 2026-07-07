@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   Alert,
   StyleSheet,
@@ -19,7 +18,6 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayerActions } from '../contexts/PlayerContext';
-import { archiveApi } from '../services/archiveApi';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { useToast } from '../contexts/ToastContext';
@@ -940,7 +938,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
   empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
 
   // Web header shell (wrapper/opacity/blur/nav row) now lives in <GlassHeader>;
@@ -1092,8 +1089,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  trackTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
-  trackSubtitle: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   removeIconBtn: {
     padding: 8,
   },

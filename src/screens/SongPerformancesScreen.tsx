@@ -391,9 +391,6 @@ const styles = StyleSheet.create({
   listContentDesktop: {
     padding: 16,
   },
-  performanceItemWrapper: {
-    position: 'relative',
-  },
   performanceItem: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xxl,
@@ -404,12 +401,5 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     ...TYPOGRAPHY.body,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    right: SPACING.xxl,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
   },
 });

@@ -33,20 +33,11 @@ export function formatDate(dateString: string): string {
   }
 }
 
-export function formatDateShort(dateString: string): string {
-  try {
-    return format(parseLocalDate(dateString), 'MM/dd');
-  } catch {
-    return dateString;
-  }
-}
-
 /**
  * Split an ISO date ("1982-08-06" or "1982-08-06T...") into its raw
  * year/month/day string parts, ignoring any time component. Shared by
  * formatDateMMDDYYYY and formatDateMDYY below — both are plain string-split
- * formatters (no date-fns / Date parsing), unlike formatDate/formatDateShort
- * above.
+ * formatters (no date-fns / Date parsing), unlike formatDate above.
  */
 function splitIsoDateParts(iso: string): [string, string, string] {
   const [y, m, d] = iso.slice(0, 10).split('-');

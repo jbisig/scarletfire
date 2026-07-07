@@ -23,8 +23,9 @@ export type DateDirection = 'oldest' | 'newest';
  * Canonical tri-state policy (originally FavoritesScreen's behavior, now
  * adopted by every screen that sorts by save time — see PublicProfileScreen,
  * which previously used `(a.savedAt || 0) - (b.savedAt || 0)` and so sorted
- * missing values as if they were saved at the Unix epoch, an intentional bug
- * fix in this task):
+ * items with no savedAt as if they were saved at the Unix epoch instead of
+ * sorting them last; this comparator fixes that by treating missing savedAt
+ * as genuinely missing rather than 0):
  *   - direction 'newest': items with a savedAt sort by timestamp descending;
  *     items with NO savedAt sort LAST.
  *   - direction 'oldest': items with a savedAt sort by timestamp ascending;

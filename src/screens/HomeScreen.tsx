@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
-import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
+import { ShowsFilterTray, ShowsFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';

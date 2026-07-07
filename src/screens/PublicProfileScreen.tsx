@@ -381,19 +381,6 @@ export function PublicProfileScreen() {
     );
   }
 
-  const formatRecentDate = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    return `${Math.floor(diffDays / 30)}mo ago`;
-  };
-
   // Header content for the shows tab: the bounded (max-10) two-column
   // "Recently Played"/"Top 10" rundown, plus the "Favorites (N)" section
   // title and sort control. The actual favorite show rows are the FlatList's
@@ -903,36 +890,5 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     fontSize: 14,
     color: COLORS.textSecondary,
-  },
-  rankedItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    gap: SPACING.md,
-  },
-  rankNumber: {
-    ...TYPOGRAPHY.heading4,
-    color: COLORS.textTertiary,
-    width: 28,
-    textAlign: 'center',
-  },
-  rankedItemInfo: {
-    flex: 1,
-  },
-  rankedItemTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-  },
-  rankedItemSubtitle: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  recentTime: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.textTertiary,
   },
 });

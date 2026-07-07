@@ -9,6 +9,9 @@ let songsByTitle: Map<string, Song> | null = null;
 
 function getSongsByTitle(): Map<string, Song> {
   if (!songsByTitle) {
+    // Map construction is last-write-wins on a duplicate lowercased title —
+    // theoretical in practice since the song catalog generator already
+    // dedupes titles before this file ever sees them.
     songsByTitle = new Map(GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song]));
   }
   return songsByTitle;
