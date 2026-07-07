@@ -92,3 +92,26 @@ insert path behind an edge function that can apply its own throttling.
 a new migration instead. Every file in this directory currently carries a
 header comment confirming it has not yet been applied to any database; once
 that stops being true for a given file, treat it as immutable.
+
+## Apply log
+
+**2026-07-06 — applied to production project `fftvyuykqbixzupxzlmo` ("Grateful
+Dead Player")** via `supabase db query --linked -f <file>`, in filename order:
+
+| Migration | Result |
+|---|---|
+| 120000 collections_sharing_flag | ✅ Applied. 16/16 existing collections grandfathered `is_shared = true`; public SELECT now gated; `updated_at` watermark verified unchanged (trigger guard worked). |
+| 120100 support_requests_limits | ✅ Applied. Pre-audit: 0 of 2 existing rows violated the new limits. All 3 CHECK constraints verified present. |
+| 120200 avatar_bucket_storage_policies | ⏭️ **Intentionally NOT applied.** Dashboard already had four equivalent folder-scoped policies (see the file's STATUS header). File retained as documentation. |
+| 120300 get_activity_feed_auth_uid | ✅ Applied. New 2-arg function + old-signature transition shim both verified resolving and executing. |
+| 120400 search_profiles_auth_uid | ✅ Applied. New 3-arg function + old-signature transition shim both verified. |
+| 120500 popular_collections_is_shared | ✅ Applied. `is_shared = true` filter confirmed in function body; smoke query returned shared collections only. |
+
+Post-apply: `supabase db advisors` reports no findings caused by this batch
+(the collections multiple-permissive-SELECT lint is the intended owner+public
+OR design; the support_requests INSERT advisor is the documented residual gap;
+all other findings pre-date these migrations).
+
+The transition shims (old `get_activity_feed`/`search_profiles` signatures)
+should be dropped in a future migration once pre-2026-07 native binaries have
+aged out.

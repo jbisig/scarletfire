@@ -17,6 +17,20 @@
 --   This migration is the first checked-in source of truth for that policy
 --   set.
 --
+-- >>> STATUS (2026-07-06): RECONCILED — INTENTIONALLY NOT APPLIED <<<
+--   Dashboard inspection of project fftvyuykqbixzupxzlmo found four
+--   equivalent hand-configured policies already on storage.objects:
+--     "Public can view avatars"              SELECT  bucket_id = 'avatars'
+--     "Users can upload their own avatar"    INSERT  bucket + foldername[1] = auth.uid()
+--     "Users can update their own avatar"    UPDATE  bucket + foldername[1] = auth.uid()
+--       (no WITH CHECK — safe: Postgres applies USING to new rows when
+--        WITH CHECK is absent, so folder scoping still holds on both sides)
+--     "Users can delete their own avatar"    DELETE  bucket + foldername[1] = auth.uid()
+--   These enforce the same guarantees this file would add; applying it would
+--   only create redundant permissive duplicates. Kept in the repo as the
+--   documented source of truth for what the dashboard policies must enforce.
+--   If the dashboard policies are ever deleted, apply this file.
+--
 -- >>> RECONCILE WITH DASHBOARD BEFORE APPLYING <<<
 --   The `avatars` bucket may already have equivalent policies created via
 --   the Supabase Studio UI (Storage > Policies), possibly under different
