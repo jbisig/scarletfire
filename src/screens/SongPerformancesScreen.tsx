@@ -13,40 +13,34 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { useShows } from '../contexts/ShowsContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { matchTrackBySlug } from '../utils/trackMatching';
+import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { matchesDateQuery } from '../utils/formatters';
-import showsData from '../data/shows.json';
-import { GratefulDeadShow, ShowsByYear } from '../types/show.types';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { findShowByDate } from '../utils/showLookup';
+import { findSongByTitle } from '../utils/songLookup';
 import { ShowCard } from '../components/ShowCard';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
-// Pre-compute song lookup Map for O(1) access
-const songsByTitle: Map<string, typeof GRATEFUL_DEAD_SONGS[number]> = new Map(
-  GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
-);
+import {
+  PerformanceSortType,
+  PERFORMANCE_SORT_OPTIONS,
+  getPerformanceSortLabel,
+  getPerformanceSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
-type SortType = 'alphabetical' | 'performanceDateOldest' | 'performanceDateNewest' | 'ratingHighest';
-
-const SORT_OPTIONS: SortOption<SortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
-  { value: 'ratingHighest', label: 'Rating (Highest First)' },
-];
+type SortType = PerformanceSortType;
 
 interface Performance {
   date: string;
@@ -55,18 +49,6 @@ interface Performance {
   rating?: 1 | 2 | 3 | null;
 }
 
-const allShowsByYear = showsData as ShowsByYear;
-
-// Look up show details by performance date
-function getShowByDate(performanceDate: string) {
-  const normalizedDate = performanceDate.substring(0, 10);
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-  return yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-}
-
-
 export function SongPerformancesScreen() {
   const route = useRoute<SongPerformancesRouteProp>();
   const navigation = useNavigation<SongPerformancesNavigationProp>();
@@ -74,21 +56,19 @@ export function SongPerformancesScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
-  const { loadTrack } = usePlayer();
+  const { loadTrack } = usePlayerActions();
   const { getShowDetail } = useShows();
-  const { getPlayCount } = usePlayCounts();
+  const { getPlayCountStable } = usePlayCounts();
   const [sortType, setSortType] = useState<SortType>('performanceDateOldest');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
-  const sortButtonRef = useRef<View>(null);
+  const sortDropdown = useSortDropdown();
 
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
 
   // Search bar handlers
   const handleSearchExpand = useCallback(() => {
@@ -99,39 +79,6 @@ export function SongPerformancesScreen() {
     setSearchQuery('');
     setIsSearchExpanded(false);
   }, []);
-
-  // Handle sort button press
-  const handleSortPress = useCallback(() => {
-    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSortModal(true);
-    });
-  }, []);
-
-  // Get sort label based on current sort type
-  const getSortLabel = (type: SortType): string => {
-    switch (type) {
-      case 'alphabetical':
-        return 'Alphabetical';
-      case 'performanceDateOldest':
-      case 'performanceDateNewest':
-        return 'Performance Date';
-      case 'ratingHighest':
-        return 'Rating';
-      default:
-        return 'Sort';
-    }
-  };
-
-  // Get sort icon based on current sort type
-  const getSortIcon = (type: SortType): 'arrow-up' | 'arrow-down' => {
-    switch (type) {
-      case 'performanceDateOldest':
-        return 'arrow-up';
-      default:
-        return 'arrow-down';
-    }
-  };
 
   // Scroll to top when sort type changes
   useEffect(() => {
@@ -148,7 +95,7 @@ export function SongPerformancesScreen() {
 
   // Look up performances from static song data
   const performances = useMemo(() => {
-    const song = songsByTitle.get(songTitle.toLowerCase());
+    const song = findSongByTitle(songTitle);
     return song?.performances ?? [];
   }, [songTitle]);
 
@@ -176,29 +123,29 @@ export function SongPerformancesScreen() {
 
     switch (sortType) {
       case 'alphabetical':
-        return sorted.sort((a, b) => {
-          const venueA = a.venue || '';
-          const venueB = b.venue || '';
-          return venueA.localeCompare(venueB);
-        });
+        return sorted.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
 
       case 'performanceDateOldest':
-        return sorted.sort((a, b) => a.date.localeCompare(b.date));
+        return sorted.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
 
       case 'performanceDateNewest':
-        return sorted.sort((a, b) => b.date.localeCompare(a.date));
+        return sorted.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
 
       case 'ratingHighest':
+        // Screen-specific: rating isn't a generic comparator concept shared
+        // by other screens, so it stays local. Missing rating sorts last;
+        // ties (including two missing ratings) fall back to performance
+        // date, oldest first — reusing compareByDate for that tie-break.
         return sorted.sort((a, b) => {
           if (!a.rating && !b.rating) {
-            return a.date.localeCompare(b.date);
+            return compareByDate(a.date, b.date, 'oldest');
           }
           if (!a.rating) return 1;
           if (!b.rating) return -1;
           if (a.rating !== b.rating) {
             return a.rating - b.rating; // Tier 1 (3 stars) first, then tier 2, then tier 3
           }
-          return a.date.localeCompare(b.date);
+          return compareByDate(a.date, b.date, 'oldest');
         });
 
       default:
@@ -252,14 +199,18 @@ export function SongPerformancesScreen() {
   }, [songTitle, navigation, getShowDetail, loadTrack]);
 
   const renderPerformanceItem = useCallback(({ item }: { item: Performance }) => {
-    const show = getShowByDate(item.date);
-    const songPlayCount = getPlayCount(songTitle, item.identifier);
+    const show = findShowByDate(item.date);
+    // Stable getter — doesn't change identity when some other song/show's
+    // play count changes elsewhere in the app, so this callback (and the
+    // ~400 ShowCard rows relying on it) doesn't churn on every play.
+    const songPlayCount = getPlayCountStable(songTitle, item.identifier);
+    const onPress = () => handlePerformancePress(item);
 
     if (show) {
       return (
         <ShowCard
           show={show}
-          onPress={() => handlePerformancePress(item)}
+          onPress={onPress}
           overrideRating={item.rating}
           overridePlayCount={songPlayCount}
         />
@@ -269,13 +220,13 @@ export function SongPerformancesScreen() {
     return (
       <TouchableOpacity
         style={styles.performanceItem}
-        onPress={() => handlePerformancePress(item)}
+        onPress={onPress}
         activeOpacity={0.7}
       >
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
       </TouchableOpacity>
     );
-  }, [handlePerformancePress, getPlayCount, songTitle]);
+  }, [handlePerformancePress, getPlayCountStable, songTitle, findShowByDate]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
@@ -319,14 +270,14 @@ export function SongPerformancesScreen() {
 
         {/* Sort Row */}
         <View style={styles.sortRow}>
-          <View ref={sortButtonRef} collapsable={false}>
+          <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabel}
-              onPress={handleSortPress}
+              onPress={sortDropdown.open}
               activeOpacity={0.7}
             >
-              <Ionicons name={getSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
-              <Text style={styles.sortLabelText}>{getSortLabel(sortType)}</Text>
+              <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -334,10 +285,10 @@ export function SongPerformancesScreen() {
 
       {/* Sort Dropdown */}
       <SortDropdown
-        visible={showSortModal}
-        onClose={() => setShowSortModal(false)}
-        position={sortButtonPosition}
-        options={SORT_OPTIONS}
+        visible={sortDropdown.visible}
+        onClose={sortDropdown.close}
+        position={sortDropdown.position}
+        options={PERFORMANCE_SORT_OPTIONS}
         selectedValue={sortType}
         onSelect={setSortType}
       />
@@ -373,7 +324,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSecondary,
   },
   header: {
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
   },
@@ -440,9 +391,6 @@ const styles = StyleSheet.create({
   listContentDesktop: {
     padding: 16,
   },
-  performanceItemWrapper: {
-    position: 'relative',
-  },
   performanceItem: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xxl,
@@ -453,12 +401,5 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     ...TYPOGRAPHY.body,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    right: SPACING.xxl,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
   },
 });

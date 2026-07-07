@@ -2,12 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   Alert,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   Platform,
   ImageBackground,
   Modal,
@@ -19,10 +17,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useAuth } from '../contexts/AuthContext';
-import { usePlayer } from '../contexts/PlayerContext';
-import { archiveApi } from '../services/archiveApi';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { logger } from '../utils/logger';
 import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useToast } from '../contexts/ToastContext';
 import { useWebAuthModal } from '../components/web/WebAuthModal';
 import { collectionsService } from '../services/collectionsService';
 import { profileService } from '../services/profileService';
@@ -36,14 +34,26 @@ import { GratefulDeadShow } from '../types/show.types';
 import { ShowCard } from '../components/ShowCard';
 import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ErrorState, LoadingState } from '../components/StateViews';
 import { BottomSheet } from '../components/BottomSheet';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { BlurBackground } from '../components/shared/BlurBackground';
+import { GlassHeader } from '../components/web/GlassHeader';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { formatCount } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
+import {
+  CollectionSortType,
+  COLLECTION_SHOW_SORT_OPTIONS,
+  getCollectionSortLabel,
+  getCollectionSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 // Derive a stable background index (1-6) from the collection id so that
 // returning to a collection shows the same header image.
@@ -60,42 +70,7 @@ function bgIndexFromId(id: string): number {
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
 
-type ShowSortType =
-  | 'alphabetical'
-  | 'dateAddedOldest'
-  | 'dateAddedNewest'
-  | 'performanceDateOldest'
-  | 'performanceDateNewest';
-
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateAddedOldest', label: 'Date Added (Oldest First)' },
-  { value: 'dateAddedNewest', label: 'Date Added (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-];
-
-function getShowSortLabel(s: ShowSortType): string {
-  switch (s) {
-    case 'alphabetical': return 'Alphabetical';
-    case 'dateAddedOldest':
-    case 'dateAddedNewest': return 'Date Added';
-    case 'performanceDateOldest':
-    case 'performanceDateNewest': return 'Show Date';
-  }
-}
-
-function getShowSortIcon(s: ShowSortType): 'arrow-up' | 'arrow-down' {
-  switch (s) {
-    case 'dateAddedOldest':
-    case 'performanceDateOldest':
-      return 'arrow-up';
-    case 'alphabetical':
-      return 'arrow-down';
-    default:
-      return 'arrow-down';
-  }
-}
+type ShowSortType = CollectionSortType;
 
 // Map a stored show metadata blob to the GratefulDeadShow shape that ShowCard expects.
 function toGratefulDeadShow(md: ShowCollectionItemMetadata): GratefulDeadShow {
@@ -132,22 +107,25 @@ export function CollectionDetailScreen() {
     duplicateCollection,
   } = useCollections();
   const { openShareTray } = useShareSheet();
+  const { showToast } = useToast();
   const { openAuthModal } = useWebAuthModal();
-  const { startSequentialSongs, startShuffleSongs } = usePlayer();
+  const { startSequentialSongs, startShuffleSongs } = usePlayerActions();
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [items, setItems] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped by the ErrorState's Retry button to re-trigger the load effect
+  // below (which otherwise only depends on route params + fetchItems).
+  const [reloadKey, setReloadKey] = useState(0);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameText, setRenameText] = useState('');
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
   const [saveCount, setSaveCount] = useState<number | null>(null);
   const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
-  const [showSortModalVisible, setShowSortModalVisible] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
-  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
-  const showSortButtonRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -158,13 +136,6 @@ export function CollectionDetailScreen() {
   const [signInPromptVisible, setSignInPromptVisible] = useState(false);
   const pendingAuthActionRef = useRef<'save' | 'duplicate' | null>(null);
   const wasSignedInRef = useRef(false);
-
-  const handleShowSortPress = () => {
-    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSortModalVisible(true);
-    });
-  };
 
   const handleMenuPress = () => {
     menuButtonRef.current?.measure((_x, _y, _width, height, pageX, pageY) => {
@@ -186,6 +157,7 @@ export function CollectionDetailScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         if (route.params?.collectionId) {
           const collectionId = route.params.collectionId;
@@ -215,6 +187,9 @@ export function CollectionDetailScreen() {
             }
           }
         }
+      } catch (e) {
+        logger.api.error('Failed to load collection', e);
+        if (!cancelled) setLoadError("Couldn't load this collection.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -222,7 +197,13 @@ export function CollectionDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [route.params?.collectionId, route.params?.username, route.params?.slug, fetchItems]);
+  }, [
+    route.params?.collectionId,
+    route.params?.username,
+    route.params?.slug,
+    fetchItems,
+    reloadKey,
+  ]);
 
   // Keep `collection` in sync with the context for owner-edited collections
   // (rename, description change) without triggering the expensive items load.
@@ -247,19 +228,26 @@ export function CollectionDetailScreen() {
   useEffect(() => {
     (async () => {
       if (!collection || ownerUsername) return;
-      if (user && user.id === collection.userId) {
-        const me = await profileService.getUserProfile(user.id);
-        setOwnerUsername(me?.username ?? null);
-        return;
+      try {
+        if (user && user.id === collection.userId) {
+          const me = await profileService.getUserProfile(user.id);
+          setOwnerUsername(me?.username ?? null);
+          return;
+        }
+        const savedMatch = savedCollections.find((s) => s.collectionId === collection.id);
+        if (savedMatch) {
+          setOwnerUsername(savedMatch.lastKnownOwnerUsername);
+          return;
+        }
+        // Fallback: fetch the owner's profile by userId so the share/Owner fields populate.
+        const prof = await profileService.getUserProfile(collection.userId);
+        setOwnerUsername(prof?.username ?? null);
+      } catch (e) {
+        // Degrade gracefully: attribution is a nice-to-have, not worth an
+        // error state or toast. Leave ownerUsername null so the header/share
+        // UI simply omits the "by @username" attribution.
+        logger.api.error('Failed to load collection owner username', e);
       }
-      const savedMatch = savedCollections.find((s) => s.collectionId === collection.id);
-      if (savedMatch) {
-        setOwnerUsername(savedMatch.lastKnownOwnerUsername);
-        return;
-      }
-      // Fallback: fetch the owner's profile by userId so the share/Owner fields populate.
-      const prof = await profileService.getUserProfile(collection.userId);
-      setOwnerUsername(prof?.username ?? null);
     })();
   }, [collection, user, ownerUsername, savedCollections]);
 
@@ -311,7 +299,26 @@ export function CollectionDetailScreen() {
       type: collection.type,
       itemCount: items.length,
     });
-  }, [collection, items.length, openShareTray, ownerUsername]);
+
+    // Flip the collection to shared the first time it's shared — this is
+    // what makes the public-link RLS policy allow anon reads. Fire-and-forget
+    // so a slow/failed network call never blocks opening the share tray;
+    // surface failures via a toast instead.
+    if (!collection.isShared) {
+      const sharedCollectionId = collection.id;
+      collectionsService
+        .markCollectionShared(sharedCollectionId)
+        .then(() => {
+          setCollection((prev) =>
+            prev && prev.id === sharedCollectionId ? { ...prev, isShared: true } : prev,
+          );
+        })
+        .catch((e) => {
+          logger.api.error('Failed to mark collection as shared', e);
+          showToast("Couldn't update sharing settings. Please try again.", 'error');
+        });
+    }
+  }, [collection, items.length, openShareTray, ownerUsername, showToast]);
 
   const handleToggleSave = useCallback(async () => {
     if (!collection) return;
@@ -429,14 +436,9 @@ export function CollectionDetailScreen() {
     (show: GratefulDeadShow) => {
       // Use push (not navigate) so Back always returns to THIS collection,
       // even if ShowDetail already exists elsewhere in the nav stack.
-      navigation.dispatch(
-        StackActions.push('ShowDetail', {
-          identifier: show.primaryIdentifier,
-          date: show.date,
-          venue: show.venue,
-          location: show.location,
-        }),
-      );
+      // Full bundle (including classicTier) so ShowDetail's first-paint
+      // header — star rating included — doesn't have to wait on a refetch.
+      navigation.dispatch(StackActions.push('ShowDetail', showDetailParams(show)));
     },
     [navigation],
   );
@@ -513,19 +515,19 @@ export function CollectionDetailScreen() {
       (i.itemMetadata as ShowCollectionItemMetadata).date ?? '';
     switch (showSort) {
       case 'alphabetical':
-        sorted.sort((a, b) => title(a).localeCompare(title(b)));
+        sorted.sort((a, b) => compareAlphabetical(title(a), title(b)));
         break;
       case 'dateAddedOldest':
-        sorted.sort((a, b) => (a.addedAt < b.addedAt ? -1 : 1));
+        sorted.sort((a, b) => compareByDate(a.addedAt, b.addedAt, 'oldest'));
         break;
       case 'dateAddedNewest':
-        sorted.sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1));
+        sorted.sort((a, b) => compareByDate(a.addedAt, b.addedAt, 'newest'));
         break;
       case 'performanceDateOldest':
-        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? -1 : 1));
+        sorted.sort((a, b) => compareByDate(perfDate(a), perfDate(b), 'oldest'));
         break;
       case 'performanceDateNewest':
-        sorted.sort((a, b) => (perfDate(a) < perfDate(b) ? 1 : -1));
+        sorted.sort((a, b) => compareByDate(perfDate(a), perfDate(b), 'newest'));
         break;
     }
     return sorted;
@@ -537,7 +539,14 @@ export function CollectionDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.container, isDesktop && styles.containerDesktop, styles.loadingContainer]}>
-        <ActivityIndicator color={COLORS.accent} />
+        <LoadingState size="small" transparentBackground />
+      </View>
+    );
+  }
+  if (loadError) {
+    return (
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+        <ErrorState message={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
       </View>
     );
   }
@@ -567,33 +576,18 @@ export function CollectionDetailScreen() {
   }
 
   const typeLabel =
-    collection.type === 'playlist'
-      ? 'Playlist'
-      : `${items.length} show${items.length === 1 ? '' : 's'}`;
+    collection.type === 'playlist' ? 'Playlist' : formatCount(items.length, 'show');
 
   const bgSource = getShareBackground(bgIndexFromId(collection.id));
 
   const header = (
-    <View style={styles.webHeaderWrapper}>
-      <ImageBackground source={bgSource} style={styles.webHeaderBg} imageStyle={styles.webHeaderBgImage} />
-      <View style={styles.webHeaderBlur} />
-      <View
-        style={[
-          styles.webHeaderContent,
-          isDesktop && styles.webHeaderContentDesktop,
-          Platform.OS !== 'web' && { paddingTop: insets.top + 8 },
-        ]}
-      >
-        <View style={styles.webNavRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            style={styles.webBackButton}
-          >
-            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
+    <GlassHeader
+      background={<ImageBackground source={bgSource} style={styles.webHeaderBg} />}
+      onBackPress={() => navigation.goBack()}
+      isDesktop={isDesktop}
+      contentGap={20}
+      contentStyle={Platform.OS !== 'web' && { paddingTop: insets.top + 8 }}
+    >
         <View style={styles.webInfoSection}>
           <View style={styles.webTitleBlock}>
             <Text style={styles.webCollectionName} numberOfLines={2}>{collection.name}</Text>
@@ -603,7 +597,7 @@ export function CollectionDetailScreen() {
                 <>
                   <Text style={styles.webMetaDot}>·</Text>
                   <Text style={styles.webMetaText}>
-                    {saveCount} save{saveCount === 1 ? '' : 's'}
+                    {formatCount(saveCount, 'save')}
                   </Text>
                 </>
               )}
@@ -682,24 +676,23 @@ export function CollectionDetailScreen() {
           )}
 
         </View>
-      </View>
-    </View>
+    </GlassHeader>
   );
 
   // Sort bar rendered directly above the list for show collections.
   const sortBar = collection.type === 'show_collection' && items.length > 0 ? (
     <View style={[styles.sortBar, isDesktop && styles.sortBarDesktop]}>
-      <View ref={showSortButtonRef} collapsable={false}>
+      <View ref={showSortDropdown.buttonRef} collapsable={false}>
         <TouchableOpacity
           style={styles.sortLabelButton}
-          onPress={handleShowSortPress}
+          onPress={showSortDropdown.open}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={`Sort shows by ${getShowSortLabel(showSort)}`}
+          accessibilityLabel={`Sort shows by ${getCollectionSortLabel(showSort)}`}
           accessibilityHint="Double tap to change sort order"
         >
-          <Ionicons name={getShowSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
-          <Text style={styles.sortLabelText}>{getShowSortLabel(showSort)}</Text>
+          <Ionicons name={getCollectionSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
+          <Text style={styles.sortLabelText}>{getCollectionSortLabel(showSort)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -767,10 +760,10 @@ export function CollectionDetailScreen() {
       )}
 
       <SortDropdown
-        visible={showSortModalVisible}
-        onClose={() => setShowSortModalVisible(false)}
-        position={showSortButtonPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={COLLECTION_SHOW_SORT_OPTIONS}
         selectedValue={showSort}
         onSelect={setShowSort}
       />
@@ -945,57 +938,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
-  description: {
-    color: COLORS.textSecondary,
-    padding: 16,
-    fontSize: 14,
-  },
-  attribution: {
-    color: COLORS.textSecondary,
-    paddingHorizontal: 16,
-    fontSize: 13,
-  },
   empty: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
 
-  // Web header
-  webHeaderWrapper: {
-    position: 'relative',
-    overflow: 'hidden',
-  },
+  // Web header shell (wrapper/opacity/blur/nav row) now lives in <GlassHeader>;
+  // this just needs to fill the background layer <GlassHeader> provides.
   webHeaderBg: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    opacity: 0.68,
-  },
-  webHeaderBgImage: {},
-  webHeaderBlur: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    // @ts-ignore - web only
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
-    zIndex: 1,
-  },
-  webHeaderContent: {
-    position: 'relative',
-    zIndex: 2,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 20,
-  },
-  webHeaderContentDesktop: {
-    paddingHorizontal: 40,
-  },
-  webNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  webBackButton: {
-    // @ts-ignore
-    cursor: 'pointer',
+    flex: 1,
   },
   webInfoSection: {
     gap: 16,
@@ -1067,9 +1015,6 @@ const styles = StyleSheet.create({
         }
       : {}),
   },
-  pillDestructive: {
-    backgroundColor: COLORS.surfaceLight,
-  },
   pillText: {
     color: COLORS.textPrimary,
     fontSize: 13,
@@ -1121,24 +1066,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  toolbar: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-  toolbarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: COLORS.cardBackground,
-  },
-  toolbarText: { color: COLORS.accent, fontSize: 13, fontWeight: '600' },
-
   // List bodies. Native cards (ShowCard/SongCard) already have their own
   // horizontal padding (SPACING.xxl), so we don't add any on native. On web,
   // ShowCard uses 16px internal padding and we offset the wrapper by 8/24
@@ -1155,13 +1082,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  trackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
   playlistBody: {
     paddingTop: 8,
   },
@@ -1169,8 +1089,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  trackTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '600' },
-  trackSubtitle: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   removeIconBtn: {
     padding: 8,
   },

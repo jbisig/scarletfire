@@ -7,16 +7,23 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { submitSupportRequest } from '../services/supportService';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../constants/theme';
 
+const LOGO = require('../../assets/images/sign-in-logo.png');
+
 const SUBJECT_MAX = 200;
 const MESSAGE_MAX = 5000;
+// Mirrors the support_requests CHECK constraints added in
+// supabase/migrations/20260706120100_support_requests_limits.sql — keep in sync.
+const EMAIL_MAX = 320;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
@@ -24,7 +31,17 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
 export function SupportScreen() {
   const { state: authState } = useAuth();
   const { isDesktop } = useResponsive();
+  const navigation = useNavigation();
   const initialEmail = authState.user?.email ?? '';
+
+  const handleHome = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else if (typeof window !== 'undefined') {
+      // Direct visit (e.g. /support typed in address bar) — return to landing.
+      window.location.href = '/';
+    }
+  }, [navigation]);
 
   const [email, setEmail] = useState(initialEmail);
   const [subject, setSubject] = useState('');
@@ -36,6 +53,7 @@ export function SupportScreen() {
 
   const emailError = useMemo(() => {
     if (!email.trim()) return 'Email is required.';
+    if (email.trim().length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`;
     if (!EMAIL_RE.test(email.trim())) return 'Enter a valid email address.';
     return null;
   }, [email]);
@@ -94,6 +112,17 @@ export function SupportScreen() {
         contentContainerStyle={styles.outer}
       >
         <View style={styles.card}>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity
+              onPress={handleHome}
+              style={styles.backLink}
+              accessibilityRole="link"
+              accessibilityLabel="Back to home"
+            >
+              <Text style={styles.backLinkText}>← Home</Text>
+            </TouchableOpacity>
+          )}
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Thanks!</Text>
           <Text style={styles.body}>
             We got your message and will get back to you as soon as we can.
@@ -113,6 +142,17 @@ export function SupportScreen() {
     >
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity
+              onPress={handleHome}
+              style={styles.backLink}
+              accessibilityRole="link"
+              accessibilityLabel="Back to home"
+            >
+              <Text style={styles.backLinkText}>← Home</Text>
+            </TouchableOpacity>
+          )}
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Support</Text>
           <Text style={styles.body}>
             Found a bug, have a feature request, or just want to say hi? Send us a note.
@@ -130,6 +170,7 @@ export function SupportScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
+              maxLength={EMAIL_MAX}
               editable={status !== 'submitting'}
             />
             {attempted && emailError && <Text style={styles.fieldError}>{emailError}</Text>}
@@ -218,6 +259,21 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 640,
     gap: SPACING.lg,
+  },
+  backLink: {
+    alignSelf: 'flex-start',
+    paddingVertical: SPACING.xs,
+    // @ts-ignore - web only
+    cursor: 'pointer',
+  },
+  backLinkText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    alignSelf: 'center',
   },
   title: {
     ...TYPOGRAPHY.heading1,

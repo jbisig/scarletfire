@@ -45,7 +45,7 @@ describe('feedService.getActivityFeed', () => {
     });
 
     expect(rpc).toHaveBeenCalledWith('get_activity_feed', {
-      viewer_id: 'me',
+      // viewer_id intentionally absent — the RPC derives the viewer from auth.uid()
       following_cursor: null,
       public_cursor: null,
       include_following: true,
@@ -128,7 +128,6 @@ describe('feedService.searchProfiles', () => {
 
     expect(rpc).toHaveBeenCalledWith('search_profiles', {
       query_text: '',
-      viewer_id: 'me',
       cursor_offset: 0,
       page_size: 20,
     });

@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { User } from '@supabase/supabase-js';
 import { authService } from './authService';
 import { followService } from './followService';
+import { resolveAvatarUrl } from './avatarResolver';
 import { Alert } from 'react-native';
 import { logger } from '../utils/logger';
 import { GratefulDeadShow } from '../types/show.types';
@@ -13,6 +14,44 @@ function generatePlaceholderUsername(): string {
   ).join('');
   return `user_${hex}`;
 }
+
+/**
+ * Thrown when the picked avatar image's MIME type (or, as a fallback, its
+ * file extension) isn't on the allowlist. `expo-image-picker` can hand back
+ * jpeg (the universal output when `allowsEditing` crops the image), png,
+ * webp, or heic (iOS, when editing is skipped) — anything else is rejected
+ * rather than trusted to build a `contentType` header from.
+ */
+export class UnsupportedAvatarImageTypeError extends Error {
+  constructor(public readonly received: string) {
+    super(`Unsupported avatar image type: ${received || '(none)'}`);
+    this.name = 'UnsupportedAvatarImageTypeError';
+  }
+}
+
+// Allowlist of MIME types `uploadAvatar` will accept, mapped to the file
+// extension used for the Storage object path. This is the PRIMARY type
+// source: `expo-image-picker` returns `asset.mimeType` on both web and
+// native, and on web the picked `uri` is a `blob:` URL with no file
+// extension at all, so the URI can't be trusted to carry type information.
+const AVATAR_MIME_TO_EXTENSION: Readonly<Record<string, string>> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+};
+
+// Maps an allowed file extension to its image/<subtype> contentType. Used
+// ONLY as a fallback when no mimeType is available (older native-only call
+// sites). `jpg` is normalized to the `jpeg` MIME subtype; `heic` keeps
+// `image/heic`.
+const AVATAR_EXTENSION_TO_MIME_SUBTYPE: Readonly<Record<string, string>> = {
+  jpg: 'jpeg',
+  jpeg: 'jpeg',
+  png: 'png',
+  webp: 'webp',
+  heic: 'heic',
+};
 
 export interface UserProfile {
   id: string;
@@ -60,14 +99,47 @@ class ProfileService {
   }
 
   /**
-   * Upload an avatar image to Supabase Storage
+   * Upload an avatar image to Supabase Storage.
+   *
+   * `mimeType` (from `expo-image-picker`'s asset result, available on both
+   * web and native) is the PRIMARY source of truth for the file type. This
+   * matters on web: `expo-image-picker` there returns `uri: "blob:https://
+   * host/uuid"` with no file extension, so parsing an extension out of the
+   * URI silently yields garbage (and previously threw on every web upload).
+   * The URI-extension parse is used ONLY when no mimeType is supplied
+   * (older native-only call sites).
    */
-  async uploadAvatar(userId: string, imageUri: string): Promise<string> {
+  async uploadAvatar(userId: string, imageUri: string, mimeType?: string | null): Promise<string> {
     const supabase = authService.getClient();
 
     // Create a unique filename using timestamp
     const timestamp = Date.now();
-    const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+
+    let fileExt: string;
+    let mimeSubtype: string;
+
+    const normalizedMimeType = mimeType?.split(';')[0]?.trim().toLowerCase();
+    if (normalizedMimeType) {
+      const mappedExt = AVATAR_MIME_TO_EXTENSION[normalizedMimeType];
+      if (!mappedExt) {
+        throw new UnsupportedAvatarImageTypeError(normalizedMimeType);
+      }
+      fileExt = mappedExt;
+      mimeSubtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[fileExt];
+    } else {
+      // Fallback: no mimeType available. Strip any query/fragment before
+      // splitting on '.' so e.g. "file:///tmp/photo.jpg?ts=1" doesn't parse
+      // as extension "jpg?ts=1".
+      const pathOnly = imageUri.split(/[?#]/)[0];
+      const uriExt = pathOnly.split('.').pop()?.toLowerCase() || '';
+      const subtype = AVATAR_EXTENSION_TO_MIME_SUBTYPE[uriExt];
+      if (!subtype) {
+        throw new UnsupportedAvatarImageTypeError(uriExt);
+      }
+      fileExt = uriExt;
+      mimeSubtype = subtype;
+    }
+
     const fileName = `${userId}/avatar-${timestamp}.${fileExt}`;
 
     // Fetch the image and convert to blob
@@ -81,7 +153,7 @@ class ProfileService {
     const { data, error } = await supabase.storage
       .from('avatars')
       .upload(fileName, arrayBuffer, {
-        contentType: `image/${fileExt}`,
+        contentType: `image/${mimeSubtype}`,
         upsert: true,
       });
 
@@ -158,10 +230,11 @@ class ProfileService {
     }
 
     const imageUri = result.assets[0].uri;
+    const mimeType = result.assets[0].mimeType;
 
     try {
       // Upload to storage
-      const publicUrl = await this.uploadAvatar(userId, imageUri);
+      const publicUrl = await this.uploadAvatar(userId, imageUri, mimeType);
 
       // Update user metadata
       await this.updateAvatarUrl(publicUrl);
@@ -169,11 +242,10 @@ class ProfileService {
       return publicUrl;
     } catch (error) {
       logger.profile.error('Error changing profile picture:', error);
-      Alert.alert(
-        'Upload Failed',
-        'There was a problem uploading your profile picture. Please try again.',
-        [{ text: 'OK' }]
-      );
+      const message = error instanceof UnsupportedAvatarImageTypeError
+        ? 'That image type is not supported. Please choose a JPG, PNG, WEBP, or HEIC photo.'
+        : 'There was a problem uploading your profile picture. Please try again.';
+      Alert.alert('Upload Failed', message, [{ text: 'OK' }]);
       throw error;
     }
   }
@@ -368,18 +440,7 @@ class ProfileService {
 
     // Prefer profiles.avatar_url (covers OAuth + uploaded); fall back to
     // Storage bucket lookup for pre-migration uploaders who haven't re-uploaded.
-    let avatarUrl: string | null = profile.avatar_url ?? null;
-    if (!avatarUrl) {
-      const { data: avatarFiles } = await supabase.storage
-        .from('avatars')
-        .list(profile.id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-      if (avatarFiles && avatarFiles.length > 0) {
-        const { data: urlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(`${profile.id}/${avatarFiles[0].name}`);
-        avatarUrl = urlData.publicUrl;
-      }
-    }
+    const avatarUrl = await resolveAvatarUrl(profile);
 
     const favorites = {
       shows: favResult.data?.shows || [],
@@ -416,16 +477,7 @@ class ProfileService {
 
     // Prefer profiles.avatar_url; fall back to Storage bucket lookup for
     // pre-migration uploaders who haven't re-uploaded yet.
-    let avatarUrl: string | null = profile.avatar_url ?? null;
-    if (!avatarUrl) {
-      const { data: files } = await supabase.storage
-        .from('avatars')
-        .list(id, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-      if (files && files.length > 0) {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(`${id}/${files[0].name}`);
-        avatarUrl = data.publicUrl;
-      }
-    }
+    const avatarUrl = await resolveAvatarUrl(profile);
 
     return { username: profile.username, display_name: profile.display_name, avatarUrl };
   }

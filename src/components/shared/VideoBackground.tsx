@@ -3,6 +3,8 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/theme';
 
+// Note: for the web-only HTML5 <video> element used by the header/player surfaces,
+// see WebVideoBackground.tsx — this component renders a gradient on web instead.
 interface VideoBackgroundProps {
   source: number | { uri: string };
   videoId: string;

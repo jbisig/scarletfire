@@ -1,14 +1,15 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, AppStateStatus, Platform } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
-import { useShows } from '../contexts/ShowsContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
-import { StarRating } from './StarRating';
+import { useAppActiveState } from '../hooks/useAppActiveState';
+import { useVideoRemount } from '../hooks/useVideoRemount';
 import { BlurBackground } from './shared/BlurBackground';
+import { WebVideoBackground } from './shared/WebVideoBackground';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
@@ -22,48 +23,21 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   const { state, play, pause, isRadioMode, isShuffleMode, currentRadioTrack, progressAnim } = usePlayer();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
-  const { getShowDetail } = useShows();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
-  const [appState, setAppState] = useState<AppStateStatus>(
-    Platform.OS !== 'web' ? AppState.currentState : 'active'
-  );
+  const appState = useAppActiveState();
 
   // Force video remount when source changes by briefly unmounting
-  const [videoMounted, setVideoMounted] = useState(true);
-  const prevVideoIdRef = useRef(videoId);
-
-  useEffect(() => {
-    if (videoId !== prevVideoIdRef.current) {
-      prevVideoIdRef.current = videoId;
-      // Briefly unmount video to force clean reload
-      setVideoMounted(false);
-      const timer = setTimeout(() => setVideoMounted(true), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [videoId]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
+  const videoMounted = useVideoRemount(videoId);
 
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('MiniPlayer video failed to load:', error);
     resetToFallback();
   }, [resetToFallback]);
 
-  // Prefetch show details in background so navigation is instant when user taps show
-  useEffect(() => {
-    if (state.currentShow?.identifier) {
-      // Fire and forget - preloads into cache
-      getShowDetail(state.currentShow.identifier).catch(() => {
-        // Ignore errors - this is just prefetching
-      });
-    }
-  }, [state.currentShow?.identifier, getShowDetail]);
+  // Prefetch-show-detail effect now lives once in PlayerContext (was
+  // duplicated identically here and in FullPlayer).
 
   // Get performance rating from shared hook
   const performanceRating = usePerformanceRating();
@@ -96,22 +70,9 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
       >
         {/* Video Background */}
         {Platform.OS === 'web' ? (
-          webVideoUri ? React.createElement('video', {
-            key: `mini-video-${videoId}`,
-            src: webVideoUri,
-            autoPlay: true,
-            loop: true,
-            muted: true,
-            playsInline: true,
-            ref: (el: HTMLVideoElement | null) => {
-              if (!el) return;
-              el.playbackRate = 0.5;
-              el.onerror = () => resetToFallback();
-              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
-              el.onloadeddata = () => clearTimeout(t);
-            },
-            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
-          }) : null
+          webVideoUri ? (
+            <WebVideoBackground uri={webVideoUri} videoId={videoId} onError={resetToFallback} />
+          ) : null
         ) : (
           videoMounted && (() => {
             const { Video, ResizeMode } = require('expo-av');
@@ -208,9 +169,6 @@ const styles = StyleSheet.create({
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
-  },
-  androidOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   contentOverlay: {
     flex: 1,

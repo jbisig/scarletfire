@@ -150,11 +150,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = authService.onAuthStateChanged(
       (user) => {
-        if (!hasResolved) {
-          hasResolved = true;
-          clearTimeout(timeoutId);
-          dispatch({ type: 'AUTH_STATE_CHANGED', user });
-        }
+        // hasResolved only guards the loading-timeout race below — every
+        // auth state change (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED,
+        // USER_UPDATED, cross-tab sign-out, etc.) must still reach the
+        // reducer so the UI stays in sync with the real session.
+        hasResolved = true;
+        clearTimeout(timeoutId);
+        dispatch({ type: 'AUTH_STATE_CHANGED', user });
       },
       () => {
         dispatch({ type: 'PASSWORD_RECOVERY' });
@@ -168,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Auto-expire password recovery state after 15 minutes
-  const recoveryTimeoutRef = useRef<NodeJS.Timeout>();
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (state.isPasswordRecovery) {
       recoveryTimeoutRef.current = setTimeout(() => {

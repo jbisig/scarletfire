@@ -9,24 +9,24 @@ import {
   Animated,
   Easing,
   InteractionManager,
-  AppState,
-  AppStateStatus,
   Platform,
-  Image,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { usePlayer } from '../contexts/PlayerContext';
-import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
-import { useShows } from '../contexts/ShowsContext';
 import { formatDate, formatTime, getVenueFromShow } from '../utils/formatters';
+import { toFavoriteSong } from '../utils/favoriteSong';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { usePerformanceRating } from '../hooks/usePerformanceRating';
+import { useAppActiveState } from '../hooks/useAppActiveState';
+import { useVideoRemount } from '../hooks/useVideoRemount';
+import { usePlayerProgress } from '../hooks/usePlayerProgress';
 import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { GESTURE_THRESHOLDS } from '../constants/thresholds';
@@ -36,17 +36,8 @@ import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlay
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import { slugifyTrackTitle, type ShareItem } from '../services/shareService';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
-
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
+import { resolveVideoUri } from '../utils/resolveVideoUri';
+import { WebVideoBackground } from './shared/WebVideoBackground';
 
 interface FullPlayerProps {
   visible: boolean;
@@ -66,7 +57,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
-  const { getShowDetail } = useShows();
   const { openShareTray } = useShareSheet();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
   const progressBarRef = useRef<View>(null);
@@ -80,38 +70,19 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const isInteractingRef = useRef(false);
 
   // Track app state to pause video when in background (saves battery) — native only
-  const [appState, setAppState] = useState<AppStateStatus>(
-    Platform.OS !== 'web' ? AppState.currentState : 'active'
-  );
+  const appState = useAppActiveState();
 
   // Cast state for Android
   const [castState, setCastState] = useState<CastState>('NO_DEVICES');
 
   // Force video remount when source changes by briefly unmounting
-  const [videoMounted, setVideoMounted] = useState(true);
+  const videoMounted = useVideoRemount(videoId);
   const [addToPlaylistVisible, setAddToPlaylistVisible] = useState(false);
-  const prevVideoIdRef = useRef(videoId);
-
-  useEffect(() => {
-    if (videoId !== prevVideoIdRef.current) {
-      prevVideoIdRef.current = videoId;
-      // Briefly unmount video to force clean reload
-      setVideoMounted(false);
-      const timer = setTimeout(() => setVideoMounted(true), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [videoId]);
 
   const handleVideoError = useCallback(() => {
     logger.video.warn('FullPlayer video failed to load, falling back to bundled video');
     resetToFallback();
   }, [resetToFallback]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
 
   // Cast state listener (Android only)
   useEffect(() => {
@@ -132,11 +103,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     haptics.medium();
     nativeAudioPlayer.showCastDialog();
   }, []);
-
-  // Time display via ref to avoid re-renders on every update
-  // Only force re-render when position changes by more than 1 second
-  const timeDisplayRef = useRef({ position: 0, duration: 0 });
-  const [, forceTimeUpdate] = useState(0);
 
   // Combined position = slide position + drag offset
   const translateY = Animated.add(slideAnim, dragOffset);
@@ -169,52 +135,34 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     }
   }, [visible]);
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPosition, setDragPosition] = useState(0);
   const lastRewindTapRef = useRef<number>(0);
-  const isDraggingRef = useRef(false);
+  // Bar measurement recorded on gesture grant (native `measure()` is async,
+  // so move/release — separate PanResponder callbacks — need it stashed
+  // somewhere; this stays here rather than in the hook since it's part of
+  // the native-specific gesture wiring, not the shared progress math).
   const barMeasurements = useRef({ pageX: 0, width: 0 });
-  const currentTrackRef = useRef(state.currentTrack);
 
-  // Update refs when state changes
-  useEffect(() => {
-    currentTrackRef.current = state.currentTrack;
-  }, [state.currentTrack]);
+  const trackDurationMs = state.currentTrack?.duration ? state.currentTrack.duration * 1000 : 0;
 
-  // Prefetch show details in background so navigation is instant
-  useEffect(() => {
-    if (state.currentShow?.identifier) {
-      // Fire and forget - preloads into cache
-      getShowDetail(state.currentShow.identifier).catch(() => {
-        // Ignore errors - this is just prefetching
-      });
-    }
-  }, [state.currentShow?.identifier, getShowDetail]);
-
-  // Update time display at regular intervals (for text only, not animation)
-  // Uses ref to avoid re-renders; only forces update when position changes significantly
-  useEffect(() => {
-    if (!visible) return;
-
-    // Update ref immediately
-    timeDisplayRef.current = { ...progressRef.current };
-    forceTimeUpdate(n => n + 1);
-
-    // Then update every second for the time text, but only re-render if changed by >= 1 second
-    const interval = setInterval(() => {
-      if (!isDragging && !isInteractingRef.current) {
-        const prev = timeDisplayRef.current;
-        const next = progressRef.current;
-        // Only force re-render if position changed by at least 1 second
-        if (Math.abs(next.position - prev.position) >= 1000 || prev.duration !== next.duration) {
-          timeDisplayRef.current = { ...next };
-          forceTimeUpdate(n => n + 1);
-        }
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [visible, progressRef, isDragging]);
+  const {
+    displayPosition,
+    displayDuration,
+    isDragging,
+    progressWidth,
+    thumbLeft,
+    beginDrag,
+    moveDrag,
+    endDrag,
+    cancelDrag,
+  } = usePlayerProgress({
+    progressRef,
+    progressAnim,
+    seekTo,
+    trackDurationMs,
+    enabled: visible,
+    isPaused: useCallback(() => isInteractingRef.current, []),
+    resyncOnDragToggle: true,
+  });
 
   // Get performance rating from shared hook
   const performanceRating = usePerformanceRating();
@@ -243,13 +191,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     openShareTray(item);
   }, [state.currentTrack, state.currentShow, performanceRating, openShareTray]);
 
-  const calculatePositionFromTouch = (pageX: number, trackDurationMs: number): number => {
-    if (barMeasurements.current.width === 0) return 0;
-    const relativeX = pageX - barMeasurements.current.pageX;
-    const percentage = Math.max(0, Math.min(1, relativeX / barMeasurements.current.width));
-    return percentage * trackDurationMs;
-  };
-
   const handleRewind = (): void => {
     const now = Date.now();
     const timeSinceLastTap = now - lastRewindTapRef.current;
@@ -272,15 +213,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     if (isSongFavorite(trackId, showIdentifier)) {
       removeFavoriteSong(trackId, showIdentifier);
     } else {
-      const favoriteSong: FavoriteSong = {
-        trackId: state.currentTrack.id,
-        trackTitle: state.currentTrack.title,
-        showIdentifier: state.currentShow.identifier,
-        showDate: state.currentShow.date,
-        venue: getVenueFromShow(state.currentShow),
-        streamUrl: state.currentTrack.streamUrl,
-      };
-      addFavoriteSong(favoriteSong);
+      addFavoriteSong(toFavoriteSong(state.currentTrack, state.currentShow));
     }
   };
 
@@ -302,14 +235,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
     });
   };
 
-  // Helper to get current duration from ref or track metadata
-  const getDurationMs = useCallback(() => {
-    const refDuration = progressRef.current.duration;
-    const trackDurationMs = currentTrackRef.current?.duration ? currentTrackRef.current.duration * 1000 : 0;
-    return refDuration > 0 ? refDuration : trackDurationMs;
-  }, [progressRef]);
-
-  // Progress bar pan responder
+  // Progress bar pan responder — gesture wiring only; position math, drag
+  // state, and duration fallback live in usePlayerProgress.
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -318,40 +245,22 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         haptics.light();
         progressBarRef.current?.measure((x, y, width, height, barPageX) => {
           barMeasurements.current = { pageX: barPageX, width };
-          const durationMs = getDurationMs();
           const touchX = barPageX + evt.nativeEvent.locationX;
-          const position = calculatePositionFromTouch(touchX, durationMs);
-          isDraggingRef.current = true;
-          setIsDragging(true);
-          setDragPosition(position);
+          beginDrag(touchX, barPageX, width);
         });
       },
       onPanResponderMove: (evt) => {
-        if (barMeasurements.current.width === 0) return;
-        const durationMs = getDurationMs();
-        const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
-        const position = calculatePositionFromTouch(touchX, durationMs);
-        setDragPosition(position);
+        const { pageX: barPageX, width } = barMeasurements.current;
+        const touchX = barPageX + evt.nativeEvent.locationX;
+        moveDrag(touchX, barPageX, width);
       },
       onPanResponderRelease: (evt) => {
-        if (barMeasurements.current.width === 0) return;
-        const durationMs = getDurationMs();
-        const touchX = barMeasurements.current.pageX + evt.nativeEvent.locationX;
-        const position = calculatePositionFromTouch(touchX, durationMs);
-        setDragPosition(position);
-        seekTo(position);
-        // Update time display ref immediately after seek
-        timeDisplayRef.current = { position, duration: durationMs };
-        setTimeout(() => {
-          setIsDragging(false);
-          isDraggingRef.current = false;
-        }, 200);
+        const { pageX: barPageX, width } = barMeasurements.current;
+        const touchX = barPageX + evt.nativeEvent.locationX;
+        endDrag(touchX, barPageX, width);
       },
       onPanResponderTerminate: () => {
-        setIsDragging(false);
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 100);
+        cancelDrag();
       },
     })
   ).current;
@@ -432,28 +341,6 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   if (!shouldRender || !state.currentTrack) return null;
 
-  const trackDuration = state.currentTrack.duration ? state.currentTrack.duration * 1000 : 0;
-  const timeDisplay = timeDisplayRef.current;
-  const duration = timeDisplay.duration > 0 ? timeDisplay.duration : trackDuration;
-  const currentPosition = isDragging ? dragPosition : timeDisplay.position;
-
-  // Animated width for progress bar (avoids re-renders)
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  // Animated thumb position (same source as fill bar to stay in sync)
-  const thumbLeft = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  // For drag position only
-  const dragProgress = duration > 0 ? (dragPosition / duration) : 0;
-
   return (
     <Animated.View
       style={[
@@ -464,22 +351,9 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
         {Platform.OS === 'web' ? (
-          webVideoUri ? React.createElement('video', {
-            key: `fullplayer-video-${videoId}`,
-            src: webVideoUri,
-            autoPlay: true,
-            loop: true,
-            muted: true,
-            playsInline: true,
-            ref: (el: HTMLVideoElement | null) => {
-              if (!el) return;
-              el.playbackRate = 0.5;
-              el.onerror = () => resetToFallback();
-              const t = setTimeout(() => { if (el.readyState === 0) resetToFallback(); }, 5000);
-              el.onloadeddata = () => clearTimeout(t);
-            },
-            style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' },
-          }) : null
+          webVideoUri ? (
+            <WebVideoBackground uri={webVideoUri} videoId={videoId} onError={resetToFallback} />
+          ) : null
         ) : (
           videoMounted && (() => {
             const { Video: ExpoVideo, ResizeMode: ExpoResizeMode } = require('expo-av');
@@ -536,8 +410,8 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             accessibilityLabel={castState === 'CONNECTED' ? 'Disconnect from Chromecast' : 'Cast to Chromecast'}
             accessibilityHint="Double tap to open cast device selection"
           >
-            <Ionicons
-              name={castState === 'CONNECTED' ? 'cast' : 'cast-outline'}
+            <MaterialIcons
+              name={castState === 'CONNECTED' ? 'cast-connected' : 'cast'}
               size={24}
               color={castState === 'CONNECTED' ? COLORS.accent : COLORS.textPrimary}
             />
@@ -643,20 +517,20 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             {...panResponder.panHandlers}
           >
             <View style={styles.progressBarBackground}>
-              <Animated.View style={[styles.progressBarFill, { width: isDragging ? `${dragProgress * 100}%` : progressWidth }]} />
+              <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
             </View>
             <Animated.View
               style={[
                 styles.progressThumb,
-                { left: isDragging ? `${dragProgress * 100}%` : thumbLeft },
+                { left: thumbLeft },
                 isDragging && styles.progressThumbActive
               ]}
               pointerEvents="none"
             />
           </View>
           <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            <Text style={styles.timeText}>{formatTime(displayPosition)}</Text>
+            <Text style={styles.timeText}>{formatTime(displayDuration)}</Text>
           </View>
         </View>
 
@@ -698,14 +572,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           onClose={() => setAddToPlaylistVisible(false)}
           type="playlist"
           itemIdentifier={`${state.currentShow.identifier}::${state.currentTrack.id}`}
-          itemMetadata={{
-            trackId: state.currentTrack.id,
-            trackTitle: state.currentTrack.title,
-            showIdentifier: state.currentShow.identifier,
-            showDate: state.currentShow.date,
-            venue: state.currentShow.venue,
-            streamUrl: state.currentTrack.streamUrl,
-          }}
+          itemMetadata={toFavoriteSong(state.currentTrack, state.currentShow)}
         />
       )}
     </Animated.View>
@@ -810,19 +677,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  saveButton: {
-    width: 33,
-    height: 33,
-    borderRadius: RADIUS.full,
-    borderWidth: 2,
-    borderColor: COLORS.textPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
   },
   trackActionsGroup: {
     flexDirection: 'row',

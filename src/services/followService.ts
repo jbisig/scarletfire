@@ -1,6 +1,7 @@
 import { authService } from './authService';
 import { logger } from '../utils/logger';
 import { activityService } from './activityService';
+import { resolveAvatarUrl } from './avatarResolver';
 
 export interface FollowUser {
   id: string;
@@ -89,16 +90,6 @@ class FollowService {
     return data !== null;
   }
 
-  private async resolveAvatarUrl(userId: string): Promise<string | null> {
-    const supabase = authService.getClient();
-    const { data: files } = await supabase.storage
-      .from('avatars')
-      .list(userId, { limit: 1, sortBy: { column: 'created_at', order: 'desc' } });
-    if (!files || files.length === 0) return null;
-    const { data } = supabase.storage.from('avatars').getPublicUrl(`${userId}/${files[0].name}`);
-    return data.publicUrl || null;
-  }
-
   private async hydrateUsers(userIds: string[]): Promise<FollowUser[]> {
     if (userIds.length === 0) return [];
     const supabase = authService.getClient();
@@ -107,11 +98,11 @@ class FollowService {
     // placeholder.
     const { data: publicProfiles } = await supabase
       .from('profiles')
-      .select('id, username, display_name')
+      .select('id, username, display_name, avatar_url')
       .in('id', userIds);
-    const byId = new Map<string, { username: string; display_name: string | null }>();
+    const byId = new Map<string, { username: string; display_name: string | null; avatar_url: string | null }>();
     for (const p of publicProfiles ?? []) {
-      byId.set(p.id, { username: p.username, display_name: p.display_name });
+      byId.set(p.id, { username: p.username, display_name: p.display_name, avatar_url: p.avatar_url ?? null });
     }
     return Promise.all(userIds.map(async (id) => {
       const pub = byId.get(id);
@@ -122,7 +113,10 @@ class FollowService {
         id,
         username: pub.username,
         display_name: pub.display_name,
-        avatarUrl: await this.resolveAvatarUrl(id),
+        // avatar_url comes from the batch SELECT above, so this only makes a
+        // per-row Storage round-trip for rows that still lack avatar_url
+        // (pre-migration uploaders) — not for every row like before.
+        avatarUrl: await resolveAvatarUrl({ id, avatar_url: pub.avatar_url }),
         isPrivate: false,
       };
     }));

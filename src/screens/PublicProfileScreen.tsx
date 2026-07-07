@@ -1,47 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-
-// Grow a rendered-count from `initial` up to `total` in `chunk`-size steps,
-// pacing with setTimeout so skeleton rows are visible while the list fills.
-// Pass a `resetKey` (e.g. the active tab) to restart the progression when
-// the consumer switches contexts.
-function useProgressiveCount(
-  total: number,
-  resetKey: unknown,
-  initial: number = 0,
-  chunk: number = 8,
-  intervalMs: number = 120,
-): number {
-  const [state, setState] = useState<{ key: unknown; count: number }>(() => ({
-    key: resetKey,
-    count: Math.min(total, initial),
-  }));
-
-  // Render-phase reset so the new tab paints skeletons on the first frame
-  // instead of waiting for the post-render effect to clear the stale count.
-  if (state.key !== resetKey) {
-    setState({ key: resetKey, count: Math.min(total, initial) });
-  }
-
-  const effectiveCount = state.key === resetKey ? state.count : Math.min(total, initial);
-
-  useEffect(() => {
-    if (total <= initial) return;
-    let current = initial;
-    let cancelled = false;
-    const id = setInterval(() => {
-      if (cancelled) return;
-      current = Math.min(current + chunk, total);
-      setState((prev) => (prev.key === resetKey ? { key: resetKey, count: current } : prev));
-      if (current >= total) clearInterval(id);
-    }, intervalMs);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [total, resetKey, initial, chunk, intervalMs]);
-
-  return effectiveCount;
-}
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -60,143 +17,71 @@ import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { Collection } from '../types/collection.types';
 import { ProfileImage } from '../components/ProfileImage';
 import { ShowCard } from '../components/ShowCard';
-import { StarRating } from '../components/StarRating';
+import { SongCard } from '../components/SongCard';
 import { useResponsive } from '../hooks/useResponsive';
-import { usePlayer } from '../contexts/PlayerContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useShareSheet } from '../contexts/ShareSheetContext';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { archiveApi } from '../services/archiveApi';
-import { FavoriteSong } from '../contexts/FavoritesContext';
-import { logger } from '../utils/logger';
+import { showDetailParams } from '../utils/showDetailParams';
+import { GratefulDeadShow } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
-import { PlayCountBadge } from '../components/PlayCountBadge';
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import { SortDropdown } from '../components/SortDropdown';
+import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { ErrorState } from '../components/StateViews';
 import { followService } from '../services/followService';
 import { useAuth } from '../contexts/AuthContext';
-import showsData from '../data/shows.json';
-import { ShowsByYear } from '../types/show.types';
-
-const allShowsByYear = showsData as ShowsByYear;
-
-function getCorrectVenue(showDate: string): string | undefined {
-  const normalizedDate = showDate.substring(0, 10);
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-  if (show) return getVenueFromShow(show);
-  return undefined;
-}
+import {
+  SavedItemSortType,
+  SAVED_SHOW_SORT_OPTIONS,
+  SAVED_SONG_SORT_OPTIONS,
+  getSavedItemSortLabel,
+  getSavedItemSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
+import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type ProfileRouteParams = {
   PublicProfile: { username: string };
 };
 
 type TabType = 'shows' | 'songs' | 'collections';
-type ShowSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
-type SongSortType = 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest' | 'alphabetical';
+type ShowSortType = SavedItemSortType;
+type SongSortType = SavedItemSortType;
+type ProfileFavoriteSong = PublicProfileData['favorites']['songs'][number];
 
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+// Discriminated union so the single FlatList backing the shows/songs tabs can
+// hold either row type. keyExtractor below is type-prefixed so a show's
+// primaryIdentifier can never collide with a song's trackId/showIdentifier.
+type ProfileListRow =
+  | { kind: 'show'; show: GratefulDeadShow }
+  | { kind: 'song'; song: ProfileFavoriteSong };
+
+const PUBLIC_PROFILE_TABS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
+  { key: 'collections', label: 'Collections' },
 ];
-
-const SONG_SORT_OPTIONS: SortOption<SongSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
+const PUBLIC_PROFILE_TABS_NO_COLLECTIONS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
 ];
-
-function getSortLabel(sortType: ShowSortType | SongSortType): string {
-  switch (sortType) {
-    case 'alphabetical': return 'Alphabetical';
-    case 'dateSavedNewest': case 'dateSavedOldest': return 'Date Saved';
-    case 'performanceDateOldest': case 'performanceDateNewest': return 'Date';
-    default: return 'Sort';
-  }
-}
-
-function getSortIcon(sortType: ShowSortType | SongSortType): 'arrow-up' | 'arrow-down' {
-  return sortType === 'dateSavedOldest' || sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
-}
-
-function SongRow({ song, trailingContent, loadingSongId, isDesktop, onPress }: {
-  song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string };
-  trailingContent?: React.ReactNode;
-  loadingSongId: string | null;
-  isDesktop: boolean;
-  onPress: (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = getCorrectVenue(song.showDate) || song.venue;
-  const songKey = `${song.trackId}-${song.showIdentifier}`;
-  const isSongLoading = loadingSongId === songKey;
-
-  return (
-    <TouchableOpacity
-      style={[styles.songItem, isSongLoading && styles.songItemLoading, isDesktop && isHovered && styles.songItemHovered]}
-      onPress={() => onPress(song)}
-      activeOpacity={0.7}
-      disabled={isSongLoading}
-      // @ts-ignore - web only mouse events
-      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
-      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
-    >
-      <View style={styles.songContentRow}>
-        <View style={styles.songInfo}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {song.trackTitle}
-          </Text>
-          <View style={styles.songDateRow}>
-            <Text style={styles.songDate}>
-              {formatDate(song.showDate)}
-            </Text>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={14} />
-            )}
-          </View>
-          {venue && (
-            <Text style={styles.songVenue} numberOfLines={1}>
-              {venue}
-            </Text>
-          )}
-        </View>
-        {trailingContent}
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 export function PublicProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<ProfileRouteParams, 'PublicProfile'>>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const { loadTrack } = usePlayer();
+  const { loadingSongId, playSong } = usePlaySavedSong();
 
   const username = route.params?.username ?? '';
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('shows');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [songSortModal, setSongSortModal] = useState(false);
-  const [showSortPosition, setShowSortPosition] = useState({ top: 0, left: 0 });
-  const [songSortPosition, setSongSortPosition] = useState({ top: 0, left: 0 });
   const [publicCollections, setPublicCollections] = useState<Collection[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -206,8 +91,8 @@ export function PublicProfileScreen() {
   const currentUser = authState.user;
   const isOwnProfile = !!currentUser && currentUser.id === data?.profile?.id;
   const { collections: ownedCollections } = useCollections();
-  const showSortRef = useRef<View>(null);
-  const songSortRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
+  const songSortDropdown = useSortDropdown();
 
   useEffect(() => {
     if (!username) {
@@ -351,21 +236,9 @@ export function PublicProfileScreen() {
       .slice(0, 10);
   }, [data]);
 
-  const handleSongPress = useCallback(async (song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
-    const songKey = `${song.trackId}-${song.showIdentifier}`;
-    try {
-      setLoadingSongId(songKey);
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
-      const track = showDetail.tracks.find(t => t.id === song.trackId);
-      if (track) {
-        await loadTrack(track, showDetail, showDetail.tracks);
-      }
-    } catch (error) {
-      logger.player.error('Failed to load song:', error);
-    } finally {
-      setLoadingSongId(null);
-    }
-  }, [loadTrack]);
+  const handleSongPress = useCallback((song: { trackId: string; trackTitle: string; showIdentifier: string; showDate: string; venue?: string }) => {
+    playSong(song.showIdentifier, song.trackId);
+  }, [playSong]);
 
   const displayName = data?.profile.display_name || username;
 
@@ -381,62 +254,105 @@ export function PublicProfileScreen() {
     });
   }, [data, displayName, openShareTray]);
 
-  // Sorted favorite shows
+  // Sorted favorite shows. Missing-savedAt policy intentionally matches
+  // FavoritesScreen's canonical tri-state (see compareBySavedAt) instead of
+  // the previous `(a.savedAt || 0)` behavior, which treated an absent
+  // savedAt as if it were saved at the Unix epoch.
   const sortedFavoriteShows = useMemo(() => {
     if (!data) return [];
     const shows = [...data.favorites.shows];
     switch (showSortType) {
       case 'alphabetical':
-        return shows.sort((a, b) => (a.venue || '').localeCompare(b.venue || ''));
+        return shows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
       case 'dateSavedNewest':
-        return shows.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
       case 'dateSavedOldest':
-        return shows.sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
       case 'performanceDateOldest':
-        return shows.sort((a, b) => a.date.localeCompare(b.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
       case 'performanceDateNewest':
-        return shows.sort((a, b) => b.date.localeCompare(a.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
       default:
         return shows;
     }
   }, [data, showSortType]);
 
-  // Sorted favorite songs
+  // Sorted favorite songs. Same canonical savedAt policy as shows above.
   const sortedFavoriteSongs = useMemo(() => {
     if (!data) return [];
     const songs = [...data.favorites.songs];
     switch (songSortType) {
       case 'alphabetical':
-        return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
+        return songs.sort((a, b) => compareAlphabetical(a.trackTitle, b.trackTitle));
       case 'dateSavedNewest':
-        return songs.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
       case 'dateSavedOldest':
-        return songs.sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
       case 'performanceDateOldest':
-        return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'oldest'));
       case 'performanceDateNewest':
-        return songs.sort((a, b) => b.showDate.localeCompare(a.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'newest'));
       default:
         return songs;
     }
   }, [data, songSortType]);
 
-  const handleShowSortPress = () => {
-    showSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
-      setShowSortPosition({ top: pageY + h + 8, left: pageX });
-      setShowSortModal(true);
-    });
-  };
+  // Takes the full show (not just identifier/venue/date) so ShowDetail gets
+  // the full nav-param bundle — including location and classicTier — for
+  // its first paint, instead of waiting on a refetch.
+  const handleShowPress = useCallback((show: GratefulDeadShow) => {
+    navigation.navigate('ShowDetail', showDetailParams(show));
+  }, [navigation]);
 
-  const visibleShowCount = useProgressiveCount(sortedFavoriteShows.length, activeTab === 'shows');
-  const visibleSongCount = useProgressiveCount(sortedFavoriteSongs.length, activeTab === 'songs');
+  const renderSongRow = useCallback((song: ProfileFavoriteSong) => (
+    <SongCard
+      song={song}
+      isLoading={loadingSongId === `${song.trackId}-${song.showIdentifier}`}
+      onPress={handleSongPress}
+      correctVenue
+    />
+  ), [loadingSongId, handleSongPress]);
 
-  const handleSongSortPress = () => {
-    songSortRef.current?.measure((_x, _y, _w, h, pageX, pageY) => {
-      setSongSortPosition({ top: pageY + h + 8, left: pageX });
-      setSongSortModal(true);
-    });
-  };
+  // Single FlatList backs both the shows and songs tabs (collections has its
+  // own ScrollView inside CollectionsTab — see the header below). Switching
+  // `data`/`renderItem` on the same FlatList instance — rather than swapping
+  // in a differently-keyed FlatList per tab — keeps one mounted list so tab
+  // switches don't remount/re-measure it.
+  const listData = useMemo<ProfileListRow[]>(() => {
+    if (activeTab === 'shows') {
+      return sortedFavoriteShows.map((show) => ({ kind: 'show' as const, show }));
+    }
+    if (activeTab === 'songs') {
+      return sortedFavoriteSongs.map((song) => ({ kind: 'song' as const, song }));
+    }
+    return [];
+  }, [activeTab, sortedFavoriteShows, sortedFavoriteSongs]);
+
+  const keyExtractor = useCallback((row: ProfileListRow) => (
+    row.kind === 'show'
+      ? `show-${row.show.primaryIdentifier}`
+      : `song-${row.song.trackId}-${row.song.showIdentifier}`
+  ), []);
+
+  const renderItem = useCallback(({ item }: { item: ProfileListRow }) => (
+    item.kind === 'show'
+      ? <ShowCard show={item.show} onPress={handleShowPress} hideSaveBadge />
+      : renderSongRow(item.song)
+  ), [handleShowPress, renderSongRow]);
+
+  const listRef = useRef<FlatList<ProfileListRow>>(null);
+
+  // Tab switches change which array backs the same FlatList instance, so the
+  // prior scroll offset doesn't correspond to anything meaningful in the new
+  // tab's content. Old behavior (everything in ListHeaderComponent) kept a
+  // single scroll container, so switching tabs preserved whatever offset the
+  // user was at — but the content below the header changed instantly. With
+  // real virtualization that's no longer sound (row heights/positions differ
+  // per tab), so we adopt FavoritesScreen's convention: reset to top on tab
+  // change instead of trying to preserve a now-meaningless offset.
+  useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [activeTab]);
 
   if (isLoading) {
     return (
@@ -456,35 +372,20 @@ export function PublicProfileScreen() {
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
         </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="person-circle-outline" size={64} color={COLORS.textTertiary} />
-          <Text style={styles.errorTitle}>Profile not found</Text>
-          <Text style={styles.errorSubtitle}>
-            This profile doesn't exist or is private.
-          </Text>
-        </View>
+        <ErrorState
+          icon="person-circle-outline"
+          title="Profile not found"
+          message="This profile doesn't exist or is private."
+        />
       </View>
     );
   }
 
-  const handleShowPress = (identifier: string, venue?: string, date?: string) => {
-    navigation.navigate('ShowDetail', { identifier, venue, date });
-  };
-
-  const formatRecentDate = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    return `${Math.floor(diffDays / 30)}mo ago`;
-  };
-
-  const renderShowsTab = () => (
+  // Header content for the shows tab: the bounded (max-10) two-column
+  // "Recently Played"/"Top 10" rundown, plus the "Favorites (N)" section
+  // title and sort control. The actual favorite show rows are the FlatList's
+  // real `data` (rendered below this header) so they virtualize.
+  const renderShowsTabHeader = () => (
     <>
       {/* Two-column: Recently Played + Most Listened */}
       {(recentShows.length > 0 || topShows.length > 0) && (
@@ -496,11 +397,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={`recent-${item.show.primaryIdentifier}`}
                 show={item.show}
-                onPress={() => handleShowPress(
-                  item.show.primaryIdentifier,
-                  getVenueFromShow(item.show),
-                  item.show.date,
-                )}
+                onPress={handleShowPress}
                 hideSaveBadge
               />
             )) : (
@@ -515,11 +412,7 @@ export function PublicProfileScreen() {
               <ShowCard
                 key={item.show.primaryIdentifier}
                 show={item.show}
-                onPress={() => handleShowPress(
-                  item.show.primaryIdentifier,
-                  getVenueFromShow(item.show),
-                  item.show.date,
-                )}
+                onPress={handleShowPress}
                 hideSaveBadge
               />
             )) : (
@@ -529,69 +422,39 @@ export function PublicProfileScreen() {
         </View>
       )}
 
-      {/* Favorite Shows */}
+      {/* Favorite Shows section title (rows render as FlatList data) */}
       {data.favorites.shows.length > 0 && (
-        <View style={styles.listSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Favorites ({data.favorites.shows.length})
-            </Text>
-            <View ref={showSortRef} collapsable={false}>
-              <TouchableOpacity
-                style={styles.sortButton}
-                onPress={handleShowSortPress}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={getSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSortLabel(showSortType)}</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.shows.length})
+          </Text>
+          <View ref={showSortDropdown.buttonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={showSortDropdown.open}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={getSavedItemSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
+              <Text style={styles.sortButtonText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
+            </TouchableOpacity>
           </View>
-          {sortedFavoriteShows.slice(0, visibleShowCount).map(show => (
-            <ShowCard
-              key={show.primaryIdentifier}
-              show={show}
-              onPress={() => handleShowPress(
-                show.primaryIdentifier,
-                getVenueFromShow(show),
-                show.date,
-              )}
-              hideSaveBadge
-            />
-          ))}
-          {visibleShowCount < sortedFavoriteShows.length && (
-            <SkeletonLoader
-              variant="showCard"
-              count={Math.min(sortedFavoriteShows.length - visibleShowCount, 6)}
-            />
-          )}
         </View>
       )}
 
       <SortDropdown
-        visible={showSortModal}
-        onClose={() => setShowSortModal(false)}
-        position={showSortPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}
       />
     </>
   );
 
-  const renderSongRow = (song: typeof data.favorites.songs[0], trailingContent?: React.ReactNode) => {
-    return (
-      <SongRow
-        song={song}
-        trailingContent={trailingContent}
-        loadingSongId={loadingSongId}
-        isDesktop={isDesktop}
-        onPress={handleSongPress}
-      />
-    );
-  };
-
-  const renderSongsTab = () => (
+  // Same idea for the songs tab — bounded two-column rundown + section title
+  // here; the favorite song rows are the FlatList's real `data`.
+  const renderSongsTabHeader = () => (
     <>
       {/* Two-column: Recently Played + Top 10 */}
       {(recentSongs.length > 0 || topSongs.length > 0) && (
@@ -622,43 +485,30 @@ export function PublicProfileScreen() {
         </View>
       )}
 
-      {/* Favorite Songs */}
+      {/* Favorite Songs section title (rows render as FlatList data) */}
       {data.favorites.songs.length > 0 && (
-        <View style={styles.listSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Favorites ({data.favorites.songs.length})
-            </Text>
-            <View ref={songSortRef} collapsable={false}>
-              <TouchableOpacity
-                style={styles.sortButton}
-                onPress={handleSongSortPress}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={getSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.sortButtonText}>{getSortLabel(songSortType)}</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Favorites ({data.favorites.songs.length})
+          </Text>
+          <View ref={songSortDropdown.buttonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={songSortDropdown.open}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={getSavedItemSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
+              <Text style={styles.sortButtonText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
+            </TouchableOpacity>
           </View>
-          {sortedFavoriteSongs.slice(0, visibleSongCount).map(song => (
-            <React.Fragment key={`fav-${song.trackId}-${song.showIdentifier}`}>
-              {renderSongRow(song, <PlayCountBadge count={0} size="small" />)}
-            </React.Fragment>
-          ))}
-          {visibleSongCount < sortedFavoriteSongs.length && (
-            <SkeletonLoader
-              variant="songItem"
-              count={Math.min(sortedFavoriteSongs.length - visibleSongCount, 6)}
-            />
-          )}
         </View>
       )}
 
       <SortDropdown
-        visible={songSortModal}
-        onClose={() => setSongSortModal(false)}
-        position={songSortPosition}
-        options={SONG_SORT_OPTIONS}
+        visible={songSortDropdown.visible}
+        onClose={songSortDropdown.close}
+        position={songSortDropdown.position}
+        options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
       />
@@ -704,10 +554,19 @@ export function PublicProfileScreen() {
         </View>
       )}
       <FlatList
-        data={[]}
-        renderItem={null}
+        ref={listRef}
+        data={listData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        // Performance tuning consistent with FavoritesScreen's per-tab lists.
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={activeTab === 'songs' ? 15 : 10}
+        updateCellsBatchingPeriod={50}
+        windowSize={11}
+        initialNumToRender={activeTab === 'songs' ? 15 : 10}
+        contentContainerStyle={[styles.listContentContainer, isDesktop && styles.listContentContainerDesktop]}
         ListHeaderComponent={
-          <View style={[styles.contentContainer, !isDesktop && styles.contentContainerMobile]}>
+          <View style={styles.contentContainer}>
             {/* Profile Header */}
             <View style={[styles.profileHeader, !isDesktop && styles.mobileHorizontalPad]}>
               <ProfileImage
@@ -795,32 +654,24 @@ export function PublicProfileScreen() {
             </View>
 
             {/* Tab Navigation */}
-            <View style={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]} accessibilityRole="tablist">
-              {((data?.profile?.is_public || isOwnProfile)
-                ? (['shows', 'songs', 'collections'] as const)
-                : (['shows', 'songs'] as const)
-              ).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
-                  onPress={() => setActiveTab(tab)}
-                  activeOpacity={0.7}
-                  accessibilityRole="tab"
-                  accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
-                  accessibilityState={{ selected: activeTab === tab }}
-                >
-                  <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                    {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <SegmentedTabs
+              tabs={
+                (data?.profile?.is_public || isOwnProfile)
+                  ? PUBLIC_PROFILE_TABS
+                  : PUBLIC_PROFILE_TABS_NO_COLLECTIONS
+              }
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              containerStyle={[styles.tabContainer, !isDesktop && styles.mobileHorizontalPad]}
+            />
 
-            {/* Tab Content */}
+            {/* Tab Content (header portion — bounded top-10/recent-10 rundown
+                and the section title; the actual favorite rows are the
+                FlatList's real `data`, rendered below this header) */}
             {activeTab === 'shows' ? (
-              renderShowsTab()
+              renderShowsTabHeader()
             ) : activeTab === 'songs' ? (
-              renderSongsTab()
+              renderSongsTabHeader()
             ) : (
               <CollectionsTab
                 entries={(isOwnProfile ? ownedCollections : publicCollections).map((c) => ({
@@ -841,7 +692,6 @@ export function PublicProfileScreen() {
             )}
           </View>
         }
-        keyExtractor={() => 'profile'}
       />
     </View>
   );
@@ -893,29 +743,18 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: '600',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    gap: SPACING.md,
-  },
-  errorTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginTop: SPACING.md,
-  },
-  errorSubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
+  // Header-only wrapper (profile info/stats/tabs). Horizontal padding now
+  // lives on the FlatList's contentContainerStyle (listContentContainer*)
+  // so it applies uniformly to the header AND the virtualized rows below it
+  // — previously everything (including rows) was inside this View.
   contentContainer: {
-    paddingHorizontal: SPACING.xl,
     paddingTop: Platform.OS === 'web' ? SPACING.lg : 0,
+  },
+  listContentContainer: {
     paddingBottom: SPACING.xl,
   },
-  contentContainerMobile: {
-    paddingHorizontal: 0,
+  listContentContainerDesktop: {
+    paddingHorizontal: SPACING.xl,
   },
   mobileHorizontalPad: {
     paddingHorizontal: SPACING.lg,
@@ -993,43 +832,10 @@ const styles = StyleSheet.create({
   followBtnTextActive: {
     color: COLORS.textPrimary,
   },
+  // Margins only — the shared row/gap/tab/active/inactive styling lives in <SegmentedTabs>.
   tabContainer: {
-    flexDirection: 'row',
     marginTop: SPACING.md,
     marginBottom: SPACING.xl,
-    gap: SPACING.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.xl,
-  },
-  activeTab: {
-    backgroundColor: COLORS.accent,
-  },
-  inactiveTab: {
-    backgroundColor: COLORS.cardBackground,
-  },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
-  },
-  inactiveTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
   },
   twoColumnRow: {
     flexDirection: 'row',
@@ -1048,9 +854,6 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
-  },
-  listSection: {
-    marginBottom: SPACING.xxl,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1086,80 +889,6 @@ const styles = StyleSheet.create({
   sortButtonText: {
     ...TYPOGRAPHY.bodySmall,
     fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  rankedItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    gap: SPACING.md,
-  },
-  rankNumber: {
-    ...TYPOGRAPHY.heading4,
-    color: COLORS.textTertiary,
-    width: 28,
-    textAlign: 'center',
-  },
-  rankedItemInfo: {
-    flex: 1,
-  },
-  rankedItemTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-  },
-  rankedItemSubtitle: {
-    ...TYPOGRAPHY.captionSmall,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  recentTime: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.textTertiary,
-  },
-  songItemHovered: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  songItemLoading: {
-    opacity: 0.5,
-  },
-  songItem: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.xxl,
-    ...(Platform.OS === 'web' ? {
-      backgroundColor: 'transparent',
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      marginVertical: 2,
-    } : {}),
-  },
-  songContentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  songInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  songTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginBottom: SPACING.xs,
-  },
-  songDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 2,
-  },
-  songDate: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-  },
-  songVenue: {
-    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
 });

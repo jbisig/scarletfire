@@ -2,17 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GratefulDeadShow, Track } from '../types/show.types';
 import { useAuth } from './AuthContext';
-import { useToast } from './ToastContext';
 import { favoritesCloudService } from '../services/favoritesCloudService';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { STORAGE_KEYS } from '../constants/registry';
 import { logger } from '../utils/logger';
 import { activityService } from '../services/activityService';
+import { useDebouncedSync } from '../hooks/useDebouncedSync';
+import { useSyncErrorToast } from '../hooks/useSyncErrorToast';
 
 const favoritesLogger = logger.create('Favorites');
-
-// Rate limit sync error toasts to avoid spamming user
-const SYNC_ERROR_TOAST_COOLDOWN = 30000; // 30 seconds
 
 export interface FavoriteSong {
   trackId: string;
@@ -63,20 +61,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favoriteSongs, setFavoriteSongs] = useState<FavoriteSong[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { state: authState } = useAuth();
-  const { showToast } = useToast();
 
   // Track deletions for sync conflict resolution (doesn't need to trigger re-renders)
   const deletionLogRef = useRef<DeletionLog>({ shows: [], songs: [] });
-  const lastSyncErrorToastRef = useRef<number>(0);
 
   // Show sync error toast with rate limiting
-  const showSyncErrorToast = useCallback(() => {
-    const now = Date.now();
-    if (now - lastSyncErrorToastRef.current > SYNC_ERROR_TOAST_COOLDOWN) {
-      lastSyncErrorToastRef.current = now;
-      showToast('Failed to sync favorites to cloud. Changes saved locally.', 'error');
-    }
-  }, [showToast]);
+  const showSyncErrorToast = useSyncErrorToast('Failed to sync favorites to cloud. Changes saved locally.');
 
   // Refs to always have latest values for cloud sync (avoids race conditions)
   const favoriteShowsRef = useRef<GratefulDeadShow[]>(favoriteShows);
@@ -163,12 +153,17 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       .then(() => loadFavorites());
   }, []);
 
-  // Sync favorites from cloud when user logs in
+  // Sync favorites from cloud when user logs in.
+  // Keyed off `authState.user?.id` (not the `user` object reference) — the
+  // auth listener dispatches AUTH_STATE_CHANGED for every Supabase event
+  // (token refresh, USER_UPDATED, etc.), each producing a new `user` object
+  // with the same id. Keying off the id avoids re-running this sync for
+  // those no-op identity changes.
   useEffect(() => {
     if (authState.isAuthenticated && authState.user && !isLoading) {
       syncFavoritesFromCloud(authState.user.id);
     }
-  }, [authState.isAuthenticated, authState.user, isLoading]);
+  }, [authState.isAuthenticated, authState.user?.id, isLoading]);
 
   // Keep refs in sync with state (for race-condition-free cloud sync)
   useEffect(() => {
@@ -327,97 +322,110 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     authStateRef.current = authState;
   }, [authState]);
 
+  // Debounced cloud sync: coalesces rapid favorite/unfavorite actions into a
+  // single upsert of the full favorites blob, 30s after the last change.
+  // Reads current shows/songs from the refs (kept in sync above) so it
+  // always sends the latest state regardless of when it actually fires.
+  const performFavoritesSync = useCallback((): Promise<void> | undefined => {
+    const auth = authStateRef.current;
+    if (!auth.isAuthenticated || !auth.user) return undefined;
+    return favoritesCloudService
+      .syncFavorites(auth.user.id, favoriteShowsRef.current, favoriteSongsRef.current)
+      .catch((error) => {
+        favoritesLogger.error('Failed to sync favorites to cloud:', error);
+        showSyncErrorToast();
+      });
+  }, [showSyncErrorToast]);
+
+  const { schedule: scheduleFavoritesSync, flush: flushFavoritesSync } = useDebouncedSync(performFavoritesSync);
+
+  // Flush any pending debounced sync as soon as the user logs out.
+  //
+  // Race note: AuthContext.logout() calls authService.logout() (which does
+  // supabase.auth.signOut(), invalidating the session both locally and on
+  // the server) BEFORE dispatching the LOGOUT action. By the time
+  // `authState.isAuthenticated` flips to false here, the session is
+  // already gone, so favoritesCloudService.syncFavorites()'s own
+  // `getSession()` guard will usually make this flush a silent no-op. The
+  // same is true for other paths that clear the session before we observe
+  // it (cross-tab sign-out, expiry). We flush anyway as best-effort — it's
+  // harmless — but this cannot reliably beat token teardown from inside
+  // this context. See task-11 report for the full analysis.
+  const wasAuthenticatedRef = useRef(authState.isAuthenticated);
+  useEffect(() => {
+    if (wasAuthenticatedRef.current && !authState.isAuthenticated) {
+      flushFavoritesSync();
+    }
+    wasAuthenticatedRef.current = authState.isAuthenticated;
+  }, [authState.isAuthenticated, flushFavoritesSync]);
+
   const addFavoriteShow = useCallback(async (show: GratefulDeadShow) => {
     // Add timestamp and enrich with tier data
     const tier = getClassicTier(show.date);
     const enrichedShow = tier ? { ...show, classicTier: tier } : show;
     const showWithTimestamp = { ...enrichedShow, savedAt: Date.now() };
-    setFavoriteShows(prev => {
-      const newFavorites = [...prev, showWithTimestamp].sort((a, b) =>
-        a.date.localeCompare(b.date)
-      );
-      saveFavoriteShows(newFavorites);
 
-      // Sync to cloud if authenticated
-      const auth = authStateRef.current;
-      if (auth.isAuthenticated && auth.user) {
-        favoritesCloudService.syncFavorites(auth.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-          favoritesLogger.error('Failed to sync favorite show to cloud:', error);
-          showSyncErrorToast();
-        });
-      }
-      return newFavorites;
-    });
+    // Compute the next value from the ref (always the latest committed
+    // state — see the ref-sync effect above) BEFORE touching the setter,
+    // then set the ref synchronously so back-to-back calls in the same
+    // tick see each other's writes. Side effects (storage write + debounced
+    // cloud sync) run after, outside of setState entirely — not inside an
+    // updater callback, which could double-fire them under StrictMode.
+    const newFavorites = [...favoriteShowsRef.current, showWithTimestamp]
+      .sort((a, b) => a.date.localeCompare(b.date));
+    favoriteShowsRef.current = newFavorites;
+    setFavoriteShows(newFavorites);
+
+    saveFavoriteShows(newFavorites);
+    scheduleFavoritesSync();
+
     activityService.emitEvent('favorited_show', 'show', show.primaryIdentifier, {
       date: show.date,
       venue: show.venue,
     }).catch(() => {});
-  }, [showSyncErrorToast]);
+  }, [scheduleFavoritesSync]);
 
   const removeFavoriteShow = useCallback(async (identifier: string) => {
     // Record deletion for sync conflict resolution
     await recordShowDeletion(identifier);
 
-    setFavoriteShows(prev => {
-      const newFavorites = prev.filter(fav => fav.primaryIdentifier !== identifier);
-      saveFavoriteShows(newFavorites);
+    const newFavorites = favoriteShowsRef.current.filter(fav => fav.primaryIdentifier !== identifier);
+    favoriteShowsRef.current = newFavorites;
+    setFavoriteShows(newFavorites);
 
-      // Sync to cloud if authenticated
-      const auth = authStateRef.current;
-      if (auth.isAuthenticated && auth.user) {
-        favoritesCloudService.syncFavorites(auth.user.id, newFavorites, favoriteSongsRef.current).catch((error) => {
-          favoritesLogger.error('Failed to sync favorite show removal to cloud:', error);
-          showSyncErrorToast();
-        });
-      }
-      return newFavorites;
-    });
-  }, [showSyncErrorToast]);
+    saveFavoriteShows(newFavorites);
+    scheduleFavoritesSync();
+  }, [scheduleFavoritesSync]);
 
   const addFavoriteSong = useCallback(async (song: FavoriteSong) => {
     // Add timestamp when saving
     const songWithTimestamp = { ...song, savedAt: Date.now() };
-    setFavoriteSongs(prev => {
-      const newFavorites = [...prev, songWithTimestamp].sort((a, b) => {
-        const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
-        if (titleCompare !== 0) return titleCompare;
-        return a.showDate.localeCompare(b.showDate);
-      });
-      saveFavoriteSongs(newFavorites);
 
-      // Sync to cloud if authenticated
-      const auth = authStateRef.current;
-      if (auth.isAuthenticated && auth.user) {
-        favoritesCloudService.syncFavorites(auth.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-          favoritesLogger.error('Failed to sync favorite song to cloud:', error);
-          showSyncErrorToast();
-        });
-      }
-      return newFavorites;
+    const newFavorites = [...favoriteSongsRef.current, songWithTimestamp].sort((a, b) => {
+      const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
+      if (titleCompare !== 0) return titleCompare;
+      return a.showDate.localeCompare(b.showDate);
     });
-  }, [showSyncErrorToast]);
+    favoriteSongsRef.current = newFavorites;
+    setFavoriteSongs(newFavorites);
+
+    saveFavoriteSongs(newFavorites);
+    scheduleFavoritesSync();
+  }, [scheduleFavoritesSync]);
 
   const removeFavoriteSong = useCallback(async (trackId: string, showIdentifier: string) => {
     // Record deletion for sync conflict resolution
     await recordSongDeletion(trackId, showIdentifier);
 
-    setFavoriteSongs(prev => {
-      const newFavorites = prev.filter(
-        fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
-      );
-      saveFavoriteSongs(newFavorites);
+    const newFavorites = favoriteSongsRef.current.filter(
+      fav => !(fav.trackId === trackId && fav.showIdentifier === showIdentifier)
+    );
+    favoriteSongsRef.current = newFavorites;
+    setFavoriteSongs(newFavorites);
 
-      // Sync to cloud if authenticated
-      const auth = authStateRef.current;
-      if (auth.isAuthenticated && auth.user) {
-        favoritesCloudService.syncFavorites(auth.user.id, favoriteShowsRef.current, newFavorites).catch((error) => {
-          favoritesLogger.error('Failed to sync favorite song removal to cloud:', error);
-          showSyncErrorToast();
-        });
-      }
-      return newFavorites;
-    });
-  }, [showSyncErrorToast]);
+    saveFavoriteSongs(newFavorites);
+    scheduleFavoritesSync();
+  }, [scheduleFavoritesSync]);
 
   const refreshFavorites = useCallback(async () => {
     // Re-sync from cloud if authenticated

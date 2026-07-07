@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ShareItem } from '../../services/shareService';
-import { formatDateMMDDYYYY } from '../../services/shareService';
+import { formatDateMMDDYYYY } from '../../utils/formatters';
 import { StarRating } from '../StarRating';
 import { FONTS } from '../../constants/theme';
 import { getShareBackground, SHARE_LOGO } from './shareBackgrounds';

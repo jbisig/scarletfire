@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,15 @@ export function useToast() {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
+}
+
+/**
+ * Non-throwing variant for code that may render outside a ToastProvider
+ * (e.g. unit tests that mount PlayerProvider on its own). Returns undefined
+ * instead of throwing so callers can no-op when there's no toast host.
+ */
+export function useOptionalToast(): ToastContextValue | undefined {
+  return useContext(ToastContext);
 }
 
 interface ToastItemProps {
@@ -120,8 +129,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const value = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       {/* Host toasts inside a transparent Modal so they render in the same
           portal layer as BottomSheet/picker Modals and sit above them (last

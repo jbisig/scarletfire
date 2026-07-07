@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, StyleProp, ViewStyle } from 'react-native';
 import { FavoriteSong } from '../contexts/FavoritesContext';
 import { formatDate } from '../utils/formatters';
+import { getCorrectVenue } from '../utils/showLookup';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { PlayCountBadge } from './PlayCountBadge';
@@ -18,6 +19,12 @@ interface SongCardProps {
    * reorder mode) make the row transparent so a parent's pressed bg can
    * show through. */
   containerStyle?: StyleProp<ViewStyle>;
+  /** When true, prefer the catalog's title-derived venue name
+   * (`getCorrectVenue`, keyed off `song.showDate`) over `song.venue`,
+   * falling back to `song.venue` when the date isn't in the catalog.
+   * Off by default so existing callers (e.g. collection/playlist rows,
+   * which already pass a deliberately-chosen venue string) are unaffected. */
+  correctVenue?: boolean;
 }
 
 /**
@@ -32,10 +39,11 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
   onPress,
   onLongPress,
   containerStyle,
+  correctVenue = false,
 }) {
   const { isDesktop } = useResponsive();
   const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = song.venue;
+  const venue = correctVenue ? (getCorrectVenue(song.showDate) || song.venue) : song.venue;
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -44,6 +52,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
         styles.songItem,
         isDesktop && isHovered && styles.songItemHovered,
         pressed && styles.songItemPressed,
+        isLoading && styles.songItemLoading,
         containerStyle,
       ]}
       onPress={onPress ? () => onPress(song) : undefined}
@@ -97,6 +106,9 @@ const styles = StyleSheet.create({
   },
   songItemPressed: {
     opacity: 0.6,
+  },
+  songItemLoading: {
+    opacity: 0.5,
   },
   songContentRow: {
     flexDirection: 'row',

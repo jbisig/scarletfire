@@ -6,20 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
-  AppState,
-  AppStateStatus,
   Platform,
-  Image,
 } from 'react-native';
 import { logger } from '../utils/logger';
 import { BlurBackground } from '../components/shared/BlurBackground';
+import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { GlassBlurOverlay } from '../components/web/GlassHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useShows } from '../contexts/ShowsContext';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
@@ -36,50 +35,9 @@ import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useResponsive } from '../hooks/useResponsive';
+import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
-
-// Default screen width — components should use useWindowDimensions for responsive sizing
-const SOTD_CARD_PADDING = SPACING.xl * 2;
-
-// Resolve video source to URL string for HTML5 video (web only)
-function resolveVideoUri(source: number | { uri: string } | string): string {
-  if (typeof source === 'string') return source;
-  if (typeof source === 'number') {
-    try { return Image.resolveAssetSource(source)?.uri || ''; } catch { return ''; }
-  }
-  if (source && typeof source === 'object' && 'uri' in source) return source.uri;
-  if (source && typeof source === 'object' && 'default' in (source as any)) return (source as any).default; // eslint-disable-line @typescript-eslint/no-explicit-any
-  return '';
-}
-
-// HTML5 video background for web SOTD card
-function WebVideoBackground({ uri, videoId, onError }: { uri: string; videoId: string; onError?: () => void }) {
-  return React.createElement('video', {
-    key: `sotd-video-${videoId}`,
-    src: uri,
-    autoPlay: true,
-    loop: true,
-    muted: true,
-    playsInline: true,
-    ref: (el: HTMLVideoElement | null) => {
-      if (!el) return;
-      el.playbackRate = 0.5;
-      if (onError) {
-        el.onerror = () => onError();
-        const t = setTimeout(() => { if (el.readyState === 0) onError(); }, 5000);
-        el.onloadeddata = () => clearTimeout(t);
-      }
-    },
-    style: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-    },
-  });
-}
+import { resolveVideoUri } from '../utils/resolveVideoUri';
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
 
@@ -95,20 +53,12 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
   // Track app state to pause video when in background (saves battery) — native only
-  const [appState, setAppState] = useState<AppStateStatus>(
-    Platform.OS !== 'web' ? AppState.currentState : 'active'
-  );
+  const appState = useAppActiveState();
 
   const handleVideoError = useCallback((error: string) => {
     logger.player.error('Video background failed to load:', error);
     resetToFallback();
   }, [resetToFallback]);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const subscription = AppState.addEventListener('change', setAppState);
-    return () => subscription.remove();
-  }, []);
 
   // Refs for carousel scroll reset
   const jumpBackInRef = useRef<ShowCarouselRef>(null);
@@ -148,13 +98,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', {
-        identifier: show.primaryIdentifier,
-        venue: show.venue,
-        date: show.date,
-        location: show.location,
-        classicTier: show.classicTier,
-      });
+      navigation.navigate('ShowDetail', showDetailParams(show));
     }
   };
 
@@ -163,13 +107,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   };
 
   const handleShowPress = useCallback((selectedShow: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: selectedShow.primaryIdentifier,
-      venue: selectedShow.venue,
-      date: selectedShow.date,
-      location: selectedShow.location,
-      classicTier: selectedShow.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(selectedShow));
   }, [navigation]);
 
   // Jump Back In: Recently played shows sorted by most recent
@@ -326,7 +264,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                 );
               })()}
               {/* Overlay */}
-              {Platform.OS === 'web' && <View style={styles.sotdWebBlur} />}
+              {Platform.OS === 'web' && <GlassBlurOverlay />}
               <View style={styles.sotdBlurOverlay}>
                 {Platform.OS !== 'web' && <BlurBackground intensity={30} tint="dark" />}
                 {isLoading ? (
@@ -481,26 +419,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     opacity: 0.68,
   },
-  sotdWebBlur: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    // @ts-ignore - web only
-    backdropFilter: 'blur(30px)',
-    WebkitBackdropFilter: 'blur(30px)',
-    zIndex: 1,
-  },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     position: 'relative',
     zIndex: 2,
-  },
-  androidOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sotdLoading: {
     paddingVertical: SPACING.xxl,

@@ -287,6 +287,36 @@ export const LAYOUT = {
   /** Horizontal show card dimensions */
   horizontalCardWidth: 224,
   horizontalCardHeight: 112,
+  /** Standard screen horizontal padding (headers, lists, page content) */
+  HORIZONTAL_PADDING: SPACING.xl,
+} as const;
+
+// =============================================================================
+// GLASS PILL (shared web glass-morphism pill/badge style)
+// =============================================================================
+
+/**
+ * Shared base style for the frosted-glass pill badges used on web (source
+ * pills, play-count pills, save/share pills, version picker). Replaces the
+ * magic `borderRadius: 342` and duplicated bg/border literals that were
+ * copy-pasted across ShowDetailScreen, ShowCard, PlayCountBadge, and
+ * VersionPicker.
+ */
+export const GLASS_PILL = {
+  backgroundColor: COLORS.surfaceMedium,
+  borderRadius: RADIUS.full,
+  borderWidth: 1,
+  borderColor: COLORS.borderLight,
+} as const;
+
+/**
+ * Web-only backdrop-blur fragment for GLASS_PILL. Not all RN style types
+ * recognize `backdropFilter`, so spread this through `webStyle()` and guard
+ * with `Platform.OS === 'web'` at the call site (see src/utils/webStyle.ts).
+ */
+export const GLASS_PILL_BLUR = {
+  backdropFilter: 'blur(34px)',
+  WebkitBackdropFilter: 'blur(34px)',
 } as const;
 
 // =============================================================================

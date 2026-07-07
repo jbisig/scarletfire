@@ -20,6 +20,7 @@ interface CollectionRow {
   slug: string;
   created_at: string;
   updated_at: string;
+  is_shared?: boolean;
 }
 
 interface CollectionItemRow {
@@ -46,6 +47,10 @@ function mapCollection(
     slug: row.slug,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // `is_shared` is only present once the collections_sharing_flag migration
+    // has been applied — default to false so the client degrades gracefully
+    // (treats the collection as not-yet-shared) against an un-migrated DB.
+    isShared: row.is_shared ?? false,
     itemCount,
     saveCount,
   };
@@ -189,6 +194,33 @@ class CollectionsService {
   async deleteCollection(id: string): Promise<void> {
     const { error } = await this.supabase.from('collections').delete().eq('id', id);
     if (error) throw error;
+  }
+
+  /**
+   * Flip a collection's `is_shared` flag on once the owner shares it — this is
+   * what makes the collection (and its items) readable via the public-link
+   * RLS policy. Idempotent: safe to call again on an already-shared collection.
+   * Callers are expected to only invoke this when the collection isn't already
+   * marked shared, and to treat it as fire-and-forget (surface failures via a
+   * toast rather than blocking the share action).
+   */
+  async markCollectionShared(collectionId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('collections')
+      .update({ is_shared: true })
+      .eq('id', collectionId);
+    if (error) {
+      // Postgres 42703 = undefined_column. If the live DB predates migration
+      // 20260706120000_collections_sharing_flag.sql, the `is_shared` column
+      // doesn't exist yet and this update fails on every share attempt.
+      // Degrade gracefully during the transition window instead of surfacing
+      // an error toast to the user for something they can't act on.
+      if (error.code === '42703') {
+        logger.api.warn('markCollectionShared: is_shared column not yet migrated', error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async fetchCollectionItems(collectionId: string): Promise<CollectionItem[]> {
@@ -535,14 +567,16 @@ class CollectionsService {
             match.lastKnownOwnerUsername !== ownerUsername)
         ) {
           snapshotUpdates.push(
-            this.supabase
-              .from('saved_collections')
-              .update({
-                last_known_name: row.name,
-                last_known_type: row.type,
-                last_known_owner_username: ownerUsername,
-              })
-              .eq('id', match.id),
+            Promise.resolve(
+              this.supabase
+                .from('saved_collections')
+                .update({
+                  last_known_name: row.name,
+                  last_known_type: row.type,
+                  last_known_owner_username: ownerUsername,
+                })
+                .eq('id', match.id),
+            ),
           );
         }
       }

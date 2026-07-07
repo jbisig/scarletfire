@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './navigationRef';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ShowDetailScreen } from '../screens/ShowDetailScreen';
@@ -11,6 +11,7 @@ import { DiscoverLandingScreen } from '../screens/DiscoverLandingScreen';
 import { SongListScreen } from '../screens/SongListScreen';
 import { SongPerformancesScreen } from '../screens/SongPerformancesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { SupportScreen } from '../screens/SupportScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
@@ -23,7 +24,7 @@ import { CustomTabBar } from '../components/CustomTabBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { usePlayer } from '../contexts/PlayerContext';
+import { useFullPlayerVisibility } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
 import { ProfileOnboardingNavigator } from './ProfileOnboardingNavigator';
 import { useProfile } from '../contexts/ProfileContext';
@@ -119,6 +120,7 @@ export type RootStackParamList = {
     performanceDate?: string;
   };
   Settings: undefined;
+  Support: undefined;
   PrivacyPolicy: undefined;
   PublicProfile: { username: string };
   FollowList: { userId?: string; username: string; mode: 'followers' | 'following' };
@@ -369,12 +371,23 @@ function DiscoverStack() {
 
 // Main content with tabs and player (mobile layout)
 function MainTabsWithPlayer() {
-  const { isFullPlayerVisible, setFullPlayerVisible } = usePlayer();
+  // Subscribe only to full-player visibility, not playback state — a play/pause
+  // dispatch must not re-render this navigator shell.
+  const { isFullPlayerVisible, setFullPlayerVisible } = useFullPlayerVisibility();
+
+  // Stabilize the props handed to CustomTabBar / MiniPlayer / FullPlayer so
+  // their React.memo wrappers hold across this component's re-renders.
+  const renderTabBar = useCallback(
+    (props: BottomTabBarProps) => <CustomTabBar {...props} />,
+    [],
+  );
+  const openFullPlayer = useCallback(() => setFullPlayerVisible(true), [setFullPlayerVisible]);
+  const closeFullPlayer = useCallback(() => setFullPlayerVisible(false), [setFullPlayerVisible]);
 
   return (
     <View style={styles.container}>
       <Tab.Navigator
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={renderTabBar}
         screenOptions={{
           headerShown: false,
         }}
@@ -406,12 +419,12 @@ function MainTabsWithPlayer() {
         />
       </Tab.Navigator>
       <View style={styles.miniPlayerContainer}>
-        <MiniPlayer onPress={() => setFullPlayerVisible(true)} />
+        <MiniPlayer onPress={openFullPlayer} />
       </View>
       {isFullPlayerVisible && (
         <FullPlayer
           visible={isFullPlayerVisible}
-          onClose={() => setFullPlayerVisible(false)}
+          onClose={closeFullPlayer}
         />
       )}
     </View>
@@ -480,7 +493,6 @@ export function AppNavigator() {
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
                 headerBackTitle: ' ',
-                headerBackTitleVisible: false,
               }}
             />
             <RootStack.Screen
@@ -490,6 +502,14 @@ export function AppNavigator() {
                 presentation: 'modal',
                 gestureEnabled: true,
               }}
+            />
+            {/* Support screen is only navigated to on web (mobile web).
+                On native, the avatar dropdown opens SUPPORT_URL in Safari
+                per App Store guidelines. */}
+            <RootStack.Screen
+              name="Support"
+              component={SupportScreen}
+              options={{ headerShown: false }}
             />
             <RootStack.Screen
               name="PublicProfile"

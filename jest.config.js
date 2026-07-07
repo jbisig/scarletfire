@@ -6,6 +6,8 @@ module.exports = {
   ],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  testPathIgnorePatterns: ['/node_modules/', '/.worktrees/'],
+  modulePathIgnorePatterns: ['/.worktrees/'],
   moduleNameMapper: {
     // Strip .js extensions on relative imports. The api/ tree runs as ESM
     // at Vercel runtime, which requires explicit .js extensions on relative

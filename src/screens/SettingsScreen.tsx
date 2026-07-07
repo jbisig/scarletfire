@@ -15,20 +15,25 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { followService } from '../services/followService';
 import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { useResponsive } from '../hooks/useResponsive';
+import { logger } from '../utils/logger';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
+  const { showToast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -38,6 +43,11 @@ export function SettingsScreen() {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [ownFollowerCount, setOwnFollowerCount] = useState(0);
   const [ownFollowingCount, setOwnFollowingCount] = useState(0);
+  // Optimistic state for the public-profile Switch while `profile` is still
+  // null (i.e. before a profile row exists). The Switch's `value` falls back
+  // to this so the toggle can move and revert purely through state, without
+  // remounting the (controlled) native widget.
+  const [pendingPublic, setPendingPublic] = useState<boolean | null>(null);
 
   useFocusEffect(useCallback(() => {
     const userId = authState.user?.id;
@@ -168,20 +178,42 @@ export function SettingsScreen() {
       setProfile(prev => prev ? { ...prev, is_public: value } : null);
       try {
         await profileService.setProfilePublic(authState.user.id, value);
-      } catch {
+      } catch (error) {
+        logger.profile.error('Failed to update profile visibility', error);
         setProfile(prev => prev ? { ...prev, is_public: !value } : null);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     } else if (value) {
-      // Create a new profile when toggling on for the first time
+      // Create a new profile when toggling on for the first time. `profile`
+      // is null here, so drive the Switch optimistically via `pendingPublic`
+      // until the profile itself lands in state (or the attempt fails).
+      setPendingPublic(true);
+      let created: UserProfile;
       try {
         const defaultUsername = (authState.user.email?.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20);
-        const created = await profileService.createProfile(authState.user.id, defaultUsername || 'user');
+        created = await profileService.createProfile(authState.user.id, defaultUsername || 'user');
+      } catch (error) {
+        logger.profile.error('Failed to create profile', error);
+        setPendingPublic(false);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
+        return;
+      }
+
+      // The profile row now exists server-side — land it in state right
+      // away so a retry after a visibility-update failure below takes the
+      // "existing profile" branch above instead of calling createProfile
+      // again (which would conflict with the row we just created).
+      setProfile(created);
+      setUsername(created.username);
+      setDisplayName(created.display_name || '');
+      setPendingPublic(null);
+
+      try {
         await profileService.setProfilePublic(authState.user.id, true);
-        setProfile({ ...created, is_public: true });
-        setUsername(created.username);
-        setDisplayName(created.display_name || '');
-      } catch {
-        // Failed to create profile
+        setProfile(prev => prev ? { ...prev, is_public: true } : prev);
+      } catch (error) {
+        logger.profile.error('Failed to update profile visibility', error);
+        showToast('Failed to update profile visibility. Please try again.', 'error');
       }
     }
   };
@@ -391,7 +423,6 @@ export function SettingsScreen() {
             <ProfileImage
               uri={avatarUrl}
               style={styles.avatar}
-              size={120}
             />
             {(isUploading || isRemoving) && (
               <View style={styles.avatarLoadingOverlay}>
@@ -447,11 +478,11 @@ export function SettingsScreen() {
             {authState.user?.id && username && (
               <View style={styles.settingsCountsRow}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('FollowList' as never, {
+                  onPress={() => navigation.navigate('FollowList', {
                     userId: authState.user!.id,
                     username,
                     mode: 'followers',
-                  } as never)}
+                  })}
                 >
                   <Text style={styles.settingsCountText}>
                     <Text style={styles.settingsCountNum}>{ownFollowerCount}</Text> Followers
@@ -459,11 +490,11 @@ export function SettingsScreen() {
                 </TouchableOpacity>
                 <Text style={styles.settingsCountSep}>  ·  </Text>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('FollowList' as never, {
+                  onPress={() => navigation.navigate('FollowList', {
                     userId: authState.user!.id,
                     username,
                     mode: 'following',
-                  } as never)}
+                  })}
                 >
                   <Text style={styles.settingsCountText}>
                     <Text style={styles.settingsCountNum}>{ownFollowingCount}</Text> Following
@@ -481,7 +512,7 @@ export function SettingsScreen() {
                 </Text>
               </View>
               <Switch
-                value={profile?.is_public ?? false}
+                value={profile?.is_public ?? pendingPublic ?? false}
                 onValueChange={handlePublicToggle}
                 trackColor={{ false: COLORS.border, true: COLORS.accent }}
                 thumbColor="#FFFFFF"
@@ -537,7 +568,7 @@ export function SettingsScreen() {
                   <View style={styles.profileLinkSection}>
                     <TouchableOpacity
                       style={styles.viewProfileButton}
-                      onPress={() => navigation.navigate('PublicProfile' as never, { username: profile.username } as never)}
+                      onPress={() => navigation.navigate('PublicProfile', { username: profile.username })}
                       activeOpacity={0.7}
                     >
                       <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
@@ -671,6 +702,13 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Matches closeButton's footprint so the title stays centered in the
+  // auth-guard header, which has no headerLogout button on the right to
+  // balance it.
+  headerSpacer: {
+    width: 40,
+    height: 40,
   },
   headerTitle: {
     ...TYPOGRAPHY.bodyLarge,

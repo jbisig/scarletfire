@@ -33,12 +33,36 @@ export function formatDate(dateString: string): string {
   }
 }
 
-export function formatDateShort(dateString: string): string {
-  try {
-    return format(parseLocalDate(dateString), 'MM/dd');
-  } catch {
-    return dateString;
-  }
+/**
+ * Split an ISO date ("1982-08-06" or "1982-08-06T...") into its raw
+ * year/month/day string parts, ignoring any time component. Shared by
+ * formatDateMMDDYYYY and formatDateMDYY below — both are plain string-split
+ * formatters (no date-fns / Date parsing), unlike formatDate above.
+ */
+function splitIsoDateParts(iso: string): [string, string, string] {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return [y, m, d];
+}
+
+/**
+ * Format an ISO date as MM/DD/YYYY with slashes, via plain string splitting
+ * (no date-fns). Originally lived in shareService.ts (shared by
+ * buildShareText and ShareCard) and was cloned verbatim in
+ * ShowDetailScreen.tsx; consolidated here in Task 14.
+ */
+export function formatDateMMDDYYYY(iso: string): string {
+  const [y, m, d] = splitIsoDateParts(iso);
+  return `${m}/${d}/${y}`;
+}
+
+/**
+ * Format an ISO date as M/D/YY — no leading zeros on month/day, 2-digit
+ * year. Used for the browser tab title in ShowDetailScreen. Consolidated
+ * here in Task 14 from an inline IIFE.
+ */
+export function formatDateMDYY(iso: string): string {
+  const [y, m, d] = splitIsoDateParts(iso);
+  return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y.slice(2)}`;
 }
 
 export function formatDuration(seconds?: number): string {
@@ -56,6 +80,11 @@ export function formatTime(milliseconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Format a download count as a compact badge string (e.g. "1.2K", "3.4M").
+ * Returns '0' for zero/undefined/NaN. Used by VersionPicker's view-count
+ * badges.
+ */
 export function formatDownloads(downloads?: number): string {
   if (!downloads) return '0';
 
@@ -65,6 +94,35 @@ export function formatDownloads(downloads?: number): string {
     return `${(downloads / 1000).toFixed(1)}K`;
   }
   return downloads.toString();
+}
+
+/**
+ * Format a download count as a descriptive "<n> downloads" label (e.g.
+ * "1.2k downloads", "500 downloads"). Kept as a separate function rather
+ * than folding into formatDownloads via an options param: it differs from
+ * formatDownloads in three independent ways (empty-string vs '0' fallback,
+ * lowercase 'k' vs uppercase 'K', and no millions tier at all), which would
+ * require three separate option flags to express as one parameterized
+ * function — more confusing than two small, clearly-named ones. Used by
+ * ShowDetailScreen's source-info pill.
+ */
+export function formatDownloadsLabel(downloads?: number): string {
+  if (!downloads) return '';
+  if (downloads >= 1000) {
+    return `${(downloads / 1000).toFixed(1)}k downloads`;
+  }
+  return `${downloads} downloads`;
+}
+
+/**
+ * Format a count with a regular (bare `s`) singular/plural noun label, e.g.
+ * `formatCount(1, 'play')` -> "1 play", `formatCount(2, 'play')` -> "2 plays".
+ * Consolidates the hand-rolled `{n} {n === 1 ? 'play' : 'plays'}` ternaries
+ * that were duplicated across ShowDetailScreen and CollectionDetailScreen in
+ * Task 17. Not suitable for irregular plurals (e.g. "person"/"people").
+ */
+export function formatCount(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
 /**

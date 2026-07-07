@@ -13,7 +13,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
 import { useDebounce } from '../hooks/useDebounce';
@@ -26,9 +25,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -70,7 +66,7 @@ export function SongListScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -209,10 +205,8 @@ export function SongListScreen() {
     return <ErrorState message={error} onRetry={loadSongs} />;
   }
 
-  const Wrapper = Platform.OS === 'web' ? View : TouchableWithoutFeedback;
-
   return (
-    <Wrapper {...(Platform.OS !== 'web' ? { onPress: Keyboard.dismiss } : { style: { flex: 1 } })}>
+    <KeyboardDismissWrapper>
       <View style={[styles.container, isDesktop && styles.containerDesktop]}>
         {/* Header Section with Gradient Fade */}
         <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
@@ -296,11 +290,31 @@ export function SongListScreen() {
           onViewProfile={handleViewProfile}
         />
       </View>
-    </Wrapper>
+    </KeyboardDismissWrapper>
+  );
+}
+
+// Renders as a tap target that dismisses the keyboard on native (where
+// TouchableWithoutFeedback + a single child is the standard idiom), or a
+// plain View on web (no keyboard-dismiss gesture needed there). Split into
+// its own component — rather than picking a component reference at render
+// time — because `View` and `TouchableWithoutFeedback` take incompatible
+// prop shapes, which a single polymorphic JSX tag can't express safely.
+function KeyboardDismissWrapper({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'web') {
+    return <View style={styles.keyboardDismissWrapper}>{children}</View>;
+  }
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      {children}
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardDismissWrapper: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -319,7 +333,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
@@ -330,7 +344,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     position: 'absolute',
-    left: HORIZONTAL_PADDING,
+    left: LAYOUT.HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
     zIndex: 20,

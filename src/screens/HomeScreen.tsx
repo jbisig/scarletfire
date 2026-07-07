@@ -16,67 +16,44 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useShows } from '../contexts/ShowsContext';
 import { ShowCard } from '../components/ShowCard';
-import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
+import { ShowsFilterTray, ShowsFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { ErrorState, NoResultsState } from '../components/StateViews';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
+import { showDetailParams } from '../utils/showDetailParams';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
 import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
 import { STATE_ABBREVIATIONS } from '../constants/states';
+import {
+  HomeSortType,
+  HOME_SORT_VALID_TYPES,
+  HOME_SORT_OPTIONS,
+  getHomeSortLabel,
+  getHomeSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
 
-type ShowSortType = 'default' | 'alphabetical' | 'performanceDateNewest' | 'mostPopular';
-const VALID_SORT_TYPES: ShowSortType[] = ['default', 'alphabetical', 'performanceDateNewest', 'mostPopular'];
-
-const SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'default', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-  { value: 'mostPopular', label: 'Most Popular' },
-  { value: 'alphabetical', label: 'Alphabetical' },
-];
+type ShowSortType = HomeSortType;
+const VALID_SORT_TYPES = HOME_SORT_VALID_TYPES;
 
 function getPrimaryDownloads(show: GratefulDeadShow): number {
   const primaryVersion = show.versions.find(v => v.identifier === show.primaryIdentifier);
   return primaryVersion?.downloads ?? 0;
-}
-
-function getSortLabel(sortType: ShowSortType): string {
-  switch (sortType) {
-    case 'default':
-      return 'Show Date';
-    case 'performanceDateNewest':
-      return 'Show Date';
-    case 'mostPopular':
-      return 'Most Popular';
-    case 'alphabetical':
-      return 'Alphabetical';
-    default:
-      return 'Sort';
-  }
-}
-
-function getSortIcon(sortType: ShowSortType): 'arrow-up' | 'arrow-down' {
-  switch (sortType) {
-    case 'default':
-      return 'arrow-up';
-    default:
-      return 'arrow-down';
-  }
 }
 
 // Pure filter function - moved outside component to avoid recreation on each render
@@ -85,6 +62,16 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
 
   const lowerQuery = query.toLowerCase();
   const normalizedQuery = normalizeForSearch(query);
+
+  // Check if query matches a state name, and if so, search for abbreviation.
+  // Hoisted out of the per-show loop below — both only depend on the query,
+  // not on the individual show, so recomputing them for every show was
+  // pure waste (an O(states) scan repeated once per show in the list).
+  const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
+  const matchingStateAbbrs = Object.entries(STATE_ABBREVIATIONS)
+    .filter(([stateName]) => stateName.startsWith(lowerQuery))
+    .map(([, abbr]) => abbr);
+
   return shows.filter(show => {
     // Search in title
     if (show.title?.toLowerCase().includes(lowerQuery)) return true;
@@ -95,16 +82,11 @@ function filterShows(shows: GratefulDeadShow[], query: string): GratefulDeadShow
     // Search in location (including state name to abbreviation conversion)
     if (show.location?.toLowerCase().includes(lowerQuery)) return true;
 
-    // Check if query matches a state name, and if so, search for abbreviation
-    const stateAbbr = STATE_ABBREVIATIONS[lowerQuery];
     if (stateAbbr && show.location?.toUpperCase().includes(stateAbbr)) return true;
 
     // Also check partial state name matches (e.g., "calif" matches "california" -> "CA")
-    const matchingStates = Object.entries(STATE_ABBREVIATIONS).filter(([stateName]) =>
-      stateName.startsWith(lowerQuery)
-    );
-    if (matchingStates.length > 0) {
-      for (const [, abbr] of matchingStates) {
+    if (matchingStateAbbrs.length > 0) {
+      for (const abbr of matchingStateAbbrs) {
         if (show.location?.toUpperCase().includes(abbr)) return true;
       }
     }
@@ -140,7 +122,7 @@ export function HomeScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const flatListRef = useRef<FlatList<GratefulDeadShow>>(null);
@@ -154,9 +136,7 @@ export function HomeScreen() {
       ? (urlSort as ShowSortType)
       : 'mostPopular';
   });
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [sortButtonPosition, setSortButtonPosition] = useState({ top: 0, left: 0 });
-  const sortButtonRef = useRef<View>(null);
+  const sortDropdown = useSortDropdown();
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(() => {
     const urlYears = route.params?.years;
     const urlSeries = route.params?.series;
@@ -215,13 +195,6 @@ export function HomeScreen() {
     setSearchQuery('');
     setIsSearchExpanded(false);
   }, []);
-
-  const handleSortPress = () => {
-    sortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSortModal(true);
-    });
-  };
 
   // Memoize available years - only recalculate when showsByYear changes
   const availableYears = useMemo(() => {
@@ -286,9 +259,9 @@ export function HomeScreen() {
       case 'mostPopular':
         return allShows.sort((a, b) => getPrimaryDownloads(b) - getPrimaryDownloads(a));
       case 'alphabetical':
-        return allShows.sort((a, b) => (a.venue || '').localeCompare(b.venue || ''));
+        return allShows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
       case 'performanceDateNewest':
-        return allShows.sort((a, b) => b.date.localeCompare(a.date));
+        return allShows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
       default:
         return allShows;
     }
@@ -312,13 +285,7 @@ export function HomeScreen() {
   }, [appliedFilters, debouncedSearchQuery, sortType]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: show.primaryIdentifier,
-      venue: show.venue,
-      date: show.date,
-      location: show.location,
-      classicTier: show.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(show));
   }, [navigation]);
 
   const handleApplyFilters = useCallback((filters: ShowsFilterState) => {
@@ -343,28 +310,18 @@ export function HomeScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
-          {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
-            {!isDesktop && (
-              <TouchableOpacity
-                ref={profileButtonRef}
-                onPress={handleProfilePress}
-                activeOpacity={0.8}
-              >
-                <ProfileImage
-                  uri={isAuthenticated ? avatarUrl : null}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.headerTitle}>Shows</Text>
-          </View>
-
-          {/* Right side: Search and Filter buttons */}
-          <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+      <ScreenHeader
+        title="Shows"
+        isDesktop={isDesktop}
+        topPadding={insets.top + 8}
+        onHeaderLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
+        isSearchExpanded={isSearchExpanded}
+        profileButtonRef={profileButtonRef}
+        avatarUrl={avatarUrl}
+        isAuthenticated={isAuthenticated}
+        onProfilePress={handleProfilePress}
+        rightContent={
+          <>
             {/* Animated Search Bar */}
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
@@ -394,17 +351,9 @@ export function HomeScreen() {
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Gradient fade overlay */}
-        <LinearGradient
-          colors={[COLORS.background, COLORS.background + '00']}
-          locations={[0, 1]}
-          style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
-          pointerEvents="none"
-        />
-      </View>
+          </>
+        }
+      />
 
       {/* Filter Tray Modal */}
       <ShowsFilterTray
@@ -430,17 +379,17 @@ export function HomeScreen() {
       {/* Action Bar Section with Sort */}
       <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
         <View style={[styles.actionRow, isDesktop && styles.actionRowDesktop]}>
-          <View ref={sortButtonRef} collapsable={false}>
+          <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabelButton}
-              onPress={handleSortPress}
+              onPress={sortDropdown.open}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={`Sort shows by ${getSortLabel(sortType)}`}
+              accessibilityLabel={`Sort shows by ${getHomeSortLabel(sortType)}`}
               accessibilityHint="Double tap to change sort order"
             >
-              <Ionicons name={getSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
-              <Text style={styles.sortLabelText}>{getSortLabel(sortType)}</Text>
+              <Ionicons name={getHomeSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Text style={styles.sortLabelText}>{getHomeSortLabel(sortType)}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -500,10 +449,10 @@ export function HomeScreen() {
 
       {/* Sort Dropdown */}
       <SortDropdown
-        visible={showSortModal}
-        onClose={() => setShowSortModal(false)}
-        position={sortButtonPosition}
-        options={SORT_OPTIONS}
+        visible={sortDropdown.visible}
+        onClose={sortDropdown.close}
+        position={sortDropdown.position}
+        options={HOME_SORT_OPTIONS}
         selectedValue={sortType}
         onSelect={setSortType}
       />
@@ -519,35 +468,18 @@ const styles = StyleSheet.create({
   containerDesktop: {
     backgroundColor: COLORS.backgroundSecondary,
   },
-  headerSection: {
-    zIndex: 10,
-    backgroundColor: COLORS.background,
-  },
-  headerSectionDesktop: {
-    backgroundColor: COLORS.backgroundSecondary,
-  },
+  // Kept for the isLoading skeleton header below (a simpler, non-absolute layout
+  // that doesn't go through <ScreenHeader>). ScreenHeader owns its own copies
+  // of these for the real header.
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
     paddingHorizontal: 32,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    position: 'absolute',
-    left: HORIZONTAL_PADDING,
-    top: 0,
-    bottom: SPACING.lg,
-    zIndex: 20,
-  },
-  headerLeftDesktop: {
-    left: 32,
   },
   avatar: {
     width: 39,
@@ -557,24 +489,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.heading2,
-  },
-  headerRight: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: LAYOUT.headerButtonGap,
-    zIndex: 10,
-  },
-  headerGradient: {
-    position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 30,
-  },
-  headerGradientDesktop: {
-    display: 'none',
   },
   actionBarSection: {
     backgroundColor: COLORS.background,
@@ -598,12 +512,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingTop: SPACING.sm + 4,
     paddingBottom: SPACING.md,
   },
   actionRowDesktop: {
-    paddingLeft: HORIZONTAL_PADDING + 8,
+    paddingLeft: LAYOUT.HORIZONTAL_PADDING + 8,
   },
   sortLabelButton: {
     flexDirection: 'row',

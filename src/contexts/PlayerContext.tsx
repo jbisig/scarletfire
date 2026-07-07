@@ -2,41 +2,17 @@ import React, { createContext, useReducer, useContext, useEffect, useRef, useSta
 import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
-import { Track, ShowDetail, GratefulDeadShow, ShowsByYear } from '../types/show.types';
+import { Track, ShowDetail, GratefulDeadShow } from '../types/show.types';
 import { audioService, appIconUri } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
+import { useOptionalShows } from './ShowsContext';
 import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import { shuffleArray } from '../utils/shuffle';
 import { logger } from '../utils/logger';
-import showsData from '../data/shows.json';
-
-// Load shows data for finding next chronological show
-const allShowsByYear = showsData as ShowsByYear;
-
-// Pre-compute sorted show list once at module level (avoids O(n) per lookup)
-const allShowsSorted: GratefulDeadShow[] = Object.values(allShowsByYear)
-  .flat()
-  .sort((a, b) => a.date.substring(0, 10).localeCompare(b.date.substring(0, 10)));
-
-// Helper function to find the next show after a given date (binary search)
-function findNextShow(currentDate: string): GratefulDeadShow | null {
-  const target = currentDate.substring(0, 10);
-  let low = 0;
-  let high = allShowsSorted.length - 1;
-
-  while (low <= high) {
-    const mid = (low + high) >>> 1;
-    const midDate = allShowsSorted[mid].date.substring(0, 10);
-    if (midDate <= target) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return low < allShowsSorted.length ? allShowsSorted[low] : null;
-}
+import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
+import { useOptionalToast } from './ToastContext';
+import { findNextShow } from '../utils/showLookup';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -52,6 +28,7 @@ const initialState: PlayerState = {
   playbackMode: 'show',
   radioQueue: [],
   radioQueueIndex: -1,
+  radioQueueOffset: 0,
   isRadioLoading: false,
   // Shuffle mode state
   shuffleQueue: [],
@@ -60,7 +37,7 @@ const initialState: PlayerState = {
   isShuffleLoading: false,
 };
 
-function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
+export function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case 'LOAD_TRACK':
       const trackIndex = action.playlist.findIndex(t => t.id === action.track.id);
@@ -126,6 +103,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         playbackMode: 'radio',
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
         isRadioLoading: true,
       };
 
@@ -135,6 +113,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         playbackMode: 'show',
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
         isRadioLoading: false,
         currentTrack: null,
         currentShow: null,
@@ -161,6 +140,11 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         ...state,
         radioQueue: newRadioQueue,
         radioQueueIndex: newRadioIndex,
+        // Cumulative count of tracks ever trimmed - the native queue is
+        // append-only, so native absolute indices keep growing even though
+        // radioQueue itself is capped. Track the running total so absolute
+        // indices can be translated back to radioQueue indices.
+        radioQueueOffset: state.radioQueueOffset + indexAdjustment,
         currentTrack: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.track : state.currentTrack,
         currentShow: state.radioQueueIndex < 0 && firstNewTrack ? firstNewTrack.show : state.currentShow,
         isRadioLoading: false,
@@ -193,17 +177,22 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       }
       return state;
 
-    case 'SYNC_RADIO_TRACK_INDEX':
-      if (action.index >= 0 && action.index < state.radioQueue.length) {
-        const radioTrack = state.radioQueue[action.index];
+    case 'SYNC_RADIO_TRACK_INDEX': {
+      // action.index is the ABSOLUTE index from the native player's
+      // append-only queue. Translate it to a radioQueue index by removing
+      // the count of tracks already trimmed from the front of radioQueue.
+      const translatedIndex = action.index - state.radioQueueOffset;
+      if (translatedIndex >= 0 && translatedIndex < state.radioQueue.length) {
+        const radioTrack = state.radioQueue[translatedIndex];
         return {
           ...state,
-          radioQueueIndex: action.index,
+          radioQueueIndex: translatedIndex,
           currentTrack: radioTrack.track,
           currentShow: radioTrack.show,
         };
       }
       return state;
+    }
 
     // Shuffle mode actions
     case 'START_SHUFFLE':
@@ -217,6 +206,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
         // Clear radio state
         radioQueue: [],
         radioQueueIndex: -1,
+        radioQueueOffset: 0,
       };
 
     case 'STOP_SHUFFLE':
@@ -239,6 +229,10 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       };
 
     case 'SHUFFLE_NEXT':
+      // shuffleNext() (below) only ever dispatches this action when the next
+      // index is within bounds — when the queue is exhausted it dispatches
+      // SET_SHUFFLE_QUEUE with a reshuffled queue instead. So the "queue
+      // exhausted" case can't reach this reducer; no branch for it here.
       const nextShuffleIndex = state.shuffleQueueIndex + 1;
       if (nextShuffleIndex < state.shuffleQueue.length) {
         return {
@@ -247,12 +241,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
           isShuffleLoading: true,
         };
       }
-      // Queue exhausted - will be handled by the effect to reshuffle
-      return {
-        ...state,
-        shuffleQueueIndex: -1, // Signal to reshuffle
-        isShuffleLoading: true,
-      };
+      return state;
 
     case 'SHUFFLE_PREVIOUS':
       const prevShuffleIndex = state.shuffleQueueIndex - 1;
@@ -289,8 +278,20 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   }
 }
 
-interface PlayerContextType {
+// Playback state + values derived from it. Changes on every dispatch — this is
+// what state-reading consumers subscribe to.
+interface PlayerStateContextValue {
   state: PlayerState;
+  // Derived values
+  isRadioMode: boolean;
+  currentRadioTrack: RadioTrack | null;
+  isShuffleMode: boolean;
+}
+
+// Imperative actions. This object is REFERENTIALLY STABLE across all renders
+// (see the actions useMemo below) so consumers that only call actions never
+// re-render on a state dispatch.
+interface PlayerActionsContextValue {
   loadTrack: (track: Track, show: ShowDetail, playlist: Track[]) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
@@ -304,8 +305,6 @@ interface PlayerContextType {
   // Radio mode functions
   startRadio: () => Promise<void>;
   stopRadio: () => Promise<void>;
-  isRadioMode: boolean;
-  currentRadioTrack: RadioTrack | null;
   // Shuffle mode functions
   startShuffleSongs: (
     songs: ShuffleSongItem[],
@@ -314,13 +313,18 @@ interface PlayerContextType {
   startShuffleShows: (shows: GratefulDeadShow[]) => Promise<void>;
   startSequentialSongs: (songs: ShuffleSongItem[], startIndex?: number) => Promise<void>;
   stopShuffle: () => Promise<void>;
-  isShuffleMode: boolean;
-  // Full player visibility
+}
+
+// Full-player visibility isolated into its own tiny context so the navigator
+// shell can subscribe to it WITHOUT subscribing to playback state.
+interface FullPlayerVisibilityContextValue {
   isFullPlayerVisible: boolean;
   setFullPlayerVisible: (visible: boolean) => void;
 }
 
-const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
+const PlayerStateContext = createContext<PlayerStateContextValue | undefined>(undefined);
+const PlayerActionsContext = createContext<PlayerActionsContextValue | undefined>(undefined);
+const FullPlayerVisibilityContext = createContext<FullPlayerVisibilityContextValue | undefined>(undefined);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialState);
@@ -328,6 +332,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const currentLoadingTrackIdRef = useRef<string | null>(null);
   const hasRecordedPlayRef = useRef(false);
   const { recordTrackPlay } = usePlayCounts();
+  // Optional: some tests mount PlayerProvider without a ShowsProvider
+  // ancestor. Falls back to a no-op so the prefetch effect below is skipped.
+  const shows = useOptionalShows();
+  // Optional: some tests mount PlayerProvider without a ToastProvider
+  // ancestor. Falls back to a silent no-op so warnings are still logged.
+  const toast = useOptionalToast();
 
   // Progress tracking via refs to avoid re-renders on every position update
   const progressRef = useRef<PlaybackProgress>({ position: 0, duration: 0 });
@@ -351,6 +361,19 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Prefetch show details in background so navigation to the current show is
+  // instant. Single instance here — FullPlayer and MiniPlayer both used to
+  // run this identical effect, which meant it fired twice (redundantly) any
+  // time both were mounted at once.
+  useEffect(() => {
+    if (state.currentShow?.identifier) {
+      // Fire and forget - preloads into cache
+      shows?.getShowDetail(state.currentShow.identifier).catch(() => {
+        // Ignore errors - this is just prefetching
+      });
+    }
+  }, [state.currentShow?.identifier, shows?.getShowDetail]);
+
   // Auto-load track when currentTrack changes
   // Skip in shuffle mode - loadShuffleSong/loadShuffleShow handle loading directly
   useEffect(() => {
@@ -370,12 +393,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         state.currentShow || undefined,
         state.playlist  // Pass full playlist for gapless playback
       ).then(() => {
-        dispatch({ type: 'SET_LOADING', isLoading: false });
-
-        // Only play if we're still on the same track (prevent race condition)
+        // Only clear the spinner / play if we're still on the same track. A
+        // previous (slower) load resolving after a newer track has already
+        // started loading must not touch loading state — otherwise it
+        // clears the spinner for the newer track that is still in flight.
         if (currentLoadingTrackIdRef.current !== trackId) {
           return;
         }
+
+        dispatch({ type: 'SET_LOADING', isLoading: false });
 
         if (shouldPlay) {
           audioService.play().then(() => {
@@ -386,6 +412,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         }
       }).catch((error) => {
         logger.player.error('Track load failed:', error.message);
+        // Same staleness guard as the success path — a stale failure must not
+        // clear loading state for a newer, still-loading track.
+        if (currentLoadingTrackIdRef.current !== trackId) {
+          return;
+        }
         dispatch({ type: 'SET_LOADING', isLoading: false });
       });
     }
@@ -699,6 +730,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [recordTrackPlay]); // progressAnim excluded — only used for setValue(), not conditional logic
 
   const loadTrack = useCallback(async (track: Track, show: ShowDetail, playlist: Track[]) => {
+    // Screens pass tracks sourced from favorites/collections/public
+    // profiles — any of which can be synced from ANOTHER user — so the
+    // streamUrl must be confirmed to point at archive.org before we ever
+    // hand it to the native player. This is a user-initiated action (tapping
+    // a track), so surface a toast in addition to the logged warning.
+    if (!isAllowedStreamUrl(track.streamUrl)) {
+      logger.player.warn('Skipped track with disallowed streamUrl:', track.streamUrl);
+      toast?.showToast("Couldn't play that track", 'error');
+      return;
+    }
+
     // If in radio mode, stop radio first
     if (state.playbackMode === 'radio') {
       dispatch({ type: 'STOP_RADIO' });
@@ -709,7 +751,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'EXIT_SHUFFLE' });
     }
     dispatch({ type: 'LOAD_TRACK', track, show, playlist });
-  }, [state.playbackMode]);
+  }, [state.playbackMode, toast]);
 
   const play = useCallback(async () => {
     try {
@@ -881,6 +923,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Find the matching track
       const track = showDetail.tracks.find(t => t.id === song.trackId);
 
+      if (track && !isAllowedStreamUrl(track.streamUrl)) {
+        // `song` came from a shuffle queue that can be sourced from favorites
+        // or a synced/shared collection — i.e. from ANOTHER user. Even
+        // though the track itself was just freshly fetched from archive.org,
+        // validate defensively before it reaches the native player.
+        logger.player.warn('Skipped shuffle song with disallowed streamUrl:', track.streamUrl);
+        toast?.showToast("Couldn't play that track", 'error');
+        dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
+        return;
+      }
+
       if (track) {
         // Set up native player with just this track (not the full show playlist)
         const nativeTrack = {
@@ -909,7 +962,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       logger.player.error('Failed to load shuffle song:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
-  }, []);
+  }, [toast]);
 
   // Helper to load and play a show from shuffle queue
   const loadShuffleShow = useCallback(async (show: GratefulDeadShow) => {
@@ -919,9 +972,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Fetch the show details
       const showDetail = await archiveApi.getShowDetail(show.primaryIdentifier);
 
-      if (showDetail.tracks.length > 0) {
+      // `show` can come from a shuffle queue sourced from favorites or a
+      // synced/shared collection (another user). Drop any tracks whose
+      // streamUrl isn't archive.org rather than trusting the fetched list
+      // wholesale — defensive, since the fetch itself is keyed by an
+      // identifier that ultimately traces back to that foreign data.
+      const validTracks = showDetail.tracks.filter(t => isAllowedStreamUrl(t.streamUrl));
+      if (validTracks.length < showDetail.tracks.length) {
+        logger.player.warn(
+          `Skipped ${showDetail.tracks.length - validTracks.length} track(s) with disallowed streamUrl in show:`,
+          show.primaryIdentifier,
+        );
+        toast?.showToast('Skipped some tracks with an invalid link', 'error');
+      }
+
+      if (validTracks.length > 0) {
         // Set up native player queue with all tracks
-        const nativeTracks = showDetail.tracks.map(t => ({
+        const nativeTracks = validTracks.map(t => ({
           id: t.id,
           url: t.streamUrl,
           title: t.title,
@@ -933,10 +1000,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await nativeAudioPlayer.setQueue(nativeTracks, 0);
 
         // Store playlist length in ref for skip detection
-        shuffleShowPlaylistLengthRef.current = showDetail.tracks.length;
+        shuffleShowPlaylistLengthRef.current = validTracks.length;
 
         // Update state
-        dispatch({ type: 'LOAD_TRACK', track: showDetail.tracks[0], show: showDetail, playlist: showDetail.tracks });
+        dispatch({ type: 'LOAD_TRACK', track: validTracks[0], show: showDetail, playlist: validTracks });
         dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
 
         // Start playback
@@ -950,7 +1017,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       logger.player.error('Failed to load shuffle show:', error);
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
     }
-  }, []);
+  }, [toast]);
 
   // Start shuffle mode for songs. `source` distinguishes favorites shuffle
   // from a playlist shuffle so the UI can show a distinct badge.
@@ -1127,6 +1194,56 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     previousTrackRef.current = previousTrack;
   }, [previousTrack]);
 
+  // ---------------------------------------------------------------------------
+  // Referentially stable public actions
+  //
+  // Several action callbacks above are re-created across renders because they
+  // close over slices of state (e.g. loadTrack over state.playbackMode). To
+  // keep the actions context value referentially stable — so consumers that
+  // only call actions never re-render on a state dispatch — each such action is
+  // mirrored into a ref and exposed through a stable wrapper. Actions that are
+  // already stable (empty-dep useCallbacks) are passed through directly.
+  //
+  // Stabilizing loadTrack in particular makes usePlaySavedSong's playSong
+  // genuinely stable — previously it followed loadTrack's identity, which
+  // changed on every playback-mode change. (nextTrack/previousTrack are already
+  // mirrored into nextTrackRef/previousTrackRef above for the lock-screen
+  // remote handlers; those refs are reused here.)
+  const loadTrackImplRef = useRef(loadTrack);
+  const startRadioImplRef = useRef(startRadio);
+  const startShuffleSongsImplRef = useRef(startShuffleSongs);
+  const startShuffleShowsImplRef = useRef(startShuffleShows);
+  const startSequentialSongsImplRef = useRef(startSequentialSongs);
+  useEffect(() => {
+    loadTrackImplRef.current = loadTrack;
+    startRadioImplRef.current = startRadio;
+    startShuffleSongsImplRef.current = startShuffleSongs;
+    startShuffleShowsImplRef.current = startShuffleShows;
+    startSequentialSongsImplRef.current = startSequentialSongs;
+  }, [loadTrack, startRadio, startShuffleSongs, startShuffleShows, startSequentialSongs]);
+
+  const stableLoadTrack = useCallback(
+    (track: Track, show: ShowDetail, playlist: Track[]) => loadTrackImplRef.current(track, show, playlist),
+    [],
+  );
+  const stableNextTrack = useCallback(() => nextTrackRef.current(), []);
+  const stablePreviousTrack = useCallback(() => previousTrackRef.current(), []);
+  const stableStartRadio = useCallback(() => startRadioImplRef.current(), []);
+  const stableStartShuffleSongs = useCallback(
+    (songs: ShuffleSongItem[], source?: 'favorites' | 'playlist') =>
+      startShuffleSongsImplRef.current(songs, source),
+    [],
+  );
+  const stableStartShuffleShows = useCallback(
+    (shows: GratefulDeadShow[]) => startShuffleShowsImplRef.current(shows),
+    [],
+  );
+  const stableStartSequentialSongs = useCallback(
+    (songs: ShuffleSongItem[], startIndex?: number) =>
+      startSequentialSongsImplRef.current(songs, startIndex),
+    [],
+  );
+
   // Derived values
   const isRadioMode = state.playbackMode === 'radio';
   const isShuffleMode = state.playbackMode === 'shuffle';
@@ -1134,62 +1251,98 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     ? state.radioQueue[state.radioQueueIndex]
     : null;
 
-  // Memoize context value to prevent unnecessary re-renders of consumers
-  const contextValue = useMemo(() => ({
-    state,
-    loadTrack,
+  // Referentially stable actions object — every member is stable (empty-dep
+  // callbacks, the stable wrappers above, or refs), so this identity never
+  // changes and PlayerActionsContext consumers never re-render on a dispatch.
+  const actions = useMemo<PlayerActionsContextValue>(() => ({
+    loadTrack: stableLoadTrack,
     play,
     pause,
     stop,
-    nextTrack,
-    previousTrack,
+    nextTrack: stableNextTrack,
+    previousTrack: stablePreviousTrack,
     seekTo,
     progressRef,
     progressAnim,
-    startRadio,
+    startRadio: stableStartRadio,
     stopRadio,
-    isRadioMode,
-    currentRadioTrack,
-    startShuffleSongs,
-    startShuffleShows,
-    startSequentialSongs,
+    startShuffleSongs: stableStartShuffleSongs,
+    startShuffleShows: stableStartShuffleShows,
+    startSequentialSongs: stableStartSequentialSongs,
     stopShuffle,
-    isShuffleMode,
-    isFullPlayerVisible,
-    setFullPlayerVisible,
   }), [
-    state,
-    loadTrack,
+    stableLoadTrack,
     play,
     pause,
     stop,
-    nextTrack,
-    previousTrack,
+    stableNextTrack,
+    stablePreviousTrack,
     seekTo,
     progressAnim,
-    startRadio,
+    stableStartRadio,
     stopRadio,
-    isRadioMode,
-    currentRadioTrack,
-    startShuffleSongs,
-    startShuffleShows,
-    startSequentialSongs,
+    stableStartShuffleSongs,
+    stableStartShuffleShows,
+    stableStartSequentialSongs,
     stopShuffle,
-    isShuffleMode,
-    isFullPlayerVisible,
   ]);
 
+  // State context value — changes on every dispatch (that is the point).
+  const stateValue = useMemo<PlayerStateContextValue>(() => ({
+    state,
+    isRadioMode,
+    currentRadioTrack,
+    isShuffleMode,
+  }), [state, isRadioMode, currentRadioTrack, isShuffleMode]);
+
+  // Visibility context value — changes only when the full player opens/closes.
+  const visibilityValue = useMemo<FullPlayerVisibilityContextValue>(() => ({
+    isFullPlayerVisible,
+    setFullPlayerVisible,
+  }), [isFullPlayerVisible]);
+
   return (
-    <PlayerContext.Provider value={contextValue}>
-      {children}
-    </PlayerContext.Provider>
+    <PlayerActionsContext.Provider value={actions}>
+      <PlayerStateContext.Provider value={stateValue}>
+        <FullPlayerVisibilityContext.Provider value={visibilityValue}>
+          {children}
+        </FullPlayerVisibilityContext.Provider>
+      </PlayerStateContext.Provider>
+    </PlayerActionsContext.Provider>
   );
 }
 
-export function usePlayer() {
-  const context = useContext(PlayerContext);
+export function usePlayerState() {
+  const context = useContext(PlayerStateContext);
   if (!context) {
-    throw new Error('usePlayer must be used within PlayerProvider');
+    throw new Error('usePlayerState must be used within PlayerProvider');
   }
   return context;
+}
+
+export function usePlayerActions() {
+  const context = useContext(PlayerActionsContext);
+  if (!context) {
+    throw new Error('usePlayerActions must be used within PlayerProvider');
+  }
+  return context;
+}
+
+export function useFullPlayerVisibility() {
+  const context = useContext(FullPlayerVisibilityContext);
+  if (!context) {
+    throw new Error('useFullPlayerVisibility must be used within PlayerProvider');
+  }
+  return context;
+}
+
+// Backwards-compatible hook returning the combined state + actions shape so
+// consumers that read both (FullPlayer, MiniPlayer, PlayerBar, etc.) don't have
+// to migrate. Because the actions object is referentially stable, also
+// subscribing to it adds no re-renders beyond the state subscription. Does NOT
+// include full-player visibility — that now lives in useFullPlayerVisibility.
+export function usePlayer() {
+  const state = usePlayerState();
+  const actions = usePlayerActions();
+  return { ...state, ...actions };
 }

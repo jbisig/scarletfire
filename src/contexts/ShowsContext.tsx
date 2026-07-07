@@ -70,16 +70,19 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
     return archiveApi.getShowVersions(date);
   }, []);
 
+  // Memoize the provider value so consumers only re-render when one of these
+  // (already-stable) members actually changes, instead of on every render of
+  // ShowsProvider (e.g. when something above it in the tree re-renders).
+  const contextValue = useMemo<ShowsContextType>(() => ({
+    showsByYear,
+    isLoading,
+    error,
+    getShowDetail,
+    getShowVersions,
+  }), [showsByYear, isLoading, error, getShowDetail, getShowVersions]);
+
   return (
-    <ShowsContext.Provider
-      value={{
-        showsByYear,
-        isLoading,
-        error,
-        getShowDetail,
-        getShowVersions,
-      }}
-    >
+    <ShowsContext.Provider value={contextValue}>
       {children}
     </ShowsContext.Provider>
   );
@@ -91,4 +94,13 @@ export function useShows() {
     throw new Error('useShows must be used within ShowsProvider');
   }
   return context;
+}
+
+/**
+ * Optional variant for consumers that may be mounted without a ShowsProvider
+ * ancestor (e.g. PlayerProvider unit tests that isolate it from the rest of
+ * the provider tree — mirrors `useOptionalToast` in ToastContext).
+ */
+export function useOptionalShows() {
+  return useContext(ShowsContext);
 }

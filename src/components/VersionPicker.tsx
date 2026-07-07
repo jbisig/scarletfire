@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
 import { formatDownloads } from '../utils/formatters';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
+import { webStyle } from '../utils/webStyle';
 
 interface VersionPickerProps {
   versions: RecordingVersion[];
@@ -171,19 +172,14 @@ const styles = StyleSheet.create({
   },
   selectorGlass: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 342,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.33)',
+    ...GLASS_PILL,
     height: 35,
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     // Keep the pill wide enough to show the source name, views, and chevron
     // without the chevron getting pushed past the right edge on narrow layouts.
     minWidth: 220,
-    // @ts-ignore - web only
-    backdropFilter: 'blur(34px)',
-    WebkitBackdropFilter: 'blur(34px)',
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
   },
   selectorWithAttribution: {
     paddingVertical: 12,

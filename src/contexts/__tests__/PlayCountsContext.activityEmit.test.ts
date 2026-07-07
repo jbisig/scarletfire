@@ -25,7 +25,7 @@ jest.mock('../../services/activityService', () => ({
 
 // Pure unit test of the increment-detection helper that PlayCountsContext
 // will export (see Step 2 for the helper definition).
-import { computeShowPlayCount, shouldEmitListenedShow } from '../PlayCountsContext';
+import { computeShowPlayCount, diffNewlyListenedShows } from '../PlayCountsContext';
 import type { PlayCount } from '../PlayCountsContext';
 
 describe('computeShowPlayCount', () => {
@@ -69,23 +69,6 @@ describe('computeShowPlayCount', () => {
     expect(computeShowPlayCount(counts, 30)).toBe(2);
   });
 });
-
-describe('shouldEmitListenedShow', () => {
-  it('emits when count goes 0 -> 1', () => {
-    expect(shouldEmitListenedShow(0, 1)).toBe(true);
-  });
-  it('emits when count goes 1 -> 2', () => {
-    expect(shouldEmitListenedShow(1, 2)).toBe(true);
-  });
-  it('does not emit when count stays the same', () => {
-    expect(shouldEmitListenedShow(1, 1)).toBe(false);
-  });
-  it('does not emit when count decreases (never expected)', () => {
-    expect(shouldEmitListenedShow(2, 1)).toBe(false);
-  });
-});
-
-import { diffNewlyListenedShows } from '../PlayCountsContext';
 
 describe('diffNewlyListenedShows', () => {
   it('returns empty when sets are identical', () => {

@@ -10,6 +10,14 @@ export interface Collection {
   slug: string;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Whether the collection is readable by anyone with the share link (anon
+   * key included). Defaults false for new collections; flips to true the
+   * first time the owner shares it (see collectionsService.markCollectionShared).
+   * Backed by the `collections.is_shared` column — existing rows were
+   * grandfathered to true when the column was introduced.
+   */
+  isShared: boolean;
   itemCount?: number;
   saveCount?: number;
 }

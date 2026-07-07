@@ -16,6 +16,14 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 export interface LoadingStateProps {
   message?: string;
   size?: 'small' | 'large';
+  /**
+   * Skip painting the container's own `COLORS.background` fill. Use this when
+   * the parent wrapper already paints its own background (e.g. a desktop
+   * `COLORS.backgroundSecondary` shell) and this view is cross-axis
+   * shrink-wrapped inside it — otherwise the two backgrounds create a visible
+   * two-tone seam around the shrunk content column.
+   */
+  transparentBackground?: boolean;
 }
 
 /**
@@ -24,9 +32,10 @@ export interface LoadingStateProps {
 export const LoadingState = React.memo<LoadingStateProps>(function LoadingState({
   message,
   size = 'large',
+  transparentBackground,
 }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, transparentBackground && styles.containerTransparent]}>
       <ActivityIndicator size={size} color={COLORS.accent} />
       {message && <Text style={styles.loadingText}>{message}</Text>}
     </View>
@@ -38,13 +47,22 @@ export const LoadingState = React.memo<LoadingStateProps>(function LoadingState(
 // =============================================================================
 
 export interface EmptyStateProps {
-  icon?: keyof typeof Ionicons.glyphMap;
+  /** Pass `null` to render without an icon. Defaults to 'albums-outline'. */
+  icon?: keyof typeof Ionicons.glyphMap | null;
   title?: string;
   message: string;
   action?: {
     label: string;
     onPress: () => void;
   };
+  /**
+   * Skip painting the container's own `COLORS.background` fill. Use this when
+   * the parent wrapper already paints its own background (e.g. a desktop
+   * `COLORS.backgroundSecondary` shell) and this view is cross-axis
+   * shrink-wrapped inside it — otherwise the two backgrounds create a visible
+   * two-tone seam around the shrunk content column.
+   */
+  transparentBackground?: boolean;
 }
 
 /**
@@ -55,10 +73,11 @@ export const EmptyState = React.memo<EmptyStateProps>(function EmptyState({
   title,
   message,
   action,
+  transparentBackground,
 }) {
   return (
-    <View style={styles.container}>
-      <Ionicons name={icon} size={48} color={COLORS.textMuted} />
+    <View style={[styles.container, transparentBackground && styles.containerTransparent]}>
+      {icon && <Ionicons name={icon} size={48} color={COLORS.textMuted} />}
       {title && <Text style={styles.emptyTitle}>{title}</Text>}
       <Text style={styles.emptyMessage}>{message}</Text>
       {action && (
@@ -79,22 +98,34 @@ export const EmptyState = React.memo<EmptyStateProps>(function EmptyState({
 // =============================================================================
 
 export interface ErrorStateProps {
+  /** Optional icon shown above the title/message (e.g. for "not found" states). */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Optional bold heading shown above the message. */
+  title?: string;
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
 }
 
 /**
- * Consistent error state with message and optional retry button.
+ * Consistent error state with message and optional retry button. Pass
+ * `icon`/`title` for richer "not found" style states (e.g. a missing
+ * profile) — without them it renders the plain single-line message used by
+ * most load-failure screens.
  */
 export const ErrorState = React.memo<ErrorStateProps>(function ErrorState({
+  icon,
+  title,
   message,
   onRetry,
   retryLabel = 'Try Again',
 }) {
+  const hasHeader = !!icon || !!title;
   return (
     <View style={styles.container}>
-      <Text style={styles.errorText}>{message}</Text>
+      {icon && <Ionicons name={icon} size={48} color={COLORS.textTertiary} />}
+      {title && <Text style={styles.errorTitle}>{title}</Text>}
+      <Text style={hasHeader ? styles.errorSubtitle : styles.errorText}>{message}</Text>
       {onRetry && (
         <TouchableOpacity
           style={styles.retryButton}
@@ -146,6 +177,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     padding: SPACING.xxxxl,
   },
+  containerTransparent: {
+    backgroundColor: 'transparent',
+  },
   loadingText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
@@ -179,6 +213,18 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.accent,
     textAlign: 'center',
+    marginBottom: SPACING.xl,
+  },
+  errorTitle: {
+    ...TYPOGRAPHY.heading4,
+    marginTop: SPACING.md,
+    textAlign: 'center',
+  },
+  errorSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.xs,
     marginBottom: SPACING.xl,
   },
   retryButton: {

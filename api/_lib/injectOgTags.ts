@@ -48,6 +48,6 @@ export function injectOgTags(html: string, tags: OgTags): string {
   ].join('\n  ');
 
   return html
-    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
-    .replace('</head>', `  ${metaBlock}\n</head>`);
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${title}</title>`)
+    .replace('</head>', () => `  ${metaBlock}\n</head>`);
 }

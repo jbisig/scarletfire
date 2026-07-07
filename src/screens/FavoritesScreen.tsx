@@ -17,25 +17,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavorites, FavoriteSong } from '../contexts/FavoritesContext';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { SortDropdown, SortOption } from '../components/SortDropdown';
+import { SortDropdown } from '../components/SortDropdown';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
 import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
-import showsData from '../data/shows.json';
 import { ShowsByYear } from '../types/show.types';
+import { showDetailParams } from '../utils/showDetailParams';
 import { Ionicons } from '@expo/vector-icons';
-import { usePlayer } from '../contexts/PlayerContext';
+import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
-import { archiveApi } from '../services/archiveApi';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
-import { StarRating } from '../components/StarRating';
-import { PlayCountBadge } from '../components/PlayCountBadge';
+import { SongCard } from '../components/SongCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
@@ -49,102 +47,28 @@ import { CollectionsTab } from '../components/collections/CollectionsTab';
 import { CreateCollectionModal } from '../components/collections/CreateCollectionModal';
 import { CollectionType, LibraryCollectionEntry } from '../types/collection.types';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
-
-// Layout constants
-const HORIZONTAL_PADDING = SPACING.xl;
-
-const allShowsByYear = showsData as ShowsByYear;
-
-// Look up correct venue by show date
-function getCorrectVenue(showDate: string): string | undefined {
-  const normalizedDate = showDate.substring(0, 10); // YYYY-MM-DD
-  const year = normalizedDate.substring(0, 4);
-  const yearShows = allShowsByYear[year];
-  if (!yearShows) return undefined;
-
-  const show = yearShows.find(s => s.date.substring(0, 10) === normalizedDate);
-  if (show) {
-    return getVenueFromShow(show);
-  }
-  return undefined;
-}
-
-// Memoized song item component to prevent unnecessary re-renders
-interface SongItemProps {
-  song: FavoriteSong;
-  isLoading: boolean;
-  playCount: number;
-  onPress: (song: FavoriteSong) => void;
-  onLongPress?: (song: FavoriteSong) => void;
-}
-
-const SongItem = React.memo<SongItemProps>(({ song, isLoading, playCount, onPress, onLongPress }) => {
-  const { isDesktop } = useResponsive();
-  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
-  const venue = getCorrectVenue(song.showDate) || song.venue;
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <TouchableOpacity
-      style={[styles.songItem, isDesktop && isHovered && styles.songItemHovered]}
-      onPress={() => onPress(song)}
-      onLongPress={onLongPress ? () => onLongPress(song) : undefined}
-      activeOpacity={0.7}
-      disabled={isLoading}
-      // @ts-ignore - web only mouse events
-      onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
-      onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
-    >
-      <View style={styles.songContentRow}>
-        <View style={styles.songInfo}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {song.trackTitle}
-          </Text>
-
-          <View style={styles.songDateRow}>
-            <Text style={styles.songDate}>
-              {formatDate(song.showDate)}
-            </Text>
-            {performanceRating && (
-              <StarRating tier={performanceRating} size={14} />
-            )}
-          </View>
-
-          {venue && (
-            <Text style={styles.songVenue} numberOfLines={1}>
-              {venue}
-            </Text>
-          )}
-        </View>
-
-        <PlayCountBadge count={playCount} size="small" />
-      </View>
-    </TouchableOpacity>
-  );
-});
-
-SongItem.displayName = 'SongItem';
+import { EmptyState } from '../components/StateViews';
+import {
+  SavedItemSortType,
+  SAVED_SHOW_SORT_OPTIONS,
+  SAVED_SONG_SORT_OPTIONS,
+  getSavedItemSortLabel,
+  getSavedItemSortIcon,
+} from '../constants/sortOptions';
+import { useSortDropdown } from '../hooks/useSortDropdown';
+import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
+import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
 type TabType = 'shows' | 'songs' | 'collections';
-type SongSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
-type ShowSortType = 'alphabetical' | 'dateSavedNewest' | 'dateSavedOldest' | 'performanceDateOldest' | 'performanceDateNewest';
+type SongSortType = SavedItemSortType;
+type ShowSortType = SavedItemSortType;
 
-const SONG_SORT_OPTIONS: SortOption<SongSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
-];
-
-const SHOW_SORT_OPTIONS: SortOption<ShowSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+const FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
+  { key: 'shows', label: 'Shows' },
+  { key: 'songs', label: 'Songs' },
+  { key: 'collections', label: 'Collections' },
 ];
 
 export function FavoritesScreen() {
@@ -153,7 +77,7 @@ export function FavoritesScreen() {
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
-  const padding = isDesktop ? 32 : HORIZONTAL_PADDING;
+  const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
   const { favoriteShows, favoriteSongs, isLoading, refreshFavorites } = useFavorites();
   const {
     deleteCollection,
@@ -165,23 +89,19 @@ export function FavoritesScreen() {
   const [createCollectionVisible, setCreateCollectionVisible] = useState(false);
   const [createCollectionType, setCreateCollectionType] = useState<CollectionType>('show_collection');
   const [pickerSong, setPickerSong] = useState<FavoriteSong | null>(null);
-  const { loadTrack, startShuffleSongs, startShuffleShows } = usePlayer();
-  const { getPlayCount } = usePlayCounts();
+  const { startShuffleSongs, startShuffleShows } = usePlayerActions();
+  const { getPlayCountStable } = usePlayCounts();
   const [activeTab, setActiveTab] = useState<TabType>('shows');
-  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
+  const { loadingSongId, playSong } = usePlaySavedSong();
   const [songSortType, setSongSortType] = useState<SongSortType>('dateSavedNewest');
   const [showSortType, setShowSortType] = useState<ShowSortType>('dateSavedNewest');
-  const [showSongSortModal, setShowSongSortModal] = useState(false);
-  const [showShowSortModal, setShowShowSortModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSortButtonPosition, setShowSortButtonPosition] = useState({ top: 0, left: 0 });
-  const [songSortButtonPosition, setSongSortButtonPosition] = useState({ top: 0, left: 0 });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const showSortButtonRef = useRef<View>(null);
-  const songSortButtonRef = useRef<View>(null);
+  const showSortDropdown = useSortDropdown();
+  const songSortDropdown = useSortDropdown();
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
 
@@ -269,20 +189,6 @@ export function FavoritesScreen() {
     setIsSearchExpanded(false);
   }, []);
 
-  const handleShowSortPress = () => {
-    showSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setShowSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowShowSortModal(true);
-    });
-  };
-
-  const handleSongSortPress = () => {
-    songSortButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSongSortButtonPosition({ top: pageY + height + 8, left: pageX });
-      setShowSongSortModal(true);
-    });
-  };
-
   // Scroll to top when sort type changes
   React.useEffect(() => {
     showsListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -342,29 +248,19 @@ export function FavoritesScreen() {
     // Sort based on selected sort type
     switch (songSortType) {
       case 'alphabetical':
-        return songs.sort((a, b) => a.trackTitle.localeCompare(b.trackTitle));
+        return songs.sort((a, b) => compareAlphabetical(a.trackTitle, b.trackTitle));
 
       case 'dateSavedNewest':
-        return songs.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return 1;
-          if (!b.savedAt) return -1;
-          return b.savedAt - a.savedAt;
-        });
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
 
       case 'dateSavedOldest':
-        return songs.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return -1;
-          if (!b.savedAt) return 1;
-          return a.savedAt - b.savedAt;
-        });
+        return songs.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
 
       case 'performanceDateOldest':
-        return songs.sort((a, b) => a.showDate.localeCompare(b.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'oldest'));
 
       case 'performanceDateNewest':
-        return songs.sort((a, b) => b.showDate.localeCompare(a.showDate));
+        return songs.sort((a, b) => compareByDate(a.showDate, b.showDate, 'newest'));
 
       default:
         return songs;
@@ -415,33 +311,19 @@ export function FavoritesScreen() {
     // Sort based on selected sort type
     switch (showSortType) {
       case 'alphabetical':
-        return shows.sort((a, b) => {
-          const venueA = a.venue || '';
-          const venueB = b.venue || '';
-          return venueA.localeCompare(venueB);
-        });
+        return shows.sort((a, b) => compareAlphabetical(a.venue || '', b.venue || ''));
 
       case 'dateSavedNewest':
-        return shows.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return 1;
-          if (!b.savedAt) return -1;
-          return b.savedAt - a.savedAt;
-        });
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'newest'));
 
       case 'dateSavedOldest':
-        return shows.sort((a, b) => {
-          if (!a.savedAt && !b.savedAt) return 0;
-          if (!a.savedAt) return -1;
-          if (!b.savedAt) return 1;
-          return a.savedAt - b.savedAt;
-        });
+        return shows.sort((a, b) => compareBySavedAt(a.savedAt, b.savedAt, 'oldest'));
 
       case 'performanceDateOldest':
-        return shows.sort((a, b) => a.date.localeCompare(b.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
 
       case 'performanceDateNewest':
-        return shows.sort((a, b) => b.date.localeCompare(a.date));
+        return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
 
       default:
         return shows;
@@ -457,87 +339,39 @@ export function FavoritesScreen() {
     });
   }, [libraryEntries, debouncedSearchQuery]);
 
-  const getSongSortLabel = (sortType: SongSortType): string => {
-    switch (sortType) {
-      case 'alphabetical':
-        return 'Alphabetical';
-      case 'dateSavedNewest':
-      case 'dateSavedOldest':
-        return 'Date Saved';
-      case 'performanceDateOldest':
-      case 'performanceDateNewest':
-        return 'Perform. Date';
-      default:
-        return 'Sort';
-    }
-  };
-
-  const getSongSortIcon = (sortType: SongSortType): 'arrow-up' | 'arrow-down' => {
-    switch (sortType) {
-      case 'dateSavedOldest':
-      case 'performanceDateOldest':
-        return 'arrow-up';
-      default:
-        return 'arrow-down';
-    }
-  };
-
-  const getShowSortLabel = (sortType: ShowSortType): string => {
-    switch (sortType) {
-      case 'alphabetical':
-        return 'Alphabetical';
-      case 'dateSavedNewest':
-      case 'dateSavedOldest':
-        return 'Date Saved';
-      case 'performanceDateOldest':
-      case 'performanceDateNewest':
-        return 'Perform. Date';
-      default:
-        return 'Sort';
-    }
-  };
-
-  const getShowSortIcon = (sortType: ShowSortType): 'arrow-up' | 'arrow-down' => {
-    switch (sortType) {
-      case 'dateSavedOldest':
-      case 'performanceDateOldest':
-        return 'arrow-up';
-      case 'alphabetical':
-        return 'arrow-down';
-      default:
-        return 'arrow-down';
-    }
-  };
-
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', {
-      identifier: show.primaryIdentifier,
-      venue: show.venue,
-      date: show.date,
-      location: show.location,
-      classicTier: show.classicTier,
-    });
+    navigation.navigate('ShowDetail', showDetailParams(show));
   }, [navigation]);
 
-  const handleSongPress = useCallback(async (song: FavoriteSong) => {
-    try {
-      setLoadingSongId(`${song.trackId}-${song.showIdentifier}`);
+  const handleSongPress = useCallback((song: FavoriteSong) => {
+    playSong(song.showIdentifier, song.trackId);
+  }, [playSong]);
 
-      // Fetch the show details to get all tracks
-      const showDetail = await archiveApi.getShowDetail(song.showIdentifier);
+  const handleSongLongPress = useCallback((song: FavoriteSong) => {
+    Alert.alert(song.trackTitle, undefined, [
+      { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, []);
 
-      // Find the matching track
-      const track = showDetail.tracks.find(t => t.id === song.trackId);
+  const songKeyExtractor = useCallback(
+    (item: FavoriteSong) => `${item.trackId}-${item.showIdentifier}`,
+    []
+  );
 
-      if (track) {
-        await loadTrack(track, showDetail, showDetail.tracks);
-      }
-    } catch (error) {
-      logger.player.error('Failed to load song:', error);
-    } finally {
-      setLoadingSongId(null);
-    }
-  }, [loadTrack]);
+  const renderSongItem = useCallback(({ item }: { item: FavoriteSong }) => (
+    <SongCard
+      song={item}
+      isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
+      // Stable getter — doesn't change identity when some other song/show's
+      // play count changes elsewhere in the app, so this callback (and the
+      // memoized song rows relying on it) doesn't churn on every play.
+      playCount={getPlayCountStable(item.trackTitle, item.showIdentifier)}
+      onPress={handleSongPress}
+      onLongPress={handleSongLongPress}
+      correctVenue
+    />
+  ), [loadingSongId, getPlayCountStable, handleSongPress, handleSongLongPress]);
 
   // Shuffle handlers
   const handleShuffleShows = useCallback(() => {
@@ -582,10 +416,12 @@ export function FavoritesScreen() {
     if (favoriteShows.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No favorites yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the save button on any show{'\n'}to add it to your favorites.
-          </Text>
+          <EmptyState
+            icon={null}
+            title="No favorites yet"
+            message={"Tap the save button on any show\nto add it to your favorites."}
+            transparentBackground
+          />
         </View>
       );
     }
@@ -596,17 +432,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={showSortButtonRef} collapsable={false}>
+            <View ref={showSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={handleShowSortPress}
+                onPress={showSortDropdown.open}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel={`Sort shows by ${getShowSortLabel(showSortType)}`}
+                accessibilityLabel={`Sort shows by ${getSavedItemSortLabel(showSortType, 'show')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getShowSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
-                <Text style={styles.sortLabelText}>{getShowSortLabel(showSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -671,10 +507,12 @@ export function FavoritesScreen() {
     if (favoriteSongs.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No favorites yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the save button on any song to{'\n'}add it to your favorites.
-          </Text>
+          <EmptyState
+            icon={null}
+            title="No favorites yet"
+            message={"Tap the save button on any song to\nadd it to your favorites."}
+            transparentBackground
+          />
         </View>
       );
     }
@@ -685,17 +523,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={songSortButtonRef} collapsable={false}>
+            <View ref={songSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={handleSongSortPress}
+                onPress={songSortDropdown.open}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel={`Sort songs by ${getSongSortLabel(songSortType)}`}
+                accessibilityLabel={`Sort songs by ${getSavedItemSortLabel(songSortType, 'song')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getSongSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
-                <Text style={styles.sortLabelText}>{getSongSortLabel(songSortType)}</Text>
+                <Ionicons name={getSavedItemSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.sortLabelText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -730,21 +568,8 @@ export function FavoritesScreen() {
           <FlatList
             ref={songsListRef}
             data={sortedAndFilteredSongs}
-            keyExtractor={(item) => `${item.trackId}-${item.showIdentifier}`}
-            renderItem={({ item }) => (
-              <SongItem
-                song={item}
-                isLoading={loadingSongId === `${item.trackId}-${item.showIdentifier}`}
-                playCount={getPlayCount(item.trackTitle, item.showIdentifier)}
-                onPress={handleSongPress}
-                onLongPress={(song) =>
-                  Alert.alert(song.trackTitle, undefined, [
-                    { text: 'Add to Playlist', onPress: () => setPickerSong(song) },
-                    { text: 'Cancel', style: 'cancel' },
-                  ])
-                }
-              />
-            )}
+            keyExtractor={songKeyExtractor}
+            renderItem={renderSongItem}
             contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -770,29 +595,19 @@ export function FavoritesScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header Section with Gradient Fade */}
-      <View style={[styles.headerSection, isDesktop && styles.headerSectionDesktop, { paddingTop: insets.top + 8 }]}>
-        {/* Custom Header: Avatar + Title + Search + Filter */}
-        <View style={[styles.header, isDesktop && styles.headerDesktop]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
-          {/* Left side: Avatar and Title (gets covered by search bar) */}
-          <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop, isSearchExpanded && { zIndex: 0 }]}>
-            {!isDesktop && (
-              <TouchableOpacity
-                ref={profileButtonRef}
-                onPress={handleProfilePress}
-                activeOpacity={0.8}
-              >
-                <ProfileImage
-                  uri={isAuthenticated ? avatarUrl : null}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.headerTitle}>Favorites</Text>
-          </View>
-
-          {/* Right side: Search and Filter buttons */}
-          <View style={[styles.headerRight, isSearchExpanded && { zIndex: 30 }]}>
+      <ScreenHeader
+        title="Favorites"
+        isDesktop={isDesktop}
+        topPadding={insets.top + 8}
+        onHeaderLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
+        isSearchExpanded={isSearchExpanded}
+        profileButtonRef={profileButtonRef}
+        avatarUrl={avatarUrl}
+        isAuthenticated={isAuthenticated}
+        onProfilePress={handleProfilePress}
+        showGradient={false}
+        rightContent={
+          <>
             {/* Share Profile Button */}
             {isAuthenticated && !isSearchExpanded && (
               <TouchableOpacity
@@ -839,29 +654,18 @@ export function FavoritesScreen() {
               placeholder="Search favorites"
               expandedWidth={searchBarFullWidth}
             />
-          </View>
-        </View>
-
+          </>
+        }
+      >
         {/* Tab Navigation */}
-        <View style={styles.tabContainer} accessibilityRole="tablist">
-          {(['shows', 'songs', 'collections'] as const).map((tab) => (
-            <TouchableOpacity
-              key={`${tab}-${activeTab}`}
-              style={[styles.tab, activeTab === tab ? styles.activeTab : styles.inactiveTab]}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityLabel={`${tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'} tab`}
-              accessibilityState={{ selected: activeTab === tab }}
-              accessibilityHint={`Double tap to view ${tab}`}
-            >
-              <Text style={activeTab === tab ? styles.activeTabText : styles.inactiveTabText}>
-                {tab === 'shows' ? 'Shows' : tab === 'songs' ? 'Songs' : 'Collections'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+        <SegmentedTabs
+          tabs={FAVORITES_TABS}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          containerStyle={styles.tabContainer}
+          getAccessibilityHint={(tab) => `Double tap to view ${tab}`}
+        />
+      </ScreenHeader>
 
       {/* Filter Tray Modal */}
       <ShowsFilterTray
@@ -980,33 +784,29 @@ export function FavoritesScreen() {
           onClose={() => setPickerSong(null)}
           type="playlist"
           itemIdentifier={`${pickerSong.showIdentifier}::${pickerSong.trackId}`}
-          itemMetadata={{
-            trackId: pickerSong.trackId,
-            trackTitle: pickerSong.trackTitle,
-            showIdentifier: pickerSong.showIdentifier,
-            showDate: pickerSong.showDate,
-            venue: pickerSong.venue,
-            streamUrl: pickerSong.streamUrl,
-          }}
+          // pickerSong is already a FavoriteSong (not a track+show pair), so
+          // toFavoriteSong's signature doesn't apply here — it's already the
+          // exact shape itemMetadata needs.
+          itemMetadata={pickerSong}
         />
       )}
 
       {/* Song Sort Dropdown */}
       <SortDropdown
-        visible={showSongSortModal}
-        onClose={() => setShowSongSortModal(false)}
-        position={songSortButtonPosition}
-        options={SONG_SORT_OPTIONS}
+        visible={songSortDropdown.visible}
+        onClose={songSortDropdown.close}
+        position={songSortDropdown.position}
+        options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
       />
 
       {/* Show Sort Dropdown */}
       <SortDropdown
-        visible={showShowSortModal}
-        onClose={() => setShowShowSortModal(false)}
-        position={showSortButtonPosition}
-        options={SHOW_SORT_OPTIONS}
+        visible={showSortDropdown.visible}
+        onClose={showSortDropdown.close}
+        position={showSortDropdown.position}
+        options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}
       />
@@ -1033,7 +833,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.lg,
   },
   headerDesktop: {
@@ -1044,7 +844,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     position: 'absolute',
-    left: HORIZONTAL_PADDING,
+    left: LAYOUT.HORIZONTAL_PADDING,
     top: 0,
     bottom: SPACING.lg,
     zIndex: 20,
@@ -1060,14 +860,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.heading2,
-  },
-  headerRight: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: LAYOUT.headerButtonGap,
-    zIndex: 10,
   },
   filterButton: {
     width: LAYOUT.headerButtonSize,
@@ -1087,16 +879,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerGradient: {
-    position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 30,
-  },
-  headerGradientDesktop: {
-    display: 'none',
   },
   actionBarSection: {
     backgroundColor: COLORS.background,
@@ -1120,7 +902,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingTop: SPACING.sm + 4,
     paddingBottom: SPACING.md,
   },
@@ -1134,43 +916,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
+  // Margins only — the shared row/gap/tab/active/inactive styling lives in <SegmentedTabs>.
   tabContainer: {
-    flexDirection: 'row',
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.sm,
-    gap: SPACING.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.xl,
-  },
-  activeTab: {
-    backgroundColor: COLORS.accent,
-  },
-  inactiveTab: {
-    backgroundColor: COLORS.cardBackground,
-  },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
-  },
-  inactiveTabText: {
-    fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    ...(Platform.OS === 'android' && {
-      paddingTop: 2,
-    }),
   },
   centerContainer: {
     flex: 1,
@@ -1188,11 +937,6 @@ const styles = StyleSheet.create({
       marginBottom: 80,
     }),
   },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading3,
-    marginBottom: SPACING.md,
-    textAlign: 'center',
-  },
   emptyText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
@@ -1205,48 +949,6 @@ const styles = StyleSheet.create({
   },
   listContentDesktop: {
     padding: 16,
-  },
-  songItem: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.xxl,
-    backgroundColor: COLORS.background,
-    ...(Platform.OS === 'web' ? {
-      backgroundColor: 'transparent',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      marginVertical: 2,
-    } : {}),
-  },
-  songItemHovered: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  songContentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  songInfo: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  songTitle: {
-    ...TYPOGRAPHY.heading4,
-    marginBottom: SPACING.xs,
-  },
-  songDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 2,
-  },
-  songDate: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-  },
-  songVenue: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
   },
   tabContentContainer: {
     flex: 1,

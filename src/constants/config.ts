@@ -33,6 +33,13 @@ function getRequiredConfig(key: string, value: string | undefined): string {
   return value;
 }
 
+/**
+ * Public URL of the in-app support page on the web. Native opens this in the
+ * system browser to satisfy App Store guidelines that require the support
+ * entry point to be a website.
+ */
+export const SUPPORT_URL = 'https://www.scarletfire.app/support';
+
 export const CONFIG = {
   // Supabase
   SUPABASE_URL: getRequiredConfig('SUPABASE_URL', extra?.supabaseUrl),
@@ -67,8 +74,3 @@ export function validateConfig(): void {
   }
 }
 
-/**
- * Public URL of the in-app support page on the web.
- * Used by native clients to open the support form in the system browser.
- */
-export const SUPPORT_URL = 'https://www.scarletfire.app/support';

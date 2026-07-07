@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
@@ -12,8 +11,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { showDetailParams } from '../utils/showDetailParams';
 import { useShowOfTheDay } from '../contexts/ShowOfTheDayContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { LoadingState, ErrorState } from '../components/StateViews';
 
 type SOTDScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -23,13 +24,7 @@ export function SOTDScreen() {
 
   const handleViewShow = () => {
     if (show) {
-      navigation.navigate('ShowDetail', {
-        identifier: show.primaryIdentifier,
-        venue: show.venue,
-        date: show.date,
-        location: show.location,
-        classicTier: show.classicTier,
-      });
+      navigation.navigate('ShowDetail', showDetailParams(show));
     }
   };
 
@@ -38,22 +33,15 @@ export function SOTDScreen() {
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={styles.loadingText}>Loading show of the day...</Text>
-      </View>
-    );
+    return <LoadingState message="Loading show of the day..." />;
   }
 
   if (error || !show) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'No show found'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorState
+        message={error || 'No show found'}
+        onRetry={handleRefresh}
+      />
     );
   }
 
@@ -116,13 +104,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: LAYOUT.listBottomPadding,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    padding: SPACING.xl,
   },
   content: {
     padding: SPACING.xl,
@@ -198,26 +179,5 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelLarge,
     color: COLORS.accent,
     marginLeft: SPACING.sm,
-  },
-  loadingText: {
-    ...TYPOGRAPHY.body,
-    marginTop: SPACING.lg,
-    color: COLORS.textSecondary,
-  },
-  errorText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-  },
-  retryButton: {
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.sm,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xxl,
-  },
-  retryButtonText: {
-    ...TYPOGRAPHY.labelLarge,
-    fontWeight: 'bold',
   },
 });
