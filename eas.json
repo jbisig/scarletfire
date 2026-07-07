@@ -31,6 +31,9 @@
   },
   "submit": {
     "production": {
+      "ios": {
+        "ascAppId": "6758163933"
+      },
       "android": {
         "serviceAccountKeyPath": "./play-store-credentials.json",
         "track": "production"
