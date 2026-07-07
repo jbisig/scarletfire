@@ -21,7 +21,7 @@ import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { matchesDateQuery } from '../utils/formatters';
 import { findShowByDate } from '../utils/showLookup';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { findSongByTitle } from '../utils/songLookup';
 import { ShowCard } from '../components/ShowCard';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown } from '../components/SortDropdown';
@@ -37,11 +37,6 @@ import {
 } from '../constants/sortOptions';
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
-
-// Pre-compute song lookup Map for O(1) access
-const songsByTitle: Map<string, typeof GRATEFUL_DEAD_SONGS[number]> = new Map(
-  GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
-);
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
@@ -100,7 +95,7 @@ export function SongPerformancesScreen() {
 
   // Look up performances from static song data
   const performances = useMemo(() => {
-    const song = songsByTitle.get(songTitle.toLowerCase());
+    const song = findSongByTitle(songTitle);
     return song?.performances ?? [];
   }, [songTitle]);
 

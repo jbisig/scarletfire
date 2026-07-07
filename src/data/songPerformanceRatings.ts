@@ -22037,16 +22037,27 @@ const TIER_3_SONG_PERFORMANCES: RatedSongPerformance[] = [
   }
 ];
 
-// Combined list for easy lookup (includes HeadyVersion + Community ratings)
-const ALL_RATED_SONG_PERFORMANCES: RatedSongPerformance[] = [
-  ...TIER_1_SONG_PERFORMANCES,
-  ...TIER_2_SONG_PERFORMANCES,
-  ...TIER_3_SONG_PERFORMANCES,
-  ...COMMUNITY_RATINGS,
-];
+// Combined list for easy lookup (includes HeadyVersion + Community ratings).
+// Built lazily, on first lookup: this is a ~3,000-element array copy (three
+// tier arrays + community ratings concatenated), so deferring it means a
+// consumer that only ever calls getSongPerformanceRating for a cache hit it
+// never gets doesn't pay for the concat at module-import time.
+let allRatedSongPerformances: RatedSongPerformance[] | null = null;
+
+function getAllRatedSongPerformances(): RatedSongPerformance[] {
+  if (!allRatedSongPerformances) {
+    allRatedSongPerformances = [
+      ...TIER_1_SONG_PERFORMANCES,
+      ...TIER_2_SONG_PERFORMANCES,
+      ...TIER_3_SONG_PERFORMANCES,
+      ...COMMUNITY_RATINGS,
+    ];
+  }
+  return allRatedSongPerformances;
+}
 
 // Lazily-built index from `${normalizedTitle}|${showDate}` to tier.
-// Built once, on first lookup, from ALL_RATED_SONG_PERFORMANCES in its
+// Built once, on first lookup, from getAllRatedSongPerformances() in its
 // existing order so that duplicate keys resolve the same way the old
 // linear .find() did: first occurrence wins.
 let ratingByTitleAndDateMap: Map<string, PerformanceRatingTier> | null = null;
@@ -22054,7 +22065,7 @@ let ratingByTitleAndDateMap: Map<string, PerformanceRatingTier> | null = null;
 function getRatingByTitleAndDateMap(): Map<string, PerformanceRatingTier> {
   if (!ratingByTitleAndDateMap) {
     const map = new Map<string, PerformanceRatingTier>();
-    for (const perf of ALL_RATED_SONG_PERFORMANCES) {
+    for (const perf of getAllRatedSongPerformances()) {
       const key = `${normalizeSongTitleForLookup(perf.songTitle)}|${perf.showDate}`;
       if (!map.has(key)) {
         map.set(key, perf.tier);

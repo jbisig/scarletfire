@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
-import { GRATEFUL_DEAD_SONGS } from '../constants/songs.generated';
+import { findSongByTitle } from '../utils/songLookup';
 
 /**
  * Hook to get the performance rating (1-3 stars) for the current track
@@ -17,9 +17,7 @@ export function usePerformanceRating(): 1 | 2 | 3 | null {
 
     if (!state.currentTrack || !state.currentShow) return null;
 
-    const song = GRATEFUL_DEAD_SONGS.find(s =>
-      s.title.toLowerCase() === state.currentTrack!.title.toLowerCase()
-    );
+    const song = findSongByTitle(state.currentTrack!.title);
 
     if (!song) return null;
 

@@ -36,7 +36,6 @@ import {
   formatDownloadsLabel,
   formatCount,
 } from '../utils/formatters';
-import { GRATEFUL_DEAD_SONGS, Song } from '../constants/songs.generated';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { matchTrackBySlug } from '../utils/trackMatching';
@@ -47,6 +46,7 @@ import { toFavoriteSong } from '../utils/favoriteSong';
 import { showDetailParams } from '../utils/showDetailParams';
 import { haptics } from '../services/hapticService';
 import { getAllShowsSorted, findShowIndexByDate, resolveIdentifierFromDate } from '../utils/showLookup';
+import { findSongByTitle } from '../utils/songLookup';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
@@ -57,11 +57,6 @@ import { ErrorState } from '../components/StateViews';
 import { webStyle } from '../utils/webStyle';
 
 // Default profile image for logged out users (web header)
-
-// Pre-compute song lookup Map for O(1) access instead of O(n) find() on each track
-const songsByTitle: Map<string, Song> = new Map(
-  GRATEFUL_DEAD_SONGS.map(song => [song.title.toLowerCase(), song])
-);
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
@@ -134,7 +129,7 @@ export function ShowDetailScreen() {
     const ratings: Record<string, 1 | 2 | 3 | null> = {};
 
     show.tracks.forEach(track => {
-      const song = songsByTitle.get(track.title.toLowerCase());
+      const song = findSongByTitle(track.title);
       if (song) {
         const performance = song.performances.find(p => p.date === show.date);
         ratings[track.id] = performance?.rating || null;
