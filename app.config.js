@@ -133,7 +133,8 @@ export default ({ config }) => {
             cameraPermission: "This app needs access to your camera to take a profile picture."
           }
         ],
-        "./plugins/audio-player/withAudioPlayerModule"
+        "./plugins/audio-player/withAudioPlayerModule",
+        "./plugins/withModularHeaders"
       ],
       extra: {
         eas: {
