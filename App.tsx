@@ -83,9 +83,11 @@ export default function App() {
   }, []);
 
   // Warm the connection to archive.org (DNS + TLS, ~250ms) so the first
-  // tap-to-play metadata fetch doesn't pay it. Fire-and-forget.
+  // tap-to-play metadata fetch doesn't pay it. Fire-and-forget; no-cors keeps
+  // the opaque response from logging a CORS console error on web (the
+  // connection is established either way, which is all we need).
   useEffect(() => {
-    fetch('https://archive.org/metadata/', { method: 'HEAD' }).catch(() => {});
+    fetch('https://archive.org/metadata/', { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
   }, []);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { ARCHIVE_CONFIG } from '../constants/api';
+import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import {
   Track,
   Progress,
@@ -225,8 +225,13 @@ class NativeAudioPlayer {
     this.audio = new Audio();
     this.setupAudioListeners(this.audio);
 
-    // Validate audio URL origin before loading
-    if (!track.url.startsWith(ARCHIVE_CONFIG.BASE_URL)) {
+    // Validate audio URL origin before loading. Uses the hardened shared
+    // validator (https-only, archive.org + *.archive.org — which includes
+    // the direct datanode hosts like ia600106.us.archive.org that streamUrls
+    // now point at). The old startsWith('https://archive.org') check both
+    // rejected datanode URLs (breaking web playback) and was bypassable via
+    // userinfo tricks ('https://archive.org@evil.com').
+    if (!isAllowedStreamUrl(track.url)) {
       this.emitter.emit(Event.PlaybackError, { error: 'Untrusted audio source' });
       return;
     }
