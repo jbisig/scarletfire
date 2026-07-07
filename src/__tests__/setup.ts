@@ -47,16 +47,6 @@ jest.mock('expo-av', () => ({
   ResizeMode: { COVER: 'cover', CONTAIN: 'contain' },
 }));
 
-// Mock react-native-mmkv
-jest.mock('react-native-mmkv', () => ({
-  MMKV: jest.fn().mockImplementation(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-    contains: jest.fn(),
-  })),
-}));
-
 // Mock @gorhom/bottom-sheet — the real library calls getBoundingClientRect
 // and other DOM/native APIs that aren't available in the Jest test renderer.
 // This lightweight stand-in lets children pass through so we can still
