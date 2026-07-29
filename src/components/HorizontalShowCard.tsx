@@ -11,6 +11,7 @@ import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { GradientCardBackground } from './GradientCardBackground';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { useResponsive } from '../hooks/useResponsive';
+import { useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 
 interface HorizontalShowCardProps {
@@ -28,6 +29,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
 }) {
   const { isDesktop } = useResponsive();
   const [modalVisible, setModalVisible] = useState(false);
+  const resolvedRating = useResolvedShowRating(show.date);
 
   const officialReleases = useMemo(() => {
     return getOfficialReleasesForDate(show.date);
@@ -70,9 +72,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
 
             <View style={styles.dateRow}>
               <Text style={styles.date}>{formatDate(show.date)}</Text>
-              {show.classicTier && (
-                <StarRating tier={show.classicTier} size={12} />
-              )}
+              {resolvedRating && <StarRating rating={resolvedRating} size={12} />}
             </View>
 
             {show.location && (

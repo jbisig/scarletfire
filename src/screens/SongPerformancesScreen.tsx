@@ -37,6 +37,10 @@ import {
 } from '../constants/sortOptions';
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
+import { compareByResolvedRating } from '../utils/performanceSort';
+import { useUserRatingsVersion } from '../contexts/UserRatingsContext';
+import { resolvePerformanceRating } from '../services/ratingResolver';
+import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 
 type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances'>;
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
@@ -66,6 +70,8 @@ export function SongPerformancesScreen() {
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
   const sortDropdown = useSortDropdown();
+  const ratingsVersion = useUserRatingsVersion();
+  const { openRatingOverlay } = useRatingOverlay();
 
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -132,26 +138,24 @@ export function SongPerformancesScreen() {
         return sorted.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
 
       case 'ratingHighest':
-        // Screen-specific: rating isn't a generic comparator concept shared
-        // by other screens, so it stays local. Missing rating sorts last;
-        // ties (including two missing ratings) fall back to performance
-        // date, oldest first — reusing compareByDate for that tie-break.
-        return sorted.sort((a, b) => {
-          if (!a.rating && !b.rating) {
-            return compareByDate(a.date, b.date, 'oldest');
-          }
-          if (!a.rating) return 1;
-          if (!b.rating) return -1;
-          if (a.rating !== b.rating) {
-            return a.rating - b.rating; // Tier 1 (3 stars) first, then tier 2, then tier 3
-          }
-          return compareByDate(a.date, b.date, 'oldest');
-        });
+        // Resolved stars (user overrides win). Missing ratings sort last;
+        // ties fall back to performance date, oldest first.
+        return sorted
+          .map(perf => ({
+            perf,
+            stars: resolvePerformanceRating(songTitle, perf.date)?.stars ?? null,
+          }))
+          .sort((a, b) => compareByResolvedRating(
+            { date: a.perf.date, stars: a.stars },
+            { date: b.perf.date, stars: b.stars },
+            compareByDate,
+          ))
+          .map(({ perf }) => perf);
 
       default:
         return sorted;
     }
-  }, [performances, sortType]);
+  }, [performances, sortType, songTitle, ratingsVersion]);
 
   // Filter performances based on search query
   const filteredPerformances = useMemo(() => {
@@ -211,8 +215,15 @@ export function SongPerformancesScreen() {
         <ShowCard
           show={show}
           onPress={onPress}
-          overrideRating={item.rating}
+          overrideResolvedRating={resolvePerformanceRating(songTitle, item.date)}
           overridePlayCount={songPlayCount}
+          onRatingPress={() => openRatingOverlay({
+            kind: 'performance',
+            songTitle,
+            date: item.date,
+            venue: item.venue,
+            showIdentifier: item.identifier,
+          })}
         />
       );
     }
@@ -226,7 +237,7 @@ export function SongPerformancesScreen() {
         <Text style={styles.fallbackText}>{item.venue || item.date}</Text>
       </TouchableOpacity>
     );
-  }, [handlePerformancePress, getPlayCountStable, songTitle, findShowByDate]);
+  }, [handlePerformancePress, getPlayCountStable, songTitle, findShowByDate, openRatingOverlay, ratingsVersion]);
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
