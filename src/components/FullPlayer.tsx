@@ -34,6 +34,7 @@ import { haptics } from '../services/hapticService';
 import { logger } from '../utils/logger';
 import { nativeAudioPlayer, Event, CastState } from '../services/nativeAudioPlayer';
 import { useShareSheet } from '../contexts/ShareSheetContext';
+import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 import { slugifyTrackTitle, type ShareItem } from '../services/shareService';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
@@ -58,6 +59,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const { getPlayCount } = usePlayCounts();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
   const { openShareTray } = useShareSheet();
+  const { openRatingOverlay } = useRatingOverlay();
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
   const progressBarRef = useRef<View>(null);
   const { height: screenHeight } = useWindowDimensions();
@@ -184,7 +186,13 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       trackSlug: slugifyTrackTitle(track.title),
       date: show.date,
       venue: getVenueFromShow(show),
-      rating: performanceRating,
+      // ShareItem's per-performance rating is the legacy 1|2|3|null tier
+      // shape; usePerformanceRating now returns a ResolvedRating ({stars,
+      // isUserRating}). Map stars > 0 to the legacy tier count for the
+      // share card; a 0-star override has no legacy analog, so show none.
+      rating: performanceRating && performanceRating.stars > 0
+        ? (performanceRating.stars as 1 | 2 | 3)
+        : null,
     };
 
     haptics.light();
@@ -467,9 +475,24 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                   <Text style={styles.showDate}>
                     {formatDate(state.currentShow.date)}
                   </Text>
-                  {performanceRating && (
-                    <StarRating tier={performanceRating} size={16} />
-                  )}
+                  <TouchableOpacity
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      if (!state.currentTrack || !state.currentShow) return;
+                      openRatingOverlay({
+                        kind: 'performance',
+                        songTitle: state.currentTrack.title,
+                        date: state.currentShow.date,
+                        venue: getVenueFromShow(state.currentShow),
+                        showIdentifier: state.currentShow.identifier,
+                      });
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Rate this performance"
+                  >
+                    <StarRating rating={performanceRating} showPlaceholder size={16} />
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
 
