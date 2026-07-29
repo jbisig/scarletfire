@@ -1,4 +1,4 @@
-import { isResolvedClassic, collectResolvedClassics } from '../../utils/classicShowsPool';
+import { isResolvedClassic, collectResolvedClassics, isUserEjectedShow } from '../../utils/classicShowsPool';
 import { setShowUserRating, resetStoreForTests } from '../../services/userRatingsStore';
 import { GratefulDeadShow } from '../../types/show.types';
 
@@ -23,6 +23,23 @@ describe('isResolvedClassic', () => {
   it('0-star override ejects a system classic', () => {
     setShowUserRating('1977-05-08', 0);
     expect(isResolvedClassic('1977-05-08')).toBe(false);
+  });
+});
+
+describe('isUserEjectedShow', () => {
+  it('true when the user explicitly rates a show 0 stars', () => {
+    setShowUserRating('1977-05-08', 0);
+    expect(isUserEjectedShow('1977-05-08')).toBe(true);
+  });
+  it('false for an unrated show (no override at all)', () => {
+    expect(isUserEjectedShow('1966-01-08')).toBe(false);
+  });
+  it('false when the user rates a show above 0 stars', () => {
+    setShowUserRating('1966-01-08', 2);
+    expect(isUserEjectedShow('1966-01-08')).toBe(false);
+  });
+  it('false for a system classic with no user override', () => {
+    expect(isUserEjectedShow('1977-05-08')).toBe(false);
   });
 });
 
