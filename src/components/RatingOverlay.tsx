@@ -1,5 +1,15 @@
-import React, { useMemo } from 'react';
-import { View, Text, Modal, TouchableOpacity, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  Platform,
+  PanResponder,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurBackground } from './shared/BlurBackground';
 import { StarRating } from './StarRating';
@@ -9,13 +19,12 @@ import {
   getActiveShowRating,
   getActivePerformanceRating,
 } from '../services/userRatingsStore';
-import { getClassicTier } from '../data/classicShowsTiers';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
-import { tierToStars } from '../services/ratingResolver';
+import { resolveSystemShowStars, resolveSystemPerformanceStars } from '../services/ratingResolver';
 import type { RatingItem } from '../contexts/RatingOverlayContext';
 import { formatDate } from '../utils/formatters';
 import { haptics } from '../services/hapticService';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { GESTURE_THRESHOLDS } from '../constants/thresholds';
 
 interface RatingOverlayProps {
   item: RatingItem | null;
@@ -41,11 +50,50 @@ export function RatingOverlay({ item, onClose }: RatingOverlayProps) {
 
   const systemStars = useMemo(() => {
     if (!item) return null;
-    const tier = item.kind === 'show'
-      ? getClassicTier(item.date)
-      : getSongPerformanceRating(item.songTitle, item.date);
-    return tier ? tierToStars(tier) : null;
+    return item.kind === 'show'
+      ? resolveSystemShowStars(item.date)
+      : resolveSystemPerformanceStars(item.songTitle, item.date);
   }, [item]);
+
+  // Swipe-down-to-dismiss on native only (web has no drag gesture per the
+  // design spec). Same threshold/spring-back pattern as FullPlayer's
+  // swipeDownResponder, simplified: no velocity math, just a distance
+  // threshold on release.
+  const dragY = useRef(new Animated.Value(0)).current;
+  const swipeResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_evt, gestureState) =>
+        Platform.OS !== 'web' &&
+        gestureState.dy > 10 &&
+        Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+      onPanResponderMove: (_evt, gestureState) => {
+        if (gestureState.dy > 0) dragY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        if (gestureState.dy > GESTURE_THRESHOLDS.DISMISS_DISTANCE) {
+          Animated.timing(dragY, {
+            toValue: 500,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            onClose();
+            dragY.setValue(0);
+          });
+        } else {
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 10,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
 
   if (!item) return null;
 
@@ -80,7 +128,10 @@ export function RatingOverlay({ item, onClose }: RatingOverlayProps) {
           </View>
         </TouchableWithoutFeedback>
 
-        <View style={styles.card}>
+        <Animated.View
+          style={[styles.card, { transform: [{ translateY: dragY }] }]}
+          {...(Platform.OS !== 'web' ? swipeResponder.panHandlers : {})}
+        >
           <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
@@ -119,7 +170,7 @@ export function RatingOverlay({ item, onClose }: RatingOverlayProps) {
               <Text style={styles.resetText}>Reset to community rating</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

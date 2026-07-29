@@ -1,5 +1,11 @@
 // src/services/__tests__/ratingResolver.test.ts
-import { resolveShowRating, resolvePerformanceRating, tierToStars } from '../ratingResolver';
+import {
+  resolveShowRating,
+  resolvePerformanceRating,
+  resolveSystemShowStars,
+  resolveSystemPerformanceStars,
+  tierToStars,
+} from '../ratingResolver';
 import {
   setShowUserRating,
   resetShowUserRating,
@@ -81,5 +87,47 @@ describe('resolvePerformanceRating', () => {
 
   it('returns null for an unrated performance', () => {
     expect(resolvePerformanceRating('Not A Real Song Title XYZ', '1970-01-01')).toBeNull();
+  });
+
+  // Real fixture: rated in the baked catalog (songs.generated.ts) but not in
+  // the HeadyVersion-derived songPerformanceRatings data — exercises the
+  // catalog fallback branch.
+  const CATALOG_ONLY_TITLE = 'China Cat Sunflower > I Know You Rider';
+  const CATALOG_ONLY_DATE = '1979-12-26';
+
+  it('falls back to the baked catalog when no HeadyVersion tier exists', () => {
+    expect(getSongPerformanceRating(CATALOG_ONLY_TITLE, CATALOG_ONLY_DATE)).toBeNull(); // fixture guard
+    expect(resolvePerformanceRating(CATALOG_ONLY_TITLE, CATALOG_ONLY_DATE)).toEqual({
+      stars: 3,
+      isUserRating: false,
+    });
+  });
+});
+
+describe('resolveSystemShowStars', () => {
+  it('mirrors the system branch of resolveShowRating', () => {
+    expect(resolveSystemShowStars(CLASSIC_DATE)).toBe(3);
+    expect(resolveSystemShowStars(UNRATED_DATE)).toBeNull();
+  });
+});
+
+describe('resolveSystemPerformanceStars', () => {
+  const SYSTEM_TITLE = 'Grateful Dead - Playing In The Band';
+  const SYSTEM_DATE = '1972-08-27';
+  const CATALOG_ONLY_TITLE = 'China Cat Sunflower > I Know You Rider';
+  const CATALOG_ONLY_DATE = '1979-12-26';
+
+  it('mirrors the system branch of resolvePerformanceRating, including the catalog fallback', () => {
+    const systemTier = getSongPerformanceRating(SYSTEM_TITLE, SYSTEM_DATE);
+    expect(resolveSystemPerformanceStars(SYSTEM_TITLE, SYSTEM_DATE)).toBe(tierToStars(systemTier!));
+    expect(resolveSystemPerformanceStars(CATALOG_ONLY_TITLE, CATALOG_ONLY_DATE)).toBe(3);
+    expect(resolveSystemPerformanceStars('Not A Real Song Title XYZ', '1970-01-01')).toBeNull();
+  });
+
+  it('ignores any user override (system-only, unlike resolvePerformanceRating)', () => {
+    setPerformanceUserRating(SYSTEM_TITLE, SYSTEM_DATE, 1);
+    expect(resolveSystemPerformanceStars(SYSTEM_TITLE, SYSTEM_DATE)).toBe(
+      tierToStars(getSongPerformanceRating(SYSTEM_TITLE, SYSTEM_DATE)!)
+    );
   });
 });

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RatingOverlay } from '../../components/RatingOverlay';
 import { UserRatingsProvider } from '../../contexts/UserRatingsContext';
 import { resetStoreForTests, getActiveShowRating, setShowUserRating } from '../../services/userRatingsStore';
+import type { RatingItem } from '../../contexts/RatingOverlayContext';
 
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ state: { isAuthenticated: false, user: null, isLoading: false } }),
@@ -18,7 +19,7 @@ jest.mock('../../services/userRatingsCloudService', () => ({
 
 const SHOW_ITEM = { kind: 'show', date: '1977-05-08', venue: 'Barton Hall', location: 'Ithaca, NY' } as const;
 
-const render = async (item: typeof SHOW_ITEM | null, onClose = jest.fn()) => {
+const render = async (item: RatingItem | null, onClose = jest.fn()) => {
   let tree!: TestRenderer.ReactTestRenderer;
   await act(async () => {
     tree = TestRenderer.create(
@@ -48,6 +49,25 @@ it('renders nothing when item is null', async () => {
 it('shows the community rating for a system-rated show', async () => {
   const { tree } = await render(SHOW_ITEM);
   // Cornell '77 is tier 1 → "Community rating" label present
+  expect(
+    tree.root.findAllByProps({ testID: 'community-rating-row' }).length
+  ).toBeGreaterThan(0);
+});
+
+// Real fixture: rated in the baked catalog (songs.generated.ts) but not in
+// the HeadyVersion-derived songPerformanceRatings data. Confirms the overlay
+// uses ratingResolver's catalog-fallback-aware helper (resolveSystemPerformanceStars)
+// rather than reading getSongPerformanceRating directly, so this row matches
+// what ShowDetail's track rows would show for the same performance.
+const CATALOG_ONLY_PERFORMANCE = {
+  kind: 'performance',
+  songTitle: 'China Cat Sunflower > I Know You Rider',
+  date: '1979-12-26',
+  venue: 'Oakland Auditorium Arena',
+} as const;
+
+it('shows the community rating for a performance rated only in the baked catalog', async () => {
+  const { tree } = await render(CATALOG_ONLY_PERFORMANCE);
   expect(
     tree.root.findAllByProps({ testID: 'community-rating-row' }).length
   ).toBeGreaterThan(0);

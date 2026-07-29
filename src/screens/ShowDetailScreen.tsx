@@ -365,8 +365,8 @@ export function ShowDetailScreen() {
 
   // Register a headerRight share icon. Runs in a separate useEffect from the
   // initial title-setting call in loadShowDetail so the callback stays fresh
-  // when `show` or `classicTier` change (e.g. when the user navigates between
-  // versions or previews).
+  // when `show` or `resolvedShowRating` change (e.g. when the user navigates
+  // between versions or previews, or updates their rating).
   const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
   const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
   const { itemCountsByIdentifier } = useCollections();
