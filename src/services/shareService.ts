@@ -16,6 +16,7 @@ export type ShareItem =
       date: string;               // ISO "1982-08-06"
       venue: string;
       tier: 1 | 2 | 3 | null;     // classicTier — drives star count on the card
+      isUserRating?: boolean;     // tier came from the user's override (gold on local card)
     }
   | {
       kind: 'song';
@@ -26,6 +27,7 @@ export type ShareItem =
       date: string;
       venue: string;
       rating: 1 | 2 | 3 | null;   // per-performance rating, falls back to tier
+      isUserRating?: boolean;     // rating came from the user's override (gold on local card)
     }
   | {
       kind: 'profile';

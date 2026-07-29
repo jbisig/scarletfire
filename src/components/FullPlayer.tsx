@@ -195,6 +195,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       rating: performanceRating && performanceRating.stars > 0
         ? ((4 - performanceRating.stars) as 1 | 2 | 3)
         : null,
+      isUserRating: performanceRating?.isUserRating ?? false,
     };
 
     haptics.light();

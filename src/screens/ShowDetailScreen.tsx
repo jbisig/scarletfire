@@ -344,17 +344,24 @@ export function ShowDetailScreen() {
   const handleShareShow = useCallback(() => {
     if (!show) return;
 
+    // resolvedShowRating is the user-override-aware rating (STAR scale) for
+    // this show's date, kept in sync via useUserRatingsVersion. ShareItem's
+    // tier field is legacy TIER scale, so invert back (tier = 4 - stars); a
+    // 0-star override has no tier analog, so share no stars in that case.
     const item: ShareItem = {
       kind: 'show',
       showId: show.identifier,
       date: show.date,
       venue: getVenueFromShow(show),
-      tier: classicTier,
+      tier: resolvedShowRating && resolvedShowRating.stars > 0
+        ? ((4 - resolvedShowRating.stars) as 1 | 2 | 3)
+        : null,
+      isUserRating: resolvedShowRating?.isUserRating ?? false,
     };
 
     haptics.light();
     openShareTray(item);
-  }, [show, classicTier, openShareTray]);
+  }, [show, resolvedShowRating, openShareTray]);
 
   // Register a headerRight share icon. Runs in a separate useEffect from the
   // initial title-setting call in loadShowDetail so the callback stays fresh

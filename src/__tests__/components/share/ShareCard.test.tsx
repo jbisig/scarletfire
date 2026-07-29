@@ -52,4 +52,17 @@ describe('ShareCard', () => {
     const { getByText } = render(<ShareCard item={showItem} bgIndex={99} />);
     expect(getByText('08/06/1982')).toBeTruthy();
   });
+
+  it('renders stars in the user-rating (gold) style when isUserRating is true', () => {
+    const userRatedShow: ShareItem = { ...showItem, tier: 2, isUserRating: true };
+    const { getByLabelText } = render(<ShareCard item={userRatedShow} bgIndex={1} />);
+    // StarRating labels user-sourced ratings "Your rating: N stars"; system
+    // ratings get "N star rating" — this distinguishes gold vs. red stars.
+    expect(getByLabelText('Your rating: 2 stars')).toBeTruthy();
+  });
+
+  it('renders stars in the system-rating (red) style when isUserRating is absent', () => {
+    const { getByLabelText } = render(<ShareCard item={showItem} bgIndex={1} />);
+    expect(getByLabelText('3 star rating')).toBeTruthy();
+  });
 });
