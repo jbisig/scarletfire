@@ -13,11 +13,11 @@
 --   deletedAt >= ratedAt marks a tombstone (reset), pruned client-side
 --   after 30 days.
 --
--- SIZE: jsonb size checks are a server-side backstop against oversized
---   blobs pushed straight at the anon/authed API (mirrors the
---   support_requests limits rationale). ~100 bytes/entry means the caps
---   below allow roughly 2.5k show + 10k performance overrides — far beyond
---   plausible use.
+-- SIZE: jsonb size checks (measured as serialized text length) are a
+--   server-side backstop against oversized blobs pushed straight at the
+--   anon/authed API (mirrors the support_requests limits rationale).
+--   ~100 bytes/entry means the caps below allow roughly 2.5k show + 10k
+--   performance overrides — far beyond plausible use.
 --
 -- DELETION: user_id references auth.users ON DELETE CASCADE, so the
 --   existing delete_user() SECURITY DEFINER function (which deletes the
@@ -34,9 +34,9 @@ create table if not exists public.user_ratings (
   performances jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   constraint user_ratings_shows_size
-    check (pg_column_size(shows) <= 262144),        -- 256 KB
+    check (octet_length(shows::text) <= 262144),        -- 256 KB
   constraint user_ratings_performances_size
-    check (pg_column_size(performances) <= 1048576) -- 1 MB
+    check (octet_length(performances::text) <= 1048576) -- 1 MB
 );
 
 alter table public.user_ratings enable row level security;
