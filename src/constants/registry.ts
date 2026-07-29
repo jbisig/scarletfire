@@ -21,6 +21,8 @@ export const STORAGE_KEYS = {
   FAVORITES_DELETIONS: '@grateful_dead_favorites_deletions',
   /** Whether user skipped auth/login */
   AUTH_SKIPPED: '@auth_skipped',
+  /** User rating overrides for shows and song performances */
+  USER_RATINGS: '@user_ratings',
 } as const;
 
 /**
