@@ -35,7 +35,7 @@ import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useUserRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
-import { collectResolvedClassics, isUserEjectedShow } from '../utils/classicShowsPool';
+import { collectResolvedClassics, mergeCuratedClassics } from '../utils/classicShowsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
@@ -149,19 +149,11 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   // Classic Shows: All classicTier shows merged with the curated Grateful Dead 101
   // list. Deduped by primary identifier; sorted by tier (1 = best), then date.
   const classicShows = useMemo(() => {
-    const allClassics: GratefulDeadShow[] = collectResolvedClassics(showsByYear);
-    const seen = new Set<string>(allClassics.map(s => s.primaryIdentifier));
-    for (const date of GRATEFUL_DEAD_101_DATES) {
-      if (isUserEjectedShow(date)) continue;
-      for (const yearShows of Object.values(showsByYear)) {
-        const found = yearShows.find(s => s.date.substring(0, 10) === date);
-        if (found && !seen.has(found.primaryIdentifier)) {
-          allClassics.push(found);
-          seen.add(found.primaryIdentifier);
-          break;
-        }
-      }
-    }
+    const allClassics = mergeCuratedClassics(
+      showsByYear,
+      GRATEFUL_DEAD_101_DATES,
+      collectResolvedClassics(showsByYear),
+    );
     const topDownloads = (s: GratefulDeadShow) =>
       s.versions.reduce((max, v) => Math.max(max, v.downloads || 0), 0);
     return allClassics

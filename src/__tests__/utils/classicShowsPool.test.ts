@@ -1,4 +1,9 @@
-import { isResolvedClassic, collectResolvedClassics, isUserEjectedShow } from '../../utils/classicShowsPool';
+import {
+  isResolvedClassic,
+  collectResolvedClassics,
+  isUserEjectedShow,
+  mergeCuratedClassics,
+} from '../../utils/classicShowsPool';
 import { setShowUserRating, resetStoreForTests } from '../../services/userRatingsStore';
 import { GratefulDeadShow } from '../../types/show.types';
 
@@ -52,5 +57,33 @@ describe('collectResolvedClassics', () => {
     };
     const result = collectResolvedClassics(byYear);
     expect(result.map(s => s.primaryIdentifier).sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('mergeCuratedClassics', () => {
+  // Exercises the actual wiring used by DiscoverLandingScreen's classicShows
+  // memo: curated dates found in showsByYear, filtered by isUserEjectedShow,
+  // merged onto a base list without duplicates.
+  it('merges a curated date with no rating at all', () => {
+    const byYear = { '1966': [show('1966-01-08T00:00:00Z', 'a')] };
+    const result = mergeCuratedClassics(byYear, ['1966-01-08'], []);
+    expect(result.map(s => s.primaryIdentifier)).toEqual(['a']);
+  });
+
+  it('does not merge a curated date the user explicitly rated 0 stars', () => {
+    setShowUserRating('1966-01-08', 0);
+    const byYear = { '1966': [show('1966-01-08T00:00:00Z', 'a')] };
+    const result = mergeCuratedClassics(byYear, ['1966-01-08'], []);
+    expect(result.map(s => s.primaryIdentifier)).toEqual([]);
+  });
+
+  it('does not duplicate a show already present in the base list', () => {
+    setShowUserRating('1966-01-08', 2);
+    const byYear = { '1966': [show('1966-01-08T00:00:00Z', 'a')] };
+    const base = collectResolvedClassics(byYear);
+    expect(base.map(s => s.primaryIdentifier)).toEqual(['a']);
+
+    const result = mergeCuratedClassics(byYear, ['1966-01-08'], base);
+    expect(result.map(s => s.primaryIdentifier)).toEqual(['a']);
   });
 });
