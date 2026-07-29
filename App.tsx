@@ -10,6 +10,7 @@ import { ShowsProvider } from './src/contexts/ShowsContext';
 import { FavoritesProvider } from './src/contexts/FavoritesContext';
 import { CollectionsProvider } from './src/contexts/CollectionsContext';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { UserRatingsProvider } from './src/contexts/UserRatingsContext';
 import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
@@ -110,6 +111,7 @@ export default function App() {
         <SafeAreaProvider>
           <ToastProvider>
             <AuthProvider>
+              <UserRatingsProvider>
               <WebAuthModalProvider>
                 <ProfileProvider>
                   <ShowsProvider>
@@ -134,6 +136,7 @@ export default function App() {
                   </ShowsProvider>
                 </ProfileProvider>
               </WebAuthModalProvider>
+              </UserRatingsProvider>
             </AuthProvider>
           </ToastProvider>
         </SafeAreaProvider>
