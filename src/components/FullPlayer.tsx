@@ -186,12 +186,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       trackSlug: slugifyTrackTitle(track.title),
       date: show.date,
       venue: getVenueFromShow(show),
-      // ShareItem's per-performance rating is the legacy 1|2|3|null tier
-      // shape; usePerformanceRating now returns a ResolvedRating ({stars,
-      // isUserRating}). Map stars > 0 to the legacy tier count for the
-      // share card; a 0-star override has no legacy analog, so show none.
+      // ShareItem's per-performance rating is the legacy 1|2|3|null TIER
+      // shape (ShareCard renders it via `StarRating tier={...}`, which does
+      // `4 - tier` internally). usePerformanceRating now returns a
+      // ResolvedRating ({stars, isUserRating}) on the STAR scale, so it must
+      // be inverted back to tier (tier = 4 - stars), not passed through
+      // as-is. A 0-star override has no legacy tier analog, so show none.
       rating: performanceRating && performanceRating.stars > 0
-        ? (performanceRating.stars as 1 | 2 | 3)
+        ? ((4 - performanceRating.stars) as 1 | 2 | 3)
         : null,
     };
 
