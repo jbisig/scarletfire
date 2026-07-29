@@ -42,10 +42,14 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
   const accessibilityLabel = useMemo(() => {
     const venue = getVenueFromShow(show);
     const date = formatDate(show.date);
-    const rating = show.classicTier ? `${4 - show.classicTier} star rating` : '';
+    const rating = resolvedRating
+      ? resolvedRating.isUserRating
+        ? `Your rating: ${resolvedRating.stars} stars`
+        : `${resolvedRating.stars} star rating`
+      : '';
     const location = show.location || '';
     return `${venue}, ${date}${location ? `, ${location}` : ''}${rating ? `. ${rating}` : ''}`;
-  }, [show]);
+  }, [show, resolvedRating]);
 
   return (
     <>
