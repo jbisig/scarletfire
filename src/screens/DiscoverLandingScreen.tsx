@@ -34,6 +34,8 @@ import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
+import { useUserRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
+import { collectResolvedClassics } from '../utils/classicShowsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
@@ -47,6 +49,8 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { playCounts } = usePlayCounts();
   const { showsByYear } = useShows();
   const { show, isLoading, refreshShow } = useShowOfTheDay();
+  const ratingsVersion = useUserRatingsVersion();
+  const sotdResolvedRating = useResolvedShowRating(show?.date);
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
   const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
@@ -145,16 +149,8 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   // Classic Shows: All classicTier shows merged with the curated Grateful Dead 101
   // list. Deduped by primary identifier; sorted by tier (1 = best), then date.
   const classicShows = useMemo(() => {
-    const allClassics: GratefulDeadShow[] = [];
-    const seen = new Set<string>();
-    for (const yearShows of Object.values(showsByYear)) {
-      for (const s of yearShows) {
-        if (s.classicTier && !seen.has(s.primaryIdentifier)) {
-          allClassics.push(s);
-          seen.add(s.primaryIdentifier);
-        }
-      }
-    }
+    const allClassics: GratefulDeadShow[] = collectResolvedClassics(showsByYear);
+    const seen = new Set<string>(allClassics.map(s => s.primaryIdentifier));
     for (const date of GRATEFUL_DEAD_101_DATES) {
       for (const yearShows of Object.values(showsByYear)) {
         const found = yearShows.find(s => s.date.substring(0, 10) === date);
@@ -174,7 +170,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         return a.date.localeCompare(b.date);
       })
       .slice(0, 25);
-  }, [showsByYear]);
+  }, [showsByYear, ratingsVersion]);
 
   // Popular collections + playlists across all users with public profiles.
   const [popularShowCollections, setPopularShowCollections] = useState<Collection[]>([]);
@@ -278,9 +274,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                     </Text>
                     <View style={styles.sotdDateRow}>
                       <Text style={styles.sotdDate}>{formatDate(show.date)}</Text>
-                      {show.classicTier && (
-                        <StarRating tier={show.classicTier} size={12} />
-                      )}
+                      {sotdResolvedRating && <StarRating rating={sotdResolvedRating} size={12} />}
                     </View>
                     {show.location && (
                       <Text style={styles.sotdLocation}>{show.location}</Text>

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { GratefulDeadShow } from '../types/show.types';
 import { useShows } from './ShowsContext';
-import { ALL_CLASSIC_SHOWS } from '../data/classicShowsTiers';
+import { isResolvedClassic } from '../utils/classicShowsPool';
+import { useUserRatingsVersion } from './UserRatingsContext';
 
 interface ShowOfTheDayContextValue {
   show: GratefulDeadShow | null;
@@ -22,24 +23,16 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const ratingsVersion = useUserRatingsVersion();
 
-  // Build classic shows list when showsByYear is loaded
+  // Build classic shows list when showsByYear is loaded (or ratings change)
   useEffect(() => {
     if (!showsByYear || showsLoading) return;
 
-    // Get all classic show dates
-    const classicDates = new Set(ALL_CLASSIC_SHOWS.map(s => s.date));
-
-    // Helper to normalize date to YYYY-MM-DD format
-    const normalizeDate = (date: string): string => {
-      return date.split('T')[0];
-    };
-
-    // Find matching shows from showsByYear
     const matchedShows: GratefulDeadShow[] = [];
     Object.values(showsByYear).forEach(yearShows => {
       yearShows.forEach(show => {
-        if (classicDates.has(normalizeDate(show.date))) {
+        if (isResolvedClassic(show.date)) {
           matchedShows.push(show);
         }
       });
@@ -53,11 +46,16 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
 
     setClassicShows(matchedShows);
 
-    // Select initial random show
-    const randomIndex = Math.floor(Math.random() * matchedShows.length);
-    setShow(matchedShows[randomIndex]);
+    // Keep the current pick if it's still in the pool (don't churn SOTD on
+    // every rating change); otherwise select a random one.
+    setShow(prev => {
+      if (prev && matchedShows.some(s => s.primaryIdentifier === prev.primaryIdentifier)) {
+        return prev;
+      }
+      return matchedShows[Math.floor(Math.random() * matchedShows.length)];
+    });
     setIsLoading(false);
-  }, [showsByYear, showsLoading]);
+  }, [showsByYear, showsLoading, ratingsVersion]);
 
   // Refresh: pick a different random show from classic shows
   const refreshShow = useCallback(() => {
