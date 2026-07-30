@@ -112,6 +112,21 @@ Post-apply: `supabase db advisors` reports no findings caused by this batch
 OR design; the support_requests INSERT advisor is the documented residual gap;
 all other findings pre-date these migrations).
 
+**2026-07-30 — applied to production project `fftvyuykqbixzupxzlmo`** via
+`supabase db push --linked` (custom ratings feature):
+
+| Migration | Result |
+|---|---|
+| 20260729120000 user_ratings_table | ✅ Applied. Table shape (user_id/shows/performances/updated_at), RLS enabled, all 4 per-user policies, both `octet_length` size constraints, PK + FK-cascade verified post-apply. `supabase db advisors`: no findings on `user_ratings`. |
+
+Migration-history note: the 2026-07-06 batch was applied with `db query -f`,
+which records nothing in `supabase_migrations.schema_migrations`. Before this
+push, all seven 2026-07-06 files were marked applied via
+`supabase migration repair --status applied <versions>` — including 120200,
+which remains **not executed** at the SQL level (see its entry above) but is
+marked applied in history so `db push` never replays it. From here on, plain
+`supabase db push` is the apply path; history and reality are in sync.
+
 The transition shims (old `get_activity_feed`/`search_profiles` signatures)
 should be dropped in a future migration once pre-2026-07 native binaries have
 aged out.
