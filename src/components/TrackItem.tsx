@@ -6,12 +6,15 @@ import { formatDuration } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import type { ResolvedRating } from '../services/ratingResolver';
 
 interface TrackItemProps {
   track: Track;
   isPlaying: boolean;
   onPress: (track: Track) => void;
-  rating?: 1 | 2 | 3 | null;
+  rating?: ResolvedRating | null;
+  /** Opens the rating overlay for this track's performance */
+  onRatingPress?: (track: Track) => void;
   /** Web only: whether this song is saved as a favorite */
   isSaved?: boolean;
   /** Web only: callback to toggle save state */
@@ -35,11 +38,15 @@ interface TrackItemProps {
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
-  const ratingText = rating ? `${4 - rating} star performance` : '';
+  const ratingText = rating
+    ? rating.isUserRating
+      ? `Your rating: ${rating.stars} ${rating.stars === 1 ? 'star' : 'stars'}`
+      : `${rating.stars} star performance`
+    : '';
   const playingText = isPlaying ? 'Now playing. ' : '';
   const selectedText = isSelected && !isPlaying ? 'Selected. ' : '';
   const accessibilityLabel = `${playingText}${selectedText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
@@ -78,10 +85,27 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           >
             {track.title}
           </Text>
-          {rating && (
-            <View style={styles.ratingContainer}>
-              <StarRating tier={rating} size={14} />
-            </View>
+          {onRatingPress ? (
+            <TouchableOpacity
+              style={styles.ratingContainer}
+              testID="track-rating-button"
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                onRatingPress(track);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={rating ? 'Change your rating' : 'Rate this performance'}
+            >
+              <StarRating rating={rating ?? null} showPlaceholder size={14} />
+            </TouchableOpacity>
+          ) : (
+            rating && (
+              <View style={styles.ratingContainer}>
+                <StarRating rating={rating} size={14} />
+              </View>
+            )
           )}
         </View>
       </View>

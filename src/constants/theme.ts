@@ -18,6 +18,8 @@ export const COLORS = {
   accent: '#E54C4F',
   accentLight: '#E54C4F',
   accentTransparent: 'rgba(229, 76, 79, 0.15)',
+  /** Gold for user-override star ratings (system ratings stay `accent` red) */
+  userRating: '#E5B44C',
 
   // Background colors
   background: '#121212',

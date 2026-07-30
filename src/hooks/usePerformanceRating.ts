@@ -1,28 +1,26 @@
 import { useMemo } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
-import { findSongByTitle } from '../utils/songLookup';
+import { ResolvedRating, resolvePerformanceRating, tierToStars } from '../services/ratingResolver';
+import { useUserRatingsVersion } from '../contexts/UserRatingsContext';
 
 /**
- * Hook to get the performance rating (1-3 stars) for the current track
- * Shared between MiniPlayer and FullPlayer to avoid code duplication
+ * Resolved rating (user override > system) for the currently playing track.
+ * Used by FullPlayer; gold vs red is decided by ResolvedRating.isUserRating.
  */
-export function usePerformanceRating(): 1 | 2 | 3 | null {
+export function usePerformanceRating(): ResolvedRating | null {
   const { state, isRadioMode, currentRadioTrack } = usePlayer();
+  const version = useUserRatingsVersion();
 
   return useMemo(() => {
-    // For radio mode, use the rating from the current radio track
     if (isRadioMode && currentRadioTrack) {
-      return currentRadioTrack.performance.tier;
+      const perf = currentRadioTrack.performance;
+      return (
+        resolvePerformanceRating(perf.songTitle, perf.showDate) ??
+        { stars: tierToStars(perf.tier), isUserRating: false }
+      );
     }
 
     if (!state.currentTrack || !state.currentShow) return null;
-
-    const song = findSongByTitle(state.currentTrack!.title);
-
-    if (!song) return null;
-
-    const performance = song.performances.find(p => p.date === state.currentShow!.date);
-
-    return performance?.rating || null;
-  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack]);
+    return resolvePerformanceRating(state.currentTrack.title, state.currentShow.date);
+  }, [state.currentTrack?.id, state.currentShow?.date, isRadioMode, currentRadioTrack, version]);
 }

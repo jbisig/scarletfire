@@ -6,12 +6,14 @@
  */
 
 import { Track, ShowDetail } from '../types/show.types';
-import { RatedSongPerformance, TIER_1_SONG_PERFORMANCES } from '../data/songPerformanceRatings';
+import { RatedSongPerformance } from '../data/songPerformanceRatings';
 import { archiveApi } from './archiveApi';
 import { networkPriority } from './networkPriority';
 import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleNormalization';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { logger } from '../utils/logger';
+import { buildRadioPool } from './radioPool';
+import { subscribeUserRatings } from './userRatingsStore';
 
 export interface RadioTrack {
   track: Track;
@@ -73,6 +75,16 @@ class RadioService {
   private similarityCache: Map<string, number> = new Map();
   private readonly MAX_CACHE_SIZE = 10000;
 
+  constructor() {
+    // Rating overrides change the tier-1 pool; rebuild lazily on next pull.
+    // Keep playedPerformances so the session's no-repeat behavior survives.
+    subscribeUserRatings(() => {
+      this.shuffledQueue = [];
+      this.queueIndex = 0;
+      this.prefetchedTracks = [];
+    });
+  }
+
   /**
    * Get cached similarity score or calculate and cache it (LRU eviction)
    */
@@ -111,18 +123,20 @@ class RadioService {
   }
 
   /**
-   * Initialize or refill the shuffled queue from TIER_1_SONG_PERFORMANCES
+   * Initialize or refill the shuffled queue from the current radio pool
+   * (system tier-1 performances plus qualifying user 3-star ratings)
    */
   private refillQueue(): void {
+    const pool = buildRadioPool();
     // Filter out already-played performances
-    const available = TIER_1_SONG_PERFORMANCES.filter(
+    const available = pool.filter(
       perf => !this.playedPerformances.has(this.getPerformanceKey(perf))
     );
 
     if (available.length === 0) {
       // All played - reset and start over
       this.playedPerformances.clear();
-      this.shuffledQueue = shuffleArray([...TIER_1_SONG_PERFORMANCES]);
+      this.shuffledQueue = shuffleArray(pool);
     } else {
       this.shuffledQueue = shuffleArray(available);
     }
@@ -341,10 +355,10 @@ class RadioService {
   }
 
   /**
-   * Get the total number of Tier 1 performances available
+   * Get the total number of performances currently in the radio pool
    */
   getTotalPerformances(): number {
-    return TIER_1_SONG_PERFORMANCES.length;
+    return buildRadioPool().length;
   }
 
   /**

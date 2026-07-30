@@ -46,7 +46,6 @@ import { toFavoriteSong } from '../utils/favoriteSong';
 import { showDetailParams } from '../utils/showDetailParams';
 import { haptics } from '../services/hapticService';
 import { getAllShowsSorted, findShowIndexByDate, resolveIdentifierFromDate } from '../utils/showLookup';
-import { findSongByTitle } from '../utils/songLookup';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
@@ -55,6 +54,9 @@ import { WebVideoBackground } from '../components/shared/WebVideoBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
 import { ErrorState } from '../components/StateViews';
 import { webStyle } from '../utils/webStyle';
+import { useResolvedShowRating, useUserRatingsVersion } from '../contexts/UserRatingsContext';
+import { resolvePerformanceRating, ResolvedRating } from '../services/ratingResolver';
+import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 
 // Default profile image for logged out users (web header)
 
@@ -95,6 +97,12 @@ export function ShowDetailScreen() {
     return match?.classicTier ?? null;
   }, [previewTier, previewDate, show?.date, showsByYear, route.params.identifier]);
 
+  // Displayed show rating: resolved so user overrides win over the system
+  // tier and the header re-renders when the user rates/unrates the show.
+  const showDate = previewDate ?? show?.date;
+  const resolvedShowRating = useResolvedShowRating(showDate);
+  const { openRatingOverlay } = useRatingOverlay();
+
   const hasSelectedFromUrl = useRef(false);
 
   // Request-generation token for loadShowDetail. Both the route-param effect
@@ -123,21 +131,16 @@ export function ShowDetailScreen() {
     return getShowPlayCount(show.identifier, show.tracks.length);
   }, [show?.identifier, show?.tracks.length, getShowPlayCount]);
 
-  // Pre-compute track ratings for the current show using O(1) Map lookup
+  // Pre-compute resolved track ratings (user override > system) for the show
+  const ratingsVersion = useUserRatingsVersion();
   const trackRatings = useMemo(() => {
     if (!show) return {};
-    const ratings: Record<string, 1 | 2 | 3 | null> = {};
-
+    const ratings: Record<string, ResolvedRating | null> = {};
     show.tracks.forEach(track => {
-      const song = findSongByTitle(track.title);
-      if (song) {
-        const performance = song.performances.find(p => p.date === show.date);
-        ratings[track.id] = performance?.rating || null;
-      }
+      ratings[track.id] = resolvePerformanceRating(track.title, show.date);
     });
-
     return ratings;
-  }, [show?.identifier, show?.date]);
+  }, [show?.identifier, show?.date, ratingsVersion]);
 
   // Look up show notes from Taper's Compendium
   const showNotesText = useMemo(() => {
@@ -341,22 +344,29 @@ export function ShowDetailScreen() {
   const handleShareShow = useCallback(() => {
     if (!show) return;
 
+    // resolvedShowRating is the user-override-aware rating (STAR scale) for
+    // this show's date, kept in sync via useUserRatingsVersion. ShareItem's
+    // tier field is legacy TIER scale, so invert back (tier = 4 - stars); a
+    // 0-star override has no tier analog, so share no stars in that case.
     const item: ShareItem = {
       kind: 'show',
       showId: show.identifier,
       date: show.date,
       venue: getVenueFromShow(show),
-      tier: classicTier,
+      tier: resolvedShowRating && resolvedShowRating.stars > 0
+        ? ((4 - resolvedShowRating.stars) as 1 | 2 | 3)
+        : null,
+      isUserRating: resolvedShowRating?.isUserRating ?? false,
     };
 
     haptics.light();
     openShareTray(item);
-  }, [show, classicTier, openShareTray]);
+  }, [show, resolvedShowRating, openShareTray]);
 
   // Register a headerRight share icon. Runs in a separate useEffect from the
   // initial title-setting call in loadShowDetail so the callback stays fresh
-  // when `show` or `classicTier` change (e.g. when the user navigates between
-  // versions or previews).
+  // when `show` or `resolvedShowRating` change (e.g. when the user navigates
+  // between versions or previews, or updates their rating).
   const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
   const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
   const { itemCountsByIdentifier } = useCollections();
@@ -467,9 +477,19 @@ export function ShowDetailScreen() {
                     {/* Date with stars */}
                     <View style={styles.webDateRow}>
                       <Text style={styles.webDate}>{formatDateMMDDYYYY(displayShow.date)}</Text>
-                      {classicTier && (
-                        <StarRating tier={classicTier} size={20} />
-                      )}
+                      <TouchableOpacity
+                        onPress={() => openRatingOverlay({
+                          kind: 'show',
+                          date: displayShow.date,
+                          venue: getVenueFromShow(displayShow),
+                          location: displayShow.location,
+                        })}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Rate this show"
+                      >
+                        <StarRating rating={resolvedShowRating} showPlaceholder size={20} />
+                      </TouchableOpacity>
                     </View>
 
                     {/* Location */}
@@ -601,9 +621,19 @@ export function ShowDetailScreen() {
               {/* Date with stars */}
               <View style={styles.dateRow}>
                 <Text style={styles.date}>{formatDateMMDDYYYY(displayShow.date)}</Text>
-                {classicTier && (
-                  <StarRating tier={classicTier} size={16} />
-                )}
+                <TouchableOpacity
+                  onPress={() => openRatingOverlay({
+                    kind: 'show',
+                    date: displayShow.date,
+                    venue: getVenueFromShow(displayShow),
+                    location: displayShow.location,
+                  })}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Rate this show"
+                >
+                  <StarRating rating={resolvedShowRating} showPlaceholder size={16} />
+                </TouchableOpacity>
               </View>
 
               {/* Location */}
@@ -690,6 +720,13 @@ export function ShowDetailScreen() {
             }
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
+            onRatingPress={(t) => openRatingOverlay({
+              kind: 'performance',
+              songTitle: t.title,
+              date: show.date,
+              venue: getVenueFromShow(displayShow),
+              showIdentifier: show.identifier,
+            })}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
             onAddToPlaylist={handleAddToPlaylist}

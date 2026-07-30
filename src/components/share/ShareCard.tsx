@@ -19,6 +19,7 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
   let subtitle: string;
   let metaDate: string | null = null;
   let tier: 1 | 2 | 3 | null = null;
+  let isUserRating = false;
 
   if (item.kind === 'profile') {
     title = `${item.displayName}'s Profile`;
@@ -32,6 +33,7 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
     title = item.kind === 'show' ? formattedDate : item.trackTitle;
     subtitle = item.venue;
     tier = item.kind === 'show' ? item.tier : item.rating;
+    isUserRating = item.isUserRating ?? false;
     if (item.kind === 'song') metaDate = formattedDate;
   }
 
@@ -56,7 +58,12 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
               {metaDate && (
                 <Text style={styles.meta}>{metaDate}</Text>
               )}
-              {tier !== null && <StarRating tier={tier} size={14} />}
+              {tier !== null && (
+                <StarRating
+                  rating={{ stars: (4 - tier) as 1 | 2 | 3, isUserRating }}
+                  size={14}
+                />
+              )}
             </View>
           </View>
         </View>

@@ -6,7 +6,7 @@ import { getCorrectVenue } from '../utils/showLookup';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { PlayCountBadge } from './PlayCountBadge';
-import { getSongPerformanceRating } from '../data/songPerformanceRatings';
+import { useResolvedPerformanceRating } from '../contexts/UserRatingsContext';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 interface SongCardProps {
@@ -42,7 +42,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
   correctVenue = false,
 }) {
   const { isDesktop } = useResponsive();
-  const performanceRating = getSongPerformanceRating(song.trackTitle, song.showDate);
+  const performanceRating = useResolvedPerformanceRating(song.trackTitle, song.showDate);
   const venue = correctVenue ? (getCorrectVenue(song.showDate) || song.venue) : song.venue;
   const [isHovered, setIsHovered] = useState(false);
 
@@ -70,7 +70,7 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
 
           <View style={styles.songDateRow}>
             <Text style={styles.songDate}>{formatDate(song.showDate)}</Text>
-            {performanceRating && <StarRating tier={performanceRating} size={14} />}
+            {performanceRating && <StarRating rating={performanceRating} size={14} />}
           </View>
 
           {venue && (

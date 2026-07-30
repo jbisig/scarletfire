@@ -22091,9 +22091,11 @@ export function getSongPerformanceRating(
 }
 
 /**
- * Normalize song titles for consistent lookups
+ * Normalize song titles for consistent lookups.
+ * Exported so user rating overrides key performances identically
+ * to the system rating index (see src/services/userRatingsStore.ts).
  */
-function normalizeSongTitleForLookup(title: string): string {
+export function normalizeSongTitleForLookup(title: string): string {
   return title
     .toLowerCase()
     .trim()

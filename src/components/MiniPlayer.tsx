@@ -5,7 +5,6 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
-import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { useVideoRemount } from '../hooks/useVideoRemount';
 import { BlurBackground } from './shared/BlurBackground';
@@ -38,9 +37,6 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
 
   // Prefetch-show-detail effect now lives once in PlayerContext (was
   // duplicated identically here and in FullPlayer).
-
-  // Get performance rating from shared hook
-  const performanceRating = usePerformanceRating();
 
   // Memoize play count lookup
   const playCount = useMemo(() => {

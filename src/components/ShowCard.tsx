@@ -6,6 +6,8 @@ import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { useCollections } from '../contexts/CollectionsContext';
+import type { ResolvedRating } from '../services/ratingResolver';
+import { useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
@@ -19,8 +21,12 @@ import { COLORS, TYPOGRAPHY, SPACING, GLASS_PILL } from '../constants/theme';
 interface ShowCardProps {
   show: GratefulDeadShow;
   onPress: (show: GratefulDeadShow) => void;
-  /** Override the star rating (use performance rating instead of show rating) */
-  overrideRating?: 1 | 2 | 3 | null;
+  /** Override the resolved star rating (e.g. show a performance rating
+   *  instead of the show rating). undefined = resolve internally. */
+  overrideResolvedRating?: ResolvedRating | null;
+  /** When set, the star slot becomes a tap target (with placeholder)
+   *  that calls this — used on the SongPerformances detail surface. */
+  onRatingPress?: () => void;
   /** Override the play count (use song-specific count instead of show count) */
   overridePlayCount?: number;
   /** Hide the save/saved heart badge */
@@ -33,7 +39,7 @@ interface ShowCardProps {
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRating, overridePlayCount, hideSaveBadge, trailingText }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideResolvedRating, onRatingPress, overridePlayCount, hideSaveBadge, trailingText }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { itemCountsByIdentifier } = useCollections();
@@ -70,8 +76,10 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
     return 0;
   }, [show.primaryIdentifier, hasShowBeenPlayed, getShowPlayCount, overridePlayCount]);
 
-  // Use override rating if provided, otherwise use show's classicTier
-  const displayRating = overrideRating !== undefined ? overrideRating : show.classicTier;
+  // Use override rating if provided, otherwise resolve the show's rating
+  // (user override wins over the system classicTier, per ratingResolver).
+  const resolvedShowRating = useResolvedShowRating(show.date);
+  const displayRating = overrideResolvedRating !== undefined ? overrideResolvedRating : resolvedShowRating;
 
   const isSaved = isShowFavorite(show.primaryIdentifier);
 
@@ -91,7 +99,11 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
   const accessibilityLabel = useMemo(() => {
     const venue = getVenueFromShow(show);
     const date = formatDate(show.date);
-    const rating = displayRating ? `${4 - displayRating} star rating` : '';
+    const rating = displayRating
+      ? displayRating.isUserRating
+        ? `Your rating: ${displayRating.stars} stars`
+        : `${displayRating.stars} star rating`
+      : '';
     const location = show.location || '';
     return `${venue}, ${date}${location ? `, ${location}` : ''}${rating ? `. ${rating}` : ''}`;
   }, [show, displayRating]);
@@ -124,8 +136,17 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideRati
               {/* Date with stars */}
               <View style={styles.dateRow}>
                 <Text style={styles.date}>{formatDate(show.date)}</Text>
-                {displayRating && (
-                  <StarRating tier={displayRating} size={14} />
+                {onRatingPress ? (
+                  <TouchableOpacity
+                    onPress={(e: any) => { e?.stopPropagation?.(); onRatingPress(); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Rate this performance"
+                  >
+                    <StarRating rating={displayRating} showPlaceholder size={14} />
+                  </TouchableOpacity>
+                ) : (
+                  displayRating && <StarRating rating={displayRating} size={14} />
                 )}
               </View>
 
