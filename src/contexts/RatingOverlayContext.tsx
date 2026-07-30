@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { RatingOverlay } from '../components/RatingOverlay';
+import { RatingTray } from '../components/rating/RatingTray';
 
 export type RatingItem =
   | { kind: 'show'; date: string; venue?: string; location?: string }
@@ -13,9 +13,10 @@ interface RatingOverlayContextValue {
 const RatingOverlayContext = createContext<RatingOverlayContextValue | null>(null);
 
 /**
- * Provider for the global rating overlay. Mount once near the app root
+ * Provider for the global rating tray. Mount once near the app root
  * (inside UserRatingsProvider) so any detail surface can call
- * openRatingOverlay() — same pattern as ShareSheetContext.
+ * openRatingOverlay() — same pattern as ShareSheetContext. The tray is
+ * platform-split (RatingTray.native / RatingTray.web) like ShareTray.
  */
 export function RatingOverlayProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = useState<RatingItem | null>(null);
@@ -31,7 +32,7 @@ export function RatingOverlayProvider({ children }: { children: React.ReactNode 
   return (
     <RatingOverlayContext.Provider value={value}>
       {children}
-      <RatingOverlay item={current} onClose={closeRatingOverlay} />
+      <RatingTray item={current} onClose={closeRatingOverlay} />
     </RatingOverlayContext.Provider>
   );
 }

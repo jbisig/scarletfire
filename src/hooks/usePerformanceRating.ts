@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
 import { ResolvedRating, resolvePerformanceRating, tierToStars } from '../services/ratingResolver';
-import { useUserRatingsVersion } from '../contexts/UserRatingsContext';
+import { usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 
 /**
  * Resolved rating (user override > system) for the currently playing track.
@@ -9,7 +9,7 @@ import { useUserRatingsVersion } from '../contexts/UserRatingsContext';
  */
 export function usePerformanceRating(): ResolvedRating | null {
   const { state, isRadioMode, currentRadioTrack } = usePlayer();
-  const version = useUserRatingsVersion();
+  const version = usePerformanceRatingsVersion();
 
   return useMemo(() => {
     if (isRadioMode && currentRadioTrack) {

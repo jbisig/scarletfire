@@ -38,7 +38,7 @@ import {
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 import { compareByResolvedRating } from '../utils/performanceSort';
-import { useUserRatingsVersion } from '../contexts/UserRatingsContext';
+import { usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 import { resolvePerformanceRating } from '../services/ratingResolver';
 import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 
@@ -65,12 +65,12 @@ export function SongPerformancesScreen() {
   const { loadTrack } = usePlayerActions();
   const { getShowDetail } = useShows();
   const { getPlayCountStable } = usePlayCounts();
-  const [sortType, setSortType] = useState<SortType>('performanceDateOldest');
+  const [sortType, setSortType] = useState<SortType>('ratingHighest');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
   const sortDropdown = useSortDropdown();
-  const ratingsVersion = useUserRatingsVersion();
+  const ratingsVersion = usePerformanceRatingsVersion();
   const { openRatingOverlay } = useRatingOverlay();
 
   // Search animation state
@@ -217,13 +217,19 @@ export function SongPerformancesScreen() {
           onPress={onPress}
           overrideResolvedRating={resolvePerformanceRating(songTitle, item.date)}
           overridePlayCount={songPlayCount}
-          onRatingPress={() => openRatingOverlay({
-            kind: 'performance',
-            songTitle,
-            date: item.date,
-            venue: item.venue,
-            showIdentifier: item.identifier,
-          })}
+          // Native keeps rating taps on the large player + show detail only;
+          // list rows here are tappable on web where there's a pointer.
+          onRatingPress={
+            Platform.OS === 'web'
+              ? () => openRatingOverlay({
+                  kind: 'performance',
+                  songTitle,
+                  date: item.date,
+                  venue: item.venue,
+                  showIdentifier: item.identifier,
+                })
+              : undefined
+          }
         />
       );
     }

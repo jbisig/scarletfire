@@ -462,11 +462,10 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
           </Text>
 
           {state.currentShow && (
-            <View style={styles.showInfoRow}>
+            <View>
               <TouchableOpacity
                 onPress={handleNavigateToShow}
                 activeOpacity={0.7}
-                style={styles.showLinkContainer}
                 accessibilityRole="link"
                 accessibilityLabel={`View show: ${getVenueFromShow(state.currentShow)}, ${formatDate(state.currentShow.date)}`}
                 accessibilityHint="Double tap to view the full show"
@@ -474,58 +473,59 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 <Text style={styles.showInfo} numberOfLines={1}>
                   {getVenueFromShow(state.currentShow)}
                 </Text>
-                <View style={styles.dateWithStars}>
-                  <Text style={styles.showDate}>
-                    {formatDate(state.currentShow.date)}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={(e: any) => {
-                      e?.stopPropagation?.();
-                      if (!state.currentTrack || !state.currentShow) return;
-                      openRatingOverlay({
-                        kind: 'performance',
-                        songTitle: state.currentTrack.title,
-                        date: state.currentShow.date,
-                        venue: getVenueFromShow(state.currentShow),
-                        showIdentifier: state.currentShow.identifier,
-                      });
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Rate this performance"
-                  >
-                    <StarRating rating={performanceRating} showPlaceholder size={16} />
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.showDate}>
+                  {formatDate(state.currentShow.date)}
+                </Text>
               </TouchableOpacity>
 
-              <View style={styles.trackActionsGroup}>
-                {/* Add to Playlist */}
+              {/* Bottom row: rating on the left, plus/heart actions on the right */}
+              <View style={styles.ratingActionsRow}>
                 <TouchableOpacity
-                  style={styles.trackActionBtn}
-                  onPress={() => setAddToPlaylistVisible(true)}
-                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (!state.currentTrack || !state.currentShow) return;
+                    openRatingOverlay({
+                      kind: 'performance',
+                      songTitle: state.currentTrack.title,
+                      date: state.currentShow.date,
+                      venue: getVenueFromShow(state.currentShow),
+                      showIdentifier: state.currentShow.identifier,
+                    });
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
-                  accessibilityLabel="Add to playlist"
+                  accessibilityLabel="Rate this performance"
                 >
-                  <Ionicons name="add" size={26} color={COLORS.textPrimary} />
+                  <StarRating rating={performanceRating} showPlaceholder size={20} />
                 </TouchableOpacity>
 
-                {/* Save Song (Heart) */}
-                <TouchableOpacity
-                  style={styles.trackActionBtn}
-                  onPress={handleToggleFavoriteSong}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                  accessibilityState={{ selected: isFavorite }}
-                >
-                  <Ionicons
-                    name={isFavorite ? 'heart' : 'heart-outline'}
-                    size={26}
-                    color={isFavorite ? COLORS.accent : COLORS.textPrimary}
-                  />
-                </TouchableOpacity>
+                <View style={styles.trackActionsGroup}>
+                  {/* Add to Playlist */}
+                  <TouchableOpacity
+                    style={styles.trackActionBtn}
+                    onPress={() => setAddToPlaylistVisible(true)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add to playlist"
+                  >
+                    <Ionicons name="add" size={26} color={COLORS.textPrimary} />
+                  </TouchableOpacity>
+
+                  {/* Save Song (Heart) */}
+                  <TouchableOpacity
+                    style={styles.trackActionBtn}
+                    onPress={handleToggleFavoriteSong}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    accessibilityState={{ selected: isFavorite }}
+                  >
+                    <Ionicons
+                      name={isFavorite ? 'heart' : 'heart-outline'}
+                      size={26}
+                      color={isFavorite ? COLORS.accent : COLORS.textPrimary}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
@@ -681,14 +681,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading1,
     marginBottom: SPACING.sm,
   },
-  showInfoRow: {
+  ratingActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  showLinkContainer: {
-    flex: 1,
-    marginRight: SPACING.lg,
+    marginTop: SPACING.sm,
   },
   showInfo: {
     ...TYPOGRAPHY.bodyLarge,
@@ -698,11 +695,6 @@ const styles = StyleSheet.create({
   showDate: {
     ...TYPOGRAPHY.body,
     color: COLORS.accent,
-  },
-  dateWithStars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
   trackActionsGroup: {
     flexDirection: 'row',

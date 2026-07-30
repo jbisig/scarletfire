@@ -34,7 +34,7 @@ import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
-import { useUserRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
+import { useShowRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { collectResolvedClassics, mergeCuratedClassics } from '../utils/classicShowsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
@@ -49,7 +49,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   const { playCounts } = usePlayCounts();
   const { showsByYear } = useShows();
   const { show, isLoading, refreshShow } = useShowOfTheDay();
-  const ratingsVersion = useUserRatingsVersion();
+  const ratingsVersion = useShowRatingsVersion();
   const sotdResolvedRating = useResolvedShowRating(show?.date);
   const { startRadio, startShuffleSongs, startShuffleShows, state: playerState } = usePlayer();
   const { favoriteShows, favoriteSongs, isLoading: favoritesLoading } = useFavorites();

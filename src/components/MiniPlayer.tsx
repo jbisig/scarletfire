@@ -9,6 +9,8 @@ import { useAppActiveState } from '../hooks/useAppActiveState';
 import { useVideoRemount } from '../hooks/useVideoRemount';
 import { BlurBackground } from './shared/BlurBackground';
 import { WebVideoBackground } from './shared/WebVideoBackground';
+import { StarRating } from './StarRating';
+import { usePerformanceRating } from '../hooks/usePerformanceRating';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
@@ -44,6 +46,10 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
       ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
       : 0;
   }, [state.currentTrack?.id, state.currentShow?.identifier, getPlayCount]);
+
+  // Resolved rating for the current track (display-only here — rating taps
+  // live on the large player and show detail screen).
+  const performanceRating = usePerformanceRating();
 
   if (!state.currentTrack) return null;
 
@@ -96,6 +102,9 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
                 <Text style={styles.trackTitle} numberOfLines={1}>
                   {state.currentTrack.title}
                 </Text>
+                {performanceRating && (
+                  <StarRating rating={performanceRating} size={12} style={styles.titleStars} />
+                )}
                 {isRadioMode && (
                   <View style={styles.radioBadge}>
                     <Ionicons name="radio" size={12} color={COLORS.textPrimary} />
@@ -180,6 +189,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.xs,
+  },
+  titleStars: {
+    marginLeft: SPACING.sm,
+    flexShrink: 0,
   },
   trackTitle: {
     ...TYPOGRAPHY.labelLarge,

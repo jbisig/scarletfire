@@ -8,6 +8,8 @@ import {
   UserStars,
   getUserRatings,
   getUserRatingsVersion,
+  getShowRatingsVersion,
+  getPerformanceRatingsVersion,
   replaceUserRatings,
   setShowUserRating,
   resetShowUserRating,
@@ -39,8 +41,25 @@ export function useUserRatingsVersion(): number {
   return useSyncExternalStore(subscribeUserRatings, getUserRatingsVersion, getUserRatingsVersion);
 }
 
+/**
+ * Kind-scoped subscribers: useSyncExternalStore only re-renders when its
+ * snapshot changes, so show-driven surfaces skip performance-rating taps
+ * and vice versa (the tap-latency fix — see userRatingsStore's counters).
+ */
+export function useShowRatingsVersion(): number {
+  return useSyncExternalStore(subscribeUserRatings, getShowRatingsVersion, getShowRatingsVersion);
+}
+
+export function usePerformanceRatingsVersion(): number {
+  return useSyncExternalStore(
+    subscribeUserRatings,
+    getPerformanceRatingsVersion,
+    getPerformanceRatingsVersion
+  );
+}
+
 export function useResolvedShowRating(date: string | undefined): ResolvedRating | null {
-  const version = useUserRatingsVersion();
+  const version = useShowRatingsVersion();
   return useMemo(
     () => (date ? resolveShowRating(date) : null),
     [date, version]
@@ -51,7 +70,7 @@ export function useResolvedPerformanceRating(
   songTitle: string | undefined,
   date: string | undefined,
 ): ResolvedRating | null {
-  const version = useUserRatingsVersion();
+  const version = usePerformanceRatingsVersion();
   return useMemo(
     () => (songTitle && date ? resolvePerformanceRating(songTitle, date) : null),
     [songTitle, date, version]

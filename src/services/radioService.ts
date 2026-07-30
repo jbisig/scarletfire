@@ -13,7 +13,7 @@ import { normalizeTrackTitle, normalizeHeadyVersionTitle } from '../utils/titleN
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
 import { logger } from '../utils/logger';
 import { buildRadioPool } from './radioPool';
-import { subscribeUserRatings } from './userRatingsStore';
+import { subscribeUserRatings, getPerformanceRatingsVersion } from './userRatingsStore';
 
 export interface RadioTrack {
   track: Track;
@@ -78,7 +78,13 @@ class RadioService {
   constructor() {
     // Rating overrides change the tier-1 pool; rebuild lazily on next pull.
     // Keep playedPerformances so the session's no-repeat behavior survives.
+    // Only performance-rating changes affect the pool — show ratings are
+    // ignored so they don't needlessly flush prefetched tracks.
+    let lastPerfVersion = getPerformanceRatingsVersion();
     subscribeUserRatings(() => {
+      const perfVersion = getPerformanceRatingsVersion();
+      if (perfVersion === lastPerfVersion) return;
+      lastPerfVersion = perfVersion;
       this.shuffledQueue = [];
       this.queueIndex = 0;
       this.prefetchedTracks = [];

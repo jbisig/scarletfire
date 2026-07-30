@@ -21,14 +21,14 @@ it('renders a resolved user rating and fires onRatingPress on tap', () => {
   expect(onRatingPress).toHaveBeenCalledWith(track);
 });
 
-it('renders the placeholder when unrated but tappable', () => {
+it('renders no stars or tap target when unrated, even if tappable', () => {
   let tree: TestRenderer.ReactTestRenderer;
   act(() => {
     tree = TestRenderer.create(
       <TrackItem {...base} rating={null} onRatingPress={jest.fn()} />
     );
   });
-  expect(tree!.root.findAllByProps({ testID: 'track-rating-button' }).length).toBeGreaterThan(0);
+  expect(tree!.root.findAllByProps({ testID: 'track-rating-button' })).toHaveLength(0);
 });
 
 it('renders nothing in the rating slot when unrated and not tappable', () => {

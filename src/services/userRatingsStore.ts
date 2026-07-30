@@ -34,10 +34,19 @@ const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 let ratings: UserRatings = { shows: {}, performances: {} };
 let version = 0;
+// Per-kind counters so React subscribers (useSyncExternalStore) only
+// re-render for the kind they consume — a performance-rating tap must not
+// recompute show-driven surfaces (Classic rail, SOTD) and vice versa.
+let showsVersion = 0;
+let performancesVersion = 0;
 const listeners = new Set<() => void>();
 
-function notify(): void {
+type RatingKind = 'shows' | 'performances' | 'both';
+
+function notify(kind: RatingKind): void {
   version++;
+  if (kind === 'shows' || kind === 'both') showsVersion++;
+  if (kind === 'performances' || kind === 'both') performancesVersion++;
   listeners.forEach(l => l());
 }
 
@@ -57,9 +66,17 @@ export function getUserRatingsVersion(): number {
   return version;
 }
 
+export function getShowRatingsVersion(): number {
+  return showsVersion;
+}
+
+export function getPerformanceRatingsVersion(): number {
+  return performancesVersion;
+}
+
 export function replaceUserRatings(next: UserRatings): void {
   ratings = next;
-  notify();
+  notify('both');
 }
 
 function isEntryActive(entry: UserRatingEntry): boolean {
@@ -85,7 +102,7 @@ export function setShowUserRating(date: string, stars: UserStars): void {
     ...ratings,
     shows: { ...ratings.shows, [dateOnly(date)]: { stars, ratedAt: Date.now() } },
   };
-  notify();
+  notify('shows');
 }
 
 export function resetShowUserRating(date: string): void {
@@ -96,7 +113,7 @@ export function resetShowUserRating(date: string): void {
     ...ratings,
     shows: { ...ratings.shows, [key]: { ...existing, deletedAt: Date.now() } },
   };
-  notify();
+  notify('shows');
 }
 
 export function setPerformanceUserRating(
@@ -113,7 +130,7 @@ export function setPerformanceUserRating(
     ...(showIdentifier ? { showIdentifier } : {}),
   };
   ratings = { ...ratings, performances: { ...ratings.performances, [key]: entry } };
-  notify();
+  notify('performances');
 }
 
 export function resetPerformanceUserRating(songTitle: string, date: string): void {
@@ -124,7 +141,7 @@ export function resetPerformanceUserRating(songTitle: string, date: string): voi
     ...ratings,
     performances: { ...ratings.performances, [key]: { ...existing, deletedAt: Date.now() } },
   };
-  notify();
+  notify('performances');
 }
 
 export function subscribeUserRatings(listener: () => void): () => void {
@@ -172,5 +189,7 @@ export function pruneTombstones(input: UserRatings, now: number = Date.now()): U
 export function resetStoreForTests(): void {
   ratings = { shows: {}, performances: {} };
   version = 0;
+  showsVersion = 0;
+  performancesVersion = 0;
   listeners.clear();
 }

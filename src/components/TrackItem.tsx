@@ -85,23 +85,25 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           >
             {track.title}
           </Text>
-          {onRatingPress ? (
-            <TouchableOpacity
-              style={styles.ratingContainer}
-              testID="track-rating-button"
-              onPress={(e: any) => {
-                e?.stopPropagation?.();
-                onRatingPress(track);
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={rating ? 'Change your rating' : 'Rate this performance'}
-            >
-              <StarRating rating={rating ?? null} showPlaceholder size={14} />
-            </TouchableOpacity>
-          ) : (
-            rating && (
+          {/* Stars only render when a user or community rating exists —
+              unrated tracks get no placeholder (rate them from the player). */}
+          {rating && (
+            onRatingPress ? (
+              <TouchableOpacity
+                style={styles.ratingContainer}
+                testID="track-rating-button"
+                onPress={(e: any) => {
+                  e?.stopPropagation?.();
+                  onRatingPress(track);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Change your rating"
+              >
+                <StarRating rating={rating} size={14} />
+              </TouchableOpacity>
+            ) : (
               <View style={styles.ratingContainer}>
                 <StarRating rating={rating} size={14} />
               </View>

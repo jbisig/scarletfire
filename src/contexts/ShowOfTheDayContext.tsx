@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { GratefulDeadShow } from '../types/show.types';
 import { useShows } from './ShowsContext';
 import { isResolvedClassic } from '../utils/classicShowsPool';
-import { useUserRatingsVersion } from './UserRatingsContext';
+import { useShowRatingsVersion } from './UserRatingsContext';
 
 interface ShowOfTheDayContextValue {
   show: GratefulDeadShow | null;
@@ -23,7 +23,7 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const ratingsVersion = useUserRatingsVersion();
+  const ratingsVersion = useShowRatingsVersion();
 
   // Build classic shows list when showsByYear is loaded (or ratings change)
   useEffect(() => {

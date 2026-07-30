@@ -54,7 +54,7 @@ import { WebVideoBackground } from '../components/shared/WebVideoBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
 import { ErrorState } from '../components/StateViews';
 import { webStyle } from '../utils/webStyle';
-import { useResolvedShowRating, useUserRatingsVersion } from '../contexts/UserRatingsContext';
+import { useResolvedShowRating, usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 import { resolvePerformanceRating, ResolvedRating } from '../services/ratingResolver';
 import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 
@@ -132,7 +132,7 @@ export function ShowDetailScreen() {
   }, [show?.identifier, show?.tracks.length, getShowPlayCount]);
 
   // Pre-compute resolved track ratings (user override > system) for the show
-  const ratingsVersion = useUserRatingsVersion();
+  const ratingsVersion = usePerformanceRatingsVersion();
   const trackRatings = useMemo(() => {
     if (!show) return {};
     const ratings: Record<string, ResolvedRating | null> = {};
@@ -873,15 +873,17 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   playCountBadge: {
+    // Matches OfficialReleaseBadge's (non-compact) vertical metrics so the
+    // two pills in badgesRow render at the same height, borderless.
+    justifyContent: 'center',
     backgroundColor: COLORS.cardBackground,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingVertical: SPACING.xs + 1,
+    borderRadius: RADIUS.full,
   },
   playCountText: {
-    ...TYPOGRAPHY.labelSmall,
+    ...TYPOGRAPHY.captionSmall,
+    fontSize: 11,
     fontWeight: '400',
     color: COLORS.textSecondary,
   },
