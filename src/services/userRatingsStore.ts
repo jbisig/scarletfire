@@ -5,7 +5,9 @@
  * selection read it synchronously outside the tree. UserRatingsContext
  * (src/contexts/UserRatingsContext.tsx) wraps this store to add
  * AsyncStorage persistence and Supabase sync, and React components
- * subscribe via useSyncExternalStore on the version counter.
+ * subscribe via useSyncExternalStore on the version counters — a global
+ * one plus per-kind counters (shows/performances) so consumers only
+ * re-render for the kind they read.
  *
  * Entry semantics: an entry is ACTIVE unless `deletedAt >= ratedAt`
  * (tombstone). Tombstones are kept so a reset made offline wins over a

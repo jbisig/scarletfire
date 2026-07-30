@@ -5,7 +5,8 @@ import { usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 
 /**
  * Resolved rating (user override > system) for the currently playing track.
- * Used by FullPlayer; gold vs red is decided by ResolvedRating.isUserRating.
+ * Used by FullPlayer and MiniPlayer; gold vs red is decided by
+ * ResolvedRating.isUserRating.
  */
 export function usePerformanceRating(): ResolvedRating | null {
   const { state, isRadioMode, currentRadioTrack } = usePlayer();

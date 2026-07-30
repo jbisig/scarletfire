@@ -1,7 +1,35 @@
 # Custom Show/Performance Ratings — Design
 
 **Date:** 2026-07-29
-**Status:** Approved
+**Status:** Approved (amended 2026-07-30 — see Post-ship amendments)
+
+## Post-ship amendments (2026-07-30, product-owner directed)
+
+Design iterations after the initial ship supersede the corresponding
+sections below (implemented in commit `8f95c48`):
+
+- **Tray, not full-screen modal.** The rating UI is a bottom tray mirroring
+  the share tray: `@gorhom/bottom-sheet` on native, centered/bottom panel on
+  web, built around `RatingCard` — the share-card image-background container
+  (random background per open, darker gradient), no logo. Everything
+  (info, picker, reset) lives inside the card.
+- **Picker carries the community rating.** No separate "Community rating"
+  row: the 0–3 picker pre-fills the community rating in red; tapping
+  replaces it with the user's rating in gold. The zero button is a
+  struck-through star (`star-off`). The reset button names its target:
+  "Reset to community rating (N stars)", 0 included when none exists.
+- **No placeholder stars on track rows.** Stars render only when a user or
+  community rating exists; unrated tracks are rated from the player.
+- **Native tap targets narrowed** to the large player and the show detail
+  screen (hero + rated track rows). Browse/list surfaces are display-only
+  on native; web list rows stay tappable.
+- **MiniPlayer displays** the resolved rating right of the (truncating)
+  track title, display-only.
+- **SongPerformances defaults to Rating (Highest First).**
+- **Performance:** the store exposes per-kind version counters
+  (shows/performances) so a rating tap only re-renders surfaces of its
+  kind, and the tray paints tap feedback from optimistic local state with
+  the store commit deferred one tick.
 
 ## Overview
 
