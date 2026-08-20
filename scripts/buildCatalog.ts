@@ -13,7 +13,7 @@
 import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { ArchiveDoc, ArchiveSearchResponse } from '../src/types/archive.types';
-import { buildRawDump, buildReport, groupDocsIntoShows } from './lib/catalogBuilder';
+import { buildRawDump, buildReport, groupDocsIntoShows, serializeCatalog } from './lib/catalogBuilder';
 
 const ARCHIVE_SEARCH_URL = 'https://archive.org/advancedsearch.php';
 const START_YEAR = 1965;
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   console.log(`\nFetched ${allDocs.length} recordings total`);
 
   const showsByYear = groupDocsIntoShows(allDocs);
-  const catalogJson = JSON.stringify(showsByYear, null, 2);
+  const catalogJson = serializeCatalog(showsByYear);
   writeFileSync(APP_CATALOG, catalogJson);
   writeFileSync(API_CATALOG, catalogJson);
 

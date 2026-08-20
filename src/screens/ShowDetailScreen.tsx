@@ -29,6 +29,7 @@ import { AddToCollectionPicker } from '../components/collections/AddToCollection
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
+import { formatLabel } from '../constants/tags';
 import {
   getVenueFromShow,
   formatDateMMDDYYYY,
@@ -587,7 +588,7 @@ export function ShowDetailScreen() {
                 ) : show ? (
                   <View style={styles.sourceInfoPillWeb}>
                     <Text style={styles.webSourceText}>
-                      {displayShow.allVersions?.[0]?.source || 'Unknown source'}
+                      {formatLabel(displayShow.allVersions?.[0]?.format)}
                     </Text>
                     <View style={styles.webDownloadsWrap}>
                       <Text style={styles.webDownloadsText} numberOfLines={1}>
@@ -699,7 +700,7 @@ export function ShowDetailScreen() {
           ) : show ? (
             <View style={styles.sourceInfoPill}>
               <Text style={styles.sourceInfoText}>
-                {displayShow.allVersions?.[0]?.source || 'Unknown source'}
+                {formatLabel(displayShow.allVersions?.[0]?.format)}
               </Text>
               <Text style={styles.downloadsText}>
                 {formatDownloadsLabel(displayShow.allVersions?.[0]?.downloads)}

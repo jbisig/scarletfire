@@ -120,7 +120,6 @@ describe('recordingFromDoc', () => {
     });
     expect(v).toEqual({
       identifier: 'gd1977-05-09.123480.sbd.miller.flac16',
-      title: 'Grateful Dead Live at War Memorial Auditorium on 1977-05-09',
       downloads: 98069,
       format: 'sbd',
       lineage: ['miller', 'lowgen'],
@@ -134,7 +133,6 @@ describe('recordingFromDoc', () => {
     const v = recordingFromDoc({ identifier: 'gd1977-02-26.sbd.steve.253.shnf', title: 'x', date: '1977-02-26T00:00:00Z' });
     expect(v).toEqual({
       identifier: 'gd1977-02-26.sbd.steve.253.shnf',
-      title: 'x',
       downloads: 0,
       format: 'sbd',
       lineage: [],

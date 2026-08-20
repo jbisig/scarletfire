@@ -6,58 +6,58 @@
 import type { ArchiveDoc } from '../../src/types/archive.types';
 import type { GratefulDeadShow, LineageTag, RecordingFormat, RecordingVersion, ShowsByYear } from '../../src/types/show.types';
 import { fieldText, recordingFromDoc } from '../../src/services/recordingParser';
-
-const FORMAT_LABELS: Record<RecordingFormat, string> = {
-  sbd: 'Soundboard',
-  aud: 'Audience',
-  matrix: 'Matrix',
-  fm: 'FM Broadcast',
-  unknown: 'Unknown',
-};
-
-const LINEAGE_LABELS: Record<LineageTag, string> = {
-  betty: 'Betty Board',
-  miller: 'Charlie Miller',
-  '16track': '16-Track',
-  lowgen: 'Low Generation',
-};
+import { FORMAT_LABELS, LINEAGE_LABELS } from '../../src/constants/tags';
 
 function yearOf(doc: ArchiveDoc): string {
   return String(doc.year || doc.date.slice(0, 4));
 }
 
 export function groupDocsIntoShows(docs: ArchiveDoc[]): ShowsByYear {
-  const byDate = new Map<string, { doc: ArchiveDoc; versions: RecordingVersion[] }>();
+  const byDate = new Map<string, { docs: ArchiveDoc[]; versions: RecordingVersion[] }>();
 
   for (const doc of docs) {
     if (!doc.identifier || !doc.date) continue;
     const version = recordingFromDoc(doc);
     const existing = byDate.get(doc.date);
     if (existing) {
+      existing.docs.push(doc);
       existing.versions.push(version);
     } else {
-      byDate.set(doc.date, { doc, versions: [version] });
+      byDate.set(doc.date, { docs: [doc], versions: [version] });
     }
   }
 
   const showsByYear: ShowsByYear = {};
   const dates = Array.from(byDate.keys()).sort();
   for (const date of dates) {
-    const { doc, versions } = byDate.get(date)!;
+    const { docs: dateDocs, versions } = byDate.get(date)!;
     versions.sort((a, b) => (b.downloads || 0) - (a.downloads || 0) || a.identifier.localeCompare(b.identifier));
+    const primaryDoc = dateDocs.find(d => d.identifier === versions[0].identifier)!;
     const show: GratefulDeadShow = {
       date,
-      year: yearOf(doc),
-      venue: fieldText(doc.venue),
-      location: fieldText(doc.coverage),
+      year: yearOf(primaryDoc),
+      venue: fieldText(primaryDoc.venue),
+      location: fieldText(primaryDoc.coverage),
       versions,
       primaryIdentifier: versions[0].identifier,
-      title: versions[0].title,
+      title: primaryDoc.title,
     };
     const year = String(show.year);
     (showsByYear[year] ??= []).push(show);
   }
   return showsByYear;
+}
+
+/**
+ * Valid JSON with one show per line (years on their own lines). No 2-space
+ * indent — that alone was ~30% of the file — but still line-diffable in git.
+ */
+export function serializeCatalog(showsByYear: ShowsByYear): string {
+  const years = Object.keys(showsByYear).sort();
+  const body = years
+    .map(year => `${JSON.stringify(year)}:[\n${showsByYear[year].map(show => JSON.stringify(show)).join(',\n')}\n]`)
+    .join(',\n');
+  return `{\n${body}\n}\n`;
 }
 
 export type RawDump = Record<string, { source?: string; lineage?: string; taper?: string; transferer?: string }>;

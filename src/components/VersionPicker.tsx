@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Mod
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
+import { formatLabel } from '../constants/tags';
 import { formatDownloads } from '../utils/formatters';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
 import { webStyle } from '../utils/webStyle';
@@ -51,7 +52,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         >
           <View style={styles.optionInfo}>
             <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
-              {version.source}
+              {formatLabel(version.format)}
             </Text>
             <Text style={styles.optionDownloads}>
               {formatDownloads(version.downloads)} views
@@ -80,12 +81,12 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={`Recording source: ${currentVersion.source}`}
+        accessibilityLabel={`Recording source: ${formatLabel(currentVersion.format)}`}
         accessibilityHint="Double tap to select a different recording"
       >
         <View style={styles.selectorTopRow}>
           <Text style={webGlassStyle ? styles.sourceNameGlass : styles.sourceName}>
-            {currentVersion.source}
+            {formatLabel(currentVersion.format)}
           </Text>
           <View style={styles.viewsWrap}>
             <Text style={webGlassStyle ? styles.viewsGlass : styles.views} numberOfLines={1}>

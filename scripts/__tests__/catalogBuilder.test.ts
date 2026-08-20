@@ -1,6 +1,7 @@
-import { groupDocsIntoShows, buildRawDump, buildReport } from '../lib/catalogBuilder';
+import { groupDocsIntoShows, buildRawDump, buildReport, serializeCatalog } from '../lib/catalogBuilder';
 import sample from './fixtures/search-1977-sample.json';
 import type { ArchiveDoc } from '../../src/types/archive.types';
+import type { ShowsByYear } from '../../src/types/show.types';
 
 const docs = sample as ArchiveDoc[];
 
@@ -42,6 +43,7 @@ describe('groupDocsIntoShows', () => {
     expect(moore.taper).toBe('Jerry Moore');
     expect(moore.transferrer).toBe('Rob Berger');
     expect(moore).not.toHaveProperty('source');
+    expect(moore).not.toHaveProperty('title');
   });
 
   it('keeps a show with many recordings intact (no slice at 5)', () => {
@@ -98,5 +100,27 @@ describe('buildReport', () => {
     const r = buildReport(groupDocsIntoShows(withUnknown), withUnknown.length);
     expect(r).toContain('## Unknown format (1)');
     expect(r).toContain('gd1977-02-17.145591.Goody-pitch-fix.flac1644');
+  });
+});
+
+describe('serializeCatalog', () => {
+  const byYear: ShowsByYear = groupDocsIntoShows(docs);
+  const out = serializeCatalog(byYear);
+
+  it('round-trips through JSON.parse to the original catalog', () => {
+    expect(JSON.parse(out)).toEqual(byYear);
+  });
+
+  it('writes one show per line (plus year/bracket lines)', () => {
+    const lines = out.split('\n').filter(l => l.length > 0);
+    const showLines = lines.filter(l => l.startsWith('{"date":'));
+    expect(showLines).toHaveLength(4);
+  });
+
+  it('has no line starting with whitespace', () => {
+    const lines = out.split('\n').filter(l => l.length > 0);
+    lines.forEach(line => {
+      expect(line).not.toMatch(/^\s/);
+    });
   });
 });

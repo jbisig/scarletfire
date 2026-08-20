@@ -92,7 +92,6 @@ export function recordingFromDoc(doc: ArchiveDoc): RecordingVersion {
 
   const version: RecordingVersion = {
     identifier: doc.identifier,
-    title: doc.title,
     downloads: doc.downloads || 0,
     format: parseFormat(source, doc.identifier),
     lineage: parseLineage({ source, lineage, taper, transferer }),

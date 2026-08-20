@@ -10,10 +10,10 @@ import {
   ARCHIVE_ENDPOINTS,
   SEARCH_LIMITS,
   AUDIO_FORMATS,
-  SOURCE_TYPES,
 } from '../constants/api';
 import { normalizeSongTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
+import { recordingFromDoc } from './recordingParser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /** Persistent show-detail cache keys (AsyncStorage — proven on both platforms here). */
@@ -212,28 +212,22 @@ class ArchiveApiService {
     const showsByDate = new Map<string, {
       date: string;
       year: string;
-      venue?: string;
-      location?: string;
+      docs: ArchiveDoc[];
       versions: RecordingVersion[];
     }>();
 
     allDocs.forEach(doc => {
       const existing = showsByDate.get(doc.date);
-      const version: RecordingVersion = {
-        identifier: doc.identifier,
-        title: doc.title,
-        source: this.extractSource(doc.identifier),
-        downloads: doc.downloads || 0,
-      };
+      const version = recordingFromDoc(doc);
 
       if (existing) {
+        existing.docs.push(doc);
         existing.versions.push(version);
       } else {
         showsByDate.set(doc.date, {
           date: doc.date,
           year: doc.year || doc.date.split('-')[0],
-          venue: doc.venue,
-          location: doc.coverage,
+          docs: [doc],
           versions: [version],
         });
       }
@@ -242,19 +236,19 @@ class ArchiveApiService {
     // Convert to ShowsByYear format
     const showsByYear: ShowsByYear = {};
     showsByDate.forEach((showData) => {
-      // Sort versions by downloads (descending) and take top versions
+      // Sort versions by downloads (descending); primary = highest downloads, no cap
       const sortedVersions = showData.versions
-        .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
+        .sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+      const primaryDoc = showData.docs.find(d => d.identifier === sortedVersions[0].identifier)!;
 
       const show: GratefulDeadShow = {
         date: showData.date,
         year: showData.year,
-        venue: showData.venue,
-        location: showData.location,
+        venue: primaryDoc.venue,
+        location: primaryDoc.coverage,
         versions: sortedVersions,
         primaryIdentifier: sortedVersions[0].identifier,
-        title: sortedVersions[0].title,
+        title: primaryDoc.title,
       };
 
       if (!showsByYear[show.year]) {
@@ -313,12 +307,7 @@ class ArchiveApiService {
       // Convert to GratefulDeadShow array
       const shows: GratefulDeadShow[] = Array.from(showsByDate.values())
         .map(({ doc }) => {
-          const version: RecordingVersion = {
-            identifier: doc.identifier,
-            title: doc.title,
-            source: this.extractSource(doc.identifier),
-            downloads: doc.downloads || 0,
-          };
+          const version = recordingFromDoc(doc);
 
           return {
             date: doc.date,
@@ -339,18 +328,6 @@ class ArchiveApiService {
   }
 
   /**
-   * Extract source type from identifier (sbd, aud, matrix, etc.)
-   */
-  private extractSource(identifier: string): string {
-    const lowerIdent = identifier.toLowerCase();
-    if (lowerIdent.includes('sbd')) return SOURCE_TYPES.SOUNDBOARD;
-    if (lowerIdent.includes('aud')) return SOURCE_TYPES.AUDIENCE;
-    if (lowerIdent.includes('matrix')) return SOURCE_TYPES.MATRIX;
-    if (lowerIdent.includes('fm')) return SOURCE_TYPES.FM_BROADCAST;
-    return SOURCE_TYPES.UNKNOWN;
-  }
-
-  /**
    * Get top versions of a show by date
    */
   async getShowVersions(date: string): Promise<RecordingVersion[]> {
@@ -359,7 +336,7 @@ class ArchiveApiService {
       const query = `collection:GratefulDead AND mediatype:etree AND date:${date}`;
       const params = {
         q: query,
-        'fl[]': ['identifier', 'title', 'downloads', 'taper', 'transferer'],
+        'fl[]': ['identifier', 'title', 'downloads', 'taper', 'transferer', 'source', 'lineage', 'avg_rating', 'num_reviews'],
         rows: SEARCH_LIMITS.MAX_SHOW_VERSIONS,
         output: 'json'
       };
@@ -376,14 +353,7 @@ class ArchiveApiService {
 
       // Sort by downloads and return top versions
       return data.response.docs
-        .map(doc => ({
-          identifier: doc.identifier,
-          title: doc.title,
-          source: this.extractSource(doc.identifier),
-          downloads: doc.downloads || 0,
-          taper: doc.taper,
-          transferrer: doc.transferer, // Note: Archive.org uses "transferer"
-        }))
+        .map(doc => recordingFromDoc(doc))
         .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
         .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
     } catch (error) {

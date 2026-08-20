@@ -3,12 +3,9 @@ export type LineageTag = 'betty' | 'miller' | '16track' | 'lowgen';
 
 export interface RecordingVersion {
   identifier: string;
-  title: string;
-  /** @deprecated legacy lowercase string from the old catalog; removed once the catalog is regenerated */
-  source?: string;
   downloads?: number; // All-time download count
-  format?: RecordingFormat;     // becomes required in Task 5
-  lineage?: LineageTag[];       // becomes required in Task 5
+  format: RecordingFormat;
+  lineage: LineageTag[];
   avgRating?: number;           // Archive avg_rating, 0–5
   numReviews?: number;
   provenance?: string;          // ≤60 chars, e.g. "SBD → Master Reel → DAT"

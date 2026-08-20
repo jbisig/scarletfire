@@ -45,11 +45,3 @@ export const AUDIO_FORMATS = {
   MP3_64: '64Kbps MP3',
   MP3_128: '128Kbps MP3',
 } as const;
-
-export const SOURCE_TYPES = {
-  SOUNDBOARD: 'Soundboard',
-  AUDIENCE: 'Audience',
-  MATRIX: 'Matrix',
-  FM_BROADCAST: 'FM Broadcast',
-  UNKNOWN: 'Unknown',
-} as const;
