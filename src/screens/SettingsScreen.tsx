@@ -19,10 +19,12 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useSourcePreference, useSourcePrefs } from '../contexts/SourcePrefsContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { followService } from '../services/followService';
 import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
+import { SourcePreferencePicker } from '../components/SourcePreferencePicker';
 import { useResponsive } from '../hooks/useResponsive';
 import { logger } from '../utils/logger';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
@@ -34,6 +36,10 @@ export function SettingsScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { state: authState, logout, deleteAccount, refreshUser } = useAuth();
   const { showToast } = useToast();
+  // Device-local until sign-in, so this must be read before the auth guard
+  // below returns early — the Playback section renders in both states.
+  const sourcePreference = useSourcePreference();
+  const { setPreference } = useSourcePrefs();
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -241,13 +247,24 @@ export function SettingsScreen() {
           <Text style={styles.headerTitle}>Settings</Text>
           <View style={styles.headerSpacer} />
         </View>
-        <View style={styles.authGuardContainer}>
-          <Ionicons name="person-circle-outline" size={64} color={COLORS.textTertiary} />
-          <Text style={styles.authGuardTitle}>Sign in to access settings</Text>
-          <Text style={styles.authGuardSubtitle}>
-            Log in or create an account to manage your profile and preferences.
-          </Text>
-        </View>
+        <ScrollView>
+          <View style={styles.authGuardContainer}>
+            <Ionicons name="person-circle-outline" size={64} color={COLORS.textTertiary} />
+            <Text style={styles.authGuardTitle}>Sign in to access settings</Text>
+            <Text style={styles.authGuardSubtitle}>
+              Log in or create an account to manage your profile and preferences.
+            </Text>
+          </View>
+
+          {/* Playback Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Playback</Text>
+            <Text style={styles.toggleHint}>
+              Which recording to play when a show has more than one. Picking a recording on a show's page pins it for that show only.
+            </Text>
+            <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -464,6 +481,15 @@ export function SettingsScreen() {
             )}
           </View>
         </View>
+      </View>
+
+      {/* Playback Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Playback</Text>
+        <Text style={styles.toggleHint}>
+          Which recording to play when a show has more than one. Picking a recording on a show's page pins it for that show only.
+        </Text>
+        <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
       </View>
 
       {/* Public Profile Section */}
@@ -993,8 +1019,6 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
   },
   authGuardContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xxl,
     gap: SPACING.md,
