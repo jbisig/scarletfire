@@ -18,6 +18,10 @@ export interface ArchiveDoc {
   downloads?: number; // All-time download count
   taper?: string; // Who recorded it
   transferer?: string; // Who did the digital transfer (Archive.org spelling)
+  source?: string | string[]; // Free-text source description (taper-entered)
+  lineage?: string | string[]; // Transfer chain
+  avg_rating?: number; // 0–5
+  num_reviews?: number;
 }
 
 export interface ArchiveMetadataResponse {

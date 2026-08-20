@@ -1,10 +1,19 @@
+export type RecordingFormat = 'sbd' | 'aud' | 'matrix' | 'fm' | 'unknown';
+export type LineageTag = 'betty' | 'miller' | '16track' | 'lowgen';
+
 export interface RecordingVersion {
   identifier: string;
   title: string;
-  source?: string; // e.g., "sbd" (soundboard), "aud" (audience), "matrix"
+  /** @deprecated legacy lowercase string from the old catalog; removed once the catalog is regenerated */
+  source?: string;
   downloads?: number; // All-time download count
+  format?: RecordingFormat;     // becomes required in Task 5
+  lineage?: LineageTag[];       // becomes required in Task 5
+  avgRating?: number;           // Archive avg_rating, 0–5
+  numReviews?: number;
+  provenance?: string;          // ≤60 chars, e.g. "SBD → Master Reel → DAT"
   taper?: string; // Who recorded it
-  transferrer?: string; // Who did the digital transfer
+  transferrer?: string; // Who did the digital transfer (app spelling; Archive's field is `transferer`)
 }
 
 export interface GratefulDeadShow {
