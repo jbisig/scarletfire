@@ -175,7 +175,7 @@ Module-level store modeled on `userRatingsStore`: synchronous getters,
 ```ts
 export type SourcePreference = 'popular' | 'sbd' | 'aud' | 'matrix' | 'fm';  // default 'popular'
 
-export interface SourcePin { identifier: string; pinnedAt: number; deletedAt?: number }
+export interface SourcePin { identifier: string; format: RecordingFormat; pinnedAt: number; deletedAt?: number }
 
 export interface SourcePrefs {
   preference: SourcePreference;
@@ -184,6 +184,8 @@ export interface SourcePrefs {
   nudgeAnswers: Partial<Record<RecordingFormat, 'yes' | 'no'>>;
 }
 ```
+
+`format` is stored at pin time so the nudge needs no catalog lookup.
 
 Merge rules: `preference` — newer `preferenceSetAt` wins. `pins` — per date,
 newer of `max(pinnedAt, deletedAt)` wins; tombstoned pins are removed after
@@ -229,6 +231,11 @@ score   = W_POP·pop + W_RATING·rating + lineage     W_POP = .45, W_RATING = .3
 All constants exported as `RANK_WEIGHTS`. `rankRecordings(versions)` returns
 versions sorted by score desc, ties broken by downloads desc then identifier.
 
+The unconstrained ranker currently weighs lineage heavily enough that a
+well-rated Charlie Miller audience tape can outrank a far more downloaded
+matrix (observed on 1977-05-08); weights are tunable in `RANK_WEIGHTS` and
+are an open calibration question.
+
 ### Resolver (`src/services/recordingResolver.ts`, pure)
 
 ```ts
@@ -249,6 +256,11 @@ export interface ResolvedRecording {
 
 export function resolveRecording(show: GratefulDeadShow, ctx: ResolveContext): ResolvedRecording;
 ```
+
+Implemented as pure `recordingResolver` + store-aware `sourceSelection`
+(`resolveForDate` / `resolveShowIdentifier` / `resolveRouteIdentifier`);
+`showDetailParams` resolves the identifier for every navigation, and web
+URLs map any recording identifier back to its date.
 
 Precedence:
 
@@ -289,6 +301,10 @@ route. It is honored for that visit and disappears when they leave — no
 session state. On web it appears in the URL, so a link shared from a Betty
 Board filter opens the Betty Board. `webLinking.ts` gets the param.
 
+The `sourceConstraint` param is a comma-separated string of tag ids (e.g.
+`matrix,miller`), built by `stringifySourceConstraint` and parsed back by
+`parseSourceConstraint`.
+
 ### Play seams
 
 The `primaryIdentifier` reads at `PlayerContext.tsx` (×3),
@@ -315,7 +331,9 @@ hook wraps it for components; non-React code reads the store synchronously.
   `nudgeAnswers[F]` is unset, the picker tray shows an inline prompt
   *"Prefer matrix everywhere?"* with **Yes** / **Not now**. Yes sets
   `preference = F`; either answer is stored in `nudgeAnswers[F]` and the
-  prompt never returns for that format.
+  prompt never returns for that format. The prompt renders in the picker's
+  modal header — at the top of the scrollable options list, immediately
+  below the "Select Source" title bar, via `renderHeaderExtras()`.
 
 ---
 
