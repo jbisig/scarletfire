@@ -143,8 +143,13 @@ export const editorialPins: Record<string /* date */, string /* identifier */>;
 
 `tagFixes` corrects parse misses without a regen. `editorialPins` is the
 spec's curated "per-show pinned recording" — distinct from *user* pins
-(Part 2). A catalog accessor `getCatalogVersions(show)` applies `tagFixes` and is
-the only way app code reads a show's recordings.
+(Part 2). A catalog accessor `getCatalogVersions(date)` applies `tagFixes` and is
+the only way app code reads a show's recordings. Keyed by date so persisted
+favorites (which embed a stale `versions` array) self-heal. `RecordingVersion`
+carries no per-recording `title` (unused by any UI; dropped for bundle size)
+and the catalog is serialized one show per line without indentation —
+uncapped, the catalog is ≈4.9 MB (18.3k recordings), not the +0.7 MB this
+spec estimated before the per-show cap was removed.
 
 ### Removals
 
