@@ -23,7 +23,7 @@ import { StarRating } from '../components/StarRating';
 import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
-import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
+import { ShowDetail, Track, GratefulDeadShow, RecordingFormat } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
@@ -47,7 +47,7 @@ import { SHOW_NOTES_CITATION } from '../data/showNotes';
 import { toFavoriteSong } from '../utils/favoriteSong';
 import { showDetailParams } from '../utils/showDetailParams';
 import { haptics } from '../services/hapticService';
-import { getAllShowsSorted, findShowIndexByDate, resolveIdentifierFromDate } from '../utils/showLookup';
+import { getAllShowsSorted, findShowIndexByDate } from '../utils/showLookup';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
@@ -59,6 +59,11 @@ import { webStyle } from '../utils/webStyle';
 import { useResolvedShowRating, usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 import { resolvePerformanceRating, ResolvedRating } from '../services/ratingResolver';
 import { useRatingOverlay } from '../contexts/RatingOverlayContext';
+import { useSourcePrefs, usePendingNudge, useActivePin, useSourcePrefsVersion } from '../contexts/SourcePrefsContext';
+import { resolveForDate, resolveRouteIdentifier } from '../services/sourceSelection';
+import { rankRecordings } from '../services/recordingRanker';
+import { describeFallback, parseSourceConstraint } from '../services/recordingResolver';
+import { useToast } from '../contexts/ToastContext';
 
 // Default profile image for logged out users (web header)
 
@@ -73,7 +78,8 @@ export function ShowDetailScreen() {
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow, isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getShowPlayCount } = usePlayCounts();
 
-  const { trackTitle, venue: previewVenue, date: previewDate, location: previewLocation, classicTier: previewTier } = route.params;
+  const { trackTitle, venue: previewVenue, date: previewDate, location: previewLocation, classicTier: previewTier, sourceConstraint: sourceConstraintParam } = route.params;
+  const sessionConstraint = useMemo(() => parseSourceConstraint(sourceConstraintParam), [sourceConstraintParam]);
 
   const [show, setShow] = useState<ShowDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,6 +110,20 @@ export function ShowDetailScreen() {
   const showDate = previewDate ?? show?.date;
   const resolvedShowRating = useResolvedShowRating(showDate);
   const { openRatingOverlay } = useRatingOverlay();
+
+  // Source-preference wiring: pin/clearPin/setPreference/answerNudge drive
+  // the store; the derived hooks re-render this screen when the pin, the
+  // nudge, or the preference changes.
+  const { pin, clearPin, setPreference, answerNudge } = useSourcePrefs();
+  const pendingNudge = usePendingNudge();
+  const sourcePrefsVersion = useSourcePrefsVersion();
+  const activePin = useActivePin(showDate);
+  const { showToast } = useToast();
+  const [fallbackNote, setFallbackNote] = useState<string | null>(null);
+  // Tracks which identifier the fallback toast was last shown for, so a
+  // fallback recording that's merely re-rendered (not re-loaded) doesn't
+  // re-toast.
+  const fallbackNoticeForRef = useRef<string | null>(null);
 
   const hasSelectedFromUrl = useRef(false);
 
@@ -175,9 +195,12 @@ export function ShowDetailScreen() {
   }, [show?.date]);
 
   // Resolve identifier: if it's a date (YYYY-MM-DD), look up the primaryIdentifier
-  const resolveIdentifier = useCallback((id: string): string => {
-    return resolveIdentifierFromDate(id);
-  }, []);
+  // and run it through the source-preference resolver (pin > editorial pin >
+  // preference > popular, honoring any session-only constraint from the route).
+  const resolveIdentifier = useCallback(
+    (id: string) => resolveRouteIdentifier(id, sessionConstraint),
+    [sessionConstraint],
+  );
 
   /**
    * Mark a track as "selected" — used when the user arrives on this screen via
@@ -261,10 +284,26 @@ export function ShowDetailScreen() {
       // the recording actually loaded (identifier) is included even when
       // it's not in the catalog (brand-new Archive upload, or an old share
       // pointing at an item since delisted) — otherwise the picker had
-      // nothing to mark as current.
-      const versions = withCurrentRecording(getCatalogVersions(previewDate ?? detail.date ?? ''), identifier);
+      // nothing to mark as current. rankRecordings sorts the picker's list
+      // best-first (spec: "sorted by score").
+      const versions = withCurrentRecording(rankRecordings(getCatalogVersions(previewDate ?? detail.date ?? '')), identifier);
       setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
       setSelectedVersion(identifier);
+
+      // Explain a fallback once per loaded recording: the resolver picked
+      // this identifier because the preferred kind doesn't exist tonight.
+      const resolved = resolveForDate(previewDate ?? detail.date ?? '', { sessionConstraint, fallbackIdentifier: identifier });
+      const chosen = versions.find(v => v.identifier === identifier);
+      if (resolved?.fallback && resolved.identifier === identifier && chosen) {
+        const note = describeFallback(resolved.fallback, chosen);
+        setFallbackNote(note);
+        if (fallbackNoticeForRef.current !== identifier) {
+          fallbackNoticeForRef.current = identifier;
+          showToast(note, 'info');
+        }
+      } else {
+        setFallbackNote(null);
+      }
 
       // Warm the audio CDN connection for the first track so tapping play
       // doesn't pay the full TLS handshake + CDN cold-cache cost. Fire and
@@ -294,10 +333,41 @@ export function ShowDetailScreen() {
   };
 
   const handleVersionChange = async (versionIdentifier: string) => {
-    if (versionIdentifier !== selectedVersion) {
-      await loadShowDetail(versionIdentifier);
-    }
+    if (versionIdentifier === selectedVersion) return;
+    const date = previewDate ?? show?.date;
+    const chosen = show?.allVersions?.find(v => v.identifier === versionIdentifier);
+    if (date && chosen) pin(date, versionIdentifier, chosen.format);
+    await loadShowDetail(versionIdentifier);
   };
+
+  const handleUseDefault = async () => {
+    const date = previewDate ?? show?.date;
+    if (!date) return;
+    clearPin(date);
+    const next = resolveForDate(date, { sessionConstraint, fallbackIdentifier: selectedVersion });
+    if (next && next.identifier !== selectedVersion) await loadShowDetail(next.identifier);
+  };
+
+  // What would play with no pin — used to mark "Default" in the picker.
+  // Depends on sourcePrefsVersion so it recomputes when the preference or
+  // any pin changes (ignoreUserPin means this show's own pin doesn't matter).
+  const defaultIdentifier = useMemo(
+    () => (showDate ? resolveForDate(showDate, { sessionConstraint, ignoreUserPin: true })?.identifier : undefined),
+    [showDate, sessionConstraint, sourcePrefsVersion],
+  );
+
+  const nudge = pendingNudge
+    ? {
+        format: pendingNudge,
+        onAnswer: (accept: boolean) => {
+          answerNudge(pendingNudge, accept ? 'yes' : 'no');
+          // getPendingNudge (sourcePrefsStore) never returns 'unknown', but
+          // its declared return type is the full RecordingFormat union —
+          // narrow to what setPreference (SourcePreference) accepts.
+          if (accept) setPreference(pendingNudge as Exclude<RecordingFormat, 'unknown'>);
+        },
+      }
+    : undefined;
 
   const handleTrackPress = useCallback((track: Track) => {
     if (show) {
@@ -586,6 +656,10 @@ export function ShowDetailScreen() {
                     selectedVersion={selectedVersion}
                     onVersionChange={handleVersionChange}
                     webGlassStyle
+                    defaultIdentifier={defaultIdentifier}
+                    pinnedIdentifier={activePin?.identifier}
+                    onUseDefault={handleUseDefault}
+                    nudge={nudge}
                   />
                 ) : show ? (
                   <View style={styles.sourceInfoPillWeb}>
@@ -599,6 +673,7 @@ export function ShowDetailScreen() {
                     </View>
                   </View>
                 ) : null}
+                {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
               </View>
 
               {/* Play count pill - desktop only */}
@@ -698,6 +773,10 @@ export function ShowDetailScreen() {
               versions={displayShow.allVersions}
               selectedVersion={selectedVersion}
               onVersionChange={handleVersionChange}
+              defaultIdentifier={defaultIdentifier}
+              pinnedIdentifier={activePin?.identifier}
+              onUseDefault={handleUseDefault}
+              nudge={nudge}
             />
           ) : show ? (
             <View style={styles.sourceInfoPill}>
@@ -709,6 +788,7 @@ export function ShowDetailScreen() {
               </Text>
             </View>
           ) : null}
+          {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
         </View>
       )}
 
@@ -982,6 +1062,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     fontSize: 15,
     color: COLORS.textSecondary,
+  },
+  fallbackNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
   // Web header shell (wrapper/background/blur/nav row) now lives in <GlassHeader>.
   webInfoSection: {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RecordingVersion } from '../types/show.types';
+import { RecordingFormat, RecordingVersion } from '../types/show.types';
 import { formatLabel, lineageLabel } from '../constants/tags';
 import { formatDownloads } from '../utils/formatters';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
@@ -14,6 +14,12 @@ interface VersionPickerProps {
   onVersionChange: (identifier: string) => void;
   /** Web only: use glass-morphism pill style */
   webGlassStyle?: boolean;
+  /** Resolver's pick for this show — marked "Default" in the list. */
+  defaultIdentifier?: string;
+  /** The user's pin for this show — marked "Pinned"; enables the "Use default" row. */
+  pinnedIdentifier?: string;
+  onUseDefault?: () => void;
+  nudge?: { format: RecordingFormat; onAnswer: (accept: boolean) => void };
 }
 
 // Format taper/transferrer attribution line
@@ -30,7 +36,7 @@ const formatRating = (version: RecordingVersion): string | null => {
   return `★ ${version.avgRating.toFixed(1)}${reviews}`;
 };
 
-export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange, webGlassStyle }) {
+export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange, webGlassStyle, defaultIdentifier, pinnedIdentifier, onUseDefault, nudge }) {
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -68,6 +74,12 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                   <Text style={styles.lineageChipText}>{lineageLabel(tag)}</Text>
                 </View>
               ))}
+              {version.identifier === defaultIdentifier && (
+                <View style={[styles.lineageChip, styles.markerChip]}><Text style={styles.markerChipText}>Default</Text></View>
+              )}
+              {version.identifier === pinnedIdentifier && (
+                <View style={[styles.lineageChip, styles.markerChip]}><Text style={styles.markerChipText}>Pinned</Text></View>
+              )}
             </View>
             <Text style={styles.optionDownloads}>
               {rating ? `${rating} · ` : ''}{formatDownloads(version.downloads)} views
@@ -89,6 +101,39 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         </TouchableOpacity>
       );
     });
+
+  const renderHeaderExtras = () => (
+    <>
+      {nudge && (
+        <View style={styles.nudgeRow} testID="nudge-row">
+          <Text style={styles.nudgeText}>Prefer {formatLabel(nudge.format)} everywhere?</Text>
+          <View style={styles.nudgeButtons}>
+            <TouchableOpacity testID="nudge-yes" style={styles.nudgeButtonPrimary} onPress={() => nudge.onAnswer(true)} accessibilityRole="button">
+              <Text style={styles.nudgeButtonPrimaryText}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity testID="nudge-no" style={styles.nudgeButton} onPress={() => nudge.onAnswer(false)} accessibilityRole="button">
+              <Text style={styles.nudgeButtonText}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {pinnedIdentifier && onUseDefault && (
+        <TouchableOpacity
+          testID="version-use-default"
+          style={styles.option}
+          onPress={() => { onUseDefault(); setIsOpen(false); }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <View style={styles.optionInfo}>
+            <Text style={styles.optionSource}>Use default</Text>
+            <Text style={styles.optionDownloads}>Forget the pin for this show and follow your playback setting</Text>
+          </View>
+          <Ionicons name="refresh" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      )}
+    </>
+  );
 
   return (
     <View style={styles.container}>
@@ -145,6 +190,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                       </TouchableOpacity>
                     </View>
                     <ScrollView style={styles.optionsList}>
+                      {renderHeaderExtras()}
                       {renderVersionOptions()}
                     </ScrollView>
                   </View>
@@ -174,6 +220,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
               style={styles.optionsList}
               contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             >
+              {renderHeaderExtras()}
               {renderVersionOptions()}
             </ScrollView>
           </View>
@@ -304,6 +351,19 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
   },
+  markerChip: { borderColor: COLORS.accent },
+  markerChipText: { ...TYPOGRAPHY.caption, color: COLORS.accent, fontWeight: '600' },
+  nudgeRow: {
+    paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.cardBackground,
+  },
+  nudgeText: { ...TYPOGRAPHY.body, fontWeight: '600', marginBottom: SPACING.sm },
+  nudgeButtons: { flexDirection: 'row', gap: SPACING.sm },
+  nudgeButtonPrimary: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, borderRadius: RADIUS.lg, backgroundColor: COLORS.accent },
+  nudgeButtonPrimaryText: { ...TYPOGRAPHY.bodySmall, color: '#FFFFFF', fontWeight: '600' },
+  nudgeButton: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.border },
+  nudgeButtonText: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
   optionDownloads: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,

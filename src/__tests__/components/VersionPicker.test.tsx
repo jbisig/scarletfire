@@ -106,3 +106,32 @@ it('calls onVersionChange with the tapped identifier', async () => {
   await act(async () => { row.props.onPress(); });
   expect(onVersionChange).toHaveBeenCalledWith('gd1977-05-08.mtx.dan.29511.flac16');
 });
+
+it('marks the default and pinned recordings and offers "Use default" only when pinned', async () => {
+  const onUseDefault = jest.fn();
+  const { tree } = await render({ defaultIdentifier: VERSIONS[1].identifier, pinnedIdentifier: VERSIONS[0].identifier, onUseDefault });
+  await openPicker(tree);
+  const text = allText(tree);
+  expect(text).toContain('Default');
+  expect(text).toContain('Pinned');
+  const useDefault = tree.root.findByProps({ testID: 'version-use-default' });
+  await act(async () => { useDefault.props.onPress(); });
+  expect(onUseDefault).toHaveBeenCalledTimes(1);
+});
+
+it('hides "Use default" when nothing is pinned', async () => {
+  const { tree } = await render({ defaultIdentifier: VERSIONS[0].identifier });
+  await openPicker(tree);
+  expect(tree.root.findAllByProps({ testID: 'version-use-default' }, { deep: false })).toHaveLength(0);
+});
+
+it('shows the nudge and reports the answer', async () => {
+  const onAnswer = jest.fn();
+  const { tree } = await render({ nudge: { format: 'matrix', onAnswer } });
+  await openPicker(tree);
+  expect(allText(tree).some(t => t.includes('Prefer Matrix everywhere?'))).toBe(true);
+  await act(async () => { tree.root.findByProps({ testID: 'nudge-yes' }).props.onPress(); });
+  expect(onAnswer).toHaveBeenCalledWith(true);
+  await act(async () => { tree.root.findByProps({ testID: 'nudge-no' }).props.onPress(); });
+  expect(onAnswer).toHaveBeenCalledWith(false);
+});
