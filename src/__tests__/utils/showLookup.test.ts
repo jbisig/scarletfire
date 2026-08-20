@@ -24,4 +24,26 @@ describe('shows.json catalog integrity', () => {
 
     expect(new Set(dates).size).toBe(dates.length);
   });
+
+  it('every recording carries a parsed format and lineage array (regenerated catalog)', () => {
+    const allShowsByYear = showsData as ShowsByYear;
+    const versions = Object.values(allShowsByYear).flat().flatMap(show => show.versions);
+    const FORMATS = new Set(['sbd', 'aud', 'matrix', 'fm', 'unknown']);
+
+    expect(versions.length).toBeGreaterThan(8000);
+    for (const v of versions) {
+      expect(FORMATS.has(v.format as string)).toBe(true);
+      expect(Array.isArray(v.lineage)).toBe(true);
+      expect(v).not.toHaveProperty('source');
+    }
+  });
+
+  it('primaryIdentifier is the highest-download recording of its show', () => {
+    const allShowsByYear = showsData as ShowsByYear;
+    for (const show of Object.values(allShowsByYear).flat()) {
+      const max = Math.max(...show.versions.map(v => v.downloads ?? 0));
+      const primary = show.versions.find(v => v.identifier === show.primaryIdentifier);
+      expect(primary?.downloads ?? 0).toBe(max);
+    }
+  });
 });
