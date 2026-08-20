@@ -58,6 +58,39 @@ describe('groupDocsIntoShows', () => {
     expect(out.versions).toHaveLength(9);
     expect(out.primaryIdentifier).toBe('gd1977-05-08.sbd.v8.shnf');
   });
+
+  it('derives title/venue/location from the primary (highest-downloads) doc, not the first doc encountered for the date', () => {
+    // The first doc in array order is the LOWER-downloads recording with a
+    // different title/venue/coverage than the eventual primary. A "first
+    // doc wins" implementation would report the low-downloads doc's fields;
+    // the correct behavior looks up the doc matching the sorted primary
+    // identifier.
+    const twoDocs: ArchiveDoc[] = [
+      {
+        identifier: 'gd1977-06-09.aud.lowdownloads.shnf',
+        title: 'WRONG TITLE (low-downloads doc)',
+        date: '1977-06-09T00:00:00Z',
+        venue: 'Wrong Venue',
+        coverage: 'Wrong City, WR',
+        year: '1977',
+        downloads: 10,
+      },
+      {
+        identifier: 'gd1977-06-09.sbd.highdownloads.shnf',
+        title: 'Grateful Dead Live at Winterland on 1977-06-09',
+        date: '1977-06-09T00:00:00Z',
+        venue: 'Winterland Arena',
+        coverage: 'San Francisco, CA',
+        year: '1977',
+        downloads: 5000,
+      },
+    ];
+    const show = groupDocsIntoShows(twoDocs)['1977'][0];
+    expect(show.primaryIdentifier).toBe('gd1977-06-09.sbd.highdownloads.shnf');
+    expect(show.title).toBe('Grateful Dead Live at Winterland on 1977-06-09');
+    expect(show.venue).toBe('Winterland Arena');
+    expect(show.location).toBe('San Francisco, CA');
+  });
 });
 
 describe('buildRawDump', () => {
