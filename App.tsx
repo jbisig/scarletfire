@@ -11,6 +11,7 @@ import { FavoritesProvider } from './src/contexts/FavoritesContext';
 import { CollectionsProvider } from './src/contexts/CollectionsContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { UserRatingsProvider } from './src/contexts/UserRatingsContext';
+import { SourcePrefsProvider } from './src/contexts/SourcePrefsContext';
 import { RatingOverlayProvider } from './src/contexts/RatingOverlayContext';
 import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
@@ -113,6 +114,7 @@ export default function App() {
           <ToastProvider>
             <AuthProvider>
               <UserRatingsProvider>
+              <SourcePrefsProvider>
               <RatingOverlayProvider>
               <WebAuthModalProvider>
                 <ProfileProvider>
@@ -139,6 +141,7 @@ export default function App() {
                 </ProfileProvider>
               </WebAuthModalProvider>
               </RatingOverlayProvider>
+              </SourcePrefsProvider>
               </UserRatingsProvider>
             </AuthProvider>
           </ToastProvider>
