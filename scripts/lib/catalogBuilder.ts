@@ -13,34 +13,43 @@ function yearOf(doc: ArchiveDoc): string {
 }
 
 export function groupDocsIntoShows(docs: ArchiveDoc[]): ShowsByYear {
+  // Group on the normalized YYYY-MM-DD, not the full timestamp string, so
+  // two docs for the same calendar day with different time-of-day suffixes
+  // (e.g. "T00:00:00Z" vs "T12:00:00Z" — Archive metadata is inconsistent
+  // here) collapse into one show, matching how the app keys the catalog
+  // (`date.slice(0, 10)`, see recordingCatalog.ts).
   const byDate = new Map<string, { docs: ArchiveDoc[]; versions: RecordingVersion[] }>();
 
   for (const doc of docs) {
     if (!doc.identifier || !doc.date) continue;
     const version = recordingFromDoc(doc);
-    const existing = byDate.get(doc.date);
+    const key = doc.date.slice(0, 10);
+    const existing = byDate.get(key);
     if (existing) {
       existing.docs.push(doc);
       existing.versions.push(version);
     } else {
-      byDate.set(doc.date, { docs: [doc], versions: [version] });
+      byDate.set(key, { docs: [doc], versions: [version] });
     }
   }
 
   const showsByYear: ShowsByYear = {};
-  const dates = Array.from(byDate.keys()).sort();
-  for (const date of dates) {
-    const { docs: dateDocs, versions } = byDate.get(date)!;
+  const keys = Array.from(byDate.keys()).sort();
+  for (const key of keys) {
+    const { docs: dateDocs, versions } = byDate.get(key)!;
     versions.sort((a, b) => (b.downloads || 0) - (a.downloads || 0) || a.identifier.localeCompare(b.identifier));
     const primaryDoc = dateDocs.find(d => d.identifier === versions[0].identifier)!;
     const show: GratefulDeadShow = {
-      date,
+      // Emit the primary doc's ORIGINAL full date string (not the
+      // normalized grouping key) so output is unchanged for data where
+      // every doc on a day already shares one timestamp.
+      date: primaryDoc.date,
       year: yearOf(primaryDoc),
       venue: fieldText(primaryDoc.venue),
       location: fieldText(primaryDoc.coverage),
       versions,
       primaryIdentifier: versions[0].identifier,
-      title: primaryDoc.title,
+      title: fieldText(primaryDoc.title) ?? '',
     };
     const year = String(show.year);
     (showsByYear[year] ??= []).push(show);
@@ -58,6 +67,31 @@ export function serializeCatalog(showsByYear: ShowsByYear): string {
     .map(year => `${JSON.stringify(year)}:[\n${showsByYear[year].map(show => JSON.stringify(show)).join(',\n')}\n]`)
     .join(',\n');
   return `{\n${body}\n}\n`;
+}
+
+/** A show reduced to the three fields the Vercel functions actually read. */
+export interface SlimShow {
+  date: string;
+  primaryIdentifier: string;
+  venue?: string;
+}
+
+/**
+ * Slim twin of the app catalog for the Vercel API functions (HTML/OG
+ * lookups only need date/primaryIdentifier/venue per show). Emitting this
+ * instead of a byte-identical copy of the full catalog keeps the bundle the
+ * Edge functions inline small — see api/_lib/showLookupEdge.ts.
+ */
+export function buildSlimCatalog(showsByYear: ShowsByYear): Record<string, SlimShow[]> {
+  const slim: Record<string, SlimShow[]> = {};
+  for (const year of Object.keys(showsByYear)) {
+    slim[year] = showsByYear[year].map(show => {
+      const entry: SlimShow = { date: show.date, primaryIdentifier: show.primaryIdentifier };
+      if (show.venue !== undefined) entry.venue = show.venue;
+      return entry;
+    });
+  }
+  return slim;
 }
 
 export type RawDump = Record<string, { source?: string; lineage?: string; taper?: string; transferer?: string }>;

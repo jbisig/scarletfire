@@ -11,8 +11,14 @@
  * statement which Node ESM rejects without `with { type: 'json' }`;
  * Edge builds inline the JSON directly. See showLookup.ts for the
  * Node-side rationale.
+ *
+ * Loads shows.slim.json (date/primaryIdentifier/venue only) rather than
+ * a full twin of src/data/shows.json — the Edge bundler inlines whatever
+ * this imports directly into every /api/og/* function's bundle, and a
+ * full twin roughly tripled the gzipped size for fields these lookups
+ * never read.
  */
-import showsData from './shows.json';
+import showsData from './shows.slim.json';
 import { getClassicTier } from './classicShowsTiers.js';
 
 export interface ShowMetadata {

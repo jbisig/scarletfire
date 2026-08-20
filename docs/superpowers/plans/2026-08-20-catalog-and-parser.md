@@ -19,7 +19,7 @@
 - **Show key:** date `YYYY-MM-DD`; `shows.json` dates carry `T00:00:00Z` — always slice to 10 chars before comparing (the existing `findShowByDate` already does).
 - **`primaryIdentifier` semantics unchanged:** highest-`downloads` recording. Nothing in this PR changes which recording plays by default — that is PR 2.
 - **The app must never import `scripts/output/*`.** Those files are audit artifacts only.
-- **`src/data/shows.json` and `api/_lib/shows.json` must be byte-identical** after every regen (the existing `api/_lib/shows.json` is a hand-kept copy; the script now writes both).
+- **`api/_lib/shows.slim.json` is a slim twin of `src/data/shows.json`**, not a byte-identical copy: `date`, `primaryIdentifier`, `venue` per show — all the OG/HTML functions read. A full twin used to be inlined into the Edge OG bundle and roughly tripled its gzipped size.
 - Tests: `npx jest <path> -v`. Typecheck: `npm run typecheck`. Both must pass before each commit. `npm run typecheck:web` has ~50 pre-existing errors in `expo-file-system`'s shim — do not add new ones, ignore the existing ones.
 - Component tests use `react-test-renderer` (`TestRenderer.create` inside `act`) following `src/__tests__/components/RatingTray.test.tsx`.
 - Tests must not hit the network. The build script's network layer is isolated in one function and is not unit-tested; its pure helpers are.

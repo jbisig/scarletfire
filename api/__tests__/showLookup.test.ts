@@ -11,13 +11,13 @@ describe('lookupShowByDate', () => {
   });
 
   it('returns metadata with classicTier=null for a date that is not a classic', () => {
-    // 1965-11-01 is the first show in shows.json and is not in any classic tier list
+    // 1965-11-01 is the first show in shows.slim.json and is not in any classic tier list
     const result = lookupShowByDate('1965-11-01');
     expect(result).not.toBeNull();
     expect(result?.classicTier).toBeNull();
   });
 
-  it('returns null for a date that does not exist in shows.json', () => {
+  it('returns null for a date that does not exist in shows.slim.json', () => {
     expect(lookupShowByDate('1800-01-01')).toBeNull();
   });
 

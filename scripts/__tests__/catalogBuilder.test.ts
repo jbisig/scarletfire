@@ -1,4 +1,4 @@
-import { groupDocsIntoShows, buildRawDump, buildReport, serializeCatalog } from '../lib/catalogBuilder';
+import { groupDocsIntoShows, buildRawDump, buildReport, buildSlimCatalog, serializeCatalog } from '../lib/catalogBuilder';
 import sample from './fixtures/search-1977-sample.json';
 import type { ArchiveDoc } from '../../src/types/archive.types';
 import type { ShowsByYear } from '../../src/types/show.types';
@@ -91,6 +91,34 @@ describe('groupDocsIntoShows', () => {
     expect(show.venue).toBe('Winterland Arena');
     expect(show.location).toBe('San Francisco, CA');
   });
+
+  it('collapses two docs on the same calendar day with different time-of-day suffixes into one show', () => {
+    const sameDay: ArchiveDoc[] = [
+      {
+        identifier: 'gd1977-06-10.sbd.midnight.shnf',
+        title: 'Grateful Dead Live at Some Venue on 1977-06-10',
+        date: '1977-06-10T00:00:00Z',
+        venue: 'Some Venue',
+        coverage: 'Some City, SC',
+        year: '1977',
+        downloads: 10,
+      },
+      {
+        identifier: 'gd1977-06-10.aud.noon.shnf',
+        title: 'Grateful Dead Live at Some Venue on 1977-06-10',
+        date: '1977-06-10T12:00:00Z',
+        venue: 'Some Venue',
+        coverage: 'Some City, SC',
+        year: '1977',
+        downloads: 5,
+      },
+    ];
+    const shows1977 = groupDocsIntoShows(sameDay)['1977'];
+    expect(shows1977).toHaveLength(1);
+    expect(shows1977[0].versions).toHaveLength(2);
+    // Emitted date is the primary (highest-downloads) doc's ORIGINAL full string.
+    expect(shows1977[0].date).toBe('1977-06-10T00:00:00Z');
+  });
 });
 
 describe('buildRawDump', () => {
@@ -155,5 +183,30 @@ describe('serializeCatalog', () => {
     lines.forEach(line => {
       expect(line).not.toMatch(/^\s/);
     });
+  });
+});
+
+describe('buildSlimCatalog', () => {
+  const byYear = groupDocsIntoShows(docs);
+  const slim = buildSlimCatalog(byYear);
+
+  it('keeps the same year keys, in the same order, as the source catalog', () => {
+    expect(Object.keys(slim)).toEqual(Object.keys(byYear));
+    Object.keys(byYear).forEach(year => {
+      expect(slim[year].map(s => s.primaryIdentifier)).toEqual(byYear[year].map(s => s.primaryIdentifier));
+    });
+  });
+
+  it('each entry has exactly date, primaryIdentifier, and venue', () => {
+    slim['1977'].forEach(entry => {
+      expect(Object.keys(entry).sort()).toEqual(['date', 'primaryIdentifier', 'venue'].sort());
+    });
+  });
+
+  it('omits venue when the source show has none', () => {
+    const noVenue: ShowsByYear = { 1977: [{ date: '1977-01-01T00:00:00Z', year: '1977', versions: [], primaryIdentifier: 'gd1977-01-01.sbd.x.shnf', title: 'x' }] };
+    const slimNoVenue = buildSlimCatalog(noVenue);
+    expect(slimNoVenue['1977'][0]).toEqual({ date: '1977-01-01T00:00:00Z', primaryIdentifier: 'gd1977-01-01.sbd.x.shnf' });
+    expect(slimNoVenue['1977'][0]).not.toHaveProperty('venue');
   });
 });

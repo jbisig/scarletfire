@@ -10,7 +10,7 @@ import { WEB_ORIGIN } from '../../_lib/constants.js';
 // runtime hangs on Satori's internal image fetches. Edge uses V8 isolates
 // with Web APIs, supports fetch natively, and has sub-millisecond cold
 // starts. The tradeoff is no Node APIs (no fs, no path) — but this endpoint
-// doesn't need them; shows.json is imported via the ESM JSON-assertion path.
+// doesn't need them; shows.slim.json is imported via the ESM JSON-assertion path.
 export const config = { runtime: 'edge' };
 
 function formatDate(iso: string): string {

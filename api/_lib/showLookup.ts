@@ -1,17 +1,20 @@
 /**
  * Node.js-runtime show lookup. Used by the HTML injection endpoints.
  *
- * Loads api/_lib/shows.json via fs.readFileSync. Node ESM requires
+ * Loads api/_lib/shows.slim.json via fs.readFileSync. Node ESM requires
  * `with { type: 'json' }` for JSON imports, which Vercel's bundler
  * strips, so we can't use the bare `import` syntax here. The Edge
  * variant (api/_lib/showLookupEdge.ts) uses `import showsData from
- * './shows.json'` because Edge's esbuild bundler inlines JSON at
+ * './shows.slim.json'` because Edge's esbuild bundler inlines JSON at
  * build time.
  *
- * api/_lib/shows.json is a COPY of src/data/shows.json kept here so
- * Vercel's function bundler auto-includes it without relying on a
- * `functions.includeFiles` glob (which has proven unreliable across
- * the various Vercel CLI versions we've deployed against).
+ * api/_lib/shows.slim.json is a SLIM twin of src/data/shows.json —
+ * date/primaryIdentifier/venue only, the fields these lookups actually
+ * read — kept here so Vercel's function bundler auto-includes it
+ * without relying on a `functions.includeFiles` glob (which has proven
+ * unreliable across the various Vercel CLI versions we've deployed
+ * against). A byte-identical full twin used to live here but roughly
+ * tripled the gzipped size of the Edge OG function bundle.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -31,11 +34,11 @@ interface RawShow {
   [key: string]: unknown;
 }
 
-// Resolve api/_lib/shows.json relative to process.cwd():
-//  - Jest (project root): api/_lib/shows.json resolves correctly
-//  - Vercel Node runtime (/var/task): api/_lib/shows.json is in the
+// Resolve api/_lib/shows.slim.json relative to process.cwd():
+//  - Jest (project root): api/_lib/shows.slim.json resolves correctly
+//  - Vercel Node runtime (/var/task): api/_lib/shows.slim.json is in the
 //    function bundle alongside this file, so the relative path works
-const showsJsonPath = path.resolve(process.cwd(), 'api/_lib/shows.json');
+const showsJsonPath = path.resolve(process.cwd(), 'api/_lib/shows.slim.json');
 const showsData = JSON.parse(readFileSync(showsJsonPath, 'utf-8')) as Record<
   string,
   RawShow[]
@@ -57,8 +60,8 @@ for (const yearShows of Object.values(showsData)) {
       classicTier: getClassicTier(isoDate) ?? null,
     };
     // A given date may have multiple shows (different recordings). For the
-    // date lookup we keep the FIRST we encounter — shows.json is ordered by
-    // best-known recording per date, so this is the right pick.
+    // date lookup we keep the FIRST we encounter — shows.slim.json is
+    // ordered by best-known recording per date, so this is the right pick.
     if (!byDate.has(isoDate)) {
       byDate.set(isoDate, meta);
     }
@@ -68,7 +71,7 @@ for (const yearShows of Object.values(showsData)) {
 
 /**
  * Lookup a show by ISO date like "1977-05-08". If multiple recordings exist
- * for the date, the first one in shows.json (typically the best-known) wins.
+ * for the date, the first one in shows.slim.json (typically the best-known) wins.
  */
 export function lookupShowByDate(date: string): ShowMetadata | null {
   return byDate.get(date) ?? null;

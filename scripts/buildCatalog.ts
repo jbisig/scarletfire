@@ -5,7 +5,11 @@
  *
  * One advancedsearch request per year (1965–1995). Writes:
  *   src/data/shows.json            — the app catalog (all recordings, parsed tags)
- *   api/_lib/shows.json            — byte-identical twin for the Vercel functions
+ *   api/_lib/shows.slim.json       — slim twin for the Vercel functions (date,
+ *                                       primaryIdentifier, venue per show — all
+ *                                       the OG/HTML lookups read; a full twin
+ *                                       used to be inlined into the Edge bundle
+ *                                       and roughly tripled its size)
  *   scripts/output/recordings-raw.json — raw source/lineage/taper/transferer per
  *                                       identifier; audit only, never imported
  *   scripts/output/catalog-report.md   — format/lineage distribution and coverage
@@ -13,7 +17,7 @@
 import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { ArchiveDoc, ArchiveSearchResponse } from '../src/types/archive.types';
-import { buildRawDump, buildReport, groupDocsIntoShows, serializeCatalog } from './lib/catalogBuilder';
+import { buildRawDump, buildReport, buildSlimCatalog, groupDocsIntoShows, serializeCatalog } from './lib/catalogBuilder';
 
 const ARCHIVE_SEARCH_URL = 'https://archive.org/advancedsearch.php';
 const START_YEAR = 1965;
@@ -27,7 +31,7 @@ const FIELDS = [
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_CATALOG = path.join(ROOT, 'src/data/shows.json');
-const API_CATALOG = path.join(ROOT, 'api/_lib/shows.json');
+const SLIM_API_CATALOG = path.join(ROOT, 'api/_lib/shows.slim.json');
 const OUTPUT_DIR = path.join(ROOT, 'scripts/output');
 
 function buildQueryString(year: number): string {
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
   const showsByYear = groupDocsIntoShows(allDocs);
   const catalogJson = serializeCatalog(showsByYear);
   writeFileSync(APP_CATALOG, catalogJson);
-  writeFileSync(API_CATALOG, catalogJson);
+  writeFileSync(SLIM_API_CATALOG, JSON.stringify(buildSlimCatalog(showsByYear)));
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(path.join(OUTPUT_DIR, 'recordings-raw.json'), JSON.stringify(buildRawDump(allDocs), null, 1));
@@ -80,7 +84,7 @@ async function main(): Promise<void> {
   writeFileSync(path.join(OUTPUT_DIR, 'catalog-report.md'), report);
 
   console.log(`\nWrote ${APP_CATALOG} (${mb(APP_CATALOG)})`);
-  console.log(`Wrote ${API_CATALOG} (${mb(API_CATALOG)})`);
+  console.log(`Wrote ${SLIM_API_CATALOG} (${mb(SLIM_API_CATALOG)})`);
   console.log(`Wrote ${path.join(OUTPUT_DIR, 'recordings-raw.json')}`);
   console.log(`Wrote ${path.join(OUTPUT_DIR, 'catalog-report.md')}\n`);
   console.log(report);

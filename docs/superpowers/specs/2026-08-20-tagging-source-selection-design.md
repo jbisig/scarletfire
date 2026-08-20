@@ -78,7 +78,7 @@ script and the app and unit-tested, instead of a third copy of the regex.
 - Groups by date into `GratefulDeadShow`, sorts versions by `downloads` desc,
   sets `primaryIdentifier` = highest downloads (unchanged semantics).
 - **No per-show cap.** All recordings are baked (8,611 today).
-- Writes `src/data/shows.json` **and** `api/_lib/shows.json` in one run.
+- Writes `src/data/shows.json` and a slim `api/_lib/shows.slim.json` (`date`, `primaryIdentifier`, `venue` per show — all the OG/HTML functions read; a full twin was inlined into the Edge bundle and tripled its size).
 - Writes `scripts/output/recordings-raw.json` (committed, never imported by
   the app): `{ [identifier]: { source, lineage, taper, transferer } }`.
 - Writes `scripts/output/catalog-report.md`: format distribution, list of
