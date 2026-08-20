@@ -27,3 +27,20 @@ export function formatLabel(format: RecordingFormat | undefined): string {
 export function lineageLabel(tag: LineageTag): string {
   return LINEAGE_LABELS[tag];
 }
+
+/** A filterable/constrainable source tag: any real format or any lineage tag. */
+export type SourceTagId = Exclude<RecordingFormat, 'unknown'> | LineageTag;
+
+const SOURCE_TAG_IDS: ReadonlySet<string> = new Set<string>([
+  'sbd', 'aud', 'matrix', 'fm', 'betty', 'miller', '16track', 'lowgen',
+]);
+
+export function isSourceTagId(value: string): value is SourceTagId {
+  return SOURCE_TAG_IDS.has(value);
+}
+
+export function sourceTagLabel(id: SourceTagId): string {
+  return id in FORMAT_LABELS
+    ? FORMAT_LABELS[id as RecordingFormat]
+    : LINEAGE_LABELS[id as LineageTag];
+}

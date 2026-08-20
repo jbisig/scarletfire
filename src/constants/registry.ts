@@ -23,6 +23,8 @@ export const STORAGE_KEYS = {
   AUTH_SKIPPED: '@auth_skipped',
   /** User rating overrides for shows and song performances */
   USER_RATINGS: '@user_ratings',
+  /** Global recording preference + per-show pins + nudge answers */
+  SOURCE_PREFS: '@source_prefs',
 } as const;
 
 /**
@@ -44,6 +46,8 @@ export const SUPABASE_TABLES = {
   FAVORITES: 'favorites',
   PLAY_COUNTS: 'play_counts',
   PROFILES: 'profiles',
+  USER_RATINGS: 'user_ratings',
+  USER_PREFERENCES: 'user_preferences',
 } as const;
 
 /** Cache invalidation: 7 days */
