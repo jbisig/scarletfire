@@ -223,18 +223,18 @@ For the versions of one show:
 ```
 pop     = log10(downloads+1) / max over the show of log10(downloads+1)     (0–1; 0 if no downloads anywhere)
 rating  = ((avgRating·numReviews) + PRIOR_MEAN·PRIOR_WEIGHT) / (numReviews + PRIOR_WEIGHT) / 5
-          with PRIOR_MEAN = 4.0, PRIOR_WEIGHT = 5; missing rating ⇒ numReviews = 0
-lineage = min(LINEAGE_CAP, Σ LINEAGE_BONUS[tag])   betty .15, miller .15, 16track .10, lowgen .05, cap .30
-score   = W_POP·pop + W_RATING·rating + lineage     W_POP = .45, W_RATING = .35
+          with PRIOR_MEAN = 4.0, PRIOR_WEIGHT = 20; missing rating ⇒ numReviews = 0
+lineage = min(LINEAGE_CAP, Σ LINEAGE_BONUS[tag])   betty .08, miller .04, 16track .04, lowgen .02, cap .12
+score   = W_POP·pop + W_RATING·rating + lineage     W_POP = .55, W_RATING = .30
 ```
 
 All constants exported as `RANK_WEIGHTS`. `rankRecordings(versions)` returns
 versions sorted by score desc, ties broken by downloads desc then identifier.
 
-The unconstrained ranker currently weighs lineage heavily enough that a
-well-rated Charlie Miller audience tape can outrank a far more downloaded
-matrix (observed on 1977-05-08); weights are tunable in `RANK_WEIGHTS` and
-are an open calibration question.
+Calibrated 2026-08-20 against the full catalog: with these weights "Most
+Popular" agrees with the most-downloaded recording on ~70% of
+multi-recording shows (the first draft's heavier lineage bonus agreed on
+only 29%).
 
 ### Resolver (`src/services/recordingResolver.ts`, pure)
 

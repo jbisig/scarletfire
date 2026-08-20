@@ -25,8 +25,8 @@ describe('resolveRecording precedence', () => {
     expect(resolveRecording([], ctx())).toBeNull();
   });
 
-  it('popular = unconstrained ranker (the lineage-rich, well-rated Betty board edges the most-downloaded matrix)', () => {
-    expect(resolveRecording(SHOW, ctx())).toEqual({ identifier: 'betty', via: 'popular' });
+  it('popular = unconstrained ranker (the most-downloaded, well-reviewed matrix wins)', () => {
+    expect(resolveRecording(SHOW, ctx())).toEqual({ identifier: 'mtx', via: 'popular' });
   });
 
   it('a user pin wins over everything when it is still in the catalog', () => {
@@ -60,7 +60,7 @@ describe('resolveRecording precedence', () => {
   });
 
   it('an empty constraint object is no constraint', () => {
-    expect(resolveRecording(SHOW, ctx({ sessionConstraint: {} }))).toEqual({ identifier: 'betty', via: 'popular' });
+    expect(resolveRecording(SHOW, ctx({ sessionConstraint: {} }))).toEqual({ identifier: 'mtx', via: 'popular' });
   });
 });
 

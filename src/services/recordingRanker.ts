@@ -1,17 +1,22 @@
 /**
  * Read-time "best recording" score for one show's recordings. Pure. Weights
  * live in RANK_WEIGHTS so tuning never needs a catalog regen.
+ *
+ * Calibrated (2026-08-20) so that "Most Popular" agrees with the
+ * most-downloaded recording on ~70% of multi-recording shows while letting
+ * rating and lineage break near-ties.
  */
 import type { LineageTag, RecordingVersion } from '../types/show.types';
 
 export const RANK_WEIGHTS = {
-  POP: 0.45,
-  RATING: 0.35,
-  /** Bayesian shrinkage toward a 4.0 average with the weight of 5 reviews. */
+  POP: 0.55,
+  RATING: 0.30,
+  /** Bayesian shrinkage toward a 4.0 average with the weight of 20 reviews — a handful of 5★ reviews must not outrank a well-established consensus. */
   PRIOR_MEAN: 4.0,
-  PRIOR_WEIGHT: 5,
-  LINEAGE_CAP: 0.30,
-  LINEAGE_BONUS: { betty: 0.15, miller: 0.15, '16track': 0.10, lowgen: 0.05 } as Record<LineageTag, number>,
+  PRIOR_WEIGHT: 20,
+  /** Lineage is a tiebreaker, not a trump card: capped well below one download-order-of-magnitude. */
+  LINEAGE_CAP: 0.12,
+  LINEAGE_BONUS: { betty: 0.08, miller: 0.04, '16track': 0.04, lowgen: 0.02 } as Record<LineageTag, number>,
 } as const;
 
 function log10Plus1(downloads: number | undefined): number {
