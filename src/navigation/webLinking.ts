@@ -6,9 +6,12 @@ const identifierToDate: Record<string, string> = {};
 
 Object.values(showsData).forEach((yearShows: any[]) => { // eslint-disable-line @typescript-eslint/no-explicit-any
   yearShows.forEach(show => {
-    if (show.primaryIdentifier && show.date) {
-      identifierToDate[show.primaryIdentifier] = show.date.substring(0, 10);
-    }
+    if (!show.date) return;
+    const date = show.date.substring(0, 10);
+    if (show.primaryIdentifier) identifierToDate[show.primaryIdentifier] = date;
+    (show.versions ?? []).forEach((v: { identifier?: string }) => {
+      if (v.identifier) identifierToDate[v.identifier] = date;
+    });
   });
 });
 
@@ -52,10 +55,12 @@ const showDetailRoute = {
   parse: {
     identifier: sanitizeIdentifier,
     trackTitle: parseTrackSlug,
+    sourceConstraint: (s: string) => decodeURIComponent(s).replace(/[^a-z0-9,]/gi, ''),
   },
   stringify: {
     identifier: (id: string) => identifierToDate[id] || id,
     trackTitle: stringifyTrackTitle,
+    sourceConstraint: (s: string) => encodeURIComponent(s),
   },
 };
 

@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import { useOptionalToast } from './ToastContext';
 import { findNextShow } from '../utils/showLookup';
+import { resolveShowIdentifier } from '../services/sourceSelection';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -617,7 +618,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Fetch the show details
-      const showDetail = await archiveApi.getShowDetail(nextShow.primaryIdentifier);
+      const showDetail = await archiveApi.getShowDetail(resolveShowIdentifier(nextShow));
 
       if (showDetail.tracks.length > 0) {
         // Load the first track of the next show
@@ -1011,7 +1012,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: true });
 
       // Fetch the show details
-      const showDetail = await archiveApi.getShowDetail(show.primaryIdentifier);
+      const identifier = resolveShowIdentifier(show);
+      const showDetail = await archiveApi.getShowDetail(identifier);
 
       // `show` can come from a shuffle queue sourced from favorites or a
       // synced/shared collection (another user). Drop any tracks whose
@@ -1022,7 +1024,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (validTracks.length < showDetail.tracks.length) {
         logger.player.warn(
           `Skipped ${showDetail.tracks.length - validTracks.length} track(s) with disallowed streamUrl in show:`,
-          show.primaryIdentifier,
+          identifier,
         );
         toast?.showToast('Skipped some tracks with an invalid link', 'error');
       }
@@ -1051,7 +1053,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         await nativeAudioPlayer.play();
         dispatch({ type: 'PLAY' });
       } else {
-        logger.player.error('No tracks in show:', show.primaryIdentifier);
+        logger.player.error('No tracks in show:', identifier);
         dispatch({ type: 'SET_SHUFFLE_LOADING', isLoading: false });
       }
     } catch (error) {

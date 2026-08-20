@@ -1,4 +1,6 @@
 import { GratefulDeadShow } from '../types/show.types';
+import { resolveShowIdentifier } from '../services/sourceSelection';
+import { SourceConstraint, stringifySourceConstraint } from '../services/recordingResolver';
 
 /**
  * The full ShowDetail nav-param bundle — matches RootStackParamList['ShowDetail']
@@ -14,6 +16,8 @@ export interface ShowDetailParams {
   date: string;
   location?: string;
   classicTier?: 1 | 2 | 3;
+  /** Serialized SourceConstraint (see recordingResolver) — honoured for this visit only. */
+  sourceConstraint?: string;
 }
 
 /**
@@ -25,13 +29,18 @@ export interface ShowDetailParams {
  * first-paint header (star rating / location flashing in late). Always
  * returning the full bundle here means callers can't accidentally regress
  * that again.
+ * The identifier is the user's preferred recording for the show, not `primaryIdentifier`.
  */
-export function showDetailParams(show: GratefulDeadShow): ShowDetailParams {
+export function showDetailParams(
+  show: GratefulDeadShow,
+  opts: { sourceConstraint?: SourceConstraint } = {},
+): ShowDetailParams {
   return {
-    identifier: show.primaryIdentifier,
+    identifier: resolveShowIdentifier(show, opts.sourceConstraint),
     venue: show.venue,
     date: show.date,
     location: show.location,
     classicTier: show.classicTier,
+    sourceConstraint: stringifySourceConstraint(opts.sourceConstraint),
   };
 }

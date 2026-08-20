@@ -66,6 +66,12 @@ jest.mock('../../services/archiveApi', () => ({
   },
 }));
 
+// The resolver would consult the real bundled catalog for 1977-05-08 and
+// pick a real identifier; these tests key everything off the fake one.
+jest.mock('../../services/sourceSelection', () => ({
+  resolveShowIdentifier: (show: { primaryIdentifier: string }) => show.primaryIdentifier,
+}));
+
 import React from 'react';
 import { Text } from 'react-native';
 import { render, waitFor, act } from '@testing-library/react-native';
