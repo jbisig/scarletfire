@@ -38,7 +38,7 @@ import {
   formatCount,
 } from '../utils/formatters';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
-import { getCatalogVersions } from '../services/recordingCatalog';
+import { getCatalogVersions, withCurrentRecording } from '../services/recordingCatalog';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
@@ -257,10 +257,12 @@ export function ShowDetailScreen() {
       if (loadRequestTokenRef.current !== requestToken) return;
 
       // Recordings come from the bundled catalog (all of them, with parsed
-      // tags) — no second network request. A recording that isn't in the
-      // catalog (brand-new upload, or a date we don't carry) just gets no
-      // picker, same as a failed versions fetch did before.
-      const versions = getCatalogVersions(previewDate ?? detail.date ?? '');
+      // tags) — no second network request. withCurrentRecording guarantees
+      // the recording actually loaded (identifier) is included even when
+      // it's not in the catalog (brand-new Archive upload, or an old share
+      // pointing at an item since delisted) — otherwise the picker had
+      // nothing to mark as current.
+      const versions = withCurrentRecording(getCatalogVersions(previewDate ?? detail.date ?? ''), identifier);
       setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
       setSelectedVersion(identifier);
 
@@ -396,7 +398,11 @@ export function ShowDetailScreen() {
         year: show.year,
         venue: show.venue,
         location: show.location,
-        versions: show.allVersions || [],
+        // Only the primary (currently loaded) recording's data is ever read
+        // back out of a favorite — the catalog is looked up fresh by date
+        // for format/lineage — so persisting every version here just bloats
+        // the favorite with ~10 KB of data that's never used.
+        versions: (show.allVersions ?? []).filter(v => v.identifier === show.identifier),
         primaryIdentifier: show.identifier,
         title: show.title,
       };

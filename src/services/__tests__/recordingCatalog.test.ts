@@ -5,7 +5,7 @@ jest.mock('../../data/recordingOverrides', () => ({
   editorialPins: {},
 }));
 
-import { applyTagFixes, getCatalogVersions, resetCatalogCacheForTests } from '../recordingCatalog';
+import { applyTagFixes, getCatalogVersions, resetCatalogCacheForTests, withCurrentRecording } from '../recordingCatalog';
 import { findShowByDate } from '../../utils/showLookup';
 import type { RecordingVersion } from '../../types/show.types';
 
@@ -40,5 +40,33 @@ describe('getCatalogVersions', () => {
 
   it('returns [] for a date with no show', () => {
     expect(getCatalogVersions('2050-01-01')).toEqual([]);
+  });
+});
+
+describe('withCurrentRecording', () => {
+  it('returns the same array instance when the identifier is already present', () => {
+    const versions: RecordingVersion[] = [
+      { identifier: 'gd1977-05-08.sbd.hicks.4982.sbeok.shnf', format: 'sbd', lineage: [] },
+      { identifier: 'gd1977-05-08.mtx.dan.29511.flac16', format: 'matrix', lineage: [] },
+    ];
+    expect(withCurrentRecording(versions, 'gd1977-05-08.mtx.dan.29511.flac16')).toBe(versions);
+  });
+
+  it('prepends a stub with an identifier-derived format and empty lineage when absent', () => {
+    const versions: RecordingVersion[] = [
+      { identifier: 'gd1977-05-08.sbd.hicks.4982.sbeok.shnf', format: 'sbd', lineage: [] },
+    ];
+    const result = withCurrentRecording(versions, 'gd1977-05-08.aud.newupload.flac16');
+    expect(result).toEqual([
+      { identifier: 'gd1977-05-08.aud.newupload.flac16', format: 'aud', lineage: [] },
+      ...versions,
+    ]);
+  });
+
+  it('works on an empty array', () => {
+    const result = withCurrentRecording([], 'gd1977-05-08.aud.newupload.flac16');
+    expect(result).toEqual([
+      { identifier: 'gd1977-05-08.aud.newupload.flac16', format: 'aud', lineage: [] },
+    ]);
   });
 });

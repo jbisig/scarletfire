@@ -53,9 +53,10 @@ const render = async (props: Partial<React.ComponentProps<typeof VersionPicker>>
   return { tree, onVersionChange };
 };
 
-// findByProps / findAllByProps match non-deep (a TouchableOpacity is matched
-// once, not again via the host View it renders) — the same reason the
-// RatingTray tests use them. Avoid root.findAll(predicate) with testIDs.
+// `findByProps` is non-deep; `findAllByProps` is deep unless given
+// `{ deep: false }` — a `TouchableOpacity` forwards `testID` to nested
+// hosts, so pass `{ deep: false }` when asserting a count. Same reason
+// the RatingTray tests use `findByProps`.
 const openPicker = async (tree: TestRenderer.ReactTestRenderer) => {
   const trigger = tree.root.findAllByProps({ accessibilityRole: 'button' })[0];
   await act(async () => { trigger.props.onPress(); });
