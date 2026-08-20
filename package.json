@@ -20,6 +20,7 @@
     "submit:ios": "eas submit --platform ios",
     "submit:android": "eas submit --platform android",
     "generate:videos": "node scripts/generateVideoSources.js",
+    "build:catalog": "tsx scripts/buildCatalog.ts",
     "export:web": "npx expo export --platform web",
     "electron:dev": "npm run export:web && electron electron/main.js",
     "electron:start": "electron electron/main.js",
@@ -109,6 +110,7 @@
     "jest-expo": "~54.0.0",
     "jsonwebtoken": "^9.0.3",
     "react-test-renderer": "19.1.0",
+    "tsx": "^4.23.12",
     "typescript": "~5.9.2"
   },
   "private": true

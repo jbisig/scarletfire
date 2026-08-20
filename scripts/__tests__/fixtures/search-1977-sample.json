@@ -1,0 +1,83 @@
+[
+  {
+    "identifier": "gd1977-05-09.123480.sbd.miller.flac16",
+    "title": "Grateful Dead Live at War Memorial Auditorium on 1977-05-09",
+    "date": "1977-05-09T00:00:00Z",
+    "venue": "War Memorial Auditorium",
+    "coverage": "Buffalo, NY",
+    "year": "1977",
+    "downloads": 98069,
+    "source": "SBD -> Master Reel (DBX-1 Encoded) -> Sony PCM501ES (44.055k)",
+    "lineage": "Sony PCM501ES (Analog Out) -> DBX-1 Decoder> Sony PCM501ES (Analog In) ->Dat (48k/Analog I",
+    "transferer": "Charlie Miller",
+    "avg_rating": 4.89,
+    "num_reviews": 9
+  },
+  {
+    "identifier": "gd1977-04-23.mtx.seamons.97596.sbeok.flac16",
+    "title": "Grateful Dead Live at Springfield Civic Center Arena on 1977-04-23",
+    "date": "1977-04-23T00:00:00Z",
+    "venue": "Springfield Civic Center Arena",
+    "coverage": "Springfield, MA",
+    "year": "1977",
+    "downloads": 175853,
+    "source": "Matrix mix (SBD/AUD)",
+    "transferer": "Hunter Seamons",
+    "avg_rating": 4.89,
+    "num_reviews": 36
+  },
+  {
+    "identifier": "gd1977-04-23.sbd.miller.88401.sbeok.flac16",
+    "title": "Grateful Dead Live at Springfield Civic Center Arena on 1977-04-23",
+    "date": "1977-04-23T00:00:00Z",
+    "venue": "Springfield Civic Center Arena",
+    "coverage": "Springfield, MA",
+    "year": "1977",
+    "downloads": 77417,
+    "source": "SBD -> Master Reel -> Dat -> CD D",
+    "lineage": "CD -> Samplitude Professional v9.11 -> FLAC",
+    "transferer": "Charlie Miller",
+    "avg_rating": 4.4,
+    "num_reviews": 18
+  },
+  {
+    "identifier": "gd1977-04-27.167535.fm.glassberg.smith.clugston.flac2496",
+    "title": "Grateful Dead Live at Capitol Theatre on 1977-04-27",
+    "date": "1977-04-27T00:00:00Z",
+    "venue": "Capitol Theatre",
+    "coverage": "Passaic, NJ",
+    "year": "1977",
+    "downloads": 1661,
+    "source": "Barry Glassberg's Master FM Reel (Pioneer TX9500 tuner > TEAC A3300S Reel @ 7 1/2 ips, Max",
+    "lineage": "1st Generation Reel (Technics RS-1506) > Tascam DA-3000 (DSF 1-bit/5.6 MHz) > dBpoweramp 2",
+    "taper": "Barry Glassberg",
+    "transferer": "Matt Smith;Scott Clugston",
+    "avg_rating": 2,
+    "num_reviews": 1
+  },
+  {
+    "identifier": "gd1977-04-27.fm.moore.berger.98429.flac24",
+    "title": "Grateful Dead Live at Capitol Theatre on 1977-04-27",
+    "date": "1977-04-27T00:00:00Z",
+    "venue": "Capitol Theatre",
+    "coverage": "Passaic, NJ",
+    "year": "1977",
+    "downloads": 24239,
+    "source": "FM reel master",
+    "lineage": "wnew simulcast>10.5\" reel @ 7.5 ips, dolby b technics rs-1506>sony nr-335>hd-p2 24/48>cd w",
+    "taper": "Jerry Moore",
+    "transferer": "Rob Berger",
+    "avg_rating": 5,
+    "num_reviews": 2
+  },
+  {
+    "identifier": "gd1977-02-26.sbd.steve.253.shnf",
+    "title": "Grateful Dead Live at Swing Auditorium on 1977-02-26",
+    "date": "1977-02-26T00:00:00Z",
+    "venue": "Swing Auditorium",
+    "coverage": "San Bernardino, CA",
+    "downloads": 36721,
+    "avg_rating": 4.8,
+    "num_reviews": 12
+  }
+]
