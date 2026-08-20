@@ -22,8 +22,6 @@ export const SEARCH_LIMITS = {
   MAX_SHOWS: 50000,
   TOP_SHOWS_COUNT: 365,
   TOP_SHOWS_MULTIPLIER: 10,
-  MAX_VERSIONS_PER_SHOW: 5,
-  MAX_SHOW_VERSIONS: 100,
   /** Sample size when fetching shows for song index generation */
   SONG_INDEX_SAMPLE: 5000,
   /** Number of top shows to process for song data */

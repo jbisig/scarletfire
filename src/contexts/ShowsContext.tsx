@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
-import { ShowsByYear, ShowDetail, RecordingVersion } from '../types/show.types';
+import { ShowsByYear, ShowDetail } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import { networkPriority } from '../services/networkPriority';
 import showsData from '../data/shows.json';
@@ -10,7 +10,6 @@ interface ShowsContextType {
   isLoading: boolean;
   error: string | null;
   getShowDetail: (identifier: string) => Promise<ShowDetail>;
-  getShowVersions: (date: string) => Promise<RecordingVersion[]>;
 }
 
 const ShowsContext = createContext<ShowsContextType | undefined>(undefined);
@@ -66,10 +65,6 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
     return requestPromise;
   }, []);
 
-  const getShowVersions = useCallback(async (date: string): Promise<RecordingVersion[]> => {
-    return archiveApi.getShowVersions(date);
-  }, []);
-
   // Memoize the provider value so consumers only re-render when one of these
   // (already-stable) members actually changes, instead of on every render of
   // ShowsProvider (e.g. when something above it in the tree re-renders).
@@ -78,8 +73,7 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     error,
     getShowDetail,
-    getShowVersions,
-  }), [showsByYear, isLoading, error, getShowDetail, getShowVersions]);
+  }), [showsByYear, isLoading, error, getShowDetail]);
 
   return (
     <ShowsContext.Provider value={contextValue}>

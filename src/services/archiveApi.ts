@@ -328,42 +328,6 @@ class ArchiveApiService {
   }
 
   /**
-   * Get top versions of a show by date
-   */
-  async getShowVersions(date: string): Promise<RecordingVersion[]> {
-    try {
-      if (!/^\d{4}-\d{2}-\d{2}/.test(date)) return [];
-      const query = `collection:GratefulDead AND mediatype:etree AND date:${date}`;
-      const params = {
-        q: query,
-        'fl[]': ['identifier', 'title', 'downloads', 'taper', 'transferer', 'source', 'lineage', 'avg_rating', 'num_reviews'],
-        rows: SEARCH_LIMITS.MAX_SHOW_VERSIONS,
-        output: 'json'
-      };
-
-      const queryString = this.buildQueryString(params);
-      const response = await this.fetchWithTimeout(`${ARCHIVE_ENDPOINTS.SEARCH}?${queryString}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data: ArchiveSearchResponse = await response.json();
-      if (!Array.isArray(data?.response?.docs)) return [];
-
-      // Sort by downloads and return top versions
-      return data.response.docs
-        .map(doc => recordingFromDoc(doc))
-        .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW);
-    } catch (error) {
-      // Return empty array on error to allow graceful degradation
-      logger.api.error('getShowVersions failed', error);
-      return [];
-    }
-  }
-
-  /**
    * Parse duration from various formats (MM:SS, HH:MM:SS, or seconds)
    */
   private parseDuration(lengthStr: string | undefined): number | undefined {

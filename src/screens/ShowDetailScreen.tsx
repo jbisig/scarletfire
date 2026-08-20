@@ -23,7 +23,7 @@ import { StarRating } from '../components/StarRating';
 import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
-import { ShowDetail, Track, GratefulDeadShow, RecordingVersion } from '../types/show.types';
+import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
@@ -38,6 +38,7 @@ import {
   formatCount,
 } from '../utils/formatters';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { getCatalogVersions } from '../services/recordingCatalog';
 import { normalizeTrackTitle } from '../utils/titleNormalization';
 import { matchTrackBySlug } from '../utils/trackMatching';
 import { SIMILARITY_THRESHOLDS } from '../constants/thresholds';
@@ -67,7 +68,7 @@ type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDet
 export function ShowDetailScreen() {
   const route = useRoute<ShowDetailRouteProp>();
   const navigation = useNavigation<ShowDetailNavigationProp>();
-  const { getShowDetail, getShowVersions, showsByYear } = useShows();
+  const { getShowDetail, showsByYear } = useShows();
   const { state: playerState, loadTrack } = usePlayer();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow, isSongFavorite, addFavoriteSong, removeFavoriteSong } = useFavorites();
   const { getShowPlayCount } = usePlayCounts();
@@ -249,22 +250,17 @@ export function ShowDetailScreen() {
     setError(null);
 
     try {
-      // Fetch show detail and all versions in parallel so the source picker
-      // and tracklist render together in one commit — no layout shift from
-      // versions loading after the initial render. If previewDate is
-      // available (navigation from a list), we can start the versions
-      // request immediately without waiting for the detail fetch.
-      const detailPromise = getShowDetail(identifier);
-      const versionsPromise: Promise<RecordingVersion[]> = previewDate
-        ? getShowVersions(previewDate)
-        : detailPromise.then(d => (d.date ? getShowVersions(d.date) : []));
-
-      const [detail, versions] = await Promise.all([detailPromise, versionsPromise]);
+      const detail = await getShowDetail(identifier);
 
       // A newer loadShowDetail call started (and thus advanced the token)
       // while this one was in flight — this response is stale, discard it.
       if (loadRequestTokenRef.current !== requestToken) return;
 
+      // Recordings come from the bundled catalog (all of them, with parsed
+      // tags) — no second network request. A recording that isn't in the
+      // catalog (brand-new upload, or a date we don't carry) just gets no
+      // picker, same as a failed versions fetch did before.
+      const versions = getCatalogVersions(previewDate ?? detail.date ?? '');
       setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
       setSelectedVersion(identifier);
 

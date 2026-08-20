@@ -42,7 +42,7 @@ describe('archiveApi.getShowsByYear', () => {
     ];
 
     // Date B: seven docs with distinct download counts, none matching the
-    // per-show version cap that used to apply (SEARCH_LIMITS.MAX_VERSIONS_PER_SHOW = 5).
+    // per-show version cap that used to apply (the old runtime search capped at 5).
     const dateB: ArchiveDoc[] = Array.from({ length: 7 }, (_, i) => ({
       identifier: `gd1978-05-08.sbd.v${i}.flac16`,
       title: 'Grateful Dead Live at Uptown Theater on 1978-05-08',
