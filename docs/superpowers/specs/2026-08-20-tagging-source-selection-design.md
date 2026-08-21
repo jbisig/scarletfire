@@ -399,7 +399,9 @@ Exhaustive, single-valued, date-bounded. Replaces both existing taxonomies:
 Ranges are contiguous so every catalog date maps to exactly one era (tested).
 `eraForDate(date)` and `eraForYear(year)` (era covering the most shows of
 that year) are exported; the Years section of the filter tray groups years by
-`eraForYear`.
+`eraForYear`. `eraForYear` groups the Years section by the era holding most
+of that year's catalog shows; the two older era lists (`FILTER_ERAS`,
+`classicShows.ERAS`) and `EraPicker` were removed.
 
 ### Venue Type (`src/data/venueTypes.ts`)
 
@@ -412,6 +414,10 @@ Stadium / Amphitheater — mutually exclusive) plus derived modifiers.
   string comes from `getVenueFromShow()`. Unmapped venues get no physical
   tag and are listed in the build report.
 - **International**: derived — `coverage`/location not in the United States.
+  International derives from the curated venue flag in
+  `scripts/data/venue-types.tsv` (the location regex misfires on
+  spelled-out states and 'Unknown'); the map covers 613 normalized venues,
+  472 with a physical type.
 - **Festival**: curated date list (`festivalDates`).
 - **Residency**: derived — a run of ≥4 shows at the same normalized venue
   within any 10-day window; every show in the run is tagged. The report lists
@@ -426,7 +432,13 @@ export const acousticSetDates: Array<{ date: string; source: string }>;
 
 Researched show-by-show (Jerrybase, DeadLists, setlist databases, the
 Compendium notes in `showNotes.ts`); `source` cites where each entry came
-from. No date-window inference.
+from. No date-window inference. Entries carry `confidence`; only
+`high`/`medium` are active, `low` rows are exported as `UNVERIFIED_*` and
+never resolved. Research:
+`docs/superpowers/research/2026-08-20-part3-curated-tags.md`. The
+research-backed Pedal Steel list includes four 1987 Dylan-&-the-Dead nights
+where Garcia played steel in the Dylan segment — flagged for owner review
+against the "during the Dead's set" wording.
 
 ### Notable (`src/data/notableShows.ts`)
 
@@ -471,6 +483,12 @@ from. No date-window inference.
   `webLinking.ts` parses/serializes `tags` and drops `series`.
 - Navigating to a show from a list with any `source`-category tags selected
   passes them as `sourceConstraint` (Part 2).
+- Counts are computed against the dates surviving the Years filter within
+  the caller's `showsByYear` (Favorites passes its own).
+- Year filtering is retained and rendered below the five tag sections
+  (owner instruction 2026-08-20); `parseTagsParam`/`stringifyTagsParam` live
+  in a dependency-free `src/navigation/tagsParam.ts` so native never loads
+  the web linking config.
 
 ### Badges
 
@@ -479,6 +497,49 @@ from. No date-window inference.
   `officialReleases.ts`. Replaces the Series filter's job.
 - The show screen's recording list shows each recording's format and lineage
   tags (Part 2 VersionPicker rows).
+- Implemented by extending the existing `OfficialReleaseBadge` (`alsoOn`
+  mode) rather than a new component.
+
+### Measured coverage
+
+Catalog coverage (2073 shows), via `getTagCoverage()`:
+
+| Tag | Shows | % |
+|---|---|---|
+| primal | 56 | 3 |
+| livedead | 152 | 7 |
+| americana | 191 | 9 |
+| europe72 | 77 | 4 |
+| wallofsound | 116 | 6 |
+| hiatus | 27 | 1 |
+| return | 42 | 2 |
+| peakkeith | 172 | 8 |
+| brent | 851 | 41 |
+| vincebruce | 137 | 7 |
+| finalyears | 252 | 12 |
+| sbd | 1820 | 88 |
+| aud | 1600 | 77 |
+| matrix | 776 | 37 |
+| fm | 94 | 5 |
+| betty | 68 | 3 |
+| miller | 1597 | 77 |
+| 16track | 19 | 1 |
+| lowgen | 1893 | 91 |
+| theater | 424 | 20 |
+| arena | 1023 | 49 |
+| stadium | 143 | 7 |
+| amphitheater | 251 | 12 |
+| festival | 16 | 1 |
+| international | 82 | 4 |
+| residency | 281 | 14 |
+| pedalsteel | 27 | 1 |
+| acousticset | 68 | 3 |
+| classic | 23 | 1 |
+| historic | 36 | 2 |
+| guest | 106 | 5 |
+
+Lowest-selectivity tags: Low Generation 91%, Soundboard 88%,
+Audience/Charlie Miller 77% — kept per the no-pruning decision.
 
 ---
 
