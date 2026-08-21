@@ -60,7 +60,7 @@ export function TagCategorySection({ category, tags, selected, counts, expanded,
 }
 
 const styles = StyleSheet.create({
-  section: { marginBottom: SPACING.lg },
+  section: { marginBottom: SPACING.lg, paddingHorizontal: SPACING.xl },
   header: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm },
   title: { ...TYPOGRAPHY.label, fontWeight: '600', color: COLORS.textSecondary, textTransform: 'uppercase', letterSpacing: 1 },
   activeChip: { marginLeft: SPACING.sm, paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: RADIUS.full, backgroundColor: COLORS.accent },

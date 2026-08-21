@@ -28,6 +28,7 @@ import { ShuffleSongItem } from '../types/player.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { ShowsByYear } from '../types/show.types';
 import { showDetailParams } from '../utils/showDetailParams';
+import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -218,6 +219,12 @@ export function FavoritesScreen() {
       });
     }
 
+    // Filter by selected tags
+    if (appliedFilters.selectedTags.length > 0) {
+      const keep = makeShowTagFilter(appliedFilters.selectedTags);
+      songs = songs.filter(song => keep(song.showDate));
+    }
+
     // Filter by search query
     if (debouncedSearchQuery.trim()) {
       const lowerQuery = debouncedSearchQuery.toLowerCase();
@@ -267,6 +274,12 @@ export function FavoritesScreen() {
         const showYear = show.date.substring(0, 4);
         return appliedFilters.selectedYears.includes(showYear);
       });
+    }
+
+    // Filter by selected tags
+    if (appliedFilters.selectedTags.length > 0) {
+      const keep = makeShowTagFilter(appliedFilters.selectedTags);
+      shows = shows.filter(show => keep(show.date));
     }
 
     // Filter by search query
@@ -321,8 +334,10 @@ export function FavoritesScreen() {
   }, [libraryEntries, debouncedSearchQuery]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', showDetailParams(show));
-  }, [navigation]);
+    navigation.navigate('ShowDetail', showDetailParams(show, {
+      sourceConstraint: sourceConstraintFromTags(appliedFilters.selectedTags),
+    }));
+  }, [navigation, appliedFilters.selectedTags]);
 
   const handleSongPress = useCallback((song: FavoriteSong) => {
     playSong(song.showIdentifier, song.trackId);

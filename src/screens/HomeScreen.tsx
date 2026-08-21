@@ -26,6 +26,8 @@ import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
+import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
+import { parseTagsParam, stringifyTagsParam } from '../navigation/webLinking';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown } from '../components/SortDropdown';
@@ -141,7 +143,7 @@ export function HomeScreen() {
     const urlYears = route.params?.years;
     return {
       selectedYears: urlYears ? urlYears.split(',').filter(Boolean) : [],
-      selectedTags: [],
+      selectedTags: parseTagsParam(route.params?.tags),
     };
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,6 +162,7 @@ export function HomeScreen() {
       years: appliedFilters.selectedYears.length > 0
         ? appliedFilters.selectedYears.join(',')
         : undefined,
+      tags: stringifyTagsParam(appliedFilters.selectedTags),
     };
     navigation.setParams(params as any); // eslint-disable-line @typescript-eslint/no-explicit-any
   }, [sortType, appliedFilters, navigation]);
@@ -200,8 +203,8 @@ export function HomeScreen() {
 
   // Cascading filter computation — each stage only recomputes when its deps change
 
-  // Stage 1: Filter by year (recomputes only when filters change, not on search)
-  const yearAndSeriesFiltered = useMemo(() => {
+  // Stage 1: Filter by year and tags (recomputes only when filters change, not on search)
+  const yearAndTagFiltered = useMemo(() => {
     if (!showsByYear) return [];
 
     // Determine which years to show based on filters
@@ -214,23 +217,26 @@ export function HomeScreen() {
 
     yearsToShow = yearsToShow.sort((a, b) => parseInt(a) - parseInt(b));
 
+    const keep = makeShowTagFilter(appliedFilters.selectedTags);
     return yearsToShow.map(year => {
-      const shows = showsByYear[year];
+      const shows = appliedFilters.selectedTags.length > 0
+        ? showsByYear[year].filter(s => keep(s.date))
+        : showsByYear[year];
       return { title: year, data: shows };
     }).filter(section => section.data.length > 0);
   }, [showsByYear, appliedFilters, availableYears]);
 
-  // Stage 2: Apply search filter on top of year/series results
+  // Stage 2: Apply search filter on top of year/tag results
   const sections = useMemo(() => {
-    if (!debouncedSearchQuery.trim()) return yearAndSeriesFiltered;
+    if (!debouncedSearchQuery.trim()) return yearAndTagFiltered;
 
-    return yearAndSeriesFiltered
+    return yearAndTagFiltered
       .map(section => ({
         title: section.title,
         data: filterShows(section.data, debouncedSearchQuery),
       }))
       .filter(section => section.data.length > 0);
-  }, [yearAndSeriesFiltered, debouncedSearchQuery]);
+  }, [yearAndTagFiltered, debouncedSearchQuery]);
 
   // Flatten and sort shows for non-default sort types
   const sortedFlatShows = useMemo(() => {
@@ -266,8 +272,10 @@ export function HomeScreen() {
   }, [appliedFilters, debouncedSearchQuery, sortType]);
 
   const handleShowPress = useCallback((show: GratefulDeadShow) => {
-    navigation.navigate('ShowDetail', showDetailParams(show));
-  }, [navigation]);
+    navigation.navigate('ShowDetail', showDetailParams(show, {
+      sourceConstraint: sourceConstraintFromTags(appliedFilters.selectedTags),
+    }));
+  }, [navigation, appliedFilters.selectedTags]);
 
   const handleApplyFilters = useCallback((filters: ShowsFilterState) => {
     setAppliedFilters(filters);

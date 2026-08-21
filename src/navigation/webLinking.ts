@@ -1,5 +1,6 @@
 import { LinkingOptions } from '@react-navigation/native';
 import showsData from '../data/shows.json';
+import { isTagId, TagId } from '../constants/tags';
 
 // Build static identifier → date lookup for clean URLs
 const identifierToDate: Record<string, string> = {};
@@ -76,19 +77,45 @@ const showDetailRoute = {
   },
 };
 
+/**
+ * Parse a `?tags=` query value into a sanitized, deduped TagId list. A
+ * malformed percent-escape (e.g. a bare "%" from a hand-edited or truncated
+ * URL) throws URIError — treated as "no tags" rather than crashing the
+ * route parse (same shape as showDetailRoute's sourceConstraint parser).
+ */
+export function parseTagsParam(raw: string | undefined): TagId[] {
+  if (!raw) return [];
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch (err) {
+    if (err instanceof URIError) return [];
+    throw err;
+  }
+  const out: TagId[] = [];
+  for (const token of decoded.split(',').map(t => t.trim().toLowerCase())) {
+    if (isTagId(token) && !out.includes(token)) out.push(token);
+  }
+  return out;
+}
+
+export function stringifyTagsParam(tags: TagId[]): string | undefined {
+  return tags.length ? tags.join(',') : undefined;
+}
+
 // Home (Shows) route: sort/filter state as query params
 const homeParseConfig = {
   sort: (sort: string) => sort,
   years: (years: string) => years,
-  series: (series: string) => decodeURIComponent(series),
+  tags: (tags: string) => parseTagsParam(tags).join(','),
 };
 const homeStringifyConfig = {
   sort: (sort: string) => sort,
   years: (years: string) => years,
-  series: (series: string) => encodeURIComponent(series),
+  tags: (tags: string) => encodeURIComponent(tags),
 };
 
-const prefixes = [typeof window !== 'undefined' ? window.location.origin : ''];
+const prefixes = [typeof window !== 'undefined' && window.location ? window.location.origin : ''];
 
 // Desktop: flat Stack navigator (no tab nesting)
 export const desktopWebLinking: LinkingOptions<any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
