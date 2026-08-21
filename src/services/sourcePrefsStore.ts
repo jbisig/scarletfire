@@ -19,6 +19,9 @@ export interface SourcePin {
 
 export type NudgeAnswer = 'yes' | 'no';
 
+/** getPendingNudge never offers 'unknown' as a preference — see its guard below. */
+export type NudgeFormat = Exclude<RecordingFormat, 'unknown'>;
+
 export interface SourcePrefs {
   preference: SourcePreference;
   preferenceSetAt: number;
@@ -101,7 +104,7 @@ export function answerNudge(format: RecordingFormat, answer: NudgeAnswer): void 
  * The format to offer as the new global preference, or null. Looks at the
  * three most recent ACTIVE pins only.
  */
-export function getPendingNudge(input: SourcePrefs = prefs): RecordingFormat | null {
+export function getPendingNudge(input: SourcePrefs = prefs): NudgeFormat | null {
   const recent = Object.values(input.pins)
     .filter(isPinActive)
     .sort((a, b) => b.pinnedAt - a.pinnedAt)

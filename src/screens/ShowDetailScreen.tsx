@@ -23,7 +23,7 @@ import { StarRating } from '../components/StarRating';
 import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
-import { ShowDetail, Track, GratefulDeadShow, RecordingFormat } from '../types/show.types';
+import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
@@ -271,7 +271,12 @@ export function ShowDetailScreen() {
     }
   }, [trackTitle, show, selectTrack]);
 
-  const loadShowDetail = async (identifier: string) => {
+  // Returns true only when THIS call's token won the race and setShow ran —
+  // false when a newer call superseded it (stale response) or the load
+  // failed. Callers that pin a version (handleVersionChange) must wait for
+  // `true` before pinning, otherwise a recording that fails to load gets
+  // pinned forever with no way to reach it again.
+  const loadShowDetail = async (identifier: string): Promise<boolean> => {
     // Claim a new generation token for this call. Any earlier in-flight call
     // whose response arrives after this point will see a mismatch below and
     // no-op instead of clobbering state with stale data.
@@ -284,7 +289,7 @@ export function ShowDetailScreen() {
 
       // A newer loadShowDetail call started (and thus advanced the token)
       // while this one was in flight — this response is stale, discard it.
-      if (loadRequestTokenRef.current !== requestToken) return;
+      if (loadRequestTokenRef.current !== requestToken) return false;
 
       // Recordings come from the bundled catalog (all of them, with parsed
       // tags) — no second network request. withCurrentRecording guarantees
@@ -331,9 +336,11 @@ export function ShowDetailScreen() {
           paddingLeft: 10,
         },
       });
+      return true;
     } catch (err) {
-      if (loadRequestTokenRef.current !== requestToken) return;
+      if (loadRequestTokenRef.current !== requestToken) return false;
       setError(err instanceof Error ? err.message : 'Failed to load show');
+      return false;
     } finally {
       if (loadRequestTokenRef.current === requestToken) setIsLoading(false);
     }
@@ -343,8 +350,12 @@ export function ShowDetailScreen() {
     if (versionIdentifier === selectedVersion) return;
     const date = previewDate ?? show?.date;
     const chosen = show?.allVersions?.find(v => v.identifier === versionIdentifier);
-    if (date && chosen) pin(date, versionIdentifier, chosen.format);
-    await loadShowDetail(versionIdentifier);
+    // Pin only after the recording actually loads — otherwise a failing
+    // recording gets pinned forever with no way for the user to reach a
+    // working one again (the pin would keep re-selecting the same broken
+    // identifier on every future visit to this date).
+    const ok = await loadShowDetail(versionIdentifier);
+    if (ok && date && chosen) pin(date, versionIdentifier, chosen.format);
   };
 
   const handleUseDefault = async () => {
@@ -368,10 +379,10 @@ export function ShowDetailScreen() {
         format: pendingNudge,
         onAnswer: (accept: boolean) => {
           answerNudge(pendingNudge, accept ? 'yes' : 'no');
-          // getPendingNudge (sourcePrefsStore) never returns 'unknown', but
-          // its declared return type is the full RecordingFormat union —
-          // narrow to what setPreference (SourcePreference) accepts.
-          if (accept) setPreference(pendingNudge as Exclude<RecordingFormat, 'unknown'>);
+          // pendingNudge is typed NudgeFormat (getPendingNudge never returns
+          // 'unknown' — see sourcePrefsStore), which is assignable directly
+          // to SourcePreference — no cast needed.
+          if (accept) setPreference(pendingNudge);
         },
       }
     : undefined;

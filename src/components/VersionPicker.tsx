@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RecordingFormat, RecordingVersion } from '../types/show.types';
+import { RecordingVersion } from '../types/show.types';
 import { formatLabel, lineageLabel } from '../constants/tags';
 import { formatDownloads } from '../utils/formatters';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
 import { webStyle } from '../utils/webStyle';
+import type { NudgeFormat } from '../services/sourcePrefsStore';
 
 interface VersionPickerProps {
   versions: RecordingVersion[];
@@ -19,7 +20,7 @@ interface VersionPickerProps {
   /** The user's pin for this show — marked "Pinned"; enables the "Use default" row. */
   pinnedIdentifier?: string;
   onUseDefault?: () => void;
-  nudge?: { format: RecordingFormat; onAnswer: (accept: boolean) => void };
+  nudge?: { format: NudgeFormat; onAnswer: (accept: boolean) => void };
 }
 
 // Format taper/transferrer attribution line

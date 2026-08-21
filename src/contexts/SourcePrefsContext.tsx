@@ -23,6 +23,7 @@ import {
   mergeSourcePrefs,
   normalizeSourcePrefs,
   NudgeAnswer,
+  NudgeFormat,
   pruneSourcePrefsTombstones,
   replaceSourcePrefs,
   setPin as storeSetPin,
@@ -52,7 +53,7 @@ export function useSourcePreference(): SourcePreference {
   return useMemo(() => getSourcePrefs().preference, [version]);
 }
 
-export function usePendingNudge(): RecordingFormat | null {
+export function usePendingNudge(): NudgeFormat | null {
   const version = useSourcePrefsVersion();
   return useMemo(() => getPendingNudge(), [version]);
 }
