@@ -1,4 +1,4 @@
-import { parseTagsParam, stringifyTagsParam } from '../webLinking';
+import { parseTagsParam, stringifyTagsParam } from '../tagsParam';
 
 it('parses, sanitizes, and round-trips tag lists', () => {
   expect(parseTagsParam('europe72,betty,arena')).toEqual(['europe72', 'betty', 'arena']);
@@ -7,4 +7,8 @@ it('parses, sanitizes, and round-trips tag lists', () => {
   expect(parseTagsParam(undefined)).toEqual([]);
   expect(stringifyTagsParam(['europe72', 'betty'])).toBe('europe72,betty');
   expect(stringifyTagsParam([])).toBeUndefined();
+});
+
+it('is a dependency-free module — no catalog-derived exports leak in alongside the pure helpers', () => {
+  expect(Object.keys(require('../tagsParam')).sort()).toEqual(['parseTagsParam', 'stringifyTagsParam']);
 });

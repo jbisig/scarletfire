@@ -27,7 +27,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
 import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
-import { parseTagsParam, stringifyTagsParam } from '../navigation/webLinking';
+import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown } from '../components/SortDropdown';
