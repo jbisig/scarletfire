@@ -112,6 +112,7 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
 
   return (
     <View style={styles.section}>
+      <Text style={styles.yearsHeading}>Years</Text>
       {eraGroups.map(({ era, years }) => {
         const eraFullySelected = isEraFullySelected(years);
         const hasEnabledYears = years.some(y => !disabledYears.has(y));
@@ -154,9 +155,14 @@ const styles = StyleSheet.create({
   section: {
     paddingTop: SPACING.xxl,
   },
-  sectionLabel: {
-    ...TYPOGRAPHY.bodySmall,
+  // Styled like TagCategorySection's `title` — uppercase label above the
+  // era groups, matching the tag section headings above it in the tray.
+  yearsHeading: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
     color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginBottom: SPACING.lg,
     paddingHorizontal: SPACING.xl,
   },

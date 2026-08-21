@@ -103,7 +103,7 @@ const VENUE_DEFS: TagDef[] = [
 ];
 
 const INSTRUMENTATION_DEFS: TagDef[] = [
-  { id: 'pedalsteel', category: 'instrumentation', label: 'Pedal Steel', description: 'Jerry on pedal steel during the Dead\'s set' },
+  { id: 'pedalsteel', category: 'instrumentation', label: 'Pedal Steel', description: 'Jerry on pedal steel during a Grateful Dead show' },
   { id: 'acousticset', category: 'instrumentation', label: 'Acoustic Set' },
 ];
 

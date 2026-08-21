@@ -15,7 +15,7 @@ import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
-import { getOfficialReleasesForDate, getDisplayRelease } from '../data/officialReleases';
+import { getOfficialReleasesForDate, pickDisplayRelease } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING, GLASS_PILL } from '../constants/theme';
 
 interface ShowCardProps {
@@ -53,7 +53,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
   const officialReleases = useMemo(() => {
     return getOfficialReleasesForDate(show.date);
   }, [show.date]);
-  const displayRelease = useMemo(() => getDisplayRelease(show.date), [show.date]);
+  const displayRelease = useMemo(() => pickDisplayRelease(officialReleases), [officialReleases]);
 
   // Use override play count if provided, otherwise calculate from show data
   const playCount = useMemo(() => {

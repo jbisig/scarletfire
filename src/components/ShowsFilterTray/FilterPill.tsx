@@ -38,7 +38,9 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
       ]}
       onPress={handlePress}
       disabled={isDisabled}
+      accessibilityRole="button"
       accessibilityState={{ selected: isSelected, disabled: !!isDisabled }}
+      accessibilityLabel={typeof count === 'number' ? `${label}, ${count} shows` : label}
       activeOpacity={0.7}
     >
       {showCheckmark && isSelected && (

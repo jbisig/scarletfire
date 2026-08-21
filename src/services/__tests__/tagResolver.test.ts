@@ -6,7 +6,12 @@ jest.mock('../../utils/showLookup', () => ({
   findShowByDate: (date: string) => mockShows.find(s => s.date.slice(0, 10) === date.slice(0, 10)),
 }));
 jest.mock('../../data/venueTypes', () => ({
-  VENUE_TYPES: { 'barton hall': { type: 'arena', confidence: 'high' }, 'winterland arena': { type: 'arena', confidence: 'high' }, 'wembley arena': { type: 'arena', confidence: 'high' } },
+  VENUE_TYPES: {
+    'barton hall': { type: 'arena', confidence: 'high' },
+    'winterland arena': { type: 'arena', confidence: 'high' },
+    'wembley arena': { type: 'arena', confidence: 'high' },
+    'sunshine daydream field': { type: 'amphitheater', confidence: 'low' },
+  },
   INTERNATIONAL_VENUES: new Set(['wembley arena']),
 }));
 jest.mock('../../data/festivalDates', () => ({ FESTIVAL_DATES: [{ date: '1969-08-16', note: 'Woodstock', source: 's', confidence: 'high' }] }));
@@ -31,11 +36,15 @@ const v = (identifier: string, over: Partial<RecordingVersion> = {}): RecordingV
 const show = (date: string, venue: string): GratefulDeadShow => ({ date: `${date}T00:00:00Z`, year: date.slice(0, 4), venue, versions: [], primaryIdentifier: `id-${date}`, title: '' });
 
 // Winterland 1978-12-27..31 = a 5-night residency; Barton Hall single night; Wembley international.
+// Sunshine Daydream Field is a low-confidence venue-type entry (see the venueTypes
+// mock below) — it must never resolve a physical type tag, so it's excluded from
+// every venueType-filtered assertion below.
 const mockShows: GratefulDeadShow[] = [
   show('1969-08-16', 'Woodstock'),
   show('1970-05-02', 'Harpur College'),
   show('1972-04-08', 'Wembley Arena'),
   show('1977-05-08', 'Barton Hall'),
+  show('1977-05-09', 'Sunshine Daydream Field'),
   show('1978-12-27', 'Winterland Arena'), show('1978-12-28', 'Winterland Arena'),
   show('1978-12-30', 'Winterland Arena'), show('1978-12-31', 'Winterland Arena'),
   show('1990-03-29', 'Nassau Coliseum'),
@@ -68,6 +77,14 @@ describe('getShowTags', () => {
   it('returns [] for a date not in the catalog and memoizes', () => {
     expect(getShowTags('2050-01-01')).toEqual([]);
     expect(getShowTags('1977-05-08')).toBe(getShowTags('1977-05-08'));
+  });
+  it('ignores a low-confidence venue-type entry (does not resolve a physical type)', () => {
+    const tags = getShowTags('1977-05-09');
+    expect(tags).not.toContain('amphitheater');
+    expect(tags).not.toContain('theater');
+    expect(tags).not.toContain('arena');
+    expect(tags).not.toContain('stadium');
+    expect(tags).toContain('peakkeith'); // other tag derivation is unaffected
   });
 });
 
@@ -112,17 +129,21 @@ describe('getTagCounts (faceted)', () => {
 });
 
 describe('sourceConstraintFromTags', () => {
-  it('takes the first selected format and all selected lineage tags; ignores other categories', () => {
+  it('takes all selected lineage tags and ignores other categories', () => {
     expect(sourceConstraintFromTags(['arena', 'betty', 'sbd', 'aud', 'lowgen'])).toEqual({ format: 'sbd', lineage: ['betty', 'lowgen'] });
     expect(sourceConstraintFromTags(['arena'])).toBeUndefined();
     expect(sourceConstraintFromTags(['miller'])).toEqual({ lineage: ['miller'] });
+  });
+  it('picks the format by REGISTRY order (sbd, aud, matrix, fm), not tap order', () => {
+    expect(sourceConstraintFromTags(['aud', 'sbd'])).toEqual({ format: 'sbd' });
+    expect(sourceConstraintFromTags(['fm', 'matrix', 'aud'])).toEqual({ format: 'aud' });
   });
 });
 
 describe('getTagCoverage', () => {
   it('reports show counts and percentages per tag over the catalog', () => {
     const cov = getTagCoverage();
-    expect(cov.find(c => c.id === 'arena')).toEqual({ id: 'arena', shows: 6, pct: Math.round((6 / 9) * 100) });
+    expect(cov.find(c => c.id === 'arena')).toEqual({ id: 'arena', shows: 6, pct: Math.round((6 / DATES.length) * 100) });
     expect(cov.find(c => c.id === 'residency')?.shows).toBe(4);
   });
 });

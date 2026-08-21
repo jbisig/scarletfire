@@ -2,13 +2,16 @@
  * Read-time show tags. A show's tags are derived on demand — era from the
  * date, venue type from the curated map, source as the UNION of its catalog
  * recordings' format + lineage tags, instrumentation/notable from curated
- * date lists — and memoized. A lazy inverted index Map<TagId, Set<date>>
- * makes filtering and faceted counts cheap (≈2k shows × ≈8 tags).
+ * date lists — and memoized per date in a `Map<date, TagId[]>`. Filtering
+ * (`buildTagPredicate`/`makeShowTagFilter`) and faceted counts
+ * (`getTagCounts`) are recomputed per selection over the caller's base
+ * dates (≈2k shows × ≈8 tags; 2.4 ms warm, measured), and the tray
+ * memoizes both with `useMemo`.
  *
  * buildTagPredicate is entity-agnostic (OR within a category, AND between)
  * so the later song-tags work reuses it unchanged.
  */
-import { isTagId, TagCategoryId, tagCategory, TagId, TAG_DEFS, VenuePhysicalType } from '../constants/tags';
+import { isTagId, tagCategory, tagsInCategory, TagCategoryId, TagId, TAG_DEFS, FORMAT_LABELS } from '../constants/tags';
 import { eraForDate } from '../data/eras';
 import { VENUE_TYPES, INTERNATIONAL_VENUES } from '../data/venueTypes';
 import { FESTIVAL_DATES } from '../data/festivalDates';
@@ -86,7 +89,9 @@ export function getShowTags(date: string): TagId[] {
   }
 
   const venueKey = normalizeVenue(show.venue);
-  const physical = VENUE_TYPES[venueKey]?.type as VenuePhysicalType | undefined;
+  const venueEntry = VENUE_TYPES[venueKey];
+  // Low-confidence physical types are dataset-ruled unreliable and are not resolved.
+  const physical = venueEntry && venueEntry.confidence !== 'low' ? venueEntry.type : undefined;
   if (physical) tags.add(physical);
   if (INTERNATIONAL_VENUES.has(venueKey)) tags.add('international');
   if (c.festival.has(key)) tags.add('festival');
@@ -155,15 +160,23 @@ export function getTagCounts(selected: TagId[], baseDates: string[]): Record<Tag
   return counts;
 }
 
-const FORMAT_IDS: ReadonlySet<string> = new Set(['sbd', 'aud', 'matrix', 'fm']);
-const LINEAGE_IDS: ReadonlySet<string> = new Set(['betty', 'miller', '16track', 'lowgen']);
+// Registry order (sbd, aud, matrix, fm, then the lineage tags) — split by
+// whether the id names a RecordingFormat, so format precedence below
+// follows TAG_DEFS order rather than the caller's selection order.
+const SOURCE_TAG_DEFS = tagsInCategory('source');
+const FORMAT_IDS: ReadonlySet<string> = new Set(SOURCE_TAG_DEFS.filter(t => t.id in FORMAT_LABELS).map(t => t.id));
+const LINEAGE_IDS: ReadonlySet<string> = new Set(SOURCE_TAG_DEFS.filter(t => !(t.id in FORMAT_LABELS)).map(t => t.id));
 
 /** The recording-resolver constraint implied by the selected Source tags (format is single-valued). */
 export function sourceConstraintFromTags(selected: TagId[]): SourceConstraint | undefined {
   const c: SourceConstraint = {};
+  const selectedSet = new Set(selected);
+  // Pick the format by REGISTRY order, not tap order: the earliest
+  // FORMAT_ID in TAG_DEFS that the user selected wins.
+  const format = SOURCE_TAG_DEFS.find(t => FORMAT_IDS.has(t.id) && selectedSet.has(t.id));
+  if (format) c.format = format.id as RecordingFormat;
   for (const id of selected) {
-    if (FORMAT_IDS.has(id) && !c.format) c.format = id as RecordingFormat;
-    else if (LINEAGE_IDS.has(id)) (c.lineage ??= []).push(id as LineageTag);
+    if (LINEAGE_IDS.has(id)) (c.lineage ??= []).push(id as LineageTag);
   }
   return c.format || c.lineage ? c : undefined;
 }

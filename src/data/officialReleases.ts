@@ -1573,9 +1573,6 @@ export function getPrimaryRelease(date: string): OfficialRelease | null {
 // FILTER TRAY UTILITIES
 // ============================================
 
-// Series grouped under "Others" in the filter UI
-export const OTHER_SERIES = ['Box Set', '50th Anniversary', 'Studio Album', 'From The Vault'];
-
 // Display series for the filter tray (6 pills)
 export const DISPLAY_SERIES = ["Dave's Picks", "Dick's Picks", "Europe '72", "Download Series", "Road Trips", "Others"];
 
