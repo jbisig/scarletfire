@@ -1,0 +1,614 @@
+normalized_venue	type	confidence	international	note
+oakland alameda county coliseum	arena	high	no	coliseum arena
+spectrum	arena	high	no	
+winterland arena	arena	high	no	ice rink arena
+madison square garden	arena	high	no	
+nassau coliseum	arena	high	no	
+shoreline amphitheatre	amphitheater	high	no	
+henry j kaiser convention center	arena	high	no	7k convention arena
+fillmore west	theater	high	no	ballroom
+boston garden	arena	high	no	
+omni	arena	high	no	
+capital centre	arena	high	no	
+cal expo	amphitheater	high	no	amphitheatre at fairgrounds
+greek theatre u of california	amphitheater	high	no	
+capitol theater	theater	high	no	
+hampton coliseum	arena	high	no	
+warfield theater	theater	high	no	
+fillmore east	theater	high	no	
+oakland auditorium arena	arena	high	no	
+alpine valley music theatre	amphitheater	high	no	
+providence civic center	arena	high	no	
+berkeley community theater	theater	high	no	
+hartford civic center	arena	high	no	
+red rocks amphitheatre	amphitheater	high	no	
+robert f kennedy stadium	stadium	high	no	
+uptown theater	theater	high	no	
+meadowlands arena	arena	high	no	
+irvine meadows	amphitheater	high	no	
+family dog at the great highway	theater	medium	no	ballroom
+giants stadium	stadium	high	no	
+deer creek music center	amphitheater	high	no	
+sam boyd silver bowl u n l v	stadium	high	no	
+avalon ballroom	theater	high	no	ballroom
+boston music hall	theater	high	no	
+long beach arena	arena	high	no	
+mcnichols sports arena	arena	high	no	
+centrum	arena	high	no	
+knickerbocker arena	arena	high	no	
+richfield coliseum	arena	high	no	
+fillmore auditorium	theater	high	no	ballroom
+charlotte coliseum	arena	high	no	
+rosemont horizon	arena	high	no	
+club front		high	no	rehearsal studio
+ventura county fairgrounds		high	no	fairgrounds
+unknown		low	no	unknown
+community war memorial auditorium	arena	high	no	war memorial arena
+veterans memorial coliseum	arena	high	no	
+autzen stadium u of oregon	stadium	high	no	
+frost amphitheatre	amphitheater	high	no	
+civic arena	arena	high	no	
+auditorium theatre	theater	high	no	
+ace s studio		high	no	rehearsal studio
+compton terrace amphitheatre	amphitheater	high	no	
+san francisco civic auditorium	arena	high	no	civic auditorium arena
+soldier field	stadium	high	no	
+matrix		high	no	nightclub
+studio		high	no	recording studio
+fox theatre	theater	high	no	
+springfield civic center	arena	high	no	
+fox theater	theater	high	no	
+cumberland county civic center	arena	high	no	
+radio city music hall	theater	high	no	
+rainbow theater	theater	high	yes	
+palace	arena	high	no	
+various		low	no	unknown
+shrine auditorium	theater	medium	no	large seated auditorium
+carousel ballroom	theater	high	no	ballroom
+kiel auditorium	arena	high	no	municipal auditorium arena
+academy of music	theater	high	no	
+greensboro coliseum	arena	high	no	
+sports arena	arena	high	no	
+golden hall community concourse	arena	medium	no	civic center hall
+pauley pavilion ucla	arena	high	no	college arena
+roosevelt stadium	stadium	high	no	
+baltimore civic center	arena	high	no	
+soldiers and sailors memorial hall	arena	medium	no	memorial hall
+dane county coliseum	arena	high	no	
+club front studio		high	no	rehearsal studio
+orpheum theatre	theater	high	no	
+merriweather post pavilion	amphitheater	high	no	
+silva hall hult center	theater	high	no	performing arts hall
+marin county veterans auditorium	theater	medium	no	civic auditorium
+miami arena	arena	high	no	
+palladium	theater	high	no	
+st paul civic center	arena	high	no	
+manor downs	stadium	medium	no	horse racetrack
+seattle center coliseum	arena	high	no	
+rich stadium	stadium	high	no	
+buckeye lake music center	amphitheater	high	no	
+great western la forum	arena	high	no	
+memorial stadium	stadium	high	no	
+stanley theater	theater	high	no	
+electric theater	theater	medium	no	ballroom
+swing auditorium	arena	medium	no	civic auditorium arena
+cleveland music hall	theater	high	no	
+hollywood palladium	theater	medium	no	ballroom
+felt forum madison square garden	arena	high	no	
+strand lyceum	theater	high	yes	theatre ballroom
+paramount northwest theater	theater	high	no	
+paramount theatre	theater	high	no	
+stanley theatre	theater	high	no	
+william and mary college hall	arena	high	no	college arena
+metropolitan sports center	arena	high	no	
+san diego sports arena	arena	high	no	
+cameron indoor stadium duke u	arena	high	no	college arena
+freedom hall	arena	high	no	
+tower theatre	theater	high	no	
+onongada county war memorial	arena	high	no	
+sportatorium	arena	high	no	
+gizah sound and light theater	amphitheater	medium	yes	open-air theater at pyramids
+oakland coliseum arena	arena	high	no	
+glens falls civic center	arena	high	no	
+west high auditorium	theater	high	no	high school auditorium
+pine knob music theater	amphitheater	high	no	
+carrier dome syracuse u	stadium	high	no	domed stadium
+stone house studio rehearsals		high	no	rehearsal studio
+saratoga performing arts center	amphitheater	high	no	
+frost amphitheatre stanford university	amphitheater	high	no	
+richmond coliseum	arena	high	no	
+oakland alameda county coliseum stadium	stadium	high	no	
+laguna seca recreation area	amphitheater	medium	no	raceway festival ground
+copps coliseum	arena	high	yes	
+riverport amphitheatre	amphitheater	high	no	
+polo field golden gate park		high	no	open park field
+hollywood bowl	amphitheater	high	no	
+crystal ballroom	theater	high	no	ballroom
+alembic studios		high	no	recording studio
+civic auditorium	arena	medium	no	civic auditorium
+ark		medium	no	club
+thelma theater	theater	high	no	
+boston tea party	theater	medium	no	ballroom
+warehouse	theater	medium	no	ballroom
+legion stadium	arena	medium	no	boxing arena dance hall
+university of iowa		low	no	unknown campus venue
+manhattan center	theater	medium	no	ballroom
+sacramento memorial auditorium	arena	medium	no	memorial auditorium
+berkeley community theatre	theater	high	no	
+music hall	theater	high	no	
+hofheinz pavilion	arena	high	no	college arena
+utica memorial auditorium	arena	high	no	
+universal amphitheatre	amphitheater	high	no	
+curtis hixon convention hall	arena	medium	no	convention hall
+portland memorial coliseum	arena	high	no	
+jai alai fronton	arena	medium	no	jai alai fronton
+roanoke civic center	arena	high	no	
+alexandra palace	arena	medium	yes	exhibition hall
+bob weir s studio		high	no	home studio
+market square arena	arena	high	no	
+lakeland civic center	arena	high	no	
+broome county arena	arena	high	no	
+summit	arena	high	no	
+augusta civic center	arena	high	no	
+crisler arena	arena	high	no	college arena
+saenger performing arts center	theater	high	no	
+zoo amphitheater	amphitheater	high	no	
+aladdin theater	arena	medium	no	7k seated theater
+starlight theater	amphitheater	high	no	
+greek theatre university of california	amphitheater	high	no	
+philadelphia civic center	arena	high	no	
+uic pavilion	arena	high	no	
+sandstone ampitheatre	amphitheater	high	no	
+world music theater	amphitheater	high	no	
+wembley arena	arena	high	yes	
+coliseum arena	arena	high	no	
+orlando arena	arena	high	no	
+usair arena	arena	high	no	
+delta center	arena	high	no	
+p n e garden auditorium	arena	medium	yes	exhibition hall
+o keefe center	theater	high	yes	
+dance hall	theater	medium	no	dance hall
+american studios		high	no	recording studio
+shrine exhibition hall	arena	medium	no	exhibition hall
+labor temple	theater	medium	no	hall ballroom
+music box	theater	low	no	ballroom
+electric factory	theater	medium	no	ballroom club
+dream bowl	theater	low	no	dance hall
+rose palace		medium	no	converted warehouse hall
+seminole indian village		medium	no	outdoor grounds
+mcarthur court university of oregon	arena	high	no	college arena
+veterans auditorium	theater	medium	no	civic auditorium
+ny state pavilion flushing meadow park		medium	no	worlds fair pavilion
+cafe au go go		high	no	small club
+honolulu civic auditorium	arena	medium	no	civic arena
+euphoria ballroom	theater	high	no	ballroom
+action house		medium	no	club
+46th street rock palace	theater	medium	no	converted theater
+palestra u of rochester	arena	medium	no	college gym
+seattle center arena	arena	high	no	
+capitol theatre	theater	high	no	
+mickey s barn		high	no	barn studio
+harding theater	theater	high	no	
+atlanta municipal auditorium	arena	medium	no	municipal auditorium
+san antonio civic auditorium	arena	medium	no	civic auditorium
+austin municipal auditorium	arena	medium	no	municipal auditorium
+hill auditorium	theater	high	no	concert hall
+wembley empire pool	arena	high	yes	
+dillon stadium	stadium	high	no	
+paramount theater	theater	high	no	
+folsom field u of colorado	stadium	high	no	
+palace theater	theater	high	no	
+cleveland public hall	arena	high	no	public auditorium
+salt palace	arena	high	no	
+springfield civic center arena	arena	high	no	
+buffalo memorial auditorium	arena	high	no	
+kezar stadium	stadium	high	no	
+p n e coliseum	arena	high	yes	
+memorial coliseum	arena	high	no	
+grand prix racecourse	stadium	medium	no	racetrack festival
+omaha civic auditorium	arena	high	no	
+denver coliseum	arena	high	no	
+cow palace	arena	high	no	
+selland arena	arena	high	no	
+philadelphia civic arena	arena	high	no	
+olympia halle	arena	high	yes	
+palais des sports	arena	high	yes	
+beacon theatre	theater	high	no	
+riverfront arena	arena	high	no	
+cobo arena	arena	high	no	
+mcarthur court u of oregon	arena	high	no	college arena
+milwaukee auditorium	arena	medium	no	municipal auditorium
+nashville municipal auditorium	arena	high	no	
+patrick gymnasium u of vermont	arena	high	no	college gym
+boutwell auditorium	arena	medium	no	municipal auditorium
+new haven coliseum	arena	high	no	
+studio rehersal club front		high	no	rehearsal studio
+rec hall penn state u	arena	high	no	college gym
+cape cod coliseum	arena	high	no	ice rink arena
+nassau veterans memorial coliseum	arena	high	no	
+barton hall cornell u	arena	high	no	college fieldhouse
+des moines civic center	arena	medium	no	civic center
+gruga halle	arena	high	yes	
+club melk weg		high	yes	club
+oakland auditorium	arena	high	no	
+golden hall san diego community concourse	arena	medium	no	civic center hall
+santa fe downs	stadium	medium	no	horse racetrack
+bob marley performing arts center		medium	yes	open-air festival ground
+city island		medium	no	open riverfront park
+poplar creek music theater	amphitheater	high	no	
+park west ski resort		medium	no	ski resort field
+kingswood music theater	amphitheater	high	yes	
+blossom music center	amphitheater	high	no	
+brendan byrne arena	arena	high	no	
+greek theater	amphitheater	high	no	
+river bend music center	amphitheater	high	no	
+sullivan stadium	stadium	high	no	
+john f kennedy stadium	stadium	high	no	
+town park		high	no	open park field
+calaveras co fairgrounds		high	no	fairgrounds
+oxford plains speedway	stadium	medium	no	speedway
+mecca	arena	high	no	
+cal state dominguez hills		low	no	unknown campus venue
+three rivers stadium	stadium	high	no	
+internationales congress centrum	arena	medium	yes	convention hall
+zenith	arena	medium	yes	concert hall
+capitol centre	arena	high	no	
+star lake ampitheater	amphitheater	high	no	
+dean smith center	arena	high	no	college arena
+desert sky pavilion	amphitheater	high	no	
+franklin county airport		high	no	airport field festival
+pyramid arena	arena	high	no	
+jefferson civic center coliseum	arena	high	no	
+portland meadows	stadium	medium	no	horse racetrack
+golden state studios		high	no	recording studio
+viola lee blues reahearsals		high	no	rehearsal session
+363 6th street		high	no	rehearsal space
+questing beast		high	no	coffeehouse
+youth opportunities center		medium	no	community center
+ivar theater	theater	high	no	
+carthay studios		high	no	recording studio
+trouper s hall	theater	medium	no	small hall
+scorpio studio outtakes		high	no	recording studio
+unknown perhaps fillmore auditorium		low	no	unknown
+san francisco state university		low	no	unknown campus venue
+kfrc studio		high	no	radio studio
+studio sessions for anthem of the sun		high	no	recording studio
+kmpx radio show		high	no	radio studio
+kpix tv studios		high	no	tv studio
+monterey fairgrounds		high	no	fairgrounds
+710 haight street house		high	no	house
+straight theater	theater	high	no	converted theater ballroom
+eureka municipal auditorium	theater	medium	no	municipal auditorium
+eagle s auditorium	theater	medium	no	ballroom
+eagles auditorium	theater	medium	no	ballroom
+haight street		high	no	street
+santa clara county fairgrounds		high	no	fairgrounds
+betty nelson s organic raspberry farm		high	no	farm field
+unknown possibly pacific high recording		low	no	unknown
+pacific high recording		high	no	recording studio
+silver dollar fair		high	no	fairgrounds
+columbus veterans hall	theater	medium	no	memorial auditorium
+bellarmine college		low	no	unknown campus venue
+gulfstream park race track	stadium	medium	no	horse racetrack
+unknown or various		low	no	unknown
+cbs studios in west hollywood		high	no	tv studio
+soldiers sailors memorial auditorium	arena	medium	no	memorial hall
+hilton hotel		high	no	hotel ballroom
+student center		low	no	unknown campus venue
+ice palace	arena	medium	no	ice rink
+university auditorium u arizona	theater	medium	no	campus auditorium
+student union ballroom u utah	theater	medium	no	campus ballroom
+ballroom	theater	low	no	ballroom
+washington university		low	no	unknown campus venue
+purdue university		low	no	unknown campus venue
+clark university		low	no	unknown campus venue
+aztec bowl san diego state u	stadium	medium	no	college stadium
+campolindo high school		low	no	high school gym
+robertson gym u c s b	arena	medium	no	college gym
+springer s inn		high	no	roadhouse club
+california hall	theater	medium	no	ballroom hall
+fresno convention center	arena	medium	no	convention center
+monterey performing arts center	theater	medium	no	performing arts theater
+pacific recording studios		high	no	recording studio
+central park		medium	no	park venue
+reed s ranch		high	no	ranch field
+piedmont park		high	no	open park
+max yasgur s farm		high	no	festival field
+green lake aqua theater	amphitheater	medium	no	outdoor aqua theater
+pelletier farm		high	no	farm field
+baton rouge int speedway	stadium	medium	no	speedway
+fillmore east early show	theater	high	no	
+san jose state university		low	no	unknown campus venue
+lanai theater	theater	medium	no	small theater
+cal expo building a		medium	no	fairgrounds exhibition hall
+mcfarlin auditorium s m u	theater	medium	no	campus auditorium
+international speedway	stadium	medium	no	speedway
+studio workingman s dead outtakes		high	no	recording studio
+fillmore east early and late shows	theater	high	no	
+fillmore east early and partial late show	theater	high	no	
+golden hall	arena	medium	no	civic center hall
+springer s inn portland		high	no	roadhouse club
+oregon state university		low	no	unknown campus venue
+ungano s night club		high	no	nightclub
+auditorium		low	no	unknown
+star theatre	theater	medium	no	
+pirates world		medium	no	amusement park
+field house u of cincinnati	arena	high	no	college fieldhouse
+mammoth gardens	theater	medium	no	converted roller rink hall
+alfred college		low	no	unknown campus venue
+harpur college		low	no	unknown campus venue
+field house wesleyan university	arena	medium	no	college fieldhouse
+kresge plaza massachusetts institute of technology		high	no	outdoor campus plaza
+dupont gymnasium m i t	arena	medium	no	college gym
+farrell hall suny	arena	low	no	college gym
+worcester polytechnic institute		low	no	unknown campus venue
+meramec community college		low	no	unknown campus venue
+fillmore east late show	theater	high	no	
+temple university		low	no	unknown campus venue
+newcastle under lyme	theater	low	yes	municipal hall
+red vest		medium	no	club
+pauley ballroom u of california	theater	medium	no	campus ballroom
+winnipeg fairgrounds		high	yes	fairgrounds
+kqed studios		high	no	tv studio
+colden auditorium queens college	theater	medium	no	campus auditorium
+marion shea auditorium paterson state college	theater	medium	no	campus auditorium
+mcdonough arena georgetown university	arena	high	no	college arena
+kiel opera house	theater	high	no	
+gym suny early and late shows	arena	medium	no	college gym
+gym s u n y	arena	medium	no	college gym
+sargent gym boston university	arena	medium	no	college gym
+anderson theatre	theater	high	no	
+club agora		high	no	club
+santa rosa fairgrounds		high	no	fairgrounds
+freeborn hall university of california	theater	medium	no	campus hall
+lane community college		low	no	unknown campus venue
+camp randall field house university of wisconsin	arena	high	no	college fieldhouse
+exposition center	arena	medium	no	convention arena
+east hall franklin marshall college	arena	low	no	college gym
+catholic youth center	arena	low	no	small gym arena
+davis gym bucknell university	arena	medium	no	college gym
+allegheny college		low	no	unknown campus venue
+dillon gym princeton university	arena	medium	no	college gym
+lusk field house s u c n y	arena	medium	no	college fieldhouse
+rhode island auditorium	arena	medium	no	ice rink arena
+bangor municipal auditorium	arena	medium	no	municipal auditorium
+wallace wade stadium duke university	stadium	high	no	
+chateau d herouville		high	yes	recording studio chateau
+yale bowl yale university	stadium	high	no	
+terminal island correctional facility		high	no	prison
+gaelic park		medium	no	outdoor athletic field
+keith rehearsals		high	no	rehearsal
+studio rehearsals with keith godchaux		high	no	rehearsal studio
+northrop auditorium u of minn	theater	high	no	campus auditorium
+eastown theater	theater	high	no	
+easttown theatre	theater	high	no	
+onondaga war memorial	arena	high	no	
+allan theater	theater	high	no	
+taft auditorium	theater	high	no	
+ohio theatre	theater	high	no	
+texas christian university		low	no	unknown campus venue
+albuquerque civic auditorium	arena	medium	no	civic auditorium
+compilation 1972 radio promos		high	no	radio compilation
+newcastle city hall	theater	high	yes	
+tivoli theater	theater	high	yes	
+stakladen aarhus university	theater	low	yes	student union hall
+tivolis koncertsal	theater	high	yes	concert hall
+beat club		high	yes	tv studio
+rheinhalle	arena	medium	yes	concert hall
+jahrhunderthalle	theater	high	yes	concert hall
+musikhalle	theater	high	yes	concert hall
+olympia theater	theater	high	yes	
+l olympia	theater	high	yes	
+bickershaw festival		high	yes	festival field
+concertgebouw	theater	high	yes	concert hall
+rotterdam civic hall	theater	medium	yes	concert hall
+lille fairgrounds		high	yes	fairgrounds
+radio luxembourg		high	yes	radio studio
+kongressaal deutsches museum	theater	medium	yes	congress hall
+san jose civic auditorium	theater	medium	no	civic auditorium
+old renaissance faire grounds		high	no	open field
+american university		low	no	unknown campus venue
+vanderbilt university		low	no	unknown campus venue
+milwaukee performing arts center	theater	high	no	
+performing arts center	theater	high	no	
+veterans memorial hall	theater	medium	no	memorial auditorium
+ford auditorium	theater	high	no	
+oklahoma city music hall	theater	high	no	
+civic center music hall	theater	high	no	
+century ii convention hall	arena	medium	no	convention hall
+dallas memorial auditorium	arena	high	no	
+winterland ballroom	arena	high	no	ice rink arena
+wake of the flood sessions		high	no	recording sessions
+roscoe maples pavilion stanford u	arena	high	no	college arena
+st paul auditorium	arena	medium	no	municipal auditorium
+international amphitheatre	arena	high	no	indoor exhibition arena
+assembly hall university of illinois	arena	high	no	college arena
+assembly hall u of il	arena	high	no	college arena
+pershing municipal auditorium	arena	medium	no	municipal auditorium
+rochester community war memorial	arena	high	no	
+des moines state fairgrounds		high	no	fairgrounds
+stadium u c santa barbara	stadium	medium	no	campus stadium
+record plant		high	no	recording studio
+onondaga county war memorial	arena	high	no	
+war memorial	arena	high	no	
+oklahoma city fairgrounds arena	arena	medium	no	fairgrounds arena
+indianapolis state fair coliseum	arena	high	no	
+mcgaw memorial hall northwestern u	arena	high	no	college arena
+county coliseum	arena	high	no	
+feyline field		medium	no	open field
+palace of fine arts	theater	high	no	
+cincinnati gardens	arena	high	no	
+public hall	arena	high	no	public auditorium
+mars hotel outtakes		high	no	recording studio
+university of nevada		low	no	unknown campus venue
+adams field house u of montana	arena	medium	no	college fieldhouse
+edmundson pavilion	arena	high	no	college arena
+campus stadium uc santa barbara	stadium	medium	no	campus stadium
+coliseum stadium	stadium	high	no	
+des moines state fair grandstand		medium	no	fairgrounds grandstand
+international amphitheater	arena	high	no	indoor exhibition arena
+parc des expositions	arena	medium	yes	exhibition hall
+ace s		high	no	rehearsal studio
+ace s snack rehearsal		high	no	rehearsal studio
+great american music hall	theater	high	no	small music hall
+lindley meadows golden gate park		high	no	open park field
+le club front studios		high	no	rehearsal studio
+colt park		high	no	open park
+mershon auditorium osu	theater	high	no	campus auditorium
+arista studios		high	no	recording studio
+studio terrapin station outtakes		high	no	recording studio
+robertson gym uc santa barbara	arena	medium	no	college gym
+multiple		low	no	unknown
+barton hall cornell university	arena	high	no	college fieldhouse
+st louis arena	arena	high	no	
+memorial coliseum u of alabama	arena	high	no	college arena
+mosque	theater	high	no	
+forum	arena	high	no	
+raceway park	stadium	medium	no	drag racing speedway
+activity center arizona state u	arena	high	no	college arena
+university arena aka the pit university of new mexico	arena	high	no	college arena
+lloyd noble center u of oklahoma	arena	high	no	college arena
+moody coliseum s m u	arena	high	no	college arena
+assembly center lousiana state u	arena	high	no	college arena
+evans field house northern illinois university	arena	medium	no	college fieldhouse
+assembly hall ind	arena	high	no	college arena
+field house seneca college	arena	medium	yes	college fieldhouse
+cotterrell gym colgate u	arena	medium	no	college gym
+arlington theater	theater	high	no	
+bakersfield memorial auditorium	theater	medium	no	civic auditorium
+stockton civic auditorium	theater	medium	no	civic auditorium
+uni dome u of northern iowa	stadium	medium	no	domed college stadium
+cassell coliseum virginia polytechnic	arena	high	no	college arena
+curtis hixon convention center	arena	medium	no	convention hall
+cassell coliseum virginia polytechnic institute and state university	arena	high	no	college arena
+huntington civic center	arena	high	no	
+veterans memorial auditorium	theater	medium	no	memorial auditorium
+rupp arena lexington center	arena	high	no	
+horton field house illinois state u	arena	medium	no	college fieldhouse
+thompson arena dartmouth college	arena	high	no	college ice arena
+field house rensselaer polytechnic institute	arena	medium	no	college fieldhouse
+campus stadium university of california	stadium	medium	no	campus stadium
+arrowhead stadium	stadium	high	no	
+studio shakedown street rehearsal		high	no	rehearsal studio
+capitol center	arena	high	no	
+rambler room loyola college		medium	no	campus student hall
+uptown theatre	theater	high	no	
+veterans coliseum	arena	high	no	
+memorial coliseum mississippi state fairgrounds	arena	high	no	
+dallas county convention center arena	arena	high	no	
+golden hall community concorse	arena	medium	no	civic center hall
+go to heaven sessions betty cantor s rough mixes		high	no	recording sessions
+utica memorial coliseum	arena	high	no	
+shea s buffalo theater	theater	high	no	
+masonic temple	theater	high	no	
+tulsa fairgrounds pavilion	arena	medium	no	fairgrounds arena
+siu arena u of southern illinois	arena	high	no	college arena
+soldier s and sailors memorial hall	arena	medium	no	memorial hall
+spartan stadium san jose state u	stadium	high	no	
+allan kirby field house lafayette college	arena	medium	no	college fieldhouse
+billerica forum	arena	low	no	ice rink
+alumni stadium u mass	stadium	high	no	
+portland international speedway	stadium	medium	no	speedway
+holleder memorial stadium	stadium	high	no	
+indiana convention center	arena	medium	no	convention hall
+nbc studios		high	no	tv studio
+folsom field	stadium	high	no	
+spokane coliseum	arena	high	no	
+mississippi river festival	amphitheater	medium	no	tent and lawn venue
+kansas city municipal auditorium	arena	high	no	
+upltown theater	theater	high	no	
+grand center	arena	medium	no	convention arena
+cleveland public auditorium	arena	high	no	public auditorium
+state fairgrounds		high	no	fairgrounds
+warfiled theater radio city music hall	theater	medium	no	combined theater listing
+alligator alley gymnasium u of florida	arena	medium	no	college gym
+mill valley recreation center		medium	no	rec center
+cole field house u of maryland	arena	high	no	college arena
+stone		high	no	nightclub
+tommorow with tom snyder nbc studios		high	no	tv studio
+athletic center rutgers u	arena	medium	no	college arena
+kansas city municipal auditorium arena	arena	high	no	
+stabler arena lehigh u	arena	high	no	college arena
+playhouse theater	theater	high	yes	
+forum theater	arena	medium	yes	exhibition hall
+stadthalle	arena	medium	yes	concert hall
+melk weg		high	yes	club
+walter koebel halle	arena	low	yes	multipurpose hall
+hippodrome	arena	medium	yes	converted arena hall
+sports palace	arena	high	yes	
+hara arena	arena	high	no	
+assembly hall u of illinois	arena	high	no	college arena
+events center u of colorado	arena	high	no	college arena
+fiesta hall san mateo county fairgrounds		medium	no	fairgrounds hall
+mickey s ranch studio		high	no	ranch studio
+reno centennial coliseum	arena	medium	no	convention arena
+recreation hall uc davis	arena	medium	no	college gym
+scope	arena	high	no	
+war memorial auditorium	arena	high	no	
+moscone convention center	arena	medium	no	convention hall
+oregon county fair		high	no	fairgrounds
+glen helen regional park		medium	no	regional park
+west palm beach auditorium	arena	medium	no	civic auditorium arena
+university of virginia		low	no	unknown campus venue
+club front rehearsals		high	no	rehearsal studio
+warfield theatre	theater	high	no	
+morgantown civic center	arena	medium	no	civic center
+alfond arena u of maine	arena	high	no	college ice arena
+boise pavillion boise state university	arena	high	no	college arena
+red rocks	amphitheater	high	no	
+downs of santa fe	stadium	medium	no	horse racetrack
+nevada county fairgrounds		high	no	fairgrounds
+santa cruz county fairgrounds		high	no	fairgrounds
+olympic arena	arena	high	no	ice arena
+1984 studio material		high	no	studio material
+niagara falls convention center	arena	medium	no	convention center
+red rocks amphitheater	amphitheater	high	no	
+indianapolis sports and music center	amphitheater	low	no	outdoor tennis stadium
+five seasons center	arena	high	no	
+twilight zone sessions		high	no	recording sessions
+marin veterans memorial auditorium	theater	medium	no	civic auditorium
+hershey park stadium	stadium	high	no	
+boreal ridge ski resort		high	no	ski resort field
+southern star amphitheater	amphitheater	high	no	
+red rocks ampitheatre	amphitheater	high	no	
+devore field southwestern u	stadium	medium	no	college stadium
+sun dome	arena	high	no	college arena
+carolina coliseum u of south carolina	arena	high	no	college arena
+cal expo amphitheatre	amphitheater	high	no	
+hubert h humphrey metrodome	stadium	high	no	domed stadium
+rubber bowl university of akron	stadium	high	no	
+backstage		low	no	unknown
+san francisco civic center	arena	medium	no	civic auditorium
+laguna seca raceway	amphitheater	medium	no	raceway festival ground
+silver stadium	stadium	high	no	baseball park
+anaheim stadium	stadium	high	no	
+coliseum	arena	high	no	
+civic center	arena	high	no	
+joe louis arena	arena	high	no	
+rochester silver stadium	stadium	high	no	baseball park
+tacoma dome	arena	high	no	domed arena
+bayfront center arena	arena	high	no	
+bayfront center	arena	high	no	
+keifer lakefront arena	arena	high	no	college arena
+reunion arena	arena	high	no	
+ante up built to last interview		high	no	interview
+club front grateful dead studio		high	no	rehearsal studio
+great western forum	arena	high	no	
+coliseum arean	arena	high	no	
+oakland alameda county coliseum arena	arena	high	no	
+cardinal stadium	stadium	high	no	
+carter finley stadium	stadium	high	no	
+foxboro stadium	stadium	high	no	
+front street		high	no	rehearsal studio
+ice stadium	arena	high	yes	ice arena
+festhalle	arena	high	yes	
+sportsahalle	arena	high	yes	
+los angeles coliseum	stadium	high	no	
+mile high stadium	stadium	high	no	
+rainbow theatre	theater	high	yes	
+los angeles sports arena	arena	high	no	
+oakland county coliseum	arena	medium	no	coliseum arena
+blockbuster desert sky pavillion	amphitheater	high	no	
+rosemont horizon arena	arena	high	no	
+oakland alameda	arena	medium	no	coliseum arena
+tampa stadium	stadium	high	no	
