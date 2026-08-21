@@ -9,7 +9,7 @@ import { StarRating } from './StarRating';
 import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { GradientCardBackground } from './GradientCardBackground';
-import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { getOfficialReleasesForDate, getDisplayRelease } from '../data/officialReleases';
 import { useResponsive } from '../hooks/useResponsive';
 import { useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
@@ -34,6 +34,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
   const officialReleases = useMemo(() => {
     return getOfficialReleasesForDate(show.date);
   }, [show.date]);
+  const displayRelease = useMemo(() => getDisplayRelease(show.date), [show.date]);
 
   const handleBadgePress = () => {
     setModalVisible(true);
@@ -86,12 +87,14 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
             )}
           </View>
 
-          {officialReleases.length > 0 && (
+          {displayRelease && (
             <View style={styles.badgesRow}>
               <OfficialReleaseBadge
                 onPress={handleBadgePress}
                 compact
-                releaseTitle={officialReleases[0].name}
+                alsoOn
+                releaseTitle={displayRelease.release.name}
+                more={displayRelease.more}
               />
             </View>
           )}

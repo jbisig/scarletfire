@@ -1640,3 +1640,15 @@ export function seriesHasYears(series: string, years: string[]): boolean {
   if (!seriesYears) return false;
   return years.some(y => seriesYears.has(y));
 }
+
+/** The release to name on a show row: earliest DISPLAY_SERIES series wins; `more` = how many others exist. */
+export function getDisplayRelease(date: string): { release: OfficialRelease; more: number } | null {
+  const releases = getOfficialReleasesForDate(date);
+  if (releases.length === 0) return null;
+  const rank = (series: string) => {
+    const i = DISPLAY_SERIES.indexOf(series);
+    return i === -1 ? DISPLAY_SERIES.indexOf('Others') : i;
+  };
+  const sorted = [...releases].sort((a, b) => rank(a.series) - rank(b.series));
+  return { release: sorted[0], more: releases.length - 1 };
+}

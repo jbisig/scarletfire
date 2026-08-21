@@ -7,6 +7,8 @@ interface OfficialReleaseBadgeProps {
   onPress: () => void;
   compact?: boolean;  // Smaller version for ShowCard
   releaseTitle?: string;  // Display actual release name instead of "Official Release"
+  alsoOn?: boolean;  // Render as "also on {title}" (show-row badge), with longer truncation
+  more?: number;  // Count of additional releases beyond the one shown, appended as "+{more}"
 }
 
 /**
@@ -17,9 +19,18 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
   onPress,
   compact = false,
   releaseTitle,
+  alsoOn = false,
+  more,
 }) => {
   const fullText = releaseTitle || 'Official Release';
-  const displayText = fullText.length > 25 ? `${fullText.slice(0, 25)}...` : fullText;
+  const maxLen = alsoOn ? 30 : 25;
+  const truncated = fullText.length > maxLen ? `${fullText.slice(0, maxLen)}...` : fullText;
+  const displayText = alsoOn
+    ? `also on ${truncated}${more ? ` +${more}` : ''}`
+    : truncated;
+  const accessibilityLabel = alsoOn
+    ? `Official release: also on ${fullText}${more ? ` +${more}` : ''}`
+    : `Official release: ${fullText}`;
 
   if (compact) {
     return (
@@ -29,7 +40,7 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel={`Official release: ${fullText}`}
+        accessibilityLabel={accessibilityLabel}
         accessibilityHint="Double tap to view release details"
       >
         <Ionicons name="disc" size={10} color={COLORS.textPrimary} />
@@ -44,7 +55,7 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Official release: ${fullText}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityHint="Double tap to view release details"
     >
       <Ionicons name="disc" size={12} color={COLORS.textPrimary} />

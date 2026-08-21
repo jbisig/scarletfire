@@ -15,7 +15,7 @@ import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
-import { getOfficialReleasesForDate } from '../data/officialReleases';
+import { getOfficialReleasesForDate, getDisplayRelease } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING, GLASS_PILL } from '../constants/theme';
 
 interface ShowCardProps {
@@ -53,6 +53,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
   const officialReleases = useMemo(() => {
     return getOfficialReleasesForDate(show.date);
   }, [show.date]);
+  const displayRelease = useMemo(() => getDisplayRelease(show.date), [show.date]);
 
   // Use override play count if provided, otherwise calculate from show data
   const playCount = useMemo(() => {
@@ -161,12 +162,14 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
             {/* Mobile: badges in bottom row */}
             {!isDesktop && (
               <View style={styles.badgesContainer}>
-                {officialReleases.length > 0 && (
+                {displayRelease && (
                   <View style={styles.officialReleaseBadgeWrapper}>
                     <OfficialReleaseBadge
                       onPress={handleBadgePress}
                       compact
-                      releaseTitle={officialReleases[0].name}
+                      alsoOn
+                      releaseTitle={displayRelease.release.name}
+                      more={displayRelease.more}
                     />
                   </View>
                 )}
@@ -182,12 +185,14 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
         {/* Desktop: badges at card level, vertically centered */}
         {isDesktop && (
           <View style={styles.badgesContainer}>
-            {officialReleases.length > 0 && (
+            {displayRelease && (
               <View style={styles.officialReleaseBadgeWrapper}>
                 <OfficialReleaseBadge
                   onPress={handleBadgePress}
                   compact
-                  releaseTitle={officialReleases[0].name}
+                  alsoOn
+                  releaseTitle={displayRelease.release.name}
+                  more={displayRelease.more}
                 />
               </View>
             )}
