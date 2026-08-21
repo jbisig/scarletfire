@@ -674,10 +674,13 @@ export function CollectionDetailScreen() {
                 </TouchableOpacity>
               )}
               {collection && isOwner && (
+                /* Label + switch, nothing else: the switch is the affordance,
+                   so a pill container and icon only made it read as a badge. */
                 <TouchableOpacity
-                  style={styles.pill}
+                  style={styles.visibilityToggle}
                   onPress={handleToggleVisibility}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   accessibilityRole="switch"
                   accessibilityLabel={collection.isPublic ? 'Public' : 'Private'}
                   accessibilityHint={
@@ -687,14 +690,7 @@ export function CollectionDetailScreen() {
                   }
                   accessibilityState={{ checked: collection.isPublic }}
                 >
-                  <BlurBackground intensity={25} tint="default" />
-                  <Ionicons
-                    name={collection.isPublic ? 'globe-outline' : 'lock-closed-outline'}
-                    size={17}
-                    color={COLORS.textPrimary}
-                  />
                   <Text style={styles.pillText}>{collection.isPublic ? 'Public' : 'Private'}</Text>
-                  {/* The pill's label alone read as a badge; the switch says "tap me". */}
                   <MiniSwitch value={collection.isPublic} />
                 </TouchableOpacity>
               )}
@@ -1066,6 +1062,14 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Same height as the pills it sits beside, without their surface.
+  visibilityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
 
   sortBar: {
