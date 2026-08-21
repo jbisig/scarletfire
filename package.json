@@ -20,6 +20,7 @@
     "submit:ios": "eas submit --platform ios",
     "submit:android": "eas submit --platform android",
     "generate:videos": "node scripts/generateVideoSources.js",
+    "generate:venue-types": "node scripts/generateVenueTypes.js",
     "build:catalog": "tsx scripts/buildCatalog.ts",
     "export:web": "npx expo export --platform web",
     "electron:dev": "npm run export:web && electron electron/main.js",
