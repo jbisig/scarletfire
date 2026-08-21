@@ -33,7 +33,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
-import { getOfficialReleasesForDate, expandDisplaySeries, getYearsForAnySeries } from '../data/officialReleases';
+import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { STATE_ABBREVIATIONS } from '../constants/states';
 import {
   HomeSortType,
@@ -139,10 +139,9 @@ export function HomeScreen() {
   const sortDropdown = useSortDropdown();
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(() => {
     const urlYears = route.params?.years;
-    const urlSeries = route.params?.series;
     return {
       selectedYears: urlYears ? urlYears.split(',').filter(Boolean) : [],
-      selectedSeries: urlSeries ? urlSeries.split(',').filter(Boolean) : [],
+      selectedTags: [],
     };
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,9 +159,6 @@ export function HomeScreen() {
       sort: sortType !== 'mostPopular' ? sortType : undefined,
       years: appliedFilters.selectedYears.length > 0
         ? appliedFilters.selectedYears.join(',')
-        : undefined,
-      series: appliedFilters.selectedSeries.length > 0
-        ? appliedFilters.selectedSeries.join(',')
         : undefined,
     };
     navigation.setParams(params as any); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -204,7 +200,7 @@ export function HomeScreen() {
 
   // Cascading filter computation — each stage only recomputes when its deps change
 
-  // Stage 1: Filter by year and series (recomputes only when filters change, not on search)
+  // Stage 1: Filter by year (recomputes only when filters change, not on search)
   const yearAndSeriesFiltered = useMemo(() => {
     if (!showsByYear) return [];
 
@@ -212,29 +208,14 @@ export function HomeScreen() {
     let yearsToShow: string[];
     if (appliedFilters.selectedYears.length > 0) {
       yearsToShow = appliedFilters.selectedYears.filter(y => availableYears.includes(y));
-    } else if (appliedFilters.selectedSeries.length > 0) {
-      yearsToShow = getYearsForAnySeries(appliedFilters.selectedSeries)
-        .filter(y => availableYears.includes(y));
     } else {
       yearsToShow = availableYears;
     }
 
     yearsToShow = yearsToShow.sort((a, b) => parseInt(a) - parseInt(b));
 
-    const expandedSeries = appliedFilters.selectedSeries.length > 0
-      ? expandDisplaySeries(appliedFilters.selectedSeries)
-      : [];
-
     return yearsToShow.map(year => {
-      let shows = showsByYear[year];
-
-      if (expandedSeries.length > 0) {
-        shows = shows.filter(show => {
-          const releases = getOfficialReleasesForDate(show.date);
-          return releases.some(r => expandedSeries.includes(r.series));
-        });
-      }
-
+      const shows = showsByYear[year];
       return { title: year, data: shows };
     }).filter(section => section.data.length > 0);
   }, [showsByYear, appliedFilters, availableYears]);

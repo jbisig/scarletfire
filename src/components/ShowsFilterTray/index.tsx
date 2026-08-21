@@ -11,21 +11,25 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SeriesSection } from './SeriesSection';
+import { TagCategorySection } from './TagCategorySection';
 import { YearsSection } from './YearsSection';
 import { FilterActionBar } from './FilterActionBar';
 import {
   ShowsFilterTrayProps,
   ShowsFilterState,
-  FilterEra,
-  FILTER_ERAS,
+  countSelectedInCategory,
 } from './types';
-import {
-  DISPLAY_SERIES,
-  getOfficialReleasesForDate,
-  expandDisplaySeries,
-} from '../../data/officialReleases';
+import { TAG_CATEGORIES, tagsInCategory, TagCategoryId, TagId } from '../../constants/tags';
+import { getTagCounts, applyTagFilter } from '../../services/tagResolver';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
+
+const DEFAULT_EXPANDED: Record<TagCategoryId, boolean> = {
+  era: true,
+  source: true,
+  venueType: false,
+  instrumentation: false,
+  notable: false,
+};
 
 export function ShowsFilterTray({
   isOpen,
@@ -37,35 +41,30 @@ export function ShowsFilterTray({
   const insets = useSafeAreaInsets();
 
   // Local pending state (not applied until user clicks Apply)
-  const [pendingSeries, setPendingSeries] = useState<string[]>(appliedFilters.selectedSeries);
+  const [pendingTags, setPendingTags] = useState<TagId[]>(appliedFilters.selectedTags);
   const [pendingYears, setPendingYears] = useState<string[]>(appliedFilters.selectedYears);
+  const [expandedCategories, setExpandedCategories] = useState<Record<TagCategoryId, boolean>>(DEFAULT_EXPANDED);
 
   // Reset pending state when tray opens with new applied filters
   useEffect(() => {
     if (isOpen) {
-      setPendingSeries(appliedFilters.selectedSeries);
+      setPendingTags(appliedFilters.selectedTags);
       setPendingYears(appliedFilters.selectedYears);
     }
   }, [isOpen, appliedFilters]);
 
-  // Toggle a series selection
-  const handleToggleSeries = useCallback((series: string) => {
-    setPendingSeries(prev =>
-      prev.includes(series)
-        ? prev.filter(s => s !== series)
-        : [...prev, series]
+  // Toggle a tag selection
+  const handleToggleTag = useCallback((id: TagId) => {
+    setPendingTags(prev =>
+      prev.includes(id)
+        ? prev.filter(t => t !== id)
+        : [...prev, id]
     );
   }, []);
 
-  // Select all series
-  const handleSelectAllSeries = useCallback(() => {
-    const allSelected = DISPLAY_SERIES.every(s => pendingSeries.includes(s));
-    if (allSelected) {
-      setPendingSeries([]);
-    } else {
-      setPendingSeries([...DISPLAY_SERIES]);
-    }
-  }, [pendingSeries]);
+  const toggleExpanded = useCallback((category: TagCategoryId) => {
+    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  }, []);
 
   // Toggle a year selection
   const handleToggleYear = useCallback((year: string) => {
@@ -77,24 +76,8 @@ export function ShowsFilterTray({
   }, []);
 
   // Select all years in an era
-  const handleSelectAllInEra = useCallback((era: FilterEra) => {
-    // Get enabled years (years with actual shows from selected series)
-    let enabledYears: string[];
-
-    if (pendingSeries.length === 0 || !showsByYear) {
-      enabledYears = era.years;
-    } else {
-      const expandedSeries = expandDisplaySeries(pendingSeries);
-      enabledYears = era.years.filter(year => {
-        const shows = showsByYear[year];
-        if (!shows) return false;
-        return shows.some(show => {
-          const releases = getOfficialReleasesForDate(show.date);
-          return releases.some(r => expandedSeries.includes(r.series));
-        });
-      });
-    }
-
+  const handleSelectAllInEra = useCallback((years: string[]) => {
+    const enabledYears = showsByYear ? years.filter(y => (showsByYear[y]?.length ?? 0) > 0) : years;
     const allSelected = enabledYears.length > 0 && enabledYears.every(y => pendingYears.includes(y));
 
     if (allSelected) {
@@ -104,15 +87,15 @@ export function ShowsFilterTray({
       // Select all enabled years in this era
       setPendingYears(prev => [...new Set([...prev, ...enabledYears])]);
     }
-  }, [pendingSeries, pendingYears, showsByYear]);
+  }, [pendingYears, showsByYear]);
 
   // Reset all filters and apply immediately (keep tray open)
   const handleReset = useCallback(() => {
     const emptyFilters: ShowsFilterState = {
-      selectedSeries: [],
       selectedYears: [],
+      selectedTags: [],
     };
-    setPendingSeries([]);
+    setPendingTags([]);
     setPendingYears([]);
     onApply(emptyFilters);
   }, [onApply]);
@@ -120,50 +103,31 @@ export function ShowsFilterTray({
   // Apply filters and close
   const handleApply = useCallback(() => {
     const newFilters: ShowsFilterState = {
-      selectedSeries: pendingSeries,
       selectedYears: pendingYears,
+      selectedTags: pendingTags,
     };
     onApply(newFilters);
     onClose();
-  }, [pendingSeries, pendingYears, onApply, onClose]);
+  }, [pendingTags, pendingYears, onApply, onClose]);
+
+  // All show dates, and those narrowed to the pending year selection
+  const allDates = useMemo(
+    () => (showsByYear ? Object.values(showsByYear).flat().map(s => s.date.slice(0, 10)) : []),
+    [showsByYear]
+  );
+  const yearDates = useMemo(
+    () => (pendingYears.length ? allDates.filter(d => pendingYears.includes(d.slice(0, 4))) : allDates),
+    [allDates, pendingYears]
+  );
+
+  // Faceted counts for each tag, given the current pending selections
+  const counts = useMemo(() => getTagCounts(pendingTags, yearDates), [pendingTags, yearDates]);
 
   // Compute matching show count
-  const matchingShowCount = useMemo(() => {
-    if (!showsByYear) return 0;
-
-    const allYears = Object.keys(showsByYear);
-
-    // Determine which years to count
-    let yearsToCount: string[];
-    if (pendingYears.length > 0) {
-      yearsToCount = pendingYears.filter(y => allYears.includes(y));
-    } else {
-      // If no years selected, count all years (series filter will apply)
-      yearsToCount = allYears;
-    }
-
-    // Expand series for filtering
-    const expandedSeries = pendingSeries.length > 0 ? expandDisplaySeries(pendingSeries) : [];
-
-    let count = 0;
-    yearsToCount.forEach(year => {
-      const shows = showsByYear[year];
-      if (!shows) return;
-
-      if (expandedSeries.length > 0) {
-        // Count only shows with releases from selected series
-        const matchingShows = shows.filter(show => {
-          const releases = getOfficialReleasesForDate(show.date);
-          return releases.some(r => expandedSeries.includes(r.series));
-        });
-        count += matchingShows.length;
-      } else {
-        count += shows.length;
-      }
-    });
-
-    return count;
-  }, [showsByYear, pendingSeries, pendingYears]);
+  const matchingShowCount = useMemo(
+    () => applyTagFilter(yearDates, pendingTags).length,
+    [yearDates, pendingTags]
+  );
 
   const isWeb = Platform.OS === 'web';
 
@@ -188,15 +152,24 @@ export function ShowsFilterTray({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <SeriesSection
-          selectedSeries={pendingSeries}
-          onToggleSeries={handleToggleSeries}
-          onSelectAll={handleSelectAllSeries}
-        />
+        {TAG_CATEGORIES.map(category => (
+          <TagCategorySection
+            key={category.id}
+            category={category}
+            tags={tagsInCategory(category.id)}
+            selected={pendingTags}
+            counts={counts}
+            expanded={
+              expandedCategories[category.id] ||
+              countSelectedInCategory({ selectedYears: pendingYears, selectedTags: pendingTags }, category.id) > 0
+            }
+            onToggleExpanded={() => toggleExpanded(category.id)}
+            onToggleTag={handleToggleTag}
+          />
+        ))}
 
         <YearsSection
           selectedYears={pendingYears}
-          selectedSeries={pendingSeries}
           showsByYear={showsByYear}
           onToggleYear={handleToggleYear}
           onSelectAllInEra={handleSelectAllInEra}

@@ -1,17 +1,16 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FILTER_ERAS, FilterEra, ShowsByYear } from './types';
-import { expandDisplaySeries, getOfficialReleasesForDate } from '../../data/officialReleases';
+import { ShowsByYear } from './types';
+import { groupYearsByEra } from '../../data/eras';
 import { useResponsive } from '../../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface YearsSectionProps {
   selectedYears: string[];
-  selectedSeries: string[];
   showsByYear: ShowsByYear | null;
   onToggleYear: (year: string) => void;
-  onSelectAllInEra: (era: FilterEra) => void;
+  onSelectAllInEra: (years: string[]) => void;
 }
 
 interface YearButtonProps {
@@ -86,60 +85,44 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
 
 export const YearsSection = React.memo<YearsSectionProps>(function YearsSection({
   selectedYears,
-  selectedSeries,
   showsByYear,
   onToggleYear,
   onSelectAllInEra,
 }) {
   const { isDesktop } = useResponsive();
-  // Compute which years should be disabled (no actual shows from selected series)
+
+  const availableYears = useMemo(
+    () => (showsByYear ? Object.keys(showsByYear).sort() : []),
+    [showsByYear]
+  );
+
+  // Years with zero shows are disabled
   const disabledYears = useMemo(() => {
-    if (selectedSeries.length === 0 || !showsByYear) {
-      return new Set<string>();
-    }
+    if (!showsByYear) return new Set<string>();
+    return new Set(availableYears.filter(y => (showsByYear[y]?.length ?? 0) === 0));
+  }, [availableYears, showsByYear]);
 
-    // Expand display series to actual series names
-    const expandedSeries = expandDisplaySeries(selectedSeries);
-    const allYears = FILTER_ERAS.flatMap(era => era.years);
-
-    // For each year, check if there are actual shows with releases from selected series
-    const yearsWithMatches = new Set<string>();
-    allYears.forEach(year => {
-      const shows = showsByYear[year];
-      if (!shows) return;
-
-      const hasMatch = shows.some(show => {
-        const releases = getOfficialReleasesForDate(show.date);
-        return releases.some(r => expandedSeries.includes(r.series));
-      });
-
-      if (hasMatch) {
-        yearsWithMatches.add(year);
-      }
-    });
-
-    return new Set(allYears.filter(y => !yearsWithMatches.has(y)));
-  }, [selectedSeries, showsByYear]);
+  const eraGroups = useMemo(() => groupYearsByEra(availableYears), [availableYears]);
 
   // Check if all years in an era are selected
-  const isEraFullySelected = (era: FilterEra): boolean => {
-    const enabledYears = era.years.filter(y => !disabledYears.has(y));
+  const isEraFullySelected = (years: string[]): boolean => {
+    const enabledYears = years.filter(y => !disabledYears.has(y));
     return enabledYears.length > 0 && enabledYears.every(y => selectedYears.includes(y));
   };
 
   return (
     <View style={styles.section}>
-      {FILTER_ERAS.map(era => {
-        const eraFullySelected = isEraFullySelected(era);
-        const hasEnabledYears = era.years.some(y => !disabledYears.has(y));
+      {eraGroups.map(({ era, years }) => {
+        const eraFullySelected = isEraFullySelected(years);
+        const hasEnabledYears = years.some(y => !disabledYears.has(y));
 
         return (
-          <View key={era.name} style={styles.eraContainer}>
+          <View key={era.id} style={styles.eraContainer}>
             <View style={styles.eraHeader}>
-              <Text style={styles.eraName}>{era.name}</Text>
+              <Text style={styles.eraName}>{era.label}</Text>
               {hasEnabledYears && (
                 <TouchableOpacity
-                  onPress={() => onSelectAllInEra(era)}
+                  onPress={() => onSelectAllInEra(years)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.selectAllText}>
@@ -149,7 +132,7 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
               )}
             </View>
             <View style={styles.yearsGrid}>
-              {era.years.map(year => (
+              {years.map(year => (
                 <YearButton
                   key={year}
                   year={year}

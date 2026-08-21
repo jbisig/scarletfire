@@ -32,7 +32,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { haptics } from '../services/hapticService';
-import { getOfficialReleasesForDate, expandDisplaySeries } from '../data/officialReleases';
 import { SongCard } from '../components/SongCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useDebounce } from '../hooks/useDebounce';
@@ -219,15 +218,6 @@ export function FavoritesScreen() {
       });
     }
 
-    // Filter by selected series (official releases)
-    if (appliedFilters.selectedSeries.length > 0) {
-      const expandedSeries = expandDisplaySeries(appliedFilters.selectedSeries);
-      songs = songs.filter(song => {
-        const releases = getOfficialReleasesForDate(song.showDate);
-        return releases.some(r => expandedSeries.includes(r.series));
-      });
-    }
-
     // Filter by search query
     if (debouncedSearchQuery.trim()) {
       const lowerQuery = debouncedSearchQuery.toLowerCase();
@@ -276,15 +266,6 @@ export function FavoritesScreen() {
       shows = shows.filter(show => {
         const showYear = show.date.substring(0, 4);
         return appliedFilters.selectedYears.includes(showYear);
-      });
-    }
-
-    // Filter by selected series (official releases)
-    if (appliedFilters.selectedSeries.length > 0) {
-      const expandedSeries = expandDisplaySeries(appliedFilters.selectedSeries);
-      shows = shows.filter(show => {
-        const releases = getOfficialReleasesForDate(show.date);
-        return releases.some(r => expandedSeries.includes(r.series));
       });
     }
 
