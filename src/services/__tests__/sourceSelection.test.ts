@@ -9,7 +9,7 @@ jest.mock('../../utils/showLookup', () => ({
   findShowByDate: (date: string) => mockShows[date.slice(0, 10)],
 }));
 
-import { resolveForDate, resolveShowIdentifier, resolveRouteIdentifier } from '../sourceSelection';
+import { resolveForDate, resolveShowIdentifier, resolveRouteIdentifier, stableShowIdentifier } from '../sourceSelection';
 import { resetStoreForTests, setSourcePreference, setPin } from '../sourcePrefsStore';
 import type { GratefulDeadShow, RecordingVersion } from '../../types/show.types';
 
@@ -71,5 +71,24 @@ describe('resolveRouteIdentifier', () => {
     expect(resolveRouteIdentifier('1977-05-08', { format: 'aud' })).toBe('aud');
     expect(resolveRouteIdentifier('gd1977-05-08.mtx.seamons')).toBe('gd1977-05-08.mtx.seamons');
     expect(resolveRouteIdentifier('1966-01-01')).toBe('1966-01-01');
+  });
+});
+
+describe('stableShowIdentifier', () => {
+  it('uses the catalog primary identifier for a catalog date regardless of which recording is loaded', () => {
+    expect(stableShowIdentifier('1977-05-08', 'betty')).toBe('mtx');
+    expect(stableShowIdentifier('1977-05-08', 'aud')).toBe('mtx');
+  });
+
+  it('accepts a full ISO timestamp', () => {
+    expect(stableShowIdentifier('1977-05-08T00:00:00Z', 'aud')).toBe('mtx');
+  });
+
+  it('falls back to the given identifier for an off-catalog date', () => {
+    expect(stableShowIdentifier('1966-01-01', 'gd66.fav')).toBe('gd66.fav');
+  });
+
+  it('falls back to the given identifier when date is undefined', () => {
+    expect(stableShowIdentifier(undefined, 'gd66.fav')).toBe('gd66.fav');
   });
 });

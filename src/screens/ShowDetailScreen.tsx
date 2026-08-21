@@ -60,7 +60,7 @@ import { useResolvedShowRating, usePerformanceRatingsVersion } from '../contexts
 import { resolvePerformanceRating, ResolvedRating } from '../services/ratingResolver';
 import { useRatingOverlay } from '../contexts/RatingOverlayContext';
 import { useSourcePrefs, usePendingNudge, useActivePin, useSourcePrefsVersion } from '../contexts/SourcePrefsContext';
-import { resolveForDate, resolveRouteIdentifier } from '../services/sourceSelection';
+import { resolveForDate, resolveRouteIdentifier, stableShowIdentifier } from '../services/sourceSelection';
 import { rankRecordings } from '../services/recordingRanker';
 import { describeFallback, parseSourceConstraint } from '../services/recordingResolver';
 import { useToast } from '../contexts/ToastContext';
@@ -108,6 +108,13 @@ export function ShowDetailScreen() {
   // Displayed show rating: resolved so user overrides win over the system
   // tier and the header re-renders when the user rates/unrates the show.
   const showDate = previewDate ?? show?.date;
+  // The stable identity of THIS SHOW for user-state keys (favorites,
+  // collections, play counts) — the catalog primary recording, never the
+  // (possibly non-primary) recording actually loaded. See sourceSelection.ts.
+  const showKey = useMemo(
+    () => stableShowIdentifier(showDate, show?.identifier ?? ''),
+    [showDate, show?.identifier],
+  );
   const resolvedShowRating = useResolvedShowRating(showDate);
   const { openRatingOverlay } = useRatingOverlay();
 
@@ -150,8 +157,8 @@ export function ShowDetailScreen() {
   // Calculate play count for this show
   const playCount = useMemo(() => {
     if (!show) return 0;
-    return getShowPlayCount(show.identifier, show.tracks.length);
-  }, [show?.identifier, show?.tracks.length, getShowPlayCount]);
+    return getShowPlayCount(showKey, show.tracks.length);
+  }, [showKey, show?.tracks.length, getShowPlayCount]);
 
   // Pre-compute resolved track ratings (user override > system) for the show
   const ratingsVersion = usePerformanceRatingsVersion();
@@ -468,17 +475,19 @@ export function ShowDetailScreen() {
         year: show.year,
         venue: show.venue,
         location: show.location,
-        // Only the primary (currently loaded) recording's data is ever read
-        // back out of a favorite — the catalog is looked up fresh by date
-        // for format/lineage — so persisting every version here just bloats
-        // the favorite with ~10 KB of data that's never used.
-        versions: (show.allVersions ?? []).filter(v => v.identifier === show.identifier),
-        primaryIdentifier: show.identifier,
+        // Only the primary recording's data is ever read back out of a
+        // favorite — the catalog is looked up fresh by date for
+        // format/lineage — so persisting every version here just bloats
+        // the favorite with ~10 KB of data that's never used. Keyed by
+        // showKey (the catalog primary), not the recording actually loaded —
+        // see stableShowIdentifier.
+        versions: (show.allVersions ?? []).filter(v => v.identifier === showKey),
+        primaryIdentifier: showKey,
         title: show.title,
       };
 
-      if (isShowFavorite(show.identifier)) {
-        removeFavoriteShow(show.identifier);
+      if (isShowFavorite(showKey)) {
+        removeFavoriteShow(showKey);
       } else {
         addFavoriteShow(showToSave);
       }
@@ -521,7 +530,7 @@ export function ShowDetailScreen() {
         year: previewDate ? parseInt(previewDate.substring(0, 4)) : 0,
       } as ShowDetail);
 
-  const isSaved = isShowFavorite(displayShow.identifier);
+  const isSaved = isShowFavorite(showKey);
 
   return (
     <ScrollView
@@ -595,7 +604,7 @@ export function ShowDetailScreen() {
                       />
                     </TouchableOpacity>
                     {(() => {
-                      const collectionCount = show ? (itemCountsByIdentifier[show.identifier] ?? 0) : 0;
+                      const collectionCount = show ? (itemCountsByIdentifier[showKey] ?? 0) : 0;
                       return (
                         <TouchableOpacity
                           style={styles.savePillWeb}
@@ -875,13 +884,13 @@ export function ShowDetailScreen() {
           visible
           onClose={() => setAddToCollectionVisible(false)}
           type="show_collection"
-          itemIdentifier={show.identifier}
+          itemIdentifier={showKey}
           itemMetadata={{
             title: show.title,
             date: show.date,
             venue: show.venue,
             location: show.location,
-            primaryIdentifier: show.identifier,
+            primaryIdentifier: showKey,
           }}
         />
       )}

@@ -13,7 +13,7 @@ import { logger } from '../utils/logger';
 import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import { useOptionalToast } from './ToastContext';
 import { findNextShow } from '../utils/showLookup';
-import { resolveShowIdentifier } from '../services/sourceSelection';
+import { resolveShowIdentifier, stableShowIdentifier } from '../services/sourceSelection';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -744,7 +744,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           hasRecordedPlayRef.current = true;
           recordTrackPlay(
             currentTrackRef.current.title,
-            currentShowRef.current.identifier,
+            // Keyed by the show's stable identity (catalog primary), not the
+            // recording actually loaded — otherwise the same show's plays
+            // split across recordings when the resolver picks a non-primary
+            // one. See sourceSelection.ts.
+            stableShowIdentifier(currentShowRef.current.date, currentShowRef.current.identifier),
             currentShowRef.current.date,
             playlistRef.current.length
           );

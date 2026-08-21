@@ -15,6 +15,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { logger } from '../utils/logger';
 
 import { resolveVideoUri } from '../utils/resolveVideoUri';
+import { stableShowIdentifier } from '../services/sourceSelection';
 
 interface MiniPlayerProps {
   onPress: () => void;
@@ -40,12 +41,17 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   // Prefetch-show-detail effect now lives once in PlayerContext (was
   // duplicated identically here and in FullPlayer).
 
-  // Memoize play count lookup
+  // Memoize play count lookup. Keyed by the show's stable identity (catalog
+  // primary) to match how PlayerContext records plays — not the recording
+  // actually loaded. See sourceSelection.ts.
   const playCount = useMemo(() => {
     return state.currentTrack && state.currentShow
-      ? getPlayCount(state.currentTrack.title, state.currentShow.identifier)
+      ? getPlayCount(
+          state.currentTrack.title,
+          stableShowIdentifier(state.currentShow.date, state.currentShow.identifier),
+        )
       : 0;
-  }, [state.currentTrack?.id, state.currentShow?.identifier, getPlayCount]);
+  }, [state.currentTrack?.id, state.currentShow?.identifier, state.currentShow?.date, getPlayCount]);
 
   // Resolved rating for the current track (display-only here — rating taps
   // live on the large player and show detail screen).

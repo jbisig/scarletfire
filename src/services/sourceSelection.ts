@@ -46,3 +46,15 @@ export function resolveRouteIdentifier(idOrDate: string, sessionConstraint?: Sou
   if (!show) return idOrDate;
   return resolveShowIdentifier(show, sessionConstraint);
 }
+
+/**
+ * The stable identity of a SHOW for user-state keys (favorites, collections,
+ * play counts, feed targets): the catalog's primary recording for that date,
+ * falling back to the given identifier when the date is off-catalog. The
+ * loaded recording now varies per user (preference, pins), so anything keyed
+ * per show must use this, never `show.identifier`.
+ */
+export function stableShowIdentifier(date: string | undefined, fallbackIdentifier: string): string {
+  const show = date ? findShowByDate(date.slice(0, 10)) : undefined;
+  return show?.primaryIdentifier ?? fallbackIdentifier;
+}
