@@ -109,8 +109,7 @@ const ProgressRow = React.memo(function ProgressRow({
               styles.progressThumb,
               { left: thumbLeft },
               isDragging && styles.progressThumbActive,
-            ]}
-            pointerEvents="none"
+            , { pointerEvents: 'none' }]}
           />
         )}
       </View>

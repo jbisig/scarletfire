@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../../hooks/useResponsive';
 import { TagCategorySection } from './TagCategorySection';
 import { YearsSection } from './YearsSection';
 import { FilterActionBar } from './FilterActionBar';
@@ -42,6 +43,7 @@ export function ShowsFilterTray({
   showsByYear,
 }: ShowsFilterTrayProps) {
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
 
   // Local pending state (not applied until user clicks Apply)
   const [pendingTags, setPendingTags] = useState<TagId[]>(appliedFilters.selectedTags);
@@ -140,7 +142,10 @@ export function ShowsFilterTray({
     [isOpen, yearDates, pendingTags]
   );
 
-  const isWeb = Platform.OS === 'web';
+  // The centered dialog is a desktop pattern; under the desktop breakpoint
+  // web gets the same fullscreen tray as native so the mobile layout is one
+  // layout, not two.
+  const isWeb = Platform.OS === 'web' && isDesktop;
 
   const content = (
     <View style={[styles.container, !isWeb && { paddingTop: insets.top }]}>

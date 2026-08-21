@@ -250,8 +250,7 @@ export function SongListScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop]}
-            pointerEvents="none"
+            style={[styles.headerGradient, isDesktop && styles.headerGradientDesktop, { pointerEvents: 'none' }]}
           />
         </View>
 

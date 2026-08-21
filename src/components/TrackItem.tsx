@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
@@ -74,7 +74,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
   const showMoreButton = isNative && !!onLongPress;
 
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.container,
         isDesktop && styles.containerDesktop,
@@ -83,25 +83,38 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         isSelected && !isPlaying && styles.selected,
         isDesktop && isHovered && !isPlaying && !isSelected && styles.hovered,
       ]}
-      onPress={() => onPress(track)}
-      onLongPress={Platform.OS !== 'web' && onLongPress ? () => onLongPress(track) : undefined}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityHint="Double tap to play this track"
-      accessibilityState={{ selected: isPlaying || isSelected }}
       // @ts-ignore - web only mouse events
       onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
       onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
     >
-      <View style={styles.infoContainer}>
-        <View style={styles.titleRow}>
-          <Text
-            style={[styles.title, isPlaying && styles.playingText]}
-            numberOfLines={2}
+      {/* The row's tap target is a layer beneath the content, not a wrapper
+          around it, so the rating / add / save / more buttons are siblings
+          rather than buttons nested inside a button (invalid on web, merged
+          away by VoiceOver on native). Text is `pointerEvents: none` so taps
+          fall through to this layer. Same pattern as ShowCard. */}
+      <Pressable
+        style={({ pressed }) => [styles.rowHit, pressed && styles.rowHitPressed]}
+        onPress={() => onPress(track)}
+        onLongPress={isNative && onLongPress ? () => onLongPress(track) : undefined}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint="Double tap to play this track"
+        accessibilityState={{ selected: isPlaying || isSelected }}
+      />
+      <View style={[styles.infoContainer, styles.passThrough]}>
+        <View style={[styles.titleRow, styles.passThrough]}>
+          <View
+            style={styles.titleWrap}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
           >
-            {track.title}
-          </Text>
+            <Text
+              style={[styles.title, isPlaying && styles.playingText]}
+              numberOfLines={2}
+            >
+              {track.title}
+            </Text>
+          </View>
           {/* Stars only render when a user or community rating exists —
               unrated tracks get no placeholder (rate them from the player). */}
           {rating && (
@@ -121,7 +134,11 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
                 <StarRating rating={rating} size={14} />
               </TouchableOpacity>
             ) : (
-              <View style={styles.ratingContainer}>
+              <View
+                style={[styles.ratingContainer, styles.passive]}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
                 <StarRating rating={rating} size={14} />
               </View>
             )
@@ -176,13 +193,19 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         </TouchableOpacity>
       )}
       {isLoading ? (
-        <View style={[styles.duration, styles.loadingSlot, hasSave && !isNative && styles.durationWeb]} testID="track-loading">
+        <View style={[styles.duration, styles.loadingSlot, hasSave && !isNative && styles.durationWeb, styles.passive]} testID="track-loading">
           <ActivityIndicator size="small" color={COLORS.accent} />
         </View>
       ) : (
-        <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && !isNative && styles.durationWeb]}>
-          {duration}
-        </Text>
+        <View
+          style={[styles.passive, styles.durationWrap]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && !isNative && styles.durationWeb]}>
+            {duration}
+          </Text>
+        </View>
       )}
       {/* Native: the one visible way into add-to-playlist / save for this
           row — long-press still works, this just makes it discoverable. */}
@@ -203,7 +226,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
         </TouchableOpacity>
       )}
-    </TouchableOpacity>
+    </View>
   );
 });
 
@@ -232,12 +255,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 12,
   },
+  rowHit: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+  },
+  rowHitPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  passThrough: {
+    pointerEvents: 'box-none',
+  },
+  passive: {
+    pointerEvents: 'none',
+  },
   infoContainer: {
     flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
+  },
+  titleWrap: {
+    flexShrink: 1,
+    pointerEvents: 'none',
+  },
+  durationWrap: {
+    alignSelf: 'baseline',
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,

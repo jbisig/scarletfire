@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 type ToastType = 'error' | 'success' | 'info';
 
@@ -59,10 +59,11 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       }),
     ]).start();
 
-    // Auto dismiss after 4 seconds
+    // Errors stay longer: a screen-reader user needs time to reach them,
+    // and an error is the one toast worth re-reading.
     const timer = setTimeout(() => {
       dismissToast();
-    }, 4000);
+    }, toast.type === 'error' ? 8000 : 4000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -106,10 +107,17 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         styles.toast,
         { opacity, transform: [{ translateY }] },
       ]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion={toast.type === 'error' ? 'assertive' : 'polite'}
     >
       <Ionicons name={getIconName()} size={20} color={getIconColor()} />
       <Text style={styles.toastText} numberOfLines={2}>{toast.message}</Text>
-      <TouchableOpacity onPress={dismissToast} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity
+        onPress={dismissToast}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+      >
         <Ionicons name="close" size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
     </Animated.View>
@@ -144,7 +152,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         animationType="none"
         onRequestClose={() => {}}
       >
-        <View style={[styles.container, { top: insets.top + SPACING.md }]} pointerEvents="box-none">
+        <View style={[styles.container, { top: insets.top + SPACING.md }, { pointerEvents: 'box-none' }]}>
           {toasts.map(toast => (
             <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
           ))}
@@ -171,11 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     marginBottom: SPACING.sm,
     gap: SPACING.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.md,
     maxWidth: '100%',
   },
   toastText: {

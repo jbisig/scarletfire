@@ -28,7 +28,7 @@ import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, LAYOUT, FONTS } from '../constants/theme';
 import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   },
   performanceCount: {
     fontSize: 26,
-    fontFamily: 'FamiljenGrotesk',
+    fontFamily: FONTS.primaryRegular,
     fontWeight: '400',
     color: COLORS.textTertiary,
   },

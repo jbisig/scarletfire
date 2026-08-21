@@ -72,7 +72,12 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
-    'FamiljenGrotesk': require('./assets/fonts/FamiljenGrotesk-SemiBold.ttf'),
+    // One face per family key (see FONTS in constants/theme.ts). The heading
+    // scale is 700, so the bare key is the Bold file — a lighter file here
+    // makes every heading synthesized bold.
+    'FamiljenGrotesk': require('./assets/fonts/FamiljenGrotesk-Bold.ttf'),
+    'FamiljenGrotesk-SemiBold': require('./assets/fonts/FamiljenGrotesk-SemiBold.ttf'),
+    'FamiljenGrotesk-Regular': require('./assets/fonts/FamiljenGrotesk-Regular.ttf'),
     'Inter': require('./assets/fonts/Inter-VariableFont_opsz,wght.ttf'),
   });
   const [fontTimeout, setFontTimeout] = useState(false);
@@ -89,8 +94,10 @@ export default function App() {
   // tap-to-play metadata fetch doesn't pay it. Fire-and-forget; no-cors keeps
   // the opaque response from logging a CORS console error on web (the
   // connection is established either way, which is all we need).
+  // robots.txt answers 200 in a few bytes; the bare /metadata/ path we used
+  // to hit 404s, which logged a red console error on every launch.
   useEffect(() => {
-    fetch('https://archive.org/metadata/', { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
+    fetch('https://archive.org/robots.txt', { method: 'HEAD', mode: 'no-cors' }).catch(() => {});
   }, []);
 
   useEffect(() => {

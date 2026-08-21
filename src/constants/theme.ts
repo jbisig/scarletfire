@@ -16,7 +16,6 @@
 export const COLORS = {
   // Primary colors
   accent: '#E54C4F',
-  accentLight: '#E54C4F',
   accentTransparent: 'rgba(229, 76, 79, 0.15)',
   /** Gold for user-override star ratings (system ratings stay `accent` red) */
   userRating: '#E5B44C',
@@ -67,8 +66,17 @@ export const COLORS = {
 // FONTS
 // =============================================================================
 
+/**
+ * Each Familjen Grotesk weight is a separate face registered under its own
+ * family key in App.tsx. `primary` is the Bold face because the heading
+ * scale below is 700 throughout; anything lighter must name its face
+ * explicitly — a single registered file plus a different `fontWeight`
+ * gets synthesized (faux) bold/regular on every platform.
+ */
 export const FONTS = {
   primary: 'FamiljenGrotesk',
+  primarySemiBold: 'FamiljenGrotesk-SemiBold',
+  primaryRegular: 'FamiljenGrotesk-Regular',
   secondary: 'Inter',
 } as const;
 
@@ -174,7 +182,8 @@ export const TYPOGRAPHY = {
     color: COLORS.textSecondary,
   },
   captionSmall: {
-    fontSize: 10,
+    // 11px is the floor for functional text (tab labels, badges, hints).
+    fontSize: 11,
     fontWeight: '500' as const,
     fontFamily: FONTS.secondary,
     color: COLORS.textSecondary,
@@ -242,31 +251,18 @@ export const RADIUS = {
 } as const;
 
 // =============================================================================
-// SHADOWS (for future use)
+// SHADOWS
 // =============================================================================
 
+/**
+ * Dropdowns, menus, and toasts. `boxShadow` is the one shadow API that
+ * renders on iOS, Android (new architecture), and web alike — the legacy
+ * `shadow*` props are deprecated on web and silently ignored on Android.
+ */
 export const SHADOWS = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
+  sm: { boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' },
+  md: { boxShadow: '0 2px 4px rgba(0, 0, 0, 0.25)' },
+  lg: { boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)' },
 } as const;
 
 // =============================================================================

@@ -449,6 +449,7 @@ export function ShowDetailScreen() {
 
   const handleTrackPress = useCallback((track: Track) => {
     if (show) {
+      haptics.light();
       setJustPressedTrackId(track.id);
       loadTrack(track, show, show.tracks);
       // Update URL to include track title for shareable links
@@ -460,6 +461,7 @@ export function ShowDetailScreen() {
 
   const handleToggleSaveSong = useCallback((track: Track) => {
     if (!show) return;
+    haptics.medium();
     if (isSongFavorite(track.id, show.identifier)) {
       removeFavoriteSong(track.id, show.identifier);
     } else {
@@ -541,6 +543,7 @@ export function ShowDetailScreen() {
 
   const handleToggleFavorite = () => {
     if (show) {
+      haptics.medium();
       const showToSave = {
         date: show.date,
         year: show.year,
@@ -974,6 +977,9 @@ export function ShowDetailScreen() {
             onPress={() => setShowNotesExpanded(!showNotesExpanded)}
             activeOpacity={0.7}
             style={styles.showNotesToggle}
+            accessibilityRole="button"
+            accessibilityLabel={showNotesExpanded ? 'Show less of the show notes' : 'Show more of the show notes'}
+            accessibilityState={{ expanded: showNotesExpanded }}
           >
             <Text style={styles.showNotesToggleText}>
               {showNotesExpanded ? 'Show less' : 'Show more'}

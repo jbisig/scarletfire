@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useCallback, useMemo, useRef } from 'react';
 import { ShowsByYear, ShowDetail } from '../types/show.types';
 import { archiveApi } from '../services/archiveApi';
 import { networkPriority } from '../services/networkPriority';
@@ -6,9 +6,9 @@ import showsData from '../data/shows.json';
 import { getClassicTier } from '../data/classicShowsTiers';
 
 interface ShowsContextType {
+  // The catalog is bundled (shows.json), so there is no loading or error
+  // state to expose — consumers can treat showsByYear as always present.
   showsByYear: ShowsByYear;
-  isLoading: boolean;
-  error: string | null;
   getShowDetail: (identifier: string) => Promise<ShowDetail>;
 }
 
@@ -30,8 +30,6 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
     return enrichedShowsByYear;
   }, []);
 
-  const [isLoading] = useState(false);
-  const [error] = useState<string | null>(null);
   // Session-permanent cache — show details are historical and never change
   const sessionCacheRef = useRef(new Map<string, ShowDetail>());
   // Track in-flight requests to prevent duplicate concurrent API calls
@@ -70,10 +68,8 @@ export function ShowsProvider({ children }: { children: React.ReactNode }) {
   // ShowsProvider (e.g. when something above it in the tree re-renders).
   const contextValue = useMemo<ShowsContextType>(() => ({
     showsByYear,
-    isLoading,
-    error,
     getShowDetail,
-  }), [showsByYear, isLoading, error, getShowDetail]);
+  }), [showsByYear, getShowDetail]);
 
   return (
     <ShowsContext.Provider value={contextValue}>

@@ -32,9 +32,9 @@ export function SortableTrackList({ items, onReorder, renderItem }: Props) {
           <View style={styles.handle}>
             <Ionicons name="reorder-three" size={22} color={COLORS.textSecondary} />
           </View>
-          {/* pointerEvents="none" so the inner SongCard's own Pressable can't
+          {/* pointerEvents none so the inner SongCard's own Pressable can't
               steal touches away from the outer long-press-drag handler. */}
-          <View style={styles.content} pointerEvents="none">
+          <View style={[styles.content, { pointerEvents: 'none' }]}>
             {renderItem(item)}
           </View>
         </Pressable>

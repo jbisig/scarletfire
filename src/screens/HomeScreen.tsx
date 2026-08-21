@@ -20,8 +20,7 @@ import { ShowsFilterTray, ShowsFilterState, hasActiveFilters } from '../componen
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { ErrorState, NoResultsState } from '../components/StateViews';
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import { NoResultsState } from '../components/StateViews';
 import { GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
@@ -32,7 +31,6 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
@@ -128,7 +126,7 @@ export function HomeScreen() {
   const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const sectionListRef = useRef<SectionList<GratefulDeadShow>>(null);
   const flatListRef = useRef<FlatList<GratefulDeadShow>>(null);
-  const { showsByYear, isLoading, error } = useShows();
+  const { showsByYear } = useShows();
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
 
   // Initialize sort/filter state from URL params (if present)
@@ -281,22 +279,6 @@ export function HomeScreen() {
     setAppliedFilters(filters);
   }, []);
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-        <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: insets.top + 8 }]}>
-          {!isDesktop && <ProfileImage uri={null} style={styles.avatar} />}
-          <Text style={styles.headerTitle}>Shows</Text>
-        </View>
-        <SkeletonLoader variant="showCard" count={10} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return <ErrorState message={error} />;
-  }
-
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       <ScreenHeader
@@ -386,8 +368,7 @@ export function HomeScreen() {
         <LinearGradient
           colors={[COLORS.background, COLORS.background + '00']}
           locations={[0, 1]}
-          style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
-          pointerEvents="none"
+          style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop, { pointerEvents: 'none' }]}
         />
       </View>
 
@@ -456,28 +437,6 @@ const styles = StyleSheet.create({
   },
   containerDesktop: {
     backgroundColor: COLORS.backgroundSecondary,
-  },
-  // Kept for the isLoading skeleton header below (a simpler, non-absolute layout
-  // that doesn't go through <ScreenHeader>). ScreenHeader owns its own copies
-  // of these for the real header.
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
-    paddingBottom: SPACING.lg,
-  },
-  headerDesktop: {
-    paddingHorizontal: 32,
-  },
-  avatar: {
-    width: 39,
-    height: 39,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.heading2,
   },
   actionBarSection: {
     backgroundColor: COLORS.background,

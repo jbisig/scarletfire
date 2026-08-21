@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   kicker: {
     color: '#fff',
     fontSize: 12,
-    fontFamily: FONTS.primary,
+    fontFamily: FONTS.primarySemiBold,
     fontWeight: '600',
     letterSpacing: 1.5,
     opacity: 0.8,

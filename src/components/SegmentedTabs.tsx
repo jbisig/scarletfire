@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Platform } from 'react-native';
-import { COLORS, SPACING, RADIUS } from '../constants/theme';
+import { COLORS, SPACING, RADIUS, FONTS } from '../constants/theme';
 
 export interface SegmentedTabItem<T extends string = string> {
   key: T;
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
+    fontFamily: FONTS.primarySemiBold,
     fontWeight: '600',
     color: COLORS.textPrimary,
     ...(Platform.OS === 'android' && {
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   inactiveTabText: {
     fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
+    fontFamily: FONTS.primarySemiBold,
     fontWeight: '600',
     color: COLORS.textSecondary,
     ...(Platform.OS === 'android' && {

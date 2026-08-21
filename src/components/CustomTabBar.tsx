@@ -112,8 +112,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...TYPOGRAPHY.captionSmall,
-    // captionSmall is 10px — below the 11px floor for functional text.
-    fontSize: 11,
     ...(Platform.OS === 'android' && {
       includeFontPadding: false,
     }),

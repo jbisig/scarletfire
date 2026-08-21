@@ -459,8 +459,7 @@ export function FavoritesScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
-            pointerEvents="none"
+            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop, { pointerEvents: 'none' }]}
           />
         </View>
 
@@ -551,8 +550,7 @@ export function FavoritesScreen() {
           <LinearGradient
             colors={[COLORS.background, COLORS.background + '00']}
             locations={[0, 1]}
-            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop]}
-            pointerEvents="none"
+            style={[styles.actionBarGradient, isDesktop && styles.actionBarGradientDesktop, { pointerEvents: 'none' }]}
           />
         </View>
 

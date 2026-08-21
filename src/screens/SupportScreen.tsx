@@ -209,7 +209,7 @@ export function SupportScreen() {
 
           {/* Honeypot: hidden from real users via display:none. Bots that blindly
               fill every input will trip this and be silently dropped. */}
-          <View style={styles.honeypot} pointerEvents="none">
+          <View style={[styles.honeypot, { pointerEvents: 'none' }]}>
             <TextInput
               value={website}
               onChangeText={setWebsite}

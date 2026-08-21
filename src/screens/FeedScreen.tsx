@@ -8,7 +8,7 @@ import { ProfileImage } from '../components/ProfileImage';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ActivityList } from '../components/feed/ActivityList';
 import { PeopleList } from '../components/feed/PeopleList';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
 
 type Segment = 'activity' | 'people';
 
@@ -170,14 +170,14 @@ const styles = StyleSheet.create({
   inactiveTab: { backgroundColor: COLORS.cardBackground },
   activeTabText: {
     fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
+    fontFamily: FONTS.primarySemiBold,
     fontWeight: '600',
     color: COLORS.textPrimary,
     ...(Platform.OS === 'android' && { paddingTop: 2 }),
   },
   inactiveTabText: {
     fontSize: 16,
-    fontFamily: 'FamiljenGrotesk',
+    fontFamily: FONTS.primarySemiBold,
     fontWeight: '600',
     color: COLORS.textSecondary,
     ...(Platform.OS === 'android' && { paddingTop: 2 }),

@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -64,6 +65,11 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
   const webVideoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
   const progressBarRef = useRef<View>(null);
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Top controls sit just below the status bar / Dynamic Island; the
+  // control deck clears the home indicator. Hard-coded 60s were wrong on
+  // SE-class phones and most Android devices.
+  const topInset = { top: insets.top + SPACING.sm };
 
   // Animation for slide up/down
   const slideAnim = useRef(new Animated.Value(initialScreenHeight)).current;
@@ -403,7 +409,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         {/* Close button */}
         <TouchableOpacity
           onPress={onClose}
-          style={styles.closeButton}
+          style={[styles.closeButton, topInset]}
           accessibilityRole="button"
           accessibilityLabel="Close player"
           accessibilityHint="Double tap to minimize the player"
@@ -414,7 +420,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         {/* Share button */}
         <TouchableOpacity
           onPress={handleShare}
-          style={styles.shareButton}
+          style={[styles.shareButton, topInset]}
           accessibilityRole="button"
           accessibilityLabel="Share song"
           accessibilityHint="Double tap to open the share tray"
@@ -426,7 +432,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         {Platform.OS === 'android' && castState !== 'NO_DEVICES' && (
           <TouchableOpacity
             onPress={handleCastPress}
-            style={styles.castButton}
+            style={[styles.castButton, topInset]}
             accessibilityRole="button"
             accessibilityLabel={castState === 'CONNECTED' ? 'Disconnect from Chromecast' : 'Cast to Chromecast'}
             accessibilityHint="Double tap to open cast device selection"
@@ -543,7 +549,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
       </View>
 
       {/* Controls Section */}
-      <View style={styles.controlsSection}>
+      <View style={[styles.controlsSection, { paddingBottom: insets.bottom + SPACING.xxl }]}>
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <View
@@ -560,8 +566,7 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
                 styles.progressThumb,
                 { left: thumbLeft },
                 isDragging && styles.progressThumbActive
-              ]}
-              pointerEvents="none"
+              , { pointerEvents: 'none' }]}
             />
           </View>
           <View style={styles.timeContainer}>
@@ -662,14 +667,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 60,
     left: SPACING.lg,
     padding: SPACING.sm,
     zIndex: 10,
   },
   castButton: {
     position: 'absolute',
-    top: 60,
     // Shifted left by ~44px so it sits beside the share button without overlapping.
     // Share button is the rightmost element; cast sits inboard of it when present.
     right: SPACING.lg + 44,
@@ -678,7 +681,6 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     position: 'absolute',
-    top: 60,
     right: SPACING.lg,
     padding: SPACING.sm,
     zIndex: 10,
@@ -739,7 +741,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingHorizontal: SPACING.xxl,
     paddingTop: SPACING.lg,
-    paddingBottom: 60,
   },
   progressContainer: {
     marginBottom: SPACING.xxl,

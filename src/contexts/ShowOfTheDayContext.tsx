@@ -18,7 +18,7 @@ interface ShowOfTheDayProviderProps {
 }
 
 export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
-  const { showsByYear, isLoading: showsLoading } = useShows();
+  const { showsByYear } = useShows();
   const [show, setShow] = useState<GratefulDeadShow | null>(null);
   const [classicShows, setClassicShows] = useState<GratefulDeadShow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +27,7 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
 
   // Build classic shows list when showsByYear is loaded (or ratings change)
   useEffect(() => {
-    if (!showsByYear || showsLoading) return;
+    if (!showsByYear) return;
 
     const matchedShows: GratefulDeadShow[] = [];
     Object.values(showsByYear).forEach(yearShows => {
@@ -55,7 +55,7 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
       return matchedShows[Math.floor(Math.random() * matchedShows.length)];
     });
     setIsLoading(false);
-  }, [showsByYear, showsLoading, ratingsVersion]);
+  }, [showsByYear, ratingsVersion]);
 
   // Refresh: pick a different random show from classic shows
   const refreshShow = useCallback(() => {
@@ -81,7 +81,7 @@ export function ShowOfTheDayProvider({ children }: ShowOfTheDayProviderProps) {
 
   const value: ShowOfTheDayContextValue = {
     show,
-    isLoading: isLoading || showsLoading,
+    isLoading,
     error,
     refreshShow,
   };
