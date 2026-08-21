@@ -89,7 +89,7 @@ describe('applyTagFilter / makeShowTagFilter', () => {
     expect(applyTagFilter(DATES, ['international'])).toEqual(['1972-04-08']);
     expect(applyTagFilter(DATES, ['arena', 'international']).length).toBe(6);   // both venueType → OR
     expect(applyTagFilter(DATES, ['residency']).length).toBe(4);
-    expect(applyTagFilter(DATES, ['arena', 'peakkeith'])).toEqual(['1977-05-08']);
+    expect(applyTagFilter(DATES, ['arena', 'peakkeith'])).toEqual(['1977-05-08', '1978-12-27', '1978-12-28', '1978-12-30', '1978-12-31']);
     expect(makeShowTagFilter(['guest'])('1990-03-29')).toBe(true);
   });
 });
@@ -99,7 +99,7 @@ describe('getTagCounts (faceted)', () => {
     const counts = getTagCounts(['arena'], DATES);
     expect(counts.arena).toBe(6);            // Barton Hall + 4 Winterland + Wembley
     expect(counts.international).toBe(1);    // own category ignored → not narrowed by 'arena'
-    expect(counts.peakkeith).toBe(1);        // era counts ARE narrowed by the arena selection
+    expect(counts.peakkeith).toBe(5);        // era counts ARE narrowed by the arena selection: Barton Hall + the 4 Winterland nights (Dec '78 is still Peak Keith)
     expect(counts.brent).toBe(0);            // Nassau (no venue type) excluded by the arena selection
     const none = getTagCounts([], DATES);
     expect(none.brent).toBe(1);
