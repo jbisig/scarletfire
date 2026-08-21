@@ -21,6 +21,7 @@ interface CollectionRow {
   created_at: string;
   updated_at: string;
   is_shared?: boolean;
+  is_public?: boolean;
 }
 
 interface CollectionItemRow {
@@ -51,6 +52,8 @@ function mapCollection(
     // has been applied — default to false so the client degrades gracefully
     // (treats the collection as not-yet-shared) against an un-migrated DB.
     isShared: row.is_shared ?? false,
+    // Same graceful default for `is_public` (20260821120000_collections_is_public.sql).
+    isPublic: row.is_public ?? false,
     itemCount,
     saveCount,
   };
@@ -144,12 +147,11 @@ class CollectionsService {
         .select('*')
         .single();
       if (!error) {
-        const created = data as CollectionRow;
-        activityService.emitEvent('created_collection', 'collection', created.id, {
-          name: created.name,
-          type: created.type,
-        }).catch(() => {});
-        return mapCollection(created, 0);
+        // New collections are Private: no feed event here. The
+        // `created_collection` event fires from setCollectionPublic() when
+        // the owner makes it discoverable — announcing a private collection
+        // sent followers to a "not found" screen.
+        return mapCollection(data as CollectionRow, 0);
       }
       lastError = error;
       if ((error as { code?: string }).code !== '23505') break;
@@ -194,6 +196,53 @@ class CollectionsService {
   async deleteCollection(id: string): Promise<void> {
     const { error } = await this.supabase.from('collections').delete().eq('id', id);
     if (error) throw error;
+  }
+
+  /**
+   * Public/Private toggle. Public = discoverable (profile, Popular
+   * Collections, feed). Going Public also enables the share link, since a
+   * public collection must be openable; going Private leaves `is_shared`
+   * alone so a link that's already out there keeps working (unlisted).
+   * Announces the collection to followers on the way to Public; the
+   * per-day dedupe index on activity_events absorbs toggle churn.
+   */
+  async setCollectionPublic(id: string, isPublic: boolean): Promise<Collection> {
+    const patch = isPublic ? { is_public: true, is_shared: true } : { is_public: false };
+    const { data, error } = await this.supabase
+      .from('collections')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    const updated = mapCollection(data as CollectionRow);
+    if (isPublic) {
+      activityService.emitEvent('created_collection', 'collection', updated.id, {
+        name: updated.name,
+        type: updated.type,
+      }).catch(() => {});
+    }
+    return updated;
+  }
+
+  /**
+   * Another user's discoverable collections — what a public profile lists.
+   * The owner's own library uses fetchCollections (everything).
+   */
+  async fetchPublicCollections(userId: string): Promise<Collection[]> {
+    const { data, error } = await this.supabase
+      .from('collections')
+      .select('*, collection_items(count)')
+      .eq('user_id', userId)
+      .eq('is_public', true)
+      .order('updated_at', { ascending: false });
+    if (error) {
+      logger.api.error('fetchPublicCollections failed', error);
+      throw error;
+    }
+    return (data ?? []).map((row: any) =>
+      mapCollection(row, row.collection_items?.[0]?.count ?? 0),
+    );
   }
 
   /**

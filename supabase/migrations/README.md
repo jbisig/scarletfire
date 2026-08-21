@@ -11,6 +11,11 @@ them is:
   the earlier migration creates). Applying 120500 before 120000 is a no-op
   error.
 
+- `20260821120000_collections_is_public.sql` requires both
+  `20260706120000_collections_sharing_flag.sql` (it backfills `is_public`
+  from `is_shared`) and `20260706130000_feed_streams_search_avatar_auth_uid.sql`
+  (it redefines `get_activity_feed` with that migration's 5-arg signature).
+
 All other migrations in this batch are independent of each other, but
 filename order is still the recommended apply order since that's the order
 they were reviewed in.

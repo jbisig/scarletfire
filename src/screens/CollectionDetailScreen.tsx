@@ -100,6 +100,7 @@ export function CollectionDetailScreen() {
     removeItem,
     reorderItems,
     renameCollection,
+    setCollectionPublic,
     deleteCollection,
     saveCollection,
     unsaveCollection,
@@ -319,6 +320,26 @@ export function CollectionDetailScreen() {
         });
     }
   }, [collection, items.length, openShareTray, ownerUsername, showToast]);
+
+  // Owner-only Public/Private toggle. Optimistic via the context (the sync
+  // effect above pushes the new value into `collection`); on failure the
+  // context reverts and we explain.
+  const handleToggleVisibility = useCallback(async () => {
+    if (!collection) return;
+    const next = !collection.isPublic;
+    try {
+      await setCollectionPublic(collection.id, next);
+      showToast(
+        next
+          ? `${collection.type === 'playlist' ? 'Playlist' : 'Collection'} is now public`
+          : `${collection.type === 'playlist' ? 'Playlist' : 'Collection'} is now private`,
+        'success',
+      );
+    } catch (e) {
+      logger.api.error('Failed to update collection visibility', e);
+      showToast("Couldn't update visibility. Please try again.", 'error');
+    }
+  }, [collection, setCollectionPublic, showToast]);
 
   const handleToggleSave = useCallback(async () => {
     if (!collection) return;
@@ -649,6 +670,29 @@ export function CollectionDetailScreen() {
                     color={COLORS.textPrimary}
                   />
                   <Text style={styles.pillText}>{saved ? 'Saved' : 'Save'}</Text>
+                </TouchableOpacity>
+              )}
+              {collection && isOwner && (
+                <TouchableOpacity
+                  style={styles.pill}
+                  onPress={handleToggleVisibility}
+                  activeOpacity={0.7}
+                  accessibilityRole="switch"
+                  accessibilityLabel={collection.isPublic ? 'Public' : 'Private'}
+                  accessibilityHint={
+                    collection.isPublic
+                      ? 'Listed on your profile and shared with followers. Double tap to make private'
+                      : 'Only people with the link can open it. Double tap to make public'
+                  }
+                  accessibilityState={{ checked: collection.isPublic }}
+                >
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons
+                    name={collection.isPublic ? 'globe-outline' : 'lock-closed-outline'}
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.pillText}>{collection.isPublic ? 'Public' : 'Private'}</Text>
                 </TouchableOpacity>
               )}
               {collection && ownerUsername && (

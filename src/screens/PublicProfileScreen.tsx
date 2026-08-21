@@ -151,8 +151,10 @@ export function PublicProfileScreen() {
       setPublicCollections([]);
       return;
     }
-    collectionsService
-      .fetchCollections(data.profile.id)
+    // Visitors see only what the owner made Public; the owner sees everything.
+    (viewerOwnsProfile
+      ? collectionsService.fetchCollections(data.profile.id)
+      : collectionsService.fetchPublicCollections(data.profile.id))
       .then(setPublicCollections)
       .catch(() => setPublicCollections([]));
   }, [data, currentUser?.id]);

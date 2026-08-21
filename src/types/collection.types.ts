@@ -18,6 +18,15 @@ export interface Collection {
    * grandfathered to true when the column was introduced.
    */
   isShared: boolean;
+  /**
+   * Whether the collection is discoverable: listed on the owner's public
+   * profile, eligible for Popular Collections, and announced to followers in
+   * the activity feed. Independent of `isShared` — a Private collection that
+   * has been shared is unlisted: the link still opens it, nobody else finds
+   * it. Going Public also sets `isShared` so the link works. Backed by
+   * `collections.is_public`; existing rows were backfilled from `is_shared`.
+   */
+  isPublic: boolean;
   itemCount?: number;
   saveCount?: number;
 }

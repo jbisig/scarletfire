@@ -36,6 +36,8 @@ interface CollectionsContextValue {
   }) => Promise<Collection>;
   renameCollection: (id: string, name: string) => Promise<void>;
   updateCollectionDescription: (id: string, description: string | null) => Promise<void>;
+  /** Public/Private toggle. Optimistic; reverts and rethrows on failure. */
+  setCollectionPublic: (id: string, isPublic: boolean) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   fetchItems: (collectionId: string) => Promise<CollectionItem[]>;
   addItem: (
@@ -136,6 +138,28 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       },
       [user],
     );
+
+  const setCollectionPublic: CollectionsContextValue['setCollectionPublic'] = useCallback(
+    async (id, isPublic) => {
+      if (!user) throw new Error('Must be signed in');
+      // Snapshot synchronously — an updater callback runs lazily at render,
+      // which can be after a fast failure has already hit the catch below.
+      const previous = collections.find((c) => c.id === id);
+      setCollections((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, isPublic, isShared: isPublic ? true : c.isShared } : c,
+        ),
+      );
+      try {
+        const updated = await collectionsService.setCollectionPublic(id, isPublic);
+        setCollections((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      } catch (e) {
+        if (previous) setCollections((prev) => prev.map((c) => (c.id === id ? previous : c)));
+        throw e;
+      }
+    },
+    [user, collections],
+  );
 
   const deleteCollection: CollectionsContextValue['deleteCollection'] = useCallback(
     async (id) => {
@@ -302,6 +326,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       createCollection,
       renameCollection,
       updateCollectionDescription,
+      setCollectionPublic,
       deleteCollection,
       fetchItems,
       addItem,
@@ -325,6 +350,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       createCollection,
       renameCollection,
       updateCollectionDescription,
+      setCollectionPublic,
       deleteCollection,
       fetchItems,
       addItem,
