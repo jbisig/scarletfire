@@ -1641,9 +1641,8 @@ export function seriesHasYears(series: string, years: string[]): boolean {
   return years.some(y => seriesYears.has(y));
 }
 
-/** The release to name on a show row: earliest DISPLAY_SERIES series wins; `more` = how many others exist. */
-export function getDisplayRelease(date: string): { release: OfficialRelease; more: number } | null {
-  const releases = getOfficialReleasesForDate(date);
+/** Pure ranking used by getDisplayRelease: earliest DISPLAY_SERIES series wins ("Others" covers every non-listed series). */
+export function pickDisplayRelease(releases: OfficialRelease[]): { release: OfficialRelease; more: number } | null {
   if (releases.length === 0) return null;
   const rank = (series: string) => {
     const i = DISPLAY_SERIES.indexOf(series);
@@ -1651,4 +1650,9 @@ export function getDisplayRelease(date: string): { release: OfficialRelease; mor
   };
   const sorted = [...releases].sort((a, b) => rank(a.series) - rank(b.series));
   return { release: sorted[0], more: releases.length - 1 };
+}
+
+/** The release to name on a show row: earliest DISPLAY_SERIES series wins; `more` = how many others exist. */
+export function getDisplayRelease(date: string): { release: OfficialRelease; more: number } | null {
+  return pickDisplayRelease(getOfficialReleasesForDate(date));
 }
