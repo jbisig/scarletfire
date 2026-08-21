@@ -379,8 +379,7 @@ appear in URLs. `formatLabel(format)` and `lineageLabel(tag)` map
 
 Exhaustive, single-valued, date-bounded. Replaces both existing taxonomies:
 `FILTER_ERAS` in `ShowsFilterTray/types.ts` and `ERAS` in
-`constants/classicShows.ts`. `EraPicker.tsx` has no consumers and is deleted
-(verify at implementation time).
+`constants/classicShows.ts`. `EraPicker.tsx` has no consumers and is deleted.
 
 | Era | Start | End |
 |---|---|---|
@@ -411,17 +410,25 @@ Stadium / Amphitheater — mutually exclusive) plus derived modifiers.
 - Physical type: curated map keyed by `normalizeVenue(venue)` (lowercase,
   strip punctuation, collapse whitespace, strip leading "the"), ~450 entries,
   each `{ type, confidence: 'high' | 'medium' | 'low', note? }`. The venue
-  string comes from `getVenueFromShow()`. Unmapped venues get no physical
-  tag and are listed in the build report.
+  string comes from `show.venue` (the catalog field the TSV keys were built
+  from; 0 mismatches vs `getVenueFromShow()` across the catalog). Unmapped
+  venues get no physical tag and are listed in the build report.
+  Low-confidence physical types are not resolved.
 - **International**: derived — `coverage`/location not in the United States.
   International derives from the curated venue flag in
   `scripts/data/venue-types.tsv` (the location regex misfires on
   spelled-out states and 'Unknown'); the map covers 613 normalized venues,
   472 with a physical type.
 - **Festival**: curated date list (`festivalDates`).
-- **Residency**: derived — a run of ≥4 shows at the same normalized venue
-  within any 10-day window; every show in the run is tagged. The report lists
-  the runs for review.
+- **Residency**: derived — every night of any run of ≥4 shows at one venue
+  with ≤10 days between consecutive nights; every night in the run is
+  tagged. The report lists the runs for review. Residency keys on the raw
+  normalized venue string, so spelling variants (e.g. the four "Golden Hall"
+  spellings) split runs — a canonical-venue column is a follow-up. Known
+  data artefact: the catalog carries a misdated `1980-06-27` Anchorage item
+  (its only recording is `gd1980-06-20.…`), which turns the three-night West
+  High stand into a four-night residency; logged for the PR 1 catalog
+  follow-up.
 
 ### Instrumentation (`src/data/instrumentation.ts`)
 
@@ -451,20 +458,20 @@ against the "during the Dead's set" wording.
 - `getShowTags(date): TagId[]` — era from date; venue type from map + rules;
   instrumentation/notable from the curated sets; source = union of the show's
   recordings' `format` and `lineage` after `tagFixes` (`unknown` contributes
-  nothing). Memoized in a lazy `Map<date, TagId[]>`.
-- Lazy inverted index `Map<TagId, Set<date>>` built on first use from
-  `getAllShowsSorted()`.
+  nothing). Per-date memoized `getShowTags`; filtering via
+  `buildTagPredicate`/`makeShowTagFilter`; `getTagCounts` recomputed per
+  selection over the caller's base dates (2.4 ms warm, measured), memoized
+  in the tray by `useMemo`.
 - `buildTagPredicate(selected: TagId[], registry, getTagsForItem)` — pure
   core: group `selected` by category; an item passes if, for every category
   with selections, it carries at least one selected tag in that category
   (OR within, AND between). Knows nothing about shows.
 - `applyTagFilter(dates: string[], selected: TagId[]): string[]` — the
-  show-specialized wrapper using the inverted index (set union per category,
-  intersection across categories).
+  show-specialized wrapper built on `buildTagPredicate` and `getShowTags`.
 - `getTagCounts(selected: TagId[], baseDates: string[]): Record<TagId, number>`
   — faceted counts: the count for tag `T` in category `C` applies every
   *other* category's selection, ignores `C`'s own selection, and intersects
-  with `T`'s set. Memoized by `(selected, baseDates)` identity.
+  with `T`'s set.
 
 ### Filter tray
 
