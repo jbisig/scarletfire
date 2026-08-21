@@ -1,0 +1,758 @@
+/**
+ * Curated Pedal Steel and Acoustic Set tags for the Grateful Dead.
+ * Source: docs/superpowers/research/2026-08-20-part3-curated-tags.md,
+ * section "## 1. Pedal Steel" (32 rows) and "## 2. Acoustic Set" (89 rows),
+ * transcribed verbatim.
+ *
+ * Only high/medium-confidence rows are active in PEDAL_STEEL_DATES and
+ * ACOUSTIC_SET_DATES; low-confidence rows live in UNVERIFIED_PEDAL_STEEL_DATES
+ * and UNVERIFIED_ACOUSTIC_SET_DATES and are never read by the resolver.
+ *
+ * Pedal Steel scope: Jerry Garcia on pedal steel during the Grateful Dead's
+ * own set (NRPS opening sets are deliberately excluded per the research's
+ * coverage notes). Acoustic Set covers the 1969 warm-ups, the 1970
+ * Workingman's Dead/American Beauty era, the fall 1980 acoustic/electric
+ * tour, and the 1981-10-16 Melkweg club show.
+ */
+
+import { CuratedShowEntry } from './festivalDates';
+
+export { CuratedShowEntry };
+
+export const PEDAL_STEEL_DATES: readonly CuratedShowEntry[] = [
+  {
+    date: '1969-05-31',
+    note: 'Pedal steel on "Green Green Grass of Home" (first known performance)',
+    source: 'https://jerrybase.com/events/19690531-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-06-20',
+    note: 'Fillmore East late show — steel on "Old Old House" and "Dire Wolf" (Weir sings lead so Garcia can play steel)',
+    source: 'https://jerrybase.com/events/19690620-02',
+    confidence: 'high',
+  },
+  {
+    date: '1969-06-21',
+    note: 'Fillmore East — steel on "Green Green Grass of Home" and "Slewfoot" (first GD "Slewfoot")',
+    source: 'https://jerrybase.com/events/19690621-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-06-22',
+    note: 'Steel on "Silver Threads and Golden Needles"',
+    source: 'https://jerrybase.com/events/19690622-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-06-27',
+    note: 'Veterans Memorial Aud., Santa Rosa — steel on "Slewfoot", "Dire Wolf", "Green Green Grass of Home", "It\'s All Over Now Baby Blue"',
+    source: 'https://jerrybase.com/events/19690627-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-06-28',
+    note: 'Santa Rosa night 2 — Garcia steel on "Slewfoot" and "Silver Threads"; note Peter Grant (not Garcia) played steel on "Doin\' That Rag" and "High Time"',
+    source: 'https://jerrybase.com/events/19690628-02',
+    confidence: 'high',
+  },
+  {
+    date: '1969-07-03',
+    note: 'Steel on "Green Green Grass of Home" > "Slewfoot"',
+    source: 'https://jerrybase.com/events/19690703-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-07-04',
+    note: 'Steel on "Slewfoot", "Silver Threads", "Let Me In" (only known performance), "Dire Wolf"',
+    source: 'https://jerrybase.com/events/19690704-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-07-08',
+    note: 'Steel on "Green Green Grass of Home" and "El Paso" (first known "El Paso")',
+    source: 'https://jerrybase.com/events/19690708-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-07-11',
+    note: 'Steel on "Hard to Handle" and "Silver Threads and Golden Needles"',
+    source: 'https://jerrybase.com/events/19690711-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-07-12',
+    note: 'Steel on "Green Green Grass of Home" and "Slewfoot"',
+    source: 'https://jerrybase.com/events/19690712-01',
+    confidence: 'high',
+  },
+  {
+    date: '1969-08-02',
+    note: 'Steel on "Seasons of My Heart" (first known performance) and "Slewfoot"; Grateful Dead Guide calls this the last steel appearance of the tour',
+    source: 'https://jerrybase.com/events/19690802-03',
+    confidence: 'high',
+  },
+  {
+    date: '1969-10-03',
+    note: 'Boston Tea Party — Lenny Kaye\'s review (Fusion, 1969-11-14) describes "In the Midnight Hour" with Garcia on pedal steel; no tape survives. unverified by reco...',
+    source: 'https://jerrybase.com/events/19691003-01',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-02-05',
+    note: 'Fillmore West — steel on country mini-set: "Seasons of My Heart", "The Race Is On", "Me and My Uncle"',
+    source: 'https://jerrybase.com/events/19700205-01',
+    confidence: 'high',
+  },
+  {
+    date: '1970-02-07',
+    note: 'Fillmore West — steel on "Green Green Grass of Home" (final GD performance), "Sawmill", "Seasons of My Heart"',
+    source: 'https://jerrybase.com/events/19700207-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-21',
+    note: 'Academy of Music, NYC — steel on the debut "Looks Like Rain"; starts the 1972 steel run',
+    source: 'https://jerrybase.com/events/19720321-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-22',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720322-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-23',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720323-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-25',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720325-02',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-26',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720326-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-27',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720327-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-03-28',
+    note: 'Academy of Music — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720328-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-04-08',
+    note: 'Wembley Empire Pool, London (Europe \'72) — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720408-01',
+    confidence: 'high',
+  },
+  {
+    date: '1972-04-11',
+    note: 'Newcastle City Hall (Europe \'72) — steel on "Looks Like Rain"',
+    source: 'https://jerrybase.com/events/19720411-02',
+    confidence: 'high',
+  },
+  {
+    date: '1972-04-14',
+    note: 'Copenhagen (Europe \'72) — steel on "Looks Like Rain"; Jerrybase: last time Garcia played pedal steel onstage with the GD until the 1987 Dylan tour',
+    source: 'https://jerrybase.com/events/19720414-01',
+    confidence: 'high',
+  },
+  {
+    date: '1987-07-04',
+    note: 'Sullivan Stadium, Foxboro — Dylan & the Dead segment: steel on "I\'ll Be Your Baby Tonight" (Dylan-set song within a GD-headlined show)',
+    source: 'https://jerrybase.com/events/19870704-02',
+    confidence: 'high',
+  },
+  {
+    date: '1987-07-10',
+    note: 'Dylan & the Dead segment — steel on "I\'ll Be Your Baby Tonight" (venue: JFK Stadium Philadelphia per section 3/4 sourcing; Jerrybase page labels differ — see...',
+    source: 'https://jerrybase.com/events/19870710-02',
+    confidence: 'high',
+  },
+  {
+    date: '1987-07-12',
+    note: 'Dylan & the Dead segment — steel on "Tomorrow Is a Long Time" (venue: Giants Stadium per section 3/4 sourcing — see caveats)',
+    source: 'https://jerrybase.com/events/19870712-02',
+    confidence: 'high',
+  },
+  {
+    date: '1987-07-24',
+    note: 'Oakland Coliseum — Dylan & the Dead segment: steel on "I\'ll Be Your Baby Tonight"',
+    source: 'https://jerrybase.com/events/19870724-02',
+    confidence: 'high',
+  },
+];
+
+export const UNVERIFIED_PEDAL_STEEL_DATES: ReadonlyArray<Omit<CuratedShowEntry, 'confidence'> & { confidence: 'low' }> = [
+  {
+    date: '1969-04-26',
+    note: 'Kinetic Playground, Chicago — Grateful Dead Guide says the pedal steel appeared onstage for a revival of "Silver Threads and Golden Needles"; Jerrybase carri...',
+    source: 'http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1969-09-27',
+    note: 'Fillmore East late show — attendee recalls "a song with Garcia on pedal steel"; song unidentified and setlist disputed. unverified',
+    source: 'https://jerrybase.com/events/19690927-02 (citing deadlists)',
+    confidence: 'low',
+  },
+  {
+    date: '1970-09-17',
+    note: 'Fillmore East acoustic set — deadlists claims Garcia on pedal steel (plus fiddle) on the debut "Box of Rain"; Jerrybase and Grateful Dead Guide both reject t...',
+    source: 'https://jerrybase.com/events/19700917-02 ; http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'low',
+  },
+];
+
+export const ACOUSTIC_SET_DATES: readonly CuratedShowEntry[] = [
+  {
+    date: '1969-12-19',
+    note: 'Fillmore Auditorium, SF — impromptu acoustic mini-set (Garcia/Weir) while waiting for Lesh; first acoustic performance',
+    source: 'http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'high',
+  },
+  {
+    date: '1969-12-26',
+    note: 'McFarlin Auditorium, SMU, Dallas — acoustic opening duet while waiting for Kreutzmann',
+    source: 'http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'high',
+  },
+  {
+    date: '1970-01-31',
+    note: 'The Warehouse, New Orleans — two acoustic segments between electric',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'high',
+  },
+  {
+    date: '1970-02-13',
+    note: 'Fillmore East (late) — first *planned* acoustic set, mid-show',
+    source: 'deadessays 1970 show list; DE acoustic essay',
+    confidence: 'high',
+  },
+  {
+    date: '1970-02-14',
+    note: 'Fillmore East (late) — acoustic set between electric sets',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-02-23',
+    note: 'Municipal Auditorium, Austin TX — six-song acoustic mid-set',
+    source: 'deadessays 1970 show list; cryptdev',
+    confidence: 'high',
+  },
+  {
+    date: '1970-02-28',
+    note: 'Family Dog on the Great Highway, SF — acoustic set between electric sets',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-03-08',
+    note: 'Travelodge Theatre in the Round, Phoenix — electric / acoustic / electric',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-03-20',
+    note: 'Capitol Theatre, Port Chester NY (late) — acoustic section',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-03-21',
+    note: 'Capitol Theatre, Port Chester NY (late) — acoustic section',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-04-03',
+    note: 'Field House, Univ. of Cincinnati — seven-song acoustic set w/ New Riders members',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-04-09',
+    note: 'Fillmore West (Miles Davis run) — acoustic between electric sets',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-04-11',
+    note: 'Fillmore West — acoustic set reported, tape incomplete',
+    source: 'DE acoustic essay; cryptdev',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-04-12',
+    note: 'Fillmore West — acoustic portion listed separately in show list',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-04-17',
+    note: 'Family Dog — all-acoustic show, billed as "Mickey Hart & His Heartbeats"',
+    source: 'deadessays 1970 show list',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-04-18',
+    note: 'Family Dog — all-acoustic; tape later found in Garcia\'s archive; Pigpen solo set',
+    source: 'deadessays 1970 show list; DE acoustic essay',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-04-19',
+    note: 'Family Dog — all-acoustic show',
+    source: 'deadessays 1970 show list',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-04-24',
+    note: 'Mammoth Gardens, Denver — six-song acoustic; "last in that format"',
+    source: 'deadessays 1970 show list; cryptdev',
+    confidence: 'high',
+  },
+  {
+    date: '1970-04-25',
+    note: 'Mammoth Gardens, Denver — acoustic section opening the show',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-05-01',
+    note: 'SAC Gym, Alfred State College NY — first *separate* opening acoustic set of the eastern tour',
+    source: 'deadessays 1970 show list; cryptdev',
+    confidence: 'high',
+  },
+  {
+    date: '1970-05-02',
+    note: 'West Gym, Harpur College, SUNY Binghamton — famous acoustic set (Dick\'s Picks 8)',
+    source: 'deadessays 1970 show list; https://en.wikipedia.org/wiki/Dick%27s_Picks_Volume_8',
+    confidence: 'high',
+  },
+  {
+    date: '1970-05-03',
+    note: 'Foss Hill, Wesleyan Univ., Middletown CT — short outdoor acoustic (Garcia/Weir, partial band)',
+    source: 'deadessays 1970 show list; cryptdev',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-05-07',
+    note: 'DuPont Gym, MIT, Cambridge MA — acoustic set then electric',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-05-14',
+    note: 'Meramec Community College, Kirkwood MO — acoustic opening set (sound problems)',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-05-15',
+    note: 'Fillmore East (early AND late) — acoustic set both shows',
+    source: 'deadessays 1970 show list; https://archive.org/details/gd_nrps70-05-15.sbd.reynolds-kaplan.29473.shnf',
+    confidence: 'high',
+  },
+  {
+    date: '1970-06-04',
+    note: 'Fillmore West — acoustic opening set',
+    source: 'deadessays 1970 show list; deadlistening.com',
+    confidence: 'high',
+  },
+  {
+    date: '1970-06-05',
+    note: 'Fillmore West — acoustic opening set',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-06-06',
+    note: 'Fillmore West — acoustic opening set (some songs not circulating)',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-06-07',
+    note: 'Fillmore West — acoustic set w/ New Riders on gospel numbers',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-06-24',
+    note: 'Capitol Theatre, Port Chester (early AND late) — acoustic set both shows',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-07-04',
+    note: 'McMahon Stadium, Calgary (Festival Express) — afternoon acoustic set; partly in the film',
+    source: 'http://deadsources.blogspot.com/2018/07/july-4-5-1970-mcmahon-stadium-calgary.html',
+    confidence: 'high',
+  },
+  {
+    date: '1970-07-08',
+    note: 'Mississippi River Festival, SIU Edwardsville IL — acoustic portion (cryptdev dates it 07-07)',
+    source: 'deadessays 1970 show list',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-09',
+    note: 'Fillmore East (midnight show) — acoustic set; no tape',
+    source: 'deadessays 1970 show list; cryptdev',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-10',
+    note: 'Fillmore East (midnight show) — acoustic set, one song documented',
+    source: 'deadessays 1970 show list',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-11',
+    note: 'Fillmore East (midnight show) — full acoustic set',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-07-12',
+    note: 'Fillmore East (midnight show) — acoustic set w/ New Riders on gospel',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-07-14',
+    note: 'Euphoria Ballroom, San Rafael — acoustic set; David Crosby guests on last two songs',
+    source: 'deadessays 1970 show list; DE acoustic essay',
+    confidence: 'high',
+  },
+  {
+    date: '1970-07-27',
+    note: 'The Matrix, SF — "Hartbeats" acoustic club show w/ New Riders',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-28',
+    note: 'The Matrix, SF — "Hartbeats" acoustic club show',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-30',
+    note: 'Lion\'s Share, San Anselmo (some sources say the Matrix) — short Dead acoustic mini-set',
+    source: 'deadessays 1970 show list; DE acoustic essay',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-07-31',
+    note: 'Lion\'s Share, San Anselmo — acoustic club show',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-08-01',
+    note: 'Lion\'s Share, San Anselmo — acoustic club show',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-08-17',
+    note: 'Fillmore West — acoustic set (partial tape)',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-08-18',
+    note: 'Fillmore West — acoustic set, several *American Beauty* songs; Pigpen on piano',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-08-19',
+    note: 'Fillmore West — acoustic set',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-08-28',
+    note: 'Thee Club, Los Angeles — acoustic club show, setlist unknown (cryptdev dates 08-27)',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-08-29',
+    note: 'Thee Club, Los Angeles — acoustic club show, setlist unknown',
+    source: 'https://deadessays.blogspot.com/2024/09/1970-show-list.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-09-17',
+    note: 'Fillmore East — acoustic set incl. "Box of Rain" with studio-style instrumentation',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-09-18',
+    note: 'Fillmore East — acoustic set abandoned after two songs',
+    source: 'deadessays 1970 show list',
+    confidence: 'high',
+  },
+  {
+    date: '1970-09-19',
+    note: 'Fillmore East — acoustic set',
+    source: 'https://archive.org/details/gd1970-09-19.150347.acoustic.aud.flac16',
+    confidence: 'high',
+  },
+  {
+    date: '1970-09-20',
+    note: 'Fillmore East — celebrated closing acoustic set; David Grisman adds twin mandolin',
+    source: 'DE acoustic essay; https://liveforlivemusic.com/news/grateful-dead-fillmore-east-all-timer-acoustic-on-this-day-1970/',
+    confidence: 'high',
+  },
+  {
+    date: '1970-09-26',
+    note: 'Terrace Ballroom, Salt Lake City — unusually long (~80 min) acoustic first set per contemporary review',
+    source: 'http://deadsources.blogspot.com/2020/06/september-26-1970-terrace-ballroom-salt.html',
+    confidence: 'medium',
+  },
+  {
+    date: '1970-11-06',
+    note: 'Capitol Theatre, Port Chester — acoustic first set',
+    source: 'http://deadessays.blogspot.com/2009/08/port-chester-november-1970.html',
+    confidence: 'high',
+  },
+  {
+    date: '1970-11-07',
+    note: 'Capitol Theatre, Port Chester — acoustic first set',
+    source: 'http://deadessays.blogspot.com/2009/08/port-chester-november-1970.html',
+    confidence: 'high',
+  },
+  {
+    date: '1970-11-08',
+    note: 'Capitol Theatre, Port Chester — last acoustic set of the 1970 era',
+    source: 'https://archive.org/details/gd1970-11-08.aud.garrett-evans.3339.shnf',
+    confidence: 'high',
+  },
+  {
+    date: '1978-11-17',
+    note: 'Rambler Room, Loyola Univ., Chicago — afternoon acoustic benefit billed "Bob Weir & Friends" (no Kreutzmann/Godchauxs); two songs released on *Reckoning*',
+    source: 'https://en.wikipedia.org/wiki/Reckoning_(Grateful_Dead_album) ; https://archive.org/details/gd78-11-17.acoustic.sbd.dodd.7687.sbeok.shnf',
+    confidence: 'medium',
+  },
+  {
+    date: '1980-09-25',
+    note: 'Warfield Theatre, SF — opening night of the 15-show run; acoustic set + two electric sets',
+    source: 'https://www.dead.net/show/september-25-1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-09-26',
+    note: 'Warfield Theatre, SF — acoustic set ("Ripple" released on *Reckoning*)',
+    source: 'https://en.wikipedia.org/wiki/Reckoning_(Grateful_Dead_album)',
+    confidence: 'high',
+  },
+  {
+    date: '1980-09-27',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'archive.org GratefulDead collection; Wikipedia *Reckoning*',
+    confidence: 'high',
+  },
+  {
+    date: '1980-09-29',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://dailydoseofdead.wordpress.com/2015/09/29/today-in-grateful-dead-history-september-29-1980-warfield-theater-san-francisco-ca/',
+    confidence: 'high',
+  },
+  {
+    date: '1980-09-30',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'archive.org GratefulDead collection',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-02',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-3bd60410.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-03',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-23d60417.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-04',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-2bd60416.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-06',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-33d60415.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-07',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://archive.org/details/gd1980-10-07.151264.sbd.healy.miller.fixed.flac2496',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-09',
+    note: 'Warfield Theatre, SF — acoustic set; officially released as *The Warfield… Oct 9 & 10, 1980*',
+    source: 'https://en.wikipedia.org/wiki/The_Warfield,_San_Francisco,_California,_October_9_%26_10,_1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-10',
+    note: 'Warfield Theatre, SF — acoustic set; officially released',
+    source: 'https://en.wikipedia.org/wiki/The_Warfield,_San_Francisco,_California,_October_9_%26_10,_1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-11',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-33d60409.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-13',
+    note: 'Warfield Theatre, SF — acoustic set',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/the-warfield-san-francisco-ca-3bd60408.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-14',
+    note: 'Warfield Theatre, SF — final night of the run; acoustic set',
+    source: 'https://www.dead.net/show/october-14-1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-18',
+    note: 'Saenger Performing Arts Center, New Orleans — acoustic set + two electric sets',
+    source: 'https://www.dead.net/show/october-18-1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-19',
+    note: 'Saenger Performing Arts Center, New Orleans — acoustic set + two electric sets',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1980/saenger-performing-arts-theater-new-orleans-la-2bd6040e.html',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-22',
+    note: 'Radio City Music Hall, NYC — opening night of 8-show run; acoustic set',
+    source: 'archive.org GratefulDead collection',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-23',
+    note: 'Radio City Music Hall, NYC — acoustic set (earliest RCMH date used on *Reckoning*)',
+    source: 'https://en.wikipedia.org/wiki/Reckoning_(Grateful_Dead_album)',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-25',
+    note: 'Radio City Music Hall, NYC — acoustic set',
+    source: 'https://dailydoseofdead.wordpress.com/2021/10/25/today-in-grateful-dead-history-october-25-1980-radio-city-music-hall-new-york-ny/',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-26',
+    note: 'Radio City Music Hall, NYC — acoustic set',
+    source: 'https://www.dead.net/show/october-26-1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-27',
+    note: 'Radio City Music Hall, NYC — acoustic set',
+    source: 'archive.org GratefulDead collection',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-29',
+    note: 'Radio City Music Hall, NYC — acoustic set',
+    source: 'https://www.dead.net/show/october-29-1980',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-30',
+    note: 'Radio City Music Hall, NYC — acoustic set',
+    source: 'https://archive.org/details/gd1980-10-30.139599.sbd.bershaw.flac16',
+    confidence: 'high',
+  },
+  {
+    date: '1980-10-31',
+    note: 'Radio City Music Hall, NYC — Halloween closed-circuit simulcast (*Dead Ahead*); acoustic set incl. "Sage & Spirit"',
+    source: 'https://en.wikipedia.org/wiki/Grateful_Dead:_Dead_Ahead',
+    confidence: 'high',
+  },
+  {
+    date: '1981-10-16',
+    note: 'Melkweg, Amsterdam — surprise club show on borrowed instruments; acoustic first set (On the Road Again, Dire Wolf, Monkey & the Engineer, Bird Song, Cassidy,...',
+    source: 'https://www.setlist.fm/setlist/grateful-dead/1981/melkweg-amsterdam-netherlands-2bd604aa.html',
+    confidence: 'high',
+  },
+];
+
+export const UNVERIFIED_ACOUSTIC_SET_DATES: ReadonlyArray<Omit<CuratedShowEntry, 'confidence'> & { confidence: 'low' }> = [
+  {
+    date: '1970-02-11',
+    note: 'Fillmore East (late) — brief acoustic encore per Cryptical Developments; deadessays\' list shows none. unverified',
+    source: 'http://cryptdev.blogspot.com/2020/07/the-grateful-dead-unplugged-1968-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1970-04-10',
+    note: 'Fillmore West — acoustic set reported, no tape circulates. unverified',
+    source: 'http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1970-04-15',
+    note: 'Winterland, SF (benefit) — listed among acoustic-era shows by Cryptical Developments. unverified',
+    source: 'http://cryptdev.blogspot.com/2020/07/the-grateful-dead-unplugged-1968-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1970-05-08',
+    note: 'Farrell Hall, SUNY Delhi — listed in cryptdev\'s acoustic-era run; not confirmed. unverified',
+    source: 'http://cryptdev.blogspot.com/2020/07/the-grateful-dead-unplugged-1968-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1970-05-09',
+    note: 'Worcester Polytechnic Inst. — partial acoustic set, fragmentary aud tape. unverified',
+    source: 'http://deadessays.blogspot.com/2009/08/deads-acoustic-sets-1969-1970.html',
+    confidence: 'low',
+  },
+  {
+    date: '1970-08-05',
+    note: 'Golden Hall, San Diego (venue disputed, possibly Thee Club LA) — entirely acoustic w/ Dawson & Nelson; deadessays says no show occurred. unverified',
+    source: 'DE acoustic essay; cryptdev',
+    confidence: 'low',
+  },
+  {
+    date: '1970-11-05',
+    note: 'Capitol Theatre, Port Chester — acoustic set possible; sole aud tape starts mid-NRPS. unverified',
+    source: 'http://deadessays.blogspot.com/2009/08/port-chester-november-1970.html',
+    confidence: 'low',
+  },
+];
