@@ -39,6 +39,21 @@ export interface PlayerState {
   currentShow: ShowDetail | null;
   isPlaying: boolean;
   isLoading: boolean;
+  /**
+   * Set when the most recent LOAD_TRACK failed to load/start from
+   * archive.org. Cleared by the next LOAD_TRACK or STOP. Screens that own
+   * the recording choice (Show Detail) use this to offer recovery —
+   * "Retry" / "Try another recording" — next to the track the user tapped.
+   */
+  loadError: { trackId: string; showIdentifier: string | null } | null;
+  /**
+   * True from the moment a track is chosen until the player reports it is
+   * actually playing (or paused/stopped/failed). Distinct from `isLoading`,
+   * which only covers the setQueue() call — on both platforms that resolves
+   * long before audio arrives, so it can't drive a spinner. Also set by the
+   * player's own `buffering` state mid-track.
+   */
+  isBuffering: boolean;
   position: number; // milliseconds
   duration: number; // milliseconds
   playlist: Track[];
@@ -70,6 +85,8 @@ export type PlayerAction =
   | { type: 'STOP' }
   | { type: 'UPDATE_POSITION'; position: number; duration: number }
   | { type: 'SET_LOADING'; isLoading: boolean }
+  | { type: 'LOAD_FAILED'; trackId: string; showIdentifier: string | null }
+  | { type: 'SET_BUFFERING'; isBuffering: boolean }
   | { type: 'NEXT_TRACK' }
   | { type: 'PREVIOUS_TRACK' }
   | { type: 'SEEK'; position: number }

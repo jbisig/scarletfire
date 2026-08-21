@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import { useOptionalToast } from './ToastContext';
 import { findNextShow } from '../utils/showLookup';
+import { describeLoadError } from '../utils/userFacingError';
 import { resolveShowIdentifier, stableShowIdentifier } from '../services/sourceSelection';
 
 const initialState: PlayerState = {
@@ -20,6 +21,8 @@ const initialState: PlayerState = {
   currentShow: null,
   isPlaying: false,
   isLoading: false,
+  loadError: null,
+  isBuffering: false,
   position: 0,
   duration: 0,
   playlist: [],
@@ -49,20 +52,34 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
         playlist: action.playlist,
         currentTrackIndex: trackIndex,
         isLoading: true,
+        loadError: null,
+        isBuffering: true,
         shouldAutoPlay: true
       };
 
     case 'PLAY':
-      return { ...state, isPlaying: true, isLoading: false };
+      return { ...state, isPlaying: true, isLoading: false, isBuffering: false };
 
     case 'PAUSE':
-      return { ...state, isPlaying: false, shouldAutoPlay: false };
+      return { ...state, isPlaying: false, isBuffering: false, shouldAutoPlay: false };
 
     case 'STOP':
       return initialState;
 
     case 'SET_LOADING':
       return { ...state, isLoading: action.isLoading };
+
+    case 'LOAD_FAILED':
+      return {
+        ...state,
+        isLoading: false,
+        isPlaying: false,
+        isBuffering: false,
+        loadError: { trackId: action.trackId, showIdentifier: action.showIdentifier },
+      };
+
+    case 'SET_BUFFERING':
+      return state.isBuffering === action.isBuffering ? state : { ...state, isBuffering: action.isBuffering };
 
     case 'NEXT_TRACK':
       const nextIndex = state.currentTrackIndex + 1;
@@ -339,6 +356,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Optional: some tests mount PlayerProvider without a ToastProvider
   // ancestor. Falls back to a silent no-op so warnings are still logged.
   const toast = useOptionalToast();
+  // Ref so the auto-load effect below can toast without adding the toast
+  // host to its dependency list (which would re-run the load on provider
+  // identity churn).
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   // Progress tracking via refs to avoid re-renders on every position update
   const progressRef = useRef<PlaybackProgress>({ position: 0, duration: 0 });
@@ -386,6 +408,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
 
       const trackId = state.currentTrack.id;
+      const showIdentifier = state.currentShow?.identifier ?? null;
       const shouldPlay = state.shouldAutoPlay;
       currentLoadingTrackIdRef.current = trackId;
 
@@ -409,6 +432,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             dispatch({ type: 'PLAY' });
           }).catch((error) => {
             logger.player.error('Auto-play failed:', error.message);
+            if (currentLoadingTrackIdRef.current !== trackId) return;
+            dispatch({ type: 'LOAD_FAILED', trackId, showIdentifier });
+            toastRef.current?.showToast("Couldn't start that track. Try again, or pick another recording.", 'error');
           });
         }
       }).catch((error) => {
@@ -418,7 +444,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         if (currentLoadingTrackIdRef.current !== trackId) {
           return;
         }
-        dispatch({ type: 'SET_LOADING', isLoading: false });
+        // Tapping a track is the highest-stakes moment in the app; a silent
+        // failure here reads as "the app is broken". Record it on state (so
+        // Show Detail can offer Retry / another recording) and say so.
+        dispatch({ type: 'LOAD_FAILED', trackId, showIdentifier });
+        toastRef.current?.showToast(describeLoadError(error, 'that track'), 'error');
       });
     }
   }, [state.currentTrack, state.isLoading, state.shouldAutoPlay, state.playbackMode]);
@@ -432,7 +462,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'PLAY' });
       } else if (playbackState === 'paused') {
         dispatch({ type: 'PAUSE' });
+      } else if (playbackState === 'buffering') {
+        // Mid-track stall (or the initial fetch on players that report it):
+        // show the spinner until the player says it's playing again.
+        dispatch({ type: 'SET_BUFFERING', isBuffering: true });
       } else if (playbackState === 'stopped' || playbackState === 'idle' || playbackState === 'ended') {
+        dispatch({ type: 'SET_BUFFERING', isBuffering: false });
         // Check if we need to load next shuffled show
         if (playbackModeRef.current === 'shuffle' && shuffleTypeRef.current === 'shows') {
           shuffleNextRef.current();
@@ -508,17 +543,39 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackError, (data) => {
       // Radio queues are built incrementally from fresh fetches and rebuilt
       // constantly — swapping the whole native queue mid-radio isn't worth
-      // the complexity, so radio keeps its existing error behavior.
-      if (playbackModeRef.current === 'radio') return;
+      // the complexity, so radio keeps its existing error behavior (but
+      // never leaves a spinner running).
+      if (playbackModeRef.current === 'radio') {
+        dispatch({ type: 'SET_BUFFERING', isBuffering: false });
+        return;
+      }
 
       const track = currentTrackRef.current;
       const show = currentShowRef.current;
       // Without a show we can't meaningfully reload; loadTrack requires it.
       if (!track || !show) return;
-      if (!track.fallbackStreamUrl || track.fallbackStreamUrl === track.streamUrl) return;
+
+      // This is where a dead stream actually lands on both platforms: the
+      // native/web players resolve setQueue() immediately and report the
+      // failure later as an event. When there's no fallback left to try, the
+      // failure is final — record it (Show Detail turns it into Retry / "try
+      // another recording") and say so, instead of leaving the row red and
+      // the mini player on a Play glyph with no explanation.
+      const surfaceFailure = () => {
+        dispatch({ type: 'LOAD_FAILED', trackId: track.id, showIdentifier: show.identifier });
+        toastRef.current?.showToast(describeLoadError(data?.error, 'that track'), 'error');
+      };
+
+      if (!track.fallbackStreamUrl || track.fallbackStreamUrl === track.streamUrl) {
+        surfaceFailure();
+        return;
+      }
       // One fallback attempt per track — if /download also fails, surface
-      // the error like before instead of looping.
-      if (fallbackAttemptedForTrackRef.current === track.id) return;
+      // the error instead of looping.
+      if (fallbackAttemptedForTrackRef.current === track.id) {
+        surfaceFailure();
+        return;
+      }
       fallbackAttemptedForTrackRef.current = track.id;
 
       logger.player.warn(

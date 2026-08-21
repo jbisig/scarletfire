@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
@@ -32,13 +32,19 @@ interface TrackItemProps {
    * and the selected highlight is hidden.
    */
   isSelected?: boolean;
+  /**
+   * True while this track is the one the player is loading from archive.org
+   * (tapped, but audio hasn't started). Swaps the duration for a spinner so
+   * the row the user just pressed visibly acknowledges it.
+   */
+  isLoading?: boolean;
 }
 
 /**
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected, isLoading = false }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
@@ -47,14 +53,25 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
       ? `Your rating: ${rating.stars} ${rating.stars === 1 ? 'star' : 'stars'}`
       : `${rating.stars} star performance`
     : '';
-  const playingText = isPlaying ? 'Now playing. ' : '';
+  const playingText = isLoading ? 'Loading. ' : isPlaying ? 'Now playing. ' : '';
   const selectedText = isSelected && !isPlaying ? 'Selected. ' : '';
   const accessibilityLabel = `${playingText}${selectedText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
 
+  const isNative = Platform.OS !== 'web';
   const hasSave = !!onToggleSave;
-  const showSaveButton = hasSave && (Platform.OS === 'web' ? ((isDesktop && isHovered) || isSaved) : isSaved);
+  const showSaveButton = hasSave && (isNative ? isSaved : ((isDesktop && isHovered) || isSaved));
   const hasAdd = !!onAddToPlaylist;
-  const showAddButton = hasAdd && Platform.OS === 'web' && (((isDesktop && isHovered) || playlistCount > 0));
+  const showAddButton = hasAdd && !isNative && ((isDesktop && isHovered) || playlistCount > 0);
+  // Desktop web reserves the slot (opacity 0) so hover-reveal doesn't shift
+  // layout. Touch surfaces (native, and web under the desktop breakpoint)
+  // have no hover: a mounted-but-invisible button is still a 28pt tap target
+  // and still announced by assistive tech, so mount it only when it's
+  // actually shown. On native the add/save actions live behind the visible
+  // "more" button instead.
+  const hoverCapable = !isNative && isDesktop;
+  const mountAddButton = hasAdd && (hoverCapable || showAddButton);
+  const mountSaveButton = hasSave && (hoverCapable || showSaveButton);
+  const showMoreButton = isNative && !!onLongPress;
 
   return (
     <TouchableOpacity
@@ -112,7 +129,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         </View>
       </View>
       {/* Add-to-playlist button (web only) — plus icon. */}
-      {hasAdd && (
+      {mountAddButton && (
         <TouchableOpacity
           style={[
             styles.iconButton,
@@ -135,7 +152,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
         </TouchableOpacity>
       )}
       {/* Save button — heart icon, red when saved. Reserves space to prevent layout shift. */}
-      {hasSave && (
+      {mountSaveButton && (
         <TouchableOpacity
           style={[
             styles.iconButton,
@@ -158,9 +175,34 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           />
         </TouchableOpacity>
       )}
-      <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && styles.durationWeb]}>
-        {duration}
-      </Text>
+      {isLoading ? (
+        <View style={[styles.duration, styles.loadingSlot, hasSave && !isNative && styles.durationWeb]} testID="track-loading">
+          <ActivityIndicator size="small" color={COLORS.accent} />
+        </View>
+      ) : (
+        <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && !isNative && styles.durationWeb]}>
+          {duration}
+        </Text>
+      )}
+      {/* Native: the one visible way into add-to-playlist / save for this
+          row — long-press still works, this just makes it discoverable. */}
+      {showMoreButton && (
+        <TouchableOpacity
+          style={styles.moreButton}
+          testID="track-more-button"
+          onPress={(e: any) => {
+            e?.stopPropagation?.();
+            onLongPress?.(track);
+          }}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`More options for ${track.title}`}
+          accessibilityHint="Add to a playlist or save to favorites"
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 });
@@ -220,6 +262,26 @@ const styles = StyleSheet.create({
   durationWeb: {
     width: 48,
     textAlign: 'right',
+  },
+  loadingSlot: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    // Match the rendered duration text height so the spinner doesn't nudge
+    // the row taller than its neighbours.
+    height: 20,
+    marginTop: 0,
+  },
+  moreButton: {
+    // 32pt + 6pt hitSlop on each side = 44pt target.
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginLeft: SPACING.xs,
+    marginRight: -SPACING.sm,
   },
   playingText: {
     color: COLORS.accent,

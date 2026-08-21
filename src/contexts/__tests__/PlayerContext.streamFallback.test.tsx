@@ -167,9 +167,27 @@ describe('PlayerContext direct-stream fallback', () => {
 
     expect(mockLoadTrack.mock.calls.length).toBe(callsAfterFirstError);
     expect(mockInvalidate).toHaveBeenCalledTimes(1);
+    // ...and the failure is final, so it's surfaced for the UI to offer
+    // recovery instead of leaving the row red and the player silent.
+    expect(probeApi!.state.loadError).toEqual({ trackId: 't1', showIdentifier: 'test-show' });
+    expect(probeApi!.state.isLoading).toBe(false);
   });
 
-  it('ignores playback errors for tracks without a fallback URL', async () => {
+  it('does not surface a failure while the fallback retry is still in flight', async () => {
+    render(<PlayerProvider><Probe /></PlayerProvider>);
+    const show = makeShow('test-show');
+    const track = makeDirectTrack('t1');
+    await act(async () => {
+      await probeApi!.loadTrack(track, show, [track]);
+    });
+    await act(async () => {
+      emitPlaybackError();
+    });
+    await waitFor(() => expect(mockInvalidate).toHaveBeenCalledTimes(1));
+    expect(probeApi!.state.loadError).toBeNull();
+  });
+
+  it('surfaces playback errors for tracks without a fallback URL as loadError', async () => {
     render(<PlayerProvider><Probe /></PlayerProvider>);
 
     const show = makeShow('test-show');
@@ -191,5 +209,6 @@ describe('PlayerContext direct-stream fallback', () => {
 
     expect(mockLoadTrack.mock.calls.length).toBe(callsBefore);
     expect(mockInvalidate).not.toHaveBeenCalled();
+    expect(probeApi!.state.loadError).toEqual({ trackId: 'plain', showIdentifier: 'test-show' });
   });
 });

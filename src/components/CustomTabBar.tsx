@@ -68,9 +68,10 @@ export const CustomTabBar = React.memo(function CustomTabBar({ state, descriptor
           return (
             <TouchableOpacity
               key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
+              aria-selected={isFocused}
+              accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
               testID={(options as { tabBarTestID?: string }).tabBarTestID}
               onPress={onPress}
               onLongPress={onLongPress}
@@ -111,6 +112,8 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...TYPOGRAPHY.captionSmall,
+    // captionSmall is 10px — below the 11px floor for functional text.
+    fontSize: 11,
     ...(Platform.OS === 'android' && {
       includeFontPadding: false,
     }),

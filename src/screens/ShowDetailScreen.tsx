@@ -64,10 +64,24 @@ import { resolveForDate, resolveRouteIdentifier, stableShowIdentifier } from '..
 import { rankRecordings } from '../services/recordingRanker';
 import { describeFallback, parseSourceConstraint } from '../services/recordingResolver';
 import { useToast } from '../contexts/ToastContext';
+import { describeLoadError } from '../utils/userFacingError';
 
 // Default profile image for logged out users (web header)
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
+
+/**
+ * Best-effort show date from a ShowDetail route param: either the date
+ * itself (`1977-05-08`) or an Archive identifier prefix (`gd1977-05-08…`,
+ * `gd77-05-08…`). Undefined when neither shape matches.
+ */
+export function dateFromRouteIdentifier(identifier: string): string | undefined {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(identifier)) return identifier;
+  const m = /^gd(\d{2}|\d{4})-(\d{2})-(\d{2})/.exec(identifier);
+  if (!m) return undefined;
+  const year = m[1].length === 2 ? `19${m[1]}` : m[1];
+  return `${year}-${m[2]}-${m[3]}`;
+}
 type ShowDetailNavigationProp = StackNavigationProp<RootStackParamList, 'ShowDetail'>;
 
 export function ShowDetailScreen() {
@@ -271,12 +285,14 @@ export function ShowDetailScreen() {
     }
   }, [trackTitle, show, selectTrack]);
 
-  // Returns true only when THIS call's token won the race and setShow ran —
-  // false when a newer call superseded it (stale response) or the load
-  // failed. Callers that pin a version (handleVersionChange) must wait for
-  // `true` before pinning, otherwise a recording that fails to load gets
-  // pinned forever with no way to reach it again.
-  const loadShowDetail = async (identifier: string): Promise<boolean> => {
+  // Returns the loaded detail only when THIS call's token won the race and
+  // setShow ran — null when a newer call superseded it (stale response) or
+  // the load failed. Callers that pin a version (handleVersionChange) must
+  // wait for a result before pinning, otherwise a recording that fails to
+  // load gets pinned forever with no way to reach it again. Returning the
+  // detail (not a boolean) lets recovery flows act on the fresh show
+  // without waiting for a re-render.
+  const loadShowDetail = async (identifier: string): Promise<ShowDetail | null> => {
     // Claim a new generation token for this call. Any earlier in-flight call
     // whose response arrives after this point will see a mismatch below and
     // no-op instead of clobbering state with stale data.
@@ -289,7 +305,7 @@ export function ShowDetailScreen() {
 
       // A newer loadShowDetail call started (and thus advanced the token)
       // while this one was in flight — this response is stale, discard it.
-      if (loadRequestTokenRef.current !== requestToken) return false;
+      if (loadRequestTokenRef.current !== requestToken) return null;
 
       // Recordings come from the bundled catalog (all of them, with parsed
       // tags) — no second network request. withCurrentRecording guarantees
@@ -299,7 +315,8 @@ export function ShowDetailScreen() {
       // nothing to mark as current. rankRecordings sorts the picker's list
       // best-first (spec: "sorted by score").
       const versions = withCurrentRecording(rankRecordings(getCatalogVersions(previewDate ?? detail.date ?? '')), identifier);
-      setShow(versions.length > 0 ? { ...detail, allVersions: versions } : detail);
+      const loaded: ShowDetail = versions.length > 0 ? { ...detail, allVersions: versions } : detail;
+      setShow(loaded);
       setSelectedVersion(identifier);
 
       // Explain a fallback once per loaded recording: the resolver picked
@@ -336,26 +353,69 @@ export function ShowDetailScreen() {
           paddingLeft: 10,
         },
       });
-      return true;
+      return loaded;
     } catch (err) {
-      if (loadRequestTokenRef.current !== requestToken) return false;
-      setError(err instanceof Error ? err.message : 'Failed to load show');
-      return false;
+      if (loadRequestTokenRef.current !== requestToken) return null;
+      setError(describeLoadError(err));
+      return null;
     } finally {
       if (loadRequestTokenRef.current === requestToken) setIsLoading(false);
     }
   };
 
-  const handleVersionChange = async (versionIdentifier: string) => {
-    if (versionIdentifier === selectedVersion) return;
+  const handleVersionChange = async (versionIdentifier: string): Promise<ShowDetail | null> => {
+    if (versionIdentifier === selectedVersion) return show;
     const date = previewDate ?? show?.date;
-    const chosen = show?.allVersions?.find(v => v.identifier === versionIdentifier);
+    const chosen = (show?.allVersions ?? catalogVersions).find(v => v.identifier === versionIdentifier);
     // Pin only after the recording actually loads — otherwise a failing
     // recording gets pinned forever with no way for the user to reach a
     // working one again (the pin would keep re-selecting the same broken
     // identifier on every future visit to this date).
-    const ok = await loadShowDetail(versionIdentifier);
-    if (ok && date && chosen) pin(date, versionIdentifier, chosen.format);
+    const loaded = await loadShowDetail(versionIdentifier);
+    if (loaded && date && chosen) pin(date, versionIdentifier, chosen.format);
+    return loaded;
+  };
+
+  // Ranked recordings for this date straight from the bundled catalog — no
+  // network needed, so recovery can offer "another recording" even when the
+  // first load never succeeded and `show` is still null. A direct link has
+  // no preview params, so fall back to the date carried by the route itself
+  // (`/show/1977-05-08`) or by the identifier (`gd77-05-08.sbd…`).
+  const catalogDate = previewDate ?? show?.date ?? dateFromRouteIdentifier(route.params.identifier);
+  const catalogVersions = useMemo(
+    () => rankRecordings(getCatalogVersions(catalogDate ?? '')),
+    [catalogDate],
+  );
+
+  /** Best-ranked recording of this show other than `excluding`. */
+  const alternativeRecording = (excluding: string) =>
+    (show?.allVersions ?? catalogVersions).find(v => v.identifier !== excluding) ?? null;
+
+  // The player failed to load/start a track from THIS show. Stays until the
+  // next track loads, so the recovery banner survives a back-and-forth.
+  const trackLoadError = show && playerState.loadError?.showIdentifier === show.identifier
+    ? playerState.loadError
+    : null;
+  const failedTrack = trackLoadError ? show?.tracks.find(t => t.id === trackLoadError.trackId) ?? null : null;
+  const recoveryRecording = alternativeRecording(selectedVersion);
+
+  /**
+   * Switch to another recording of this show and, once it loads, resume the
+   * performance the user had tapped (matched by title — track ids differ
+   * per recording). Falls back to just switching if no match is found.
+   */
+  const switchRecordingAndResume = async (identifier: string, resume: Track | null) => {
+    const loaded = await handleVersionChange(identifier);
+    if (!loaded || !resume) return;
+    const match = matchTrackBySlug(
+      normalizeTrackTitle(resume.title),
+      loaded.tracks,
+      SIMILARITY_THRESHOLDS.SEARCH_MATCH,
+    );
+    if (match) {
+      setJustPressedTrackId(match.id);
+      loadTrack(match, loaded, loaded.tracks);
+    }
   };
 
   const handleUseDefault = async () => {
@@ -514,7 +574,18 @@ export function ShowDetailScreen() {
   }
 
   if (error || (!show && !isLoading)) {
-    return <ErrorState message={error || 'Show not found'} />;
+    const failedIdentifier = selectedVersion || resolveIdentifier(route.params.identifier);
+    const alternative = alternativeRecording(failedIdentifier);
+    return (
+      <ErrorState
+        message={error || "This show isn't available right now."}
+        onRetry={() => loadShowDetail(failedIdentifier)}
+        secondaryAction={alternative ? {
+          label: 'Try a different recording',
+          onPress: () => handleVersionChange(alternative.identifier),
+        } : undefined}
+      />
+    );
   }
 
   // Use real show data once loaded, but prefer preview values for
@@ -813,6 +884,49 @@ export function ShowDetailScreen() {
       )}
 
       <View style={[styles.tracksContainer, isDesktop && styles.tracksContainerDesktop]}>
+        {trackLoadError && (
+          <View style={styles.loadErrorBanner} accessibilityRole="alert" accessibilityLiveRegion="polite">
+            <View style={styles.loadErrorHeader}>
+              <Ionicons name="alert-circle" size={20} color={COLORS.error} />
+              <View style={styles.loadErrorCopy}>
+                <Text style={styles.loadErrorTitle}>
+                  {failedTrack ? `Couldn't load “${failedTrack.title}” from archive.org.` : "Couldn't load that track from archive.org."}
+                </Text>
+                <Text style={styles.loadErrorBody}>
+                  {recoveryRecording
+                    ? 'Retry, or try another recording of this show.'
+                    : 'Check your connection and retry.'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.loadErrorActions}>
+              {failedTrack && (
+                <TouchableOpacity
+                  style={styles.loadErrorPrimary}
+                  onPress={() => handleTrackPress(failedTrack)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry"
+                >
+                  <Text style={styles.loadErrorPrimaryText}>Retry</Text>
+                </TouchableOpacity>
+              )}
+              {recoveryRecording && (
+                <TouchableOpacity
+                  style={styles.loadErrorSecondary}
+                  onPress={() => switchRecordingAndResume(recoveryRecording.identifier, failedTrack)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Try another recording: ${formatLabel(recoveryRecording.format)}`}
+                >
+                  <Text style={styles.loadErrorSecondaryText}>
+                    Try {formatLabel(recoveryRecording.format)} recording
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
         {show ? show.tracks.map((track) => (
           <TrackItem
             key={track.id}
@@ -821,6 +935,7 @@ export function ShowDetailScreen() {
               playerState.currentTrack?.id === track.id ||
               justPressedTrackId === track.id
             }
+            isLoading={(playerState.isLoading || playerState.isBuffering) && playerState.currentTrack?.id === track.id}
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
             onRatingPress={(t) => openRatingOverlay({
@@ -1154,6 +1269,61 @@ const styles = StyleSheet.create({
   tracksLoading: {
     padding: SPACING.xxxl,
     alignItems: 'center',
+  },
+  loadErrorBanner: {
+    marginHorizontal: SPACING.xxl,
+    marginBottom: SPACING.sm,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: RADIUS.md,
+    gap: SPACING.md,
+  },
+  loadErrorHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.sm + 2,
+  },
+  loadErrorCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  loadErrorTitle: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+  },
+  loadErrorBody: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+  },
+  loadErrorActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  loadErrorPrimary: {
+    minHeight: 44,
+    paddingHorizontal: SPACING.xl,
+    justifyContent: 'center',
+    backgroundColor: COLORS.textPrimary,
+    borderRadius: RADIUS.full,
+  },
+  loadErrorPrimaryText: {
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+    color: COLORS.background,
+  },
+  loadErrorSecondary: {
+    minHeight: 44,
+    paddingHorizontal: SPACING.lg,
+    justifyContent: 'center',
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  loadErrorSecondaryText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textPrimary,
   },
   nextTourStopsSection: {
     marginTop: SPACING.sm,

@@ -89,6 +89,8 @@ function baseRadioState(overrides: Partial<PlayerState> = {}): PlayerState {
     currentShow: null,
     isPlaying: false,
     isLoading: false,
+    loadError: null,
+    isBuffering: false,
     position: 0,
     duration: 0,
     playlist: [],

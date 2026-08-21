@@ -57,6 +57,17 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
       const isSelected = version.identifier === selectedVersion;
       const attribution = formatAttribution(version);
       const rating = formatRating(version);
+      const markers = [
+        version.identifier === defaultIdentifier ? 'default' : null,
+        version.identifier === pinnedIdentifier ? 'pinned' : null,
+      ].filter(Boolean);
+      const rowLabel = [
+        formatLabel(version.format),
+        ...version.lineage.map(lineageLabel),
+        ...markers,
+        `${formatDownloads(version.downloads)} views`,
+        attribution,
+      ].filter(Boolean).join(', ');
       return (
         <TouchableOpacity
           key={version.identifier}
@@ -64,6 +75,10 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           style={styles.option}
           onPress={() => handleSelect(version.identifier)}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={rowLabel}
+          accessibilityState={{ selected: isSelected }}
+          accessibilityHint={isSelected ? undefined : 'Double tap to switch to this recording'}
         >
           <View style={styles.optionInfo}>
             <View style={styles.tagRow}>
@@ -186,6 +201,8 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
                       <TouchableOpacity
                         onPress={() => setIsOpen(false)}
                         style={styles.closeButton}
+                        accessibilityRole="button"
+                        accessibilityLabel="Close"
                       >
                         <Ionicons name="close" size={28} color={COLORS.textPrimary} />
                       </TouchableOpacity>
@@ -213,6 +230,8 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
               <TouchableOpacity
                 onPress={() => setIsOpen(false)}
                 style={styles.closeButton}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
               >
                 <Ionicons name="close" size={28} color={COLORS.textPrimary} />
               </TouchableOpacity>

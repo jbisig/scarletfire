@@ -67,6 +67,8 @@ export function SortDropdown<T extends string>({
             styles.container,
             { top: position.top, left: clampedLeft, width: dropdownWidth }
           ]}
+          accessibilityRole="menu"
+          accessibilityLabel="Sort options"
         >
           {options.map((option, index) => (
             <React.Fragment key={option.value}>
@@ -75,6 +77,9 @@ export function SortDropdown<T extends string>({
                 style={styles.item}
                 onPress={() => handleSelect(option.value)}
                 activeOpacity={0.7}
+                accessibilityRole="menuitem"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected: selectedValue === option.value }}
               >
                 <Text
                   style={[

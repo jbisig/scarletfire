@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 
 const FLOWER_IMAGE = require('../../assets/images/flower.png');
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,23 +54,32 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
 
   return (
     <>
-      <TouchableOpacity
-        style={[styles.container, isDesktop && styles.containerDesktop]}
-        onPress={() => onPress(show)}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint="Double tap to view show details"
-      >
+      <View style={[styles.container, isDesktop && styles.containerDesktop]}>
         <GradientCardBackground width={isDesktop ? 300 : LAYOUT.horizontalCardWidth} height={isDesktop ? 150 : LAYOUT.horizontalCardHeight} seed={show.primaryIdentifier} index={index} color={color} />
         <Image source={FLOWER_IMAGE} style={styles.flowerImage} />
+
+        {/* Card tap target sits between the artwork and the text layer so the
+            release badge below is a sibling button, not a button nested in
+            a button (see ShowCard for the full rationale). */}
+        <Pressable
+          style={({ pressed }) => [styles.cardHit, pressed && styles.cardHitPressed]}
+          onPress={() => onPress(show)}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint="Double tap to view show details"
+        />
+
         <LinearGradient
           colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0)']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          style={styles.gradient}
+          style={[styles.gradient, styles.passThrough]}
         >
-          <View style={styles.topContent}>
+          <View
+            style={[styles.topContent, styles.passive]}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
             <Text style={styles.venue} numberOfLines={1} ellipsizeMode="tail">
               {getVenueFromShow(show)}
             </Text>
@@ -88,7 +97,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
           </View>
 
           {displayRelease && (
-            <View style={styles.badgesRow}>
+            <View style={[styles.badgesRow, styles.passThrough]}>
               <OfficialReleaseBadge
                 onPress={handleBadgePress}
                 compact
@@ -99,7 +108,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
             </View>
           )}
         </LinearGradient>
-      </TouchableOpacity>
+      </View>
 
       <OfficialReleaseModal
         visible={modalVisible}
@@ -121,6 +130,18 @@ const styles = StyleSheet.create({
   containerDesktop: {
     width: 300,
     height: 150,
+  },
+  cardHit: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  cardHitPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  passThrough: {
+    pointerEvents: 'box-none',
+  },
+  passive: {
+    pointerEvents: 'none',
   },
   flowerImage: {
     position: 'absolute',

@@ -42,6 +42,9 @@ export function FeedScreen() {
                 ref={profileButtonRef}
                 onPress={handleProfilePress}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={isAuthenticated ? 'Your account' : 'Sign in'}
+                accessibilityHint="Opens profile, settings, and support"
               >
                 <ProfileImage
                   uri={isAuthenticated ? avatarUrl : null}

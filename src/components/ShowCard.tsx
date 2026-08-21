@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GratefulDeadShow } from '../types/show.types';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
@@ -33,6 +33,23 @@ interface ShowCardProps {
   hideSaveBadge?: boolean;
   /** Custom trailing text shown after badges (e.g. "2d ago", "12 plays") */
   trailingText?: string;
+}
+
+/**
+ * Non-interactive content layer: taps pass through to the card's hit layer
+ * beneath. `hideFromA11y` drops it from the accessibility tree when the
+ * card button's own label already announces the same words.
+ */
+function Passive({ children, hideFromA11y }: { children: React.ReactNode; hideFromA11y?: boolean }) {
+  return (
+    <View
+      style={styles.passive}
+      accessibilityElementsHidden={hideFromA11y}
+      importantForAccessibility={hideFromA11y ? 'no-hide-descendants' : 'auto'}
+    >
+      {children}
+    </View>
+  );
 }
 
 /**
@@ -111,32 +128,67 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
 
   const isWeb = Platform.OS === 'web';
 
+  const badges = (
+    <>
+      {displayRelease && (
+        <View style={styles.officialReleaseBadgeWrapper}>
+          <OfficialReleaseBadge
+            onPress={handleBadgePress}
+            compact
+            alsoOn
+            releaseTitle={displayRelease.release.name}
+            more={displayRelease.more}
+          />
+        </View>
+      )}
+      <Passive><PlayCountBadge count={playCount} size="small" /></Passive>
+      {trailingText && (
+        <Passive><Text style={styles.trailingText}>{trailingText}</Text></Passive>
+      )}
+    </>
+  );
+
   return (
     <>
-      <TouchableOpacity
+      <View
         style={[styles.container, isDesktop && styles.containerDesktop, isDesktop && isHovered && styles.hovered]}
-        onPress={() => onPress(show)}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityHint="Double tap to view show details and track list"
         // @ts-ignore - web only mouse events
         onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
         onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
       >
+        {/* The card's tap target is a full-bleed layer BENEATH the content
+            rather than a wrapper around it, so the release badge and save
+            pills are siblings of the card button instead of buttons nested
+            inside a button — invalid HTML on web (hydration errors) and
+            unreachable by VoiceOver on native, where a parent button merges
+            its children. Text layers are `pointerEvents: none` so taps fall
+            through to this layer; badge rows are `box-none` so only their
+            buttons catch touches. */}
+        <Pressable
+          style={({ pressed }) => [styles.cardHit, pressed && styles.cardHitPressed]}
+          onPress={() => onPress(show)}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint="Double tap to view show details and track list"
+        />
+
         {/* Text content: on desktop wrapped for flex layout */}
-        <View style={isDesktop ? styles.cardContentDesktop : undefined}>
+        <View style={[styles.passThrough, isDesktop && styles.cardContentDesktop]}>
           {/* Venue name - full width at top */}
-          <Text style={styles.venue} numberOfLines={1}>
-            {getVenueFromShow(show)}
-          </Text>
+          <Passive hideFromA11y>
+            <Text style={styles.venue} numberOfLines={1}>
+              {getVenueFromShow(show)}
+            </Text>
+          </Passive>
 
           {/* Info row: on mobile includes badges, on desktop just text */}
-          <View style={!isDesktop ? styles.bottomRow : undefined}>
-            <View style={styles.infoContainer}>
+          <View style={[styles.passThrough, !isDesktop && styles.bottomRow]}>
+            <View style={[styles.passThrough, styles.infoContainer]}>
               {/* Date with stars */}
-              <View style={styles.dateRow}>
-                <Text style={styles.date}>{formatDate(show.date)}</Text>
+              <View style={[styles.passThrough, styles.dateRow]}>
+                <Passive hideFromA11y>
+                  <Text style={styles.date}>{formatDate(show.date)}</Text>
+                </Passive>
                 {onRatingPress ? (
                   <TouchableOpacity
                     onPress={(e: any) => { e?.stopPropagation?.(); onRatingPress(); }}
@@ -147,36 +199,28 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
                     <StarRating rating={displayRating} showPlaceholder size={14} />
                   </TouchableOpacity>
                 ) : (
-                  displayRating && <StarRating rating={displayRating} size={14} />
+                  displayRating && (
+                    <Passive hideFromA11y>
+                      <StarRating rating={displayRating} size={14} />
+                    </Passive>
+                  )
                 )}
               </View>
 
               {/* Location */}
               {show.location && (
-                <Text style={styles.location} numberOfLines={1}>
-                  {show.location}
-                </Text>
+                <Passive hideFromA11y>
+                  <Text style={styles.location} numberOfLines={1}>
+                    {show.location}
+                  </Text>
+                </Passive>
               )}
             </View>
 
             {/* Mobile: badges in bottom row */}
             {!isDesktop && (
-              <View style={styles.badgesContainer}>
-                {displayRelease && (
-                  <View style={styles.officialReleaseBadgeWrapper}>
-                    <OfficialReleaseBadge
-                      onPress={handleBadgePress}
-                      compact
-                      alsoOn
-                      releaseTitle={displayRelease.release.name}
-                      more={displayRelease.more}
-                    />
-                  </View>
-                )}
-                <PlayCountBadge count={playCount} size="small" />
-                {trailingText && (
-                  <Text style={styles.trailingText}>{trailingText}</Text>
-                )}
+              <View style={[styles.passThrough, styles.badgesContainer]}>
+                {badges}
               </View>
             )}
           </View>
@@ -184,22 +228,8 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
 
         {/* Desktop: badges at card level, vertically centered */}
         {isDesktop && (
-          <View style={styles.badgesContainer}>
-            {displayRelease && (
-              <View style={styles.officialReleaseBadgeWrapper}>
-                <OfficialReleaseBadge
-                  onPress={handleBadgePress}
-                  compact
-                  alsoOn
-                  releaseTitle={displayRelease.release.name}
-                  more={displayRelease.more}
-                />
-              </View>
-            )}
-            <PlayCountBadge count={playCount} size="small" />
-            {trailingText && (
-              <Text style={styles.trailingText}>{trailingText}</Text>
-            )}
+          <View style={[styles.passThrough, styles.badgesContainer]}>
+            {badges}
             {isWeb && !hideSaveBadge && (
               <>
                 <TouchableOpacity
@@ -243,7 +273,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
             )}
           </View>
         )}
-      </TouchableOpacity>
+      </View>
 
       {/* Official Release Modal */}
       <OfficialReleaseModal
@@ -287,6 +317,19 @@ const styles = StyleSheet.create({
       paddingHorizontal: 16,
       marginVertical: 2,
     } : {}),
+  },
+  cardHit: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: Platform.OS === 'web' ? 12 : 0,
+  },
+  cardHitPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  passThrough: {
+    pointerEvents: 'box-none',
+  },
+  passive: {
+    pointerEvents: 'none',
   },
   containerDesktop: {
     flexDirection: 'row',

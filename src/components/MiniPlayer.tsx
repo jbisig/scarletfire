@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -7,6 +7,7 @@ import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { formatDate, getVenueFromShow } from '../utils/formatters';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { useVideoRemount } from '../hooks/useVideoRemount';
+import { useSlowLoading } from '../hooks/useSlowLoading';
 import { BlurBackground } from './shared/BlurBackground';
 import { WebVideoBackground } from './shared/WebVideoBackground';
 import { StarRating } from './StarRating';
@@ -57,7 +58,17 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
   // live on the large player and show detail screen).
   const performanceRating = usePerformanceRating();
 
+  // Stream start is the moment users most often wonder "did that work?" —
+  // show a spinner immediately, and after ~3 s say where the wait is.
+  const isBuffering = state.isLoading || state.isBuffering;
+  const isSlow = useSlowLoading(isBuffering);
+
   if (!state.currentTrack) return null;
+
+  const showLine = state.currentShow
+    ? `${getVenueFromShow(state.currentShow)}${state.currentShow.date ? ` on ${formatDate(state.currentShow.date)}` : ''}`
+    : '';
+  const subtitle = isSlow ? 'Still loading from archive.org…' : showLine;
 
   // Animated progress width from context
   const progressWidth = progressAnim.interpolate({
@@ -73,8 +84,9 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
         onPress={onPress}
         activeOpacity={1}
         accessibilityRole="button"
-        accessibilityLabel={`Now playing: ${state.currentTrack.title}. Double tap to open full player.`}
+        accessibilityLabel={`${isBuffering ? 'Loading' : 'Now playing'}: ${state.currentTrack.title}. Double tap to open full player.`}
         accessibilityHint="Opens the full screen player"
+        accessibilityState={{ busy: isBuffering }}
       >
         {/* Video Background */}
         {Platform.OS === 'web' ? (
@@ -127,8 +139,8 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
                   </View>
                 )}
               </View>
-              <Text style={styles.showTitle} numberOfLines={1}>
-                {state.currentShow && getVenueFromShow(state.currentShow)} on {state.currentShow?.date && formatDate(state.currentShow.date)}
+              <Text style={[styles.showTitle, isSlow && styles.showTitleSlow]} numberOfLines={1}>
+                {subtitle}
               </Text>
             </View>
 
@@ -139,14 +151,19 @@ export const MiniPlayer = React.memo(function MiniPlayer({ onPress }: MiniPlayer
               }}
               style={styles.playButton}
               accessibilityRole="button"
-              accessibilityLabel={state.isPlaying ? 'Pause' : 'Play'}
+              accessibilityLabel={isBuffering ? 'Loading' : state.isPlaying ? 'Pause' : 'Play'}
               accessibilityHint={state.isPlaying ? 'Double tap to pause' : 'Double tap to play'}
+              accessibilityState={{ busy: isBuffering }}
             >
-              <Ionicons
-                name={state.isPlaying ? 'pause' : 'play'}
-                size={28}
-                color={COLORS.textPrimary}
-              />
+              {isBuffering ? (
+                <ActivityIndicator size="small" color={COLORS.textPrimary} style={styles.playSpinner} />
+              ) : (
+                <Ionicons
+                  name={state.isPlaying ? 'pause' : 'play'}
+                  size={28}
+                  color={COLORS.textPrimary}
+                />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -217,8 +234,23 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     opacity: 0.85,
   },
+  showTitleSlow: {
+    opacity: 1,
+    fontWeight: '500',
+  },
   playButton: {
     padding: SPACING.sm,
+    // Match the 28px glyph so swapping in the spinner doesn't shift layout.
+    width: 28 + SPACING.sm * 2,
+    height: 28 + SPACING.sm * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playSpinner: {
+    // ActivityIndicator "small" is 20px; keep it optically centred in the
+    // 28px slot the play/pause glyph occupies.
+    width: 28,
+    height: 28,
   },
   progressBarContainer: {
     paddingHorizontal: SPACING.md,

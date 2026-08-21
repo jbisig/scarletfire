@@ -11,6 +11,7 @@ import {
   InteractionManager,
   Platform,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -352,12 +353,21 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
 
   if (!shouldRender || !state.currentTrack) return null;
 
+  const canGoNext = isRadioMode || (!!state.playlist && state.playlist.length > 0);
+  const isBuffering = state.isLoading || state.isBuffering;
+
   return (
     <Animated.View
       style={[
         styles.container,
         { transform: [{ translateY }] }
       ]}
+      // The tray covers the whole screen; tell assistive tech it's modal so
+      // focus doesn't wander into the tab bar / mini player painted beneath.
+      accessibilityViewIsModal
+      role={Platform.OS === 'web' ? 'dialog' : undefined}
+      aria-modal={Platform.OS === 'web' ? true : undefined}
+      accessibilityLabel="Now playing"
     >
       {/* Video Background - only play when visible and app is active to save battery */}
       <View style={styles.videoContainer} {...swipeDownResponder.panHandlers}>
@@ -561,8 +571,14 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
         </View>
 
         {/* Playback Controls */}
-        <View style={styles.controlsContainer}>
-          <TouchableOpacity onPress={() => { haptics.medium(); handleRewind(); }} style={styles.controlButton}>
+        <View style={styles.controlsContainer} accessibilityRole="toolbar" accessibilityLabel="Playback controls">
+          <TouchableOpacity
+            onPress={() => { haptics.medium(); handleRewind(); }}
+            style={styles.controlButton}
+            accessibilityRole="button"
+            accessibilityLabel="Restart track"
+            accessibilityHint="Double tap to restart. Double tap twice in a row to go to the previous track"
+          >
             <Ionicons name="play-skip-back" size={36} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
@@ -570,23 +586,35 @@ export const FullPlayer = React.memo<FullPlayerProps>(({ visible, onClose }) => 
             onPress={() => { haptics.heavy(); state.isPlaying ? pause() : play(); }}
             style={styles.playButton}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isBuffering ? 'Loading' : state.isPlaying ? 'Pause' : 'Play'}
+            accessibilityHint={state.isPlaying ? 'Double tap to pause playback' : 'Double tap to start playback'}
+            accessibilityState={{ busy: isBuffering }}
           >
-            <Ionicons
-              name={state.isPlaying ? 'pause' : 'play'}
-              size={32}
-              color={COLORS.background}
-            />
+            {isBuffering ? (
+              <ActivityIndicator size="small" color={COLORS.background} />
+            ) : (
+              <Ionicons
+                name={state.isPlaying ? 'pause' : 'play'}
+                size={32}
+                color={COLORS.background}
+              />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => { haptics.medium(); nextTrack(); }}
             style={styles.controlButton}
-            disabled={!isRadioMode && (!state.playlist || state.playlist.length === 0)}
+            disabled={!canGoNext}
+            accessibilityRole="button"
+            accessibilityLabel="Next track"
+            accessibilityHint="Double tap to skip to the next track"
+            accessibilityState={{ disabled: !canGoNext }}
           >
             <Ionicons
               name="play-skip-forward"
               size={36}
-              color={(isRadioMode || (state.playlist && state.playlist.length > 0)) ? COLORS.textPrimary : COLORS.textMuted}
+              color={canGoNext ? COLORS.textPrimary : COLORS.textMuted}
             />
           </TouchableOpacity>
         </View>

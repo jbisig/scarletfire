@@ -58,6 +58,9 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessibilityRole="checkbox"
+      accessibilityLabel={year}
+      accessibilityState={{ checked: isSelected, disabled: isDisabled }}
     >
       <View style={styles.yearButtonInner}>
         <Animated.View style={[styles.yearContent, { transform: [{ translateX }] }]}>
@@ -125,6 +128,9 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
                 <TouchableOpacity
                   onPress={() => onSelectAllInEra(years)}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${eraFullySelected ? 'Clear all' : 'Select all'} years in ${era.label}`}
                 >
                   <Text style={styles.selectAllText}>
                     {eraFullySelected ? 'Clear all' : 'Select all'}

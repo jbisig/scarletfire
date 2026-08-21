@@ -105,6 +105,14 @@ export interface ErrorStateProps {
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
+  /**
+   * A second way out, shown as a quiet text button under Retry — e.g.
+   * "Try a different recording" when the failing thing has alternatives.
+   */
+  secondaryAction?: {
+    label: string;
+    onPress: () => void;
+  };
 }
 
 /**
@@ -119,20 +127,40 @@ export const ErrorState = React.memo<ErrorStateProps>(function ErrorState({
   message,
   onRetry,
   retryLabel = 'Try Again',
+  secondaryAction,
 }) {
   const hasHeader = !!icon || !!title;
   return (
     <View style={styles.container}>
       {icon && <Ionicons name={icon} size={48} color={COLORS.textTertiary} />}
       {title && <Text style={styles.errorTitle}>{title}</Text>}
-      <Text style={hasHeader ? styles.errorSubtitle : styles.errorText}>{message}</Text>
+      <Text
+        style={hasHeader ? styles.errorSubtitle : styles.errorText}
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+      >
+        {message}
+      </Text>
       {onRetry && (
         <TouchableOpacity
           style={styles.retryButton}
           onPress={onRetry}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={retryLabel}
         >
           <Text style={styles.retryButtonText}>{retryLabel}</Text>
+        </TouchableOpacity>
+      )}
+      {secondaryAction && (
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={secondaryAction.onPress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={secondaryAction.label}
+        >
+          <Text style={styles.secondaryButtonText}>{secondaryAction.label}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -235,5 +263,16 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     ...TYPOGRAPHY.labelLarge,
+  },
+  secondaryButton: {
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.xxl,
+    paddingVertical: SPACING.md,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    ...TYPOGRAPHY.labelLarge,
+    color: COLORS.textSecondary,
   },
 });

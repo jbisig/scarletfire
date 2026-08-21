@@ -127,6 +127,8 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
                 style={styles.closeSearchButton}
                 onPress={handleClose}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
               >
                 <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
               </TouchableOpacity>
@@ -141,6 +143,12 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
     <Pressable
       onPress={isExpanded ? undefined : onExpand}
       disabled={isExpanded}
+      accessibilityRole={isExpanded ? undefined : 'button'}
+      accessibilityLabel={isExpanded ? undefined : 'Search'}
+      accessibilityHint={isExpanded ? undefined : 'Double tap to open search'}
+      // Once expanded the wrapper is inert; let the input and close button
+      // be the focusable elements instead of a disabled ghost button.
+      accessible={!isExpanded}
     >
       <Animated.View style={[styles.searchContainer, { width: searchBarWidth, maxWidth: '100%' }]}>
         <View style={styles.searchInputWrapper}>
@@ -159,11 +167,15 @@ export const AnimatedSearchBar = React.memo<AnimatedSearchBarProps>(function Ani
                 autoCorrect={false}
                 autoFocus
                 selectionColor={COLORS.textPrimary}
+                accessibilityLabel={placeholder}
               />
               <TouchableOpacity
                 style={styles.closeSearchButton}
                 onPress={handleClose}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Close search"
+                accessibilityHint="Clears the search and collapses the search bar"
               >
                 <Ionicons name="close-circle" size={20} color={COLORS.textHint} />
               </TouchableOpacity>

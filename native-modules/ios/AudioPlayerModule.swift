@@ -11,6 +11,7 @@ class AudioPlayerModule: RCTEventEmitter {
   private var currentItems: [AVPlayerItem] = []
   private var timeObserver: Any?
   private var statusObservers: [NSKeyValueObservation] = []
+  private var timeControlObserver: NSKeyValueObservation?
   private var originalTracks: [[String: Any]] = []
   private var currentTrackIndex: Int = 0
   private var queueStartIndex: Int = 0  // Tracks offset between currentItems and originalTracks
@@ -105,7 +106,33 @@ class AudioPlayerModule: RCTEventEmitter {
   private func setupPlayer() {
     player = AVQueuePlayer()
     setupTimeObserver()
+    setupTimeControlObserver()
     setupRemoteCommandCenter()
+  }
+
+  // MARK: - Buffering State
+
+  /// Reports what the player is really doing. `playInternal()` emits
+  /// "playing" the moment play() is called so the UI responds instantly, but
+  /// AVPlayer may still be waiting on archive.org for seconds after that.
+  /// JS keeps a spinner up on "buffering" and clears it on the real
+  /// "playing" — without this, a cold start looks identical to playback.
+  /// `.paused` is deliberately not forwarded here: pauseInternal() already
+  /// reports explicit pauses, and AVPlayer also passes through `.paused`
+  /// while items are swapped, which would read as a user pause.
+  private func setupTimeControlObserver() {
+    timeControlObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+      let state: String?
+      switch player.timeControlStatus {
+      case .waitingToPlayAtSpecifiedRate: state = "buffering"
+      case .playing: state = "playing"
+      default: state = nil
+      }
+      guard let state = state else { return }
+      DispatchQueue.main.async { [weak self] in
+        self?.sendEvent(withName: "playback-state", body: ["state": state])
+      }
+    }
   }
 
   // MARK: - Remote Command Center (Lock Screen Controls)
@@ -475,6 +502,7 @@ class AudioPlayerModule: RCTEventEmitter {
     if let observer = timeObserver {
       player?.removeTimeObserver(observer)
     }
+    timeControlObserver?.invalidate()
     statusObservers.removeAll()
     NotificationCenter.default.removeObserver(self)
   }
