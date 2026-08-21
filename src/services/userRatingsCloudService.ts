@@ -1,5 +1,6 @@
 import { authService } from './authService';
 import type { UserRatings } from './userRatingsStore';
+import { SUPABASE_TABLES } from '../constants/registry';
 
 class UserRatingsCloudService {
   private get supabase() {
@@ -12,7 +13,7 @@ class UserRatingsCloudService {
     if (!session) return;
 
     const { error } = await this.supabase
-      .from('user_ratings')
+      .from(SUPABASE_TABLES.USER_RATINGS)
       .upsert({
         user_id: userId,
         shows: ratings.shows,
@@ -28,7 +29,7 @@ class UserRatingsCloudService {
   /** Load ratings from cloud; empty ratings if the user has no row yet. */
   async loadRatings(userId: string): Promise<UserRatings> {
     const { data, error } = await this.supabase
-      .from('user_ratings')
+      .from(SUPABASE_TABLES.USER_RATINGS)
       .select('shows, performances')
       .eq('user_id', userId)
       .single();

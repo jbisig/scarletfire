@@ -207,8 +207,9 @@ Cloud: new table `user_preferences` via a migration mirroring
 - `pins jsonb not null default '{}'` — CHECK `octet_length(pins::text) <= 262144`
 - `updated_at timestamptz`
 - RLS enabled; four idempotent per-user policies
-- `supabase/delete_user_function.sql` updated to include the table;
-  `SUPABASE_TABLES` in `registry.ts` updated.
+- `SUPABASE_TABLES` in `registry.ts` updated. No change needed to
+  `supabase/delete_user_function.sql` — the table's `on delete cascade` FK
+  on `user_id` already removes the row when the user is deleted.
 - Applied with `supabase db push --linked`.
 
 `userPreferencesCloudService` — whole-blob `upsert(..., { onConflict: 'user_id' })`;
@@ -307,11 +308,23 @@ The `sourceConstraint` param is a comma-separated string of tag ids (e.g.
 
 ### Play seams
 
-The `primaryIdentifier` reads at `PlayerContext.tsx` (×3),
-`ShowOfTheDayContext.tsx` (×2), and `showDetailParams.ts` go through
-`resolveRecording` with the current store state. A `useResolvedRecording(show)`
-hook wraps it for components; non-React code reads the store synchronously.
-`radioService` is unchanged.
+The `primaryIdentifier` reads at `PlayerContext.tsx` (×2 — the third read
+keys a song's own recording and is untouched), `ShowOfTheDayContext.tsx`
+(×2), and `showDetailParams.ts` go through `resolveRecording` with the
+current store state. `showDetailParams`/`sourceSelection` wrap it for
+components; non-React code reads the store synchronously. `radioService` is
+unchanged.
+
+### Stable show identity
+
+The recording loaded for a show now varies per user (preference, pins), so
+anything keyed per SHOW — favorites, collections, play counts — must not key
+off the loaded recording's identifier. `stableShowIdentifier(date)` in
+`sourceSelection.ts` returns the catalog's primary recording for that date
+(falling back to the loaded identifier when the date is off-catalog) and is
+the only identifier those features use; `resolveShowIdentifier` /
+`resolveForDate` remain the seam for "what should play," and are unrelated
+to this identity.
 
 ### UI
 
@@ -333,7 +346,8 @@ hook wraps it for components; non-React code reads the store synchronously.
   `preference = F`; either answer is stored in `nudgeAnswers[F]` and the
   prompt never returns for that format. The prompt renders in the picker's
   modal header — at the top of the scrollable options list, immediately
-  below the "Select Source" title bar, via `renderHeaderExtras()`.
+  below the "Select Source" title bar, via `renderHeaderExtras()`. The tray
+  closes on selection, so the prompt is first seen on the next picker open.
 
 ---
 

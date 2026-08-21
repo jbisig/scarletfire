@@ -55,7 +55,19 @@ const showDetailRoute = {
   parse: {
     identifier: sanitizeIdentifier,
     trackTitle: parseTrackSlug,
-    sourceConstraint: (s: string) => decodeURIComponent(s).replace(/[^a-z0-9,]/gi, ''),
+    sourceConstraint: (s: string) => {
+      // A malformed percent-escape (e.g. a bare "%" from a hand-edited or
+      // truncated URL) throws URIError — treat it as "no constraint" rather
+      // than crashing the route parse.
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(s);
+      } catch (err) {
+        if (err instanceof URIError) return '';
+        throw err;
+      }
+      return decoded.replace(/[^a-z0-9,]/gi, '');
+    },
   },
   stringify: {
     identifier: (id: string) => identifierToDate[id] || id,
