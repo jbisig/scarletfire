@@ -17,8 +17,6 @@
 
 import { CuratedShowEntry } from './festivalDates';
 
-export { CuratedShowEntry };
-
 export const PEDAL_STEEL_DATES: readonly CuratedShowEntry[] = [
   {
     date: '1969-05-31',

@@ -31,6 +31,9 @@ const DEFAULT_EXPANDED: Record<TagCategoryId, boolean> = {
   notable: false,
 };
 
+// Stable empty result for the closed-tray fast path — see `counts` below.
+const EMPTY_COUNTS = {} as Record<TagId, number>;
+
 export function ShowsFilterTray({
   isOpen,
   onClose,
@@ -120,13 +123,21 @@ export function ShowsFilterTray({
     [allDates, pendingYears]
   );
 
-  // Faceted counts for each tag, given the current pending selections
-  const counts = useMemo(() => getTagCounts(pendingTags, yearDates), [pendingTags, yearDates]);
+  // Faceted counts for each tag, given the current pending selections.
+  // The tray is always mounted (with isOpen=false) so Home can animate it
+  // open instantly; gate on isOpen so a closed tray never pays for walking
+  // the full tag index during Home's first paint. The open-effect above
+  // re-seeds pendingTags/pendingYears whenever the tray opens, so this
+  // recomputes with fresh inputs as soon as isOpen flips true.
+  const counts = useMemo(
+    () => (isOpen ? getTagCounts(pendingTags, yearDates) : EMPTY_COUNTS),
+    [isOpen, pendingTags, yearDates]
+  );
 
-  // Compute matching show count
+  // Compute matching show count (same isOpen gate as `counts` above)
   const matchingShowCount = useMemo(
-    () => applyTagFilter(yearDates, pendingTags).length,
-    [yearDates, pendingTags]
+    () => (isOpen ? applyTagFilter(yearDates, pendingTags).length : 0),
+    [isOpen, yearDates, pendingTags]
   );
 
   const isWeb = Platform.OS === 'web';

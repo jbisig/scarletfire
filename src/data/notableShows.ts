@@ -19,8 +19,6 @@
 import { CuratedShowEntry } from './festivalDates';
 import { TIER_1_SHOWS } from './classicShowsTiers';
 
-export { CuratedShowEntry };
-
 export const HISTORIC_EVENT_DATES: readonly CuratedShowEntry[] = [
   {
     date: '1965-05-05',
