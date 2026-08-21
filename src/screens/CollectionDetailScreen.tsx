@@ -41,6 +41,7 @@ import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
+import { MiniSwitch } from '../components/MiniSwitch';
 import { getShareBackground } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
@@ -693,6 +694,8 @@ export function CollectionDetailScreen() {
                     color={COLORS.textPrimary}
                   />
                   <Text style={styles.pillText}>{collection.isPublic ? 'Public' : 'Private'}</Text>
+                  {/* The pill's label alone read as a badge; the switch says "tap me". */}
+                  <MiniSwitch value={collection.isPublic} />
                 </TouchableOpacity>
               )}
               {collection && ownerUsername && (
