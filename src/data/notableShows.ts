@@ -65,6 +65,12 @@ export const HISTORIC_EVENT_DATES: readonly CuratedShowEntry[] = [
     confidence: 'high',
   },
   {
+    date: '1968-05-03',
+    note: 'Free show for striking students at Columbia University; band smuggled onto campus in a bread truck (date confidence: high, venue confidence: medium)',
+    source: 'https://jerrybase.com/events/19680503-01 ; https://www.dead.net/show/may-3-1968',
+    confidence: 'high',
+  },
+  {
     date: '1969-08-16',
     note: 'Woodstock, Max Yasgur\'s farm, Bethel NY — the infamously rain-plagued Dead set',
     source: 'https://jerrybase.com/events/19690816-01',
