@@ -11,15 +11,6 @@ interface FilterPillProps {
   showCheckmark?: boolean;
   count?: number;
   testID?: string;
-  /**
-   * Optional accessibilityState override. Callers that render `FilterPill` as a
-   * standalone JSX element with a testID (e.g. `TagCategorySection`) can pass this
-   * so `disabled`/`selected` are inspectable directly off the pill's own props
-   * (useful in tests, where `findByProps({ testID }, { deep: false })` stops at
-   * this outer node rather than descending into the internal `TouchableOpacity`).
-   * Defaults to `{ selected: isSelected, disabled: isDisabled }` when omitted.
-   */
-  accessibilityState?: { selected?: boolean; disabled?: boolean };
   onPress: () => void;
 }
 
@@ -30,7 +21,6 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
   showCheckmark = false,
   count,
   testID,
-  accessibilityState,
   onPress,
 }) {
   const handlePress = () => {
@@ -48,7 +38,7 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
       ]}
       onPress={handlePress}
       disabled={isDisabled}
-      accessibilityState={accessibilityState ?? { selected: isSelected, disabled: !!isDisabled }}
+      accessibilityState={{ selected: isSelected, disabled: !!isDisabled }}
       activeOpacity={0.7}
     >
       {showCheckmark && isSelected && (

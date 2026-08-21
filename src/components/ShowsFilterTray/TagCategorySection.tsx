@@ -49,7 +49,6 @@ export function TagCategorySection({ category, tags, selected, counts, expanded,
                 count={count}
                 isSelected={isSelected}
                 isDisabled={isDisabled}
-                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
                 onPress={() => onToggleTag(tag.id)}
               />
             );

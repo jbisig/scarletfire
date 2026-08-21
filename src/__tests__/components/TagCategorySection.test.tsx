@@ -35,7 +35,9 @@ it('renders the header with an active count and the pills with counts when expan
 it('disables zero-count unselected pills and reports toggles', async () => {
   const { tree, onToggleTag } = await render();
   const festival = tree.root.findByProps({ testID: 'tag-pill-festival' });
-  expect(festival.props.disabled ?? festival.props.accessibilityState?.disabled).toBeTruthy();
+  // findByProps stops at the FilterPill composite, so assert its own prop
+  expect(festival.props.isDisabled).toBe(true);
+  expect(tree.root.findByProps({ testID: 'tag-pill-arena' }).props.isDisabled).toBe(false);
   await act(async () => { tree.root.findByProps({ testID: 'tag-pill-stadium' }).props.onPress(); });
   expect(onToggleTag).toHaveBeenCalledWith('stadium');
 });
