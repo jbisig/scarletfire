@@ -113,6 +113,7 @@ export function ShowDetailScreen() {
   // floating Collapse can stand in while the reader is inside it.
   const scrollRef = useRef<ScrollView>(null);
   const notesLayout = useRef({ y: 0, height: 0 });
+  const viewportHeight = useRef(0);
   const [collapseVisible, setCollapseVisible] = useState(false);
 
   /** What the header's Play button starts: the show from its opening track. */
@@ -125,6 +126,7 @@ export function ShowDetailScreen() {
    */
   const handleNotesScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement } = event.nativeEvent;
+    viewportHeight.current = layoutMeasurement.height;
     const { y, height } = notesLayout.current;
     const viewportBottom = contentOffset.y + layoutMeasurement.height;
     setCollapseVisible(
@@ -135,9 +137,21 @@ export function ShowDetailScreen() {
   const collapseNotes = useCallback(() => {
     setShowNotesExpanded(false);
     setCollapseVisible(false);
-    // Land back on the section heading rather than wherever the collapse left
-    // the viewport, which would otherwise be somewhere in the track list.
-    scrollRef.current?.scrollTo({ y: Math.max(0, notesLayout.current.y - SPACING.md), animated: true });
+    // Scroll only once the collapse has laid out. Firing in the same tick asks
+    // the scroll view to move within content that is about to lose most of its
+    // height, and the offset gets clamped against the old size.
+    requestAnimationFrame(() => {
+      const { y } = notesLayout.current;
+      // The notes sit just under the header, so returning to the very top
+      // brings them back with the artwork, date and source picker around them.
+      // Only on a viewport too short for that do we scroll the notes to the top
+      // on their own.
+      const fitsFromTop = viewportHeight.current === 0 || y < viewportHeight.current * 0.6;
+      scrollRef.current?.scrollTo({
+        y: fitsFromTop ? 0 : Math.max(0, y - SPACING.md),
+        animated: true,
+      });
+    });
   }, []);
 
   const { isDesktop } = useResponsive();
@@ -711,6 +725,7 @@ export function ShowDetailScreen() {
           ) : undefined}
           onBackPress={() => navigation.goBack()}
           isDesktop={isDesktop}
+          contentStyle={!isDesktop ? styles.glassHeaderContentMobile : undefined}
           fadeToBackground
           navRight={!isDesktop ? (
             <TouchableOpacity
@@ -725,7 +740,7 @@ export function ShowDetailScreen() {
           ) : undefined}
         >
             {/* Show info section */}
-            <View style={styles.webInfoSection}>
+            <View style={[styles.webInfoSection, !isDesktop && styles.webInfoSectionMobile]}>
               {/* Venue + Details */}
               <View style={styles.webVenueBlock}>
                 <Text style={styles.webVenue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
@@ -866,7 +881,10 @@ export function ShowDetailScreen() {
                     versions={displayShow.allVersions}
                     selectedVersion={selectedVersion}
                     onVersionChange={handleVersionChange}
-                    webGlassStyle
+                    // Desktop keeps the glass pill, where it sits in a row of
+                    // them. Mobile web follows native: the same translucent
+                    // black pill over the artwork.
+                    webGlassStyle={isDesktop}
                     defaultIdentifier={defaultIdentifier}
                     pinnedIdentifier={activePin?.identifier}
                     onUseDefault={handleUseDefault}
@@ -1419,6 +1437,16 @@ const styles = StyleSheet.create({
   webInfoSection: {
     gap: 16,
   },
+  // Mobile web has far less room than desktop, and the header was pushing the
+  // track list below the fold. GlassHeader's own padding is overridden rather
+  // than changed at source, since DiscoverLanding and CollectionDetail share it.
+  webInfoSectionMobile: {
+    gap: SPACING.md,
+  },
+  glassHeaderContentMobile: {
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
+  },
   webVenueBlock: {
     gap: 12,
   },
@@ -1564,18 +1592,21 @@ const styles = StyleSheet.create({
   },
   showNotesSection: {
     marginTop: SPACING.lg,
+    // The page's content margin, matching the track rows (TrackItem uses the
+    // same value). Held here rather than on each child so the text, citation
+    // and toggle cannot drift apart.
+    paddingHorizontal: SPACING.xxl,
   },
   showNotesSectionDesktop: {
-    padding: 24,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xxl,
   },
   showNotesText: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    paddingHorizontal: SPACING.xxl,
+    // Long-form reading, so brighter than the muted secondary grey used for
+    // one-line metadata elsewhere on the page.
+    color: BRAND_COLORS.textSoft,
     lineHeight: 22,
-    ...(Platform.OS === 'web' ? {
-      paddingHorizontal: 16,
-    } : {}),
   },
   floatingCollapse: {
     position: 'absolute',
@@ -1603,10 +1634,9 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   showNotesToggle: {
-    paddingHorizontal: SPACING.xxl,
+    alignSelf: 'flex-start',
     paddingVertical: SPACING.sm,
     ...(Platform.OS === 'web' ? {
-      paddingHorizontal: 16,
       // @ts-ignore
       cursor: 'pointer',
     } : {}),
@@ -1618,11 +1648,7 @@ const styles = StyleSheet.create({
   showNotesCitation: {
     ...TYPOGRAPHY.labelSmall,
     color: COLORS.textMuted,
-    paddingHorizontal: SPACING.xxl,
     marginTop: SPACING.md,
     fontStyle: 'italic',
-    ...(Platform.OS === 'web' ? {
-      paddingHorizontal: 16,
-    } : {}),
   },
 });
