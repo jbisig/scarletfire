@@ -81,7 +81,7 @@ METADATA_KEY = re.compile(
 # body size, so this label is what marks them there.
 SETLIST_KEY = re.compile(
     r"^\s*((First|Second|Third|Acoustic|Electric)\s+)?Sets?\s*[.,]?\s*(List|\d+)?\s*[.,]?\s*[:;]"
-    r"|^\s*Encore\s*[.,]?\s*[:;]",
+    r"|^\s*(Encore|Studio\s+Rehearsal|Rehearsal|Soundcheck)\s*[.,]?\s*[:;]",
     re.I,
 )
 # Footnotes hung off a setlist: "* with Duane Allman...", "† also with Berry
@@ -93,6 +93,17 @@ DATE_CAPTION = re.compile(r"^\s*\d{1,2}/\d{1,2}/\d{2}\s*,\s*[A-Z]")
 CAPTION_TEXT = re.compile(r"photo credit|^(Back|Front) row, left to right|^Left to right", re.I)
 DATE_TOKEN = re.compile(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{2})")
 # "MC>PCM>RR>PCM" — a tape's genealogy, printed under the Source line.
+# A tape's genealogy: "MR>C? >BetaHF >PCM". Spelled out against the vocabulary
+# the tapers actually use, rather than "any short token", so that prose naming a
+# segue — "Scarlet Begonias" > "Fire on the Mountain" — cannot match.
+_TAPE_TOKEN = (
+    r"(?:MR|MC|SBD|AUD|AVD|FM|DAT|PCM|CDR?|MTX|ADD|Beta\s?HF|Beta|HF|RR|DR|"
+    r"[A-Z]{1,3}\d?)\??"
+)
+GENEALOGY_CHAIN = re.compile(
+    rf"^\s*{_TAPE_TOKEN}(?:\s*>\s*{_TAPE_TOKEN})+\s*"
+)
+
 GENEALOGY = re.compile(
     r"^[A-Z0-9 ]{1,8}(\s*>\s*[A-Z0-9 ]{1,8}){1,}$"
     # "Genealogy:" itself breaks across the column, stranding its tail: "ogy: MR > C > DAT"
@@ -244,7 +255,12 @@ def _classify(column: Column, body_size: float):
 
     for line in column.lines:
         text = line.text.strip()
-        caps = text == text.upper() and re.search(r"[A-Z]{2}", text) is not None
+        letters = [c for c in text if c.isalpha()]
+        caps = (
+            len(letters) >= 4
+            and sum(1 for c in letters if c.isupper()) / len(letters) >= 0.8
+            and re.search(r"[A-Z]{2}", text) is not None
+        )
 
         if is_date_line(text) and line.size >= body_size + 2.5:
             line.role = "header"
@@ -275,9 +291,14 @@ def _classify(column: Column, body_size: float):
             line.role = "setlist"
         elif METADATA_KEY.match(text) or GENEALOGY.match(text) or "Helvetica" in line.font:
             line.role = "metadata"
-        elif line.size >= body_size + 1.4:
+        elif line.size >= body_size + 1.4 and len(text.split()) >= 3:
+            # Size alone is not enough: the scan renders the odd word oversized,
+            # and a one-word "setlist" then swallows the prose that follows it
+            # through _carry_wrapped_values.
             line.role = "setlist"
-        elif line.x0 >= left + 17:
+        elif line.x0 >= left + 17 and len(text.split()) >= 3:
+            # A block quotation runs to several words a line; one or two words
+            # sitting off the margin is a scan artefact, not a quotation.
             line.role = "quote"
         elif line.x0 >= left + 5:
             line.role = "indent"
@@ -307,8 +328,14 @@ def _carry_wrapped_values(lines):
             continue
         if line.role not in ("body", "indent", "quote"):
             continue
-        if line.top - prev.top <= leading * 1.55:
-            line.role = prev.role
+        if line.top - prev.top > leading * 1.55:
+            continue
+        # A metadata or setlist value is a fragment; a line that closes on a full
+        # stop and runs to a sentence's length is the review resuming.
+        finished = re.search(r"[.!?][\"'\u201d)]?$", line.text.strip())
+        if finished and len(line.text.split()) >= 6:
+            continue
+        line.role = prev.role
 
 
 def page_columns(page, head_margin=48.0):
@@ -434,6 +461,11 @@ SUPERSCRIPT_AFTER_STOP = re.compile(r'([.!?])\s?\d{1,3}(?=\s+["“(]?[A-Z])')
 
 def clean(text: str) -> str:
     text = unicodedata.normalize("NFC", text)
+    # A genealogy chain run together with the opening sentence:
+    # "MR > C? > Beta HF > PCM After three amazing shows in downtown L.A. ..."
+    lead = GENEALOGY_CHAIN.match(text)
+    if lead and lead.end() < len(text) and text[lead.end():lead.end() + 1].isupper():
+        text = text[lead.end():]
     # The scan reads a closing double quote plus a superscript note number as ,,N
     text = re.sub(r"[.,]?,,(\d{1,3})\b", '."', text)
     text = re.sub(r',,(?=[\s"])', '"', text)
@@ -641,6 +673,11 @@ def write_ts(notes, path):
 
 SENTENCE = re.compile(r"[a-z][.!?](\s|$)")
 
+# The same keys, wherever they appear in a short paragraph.
+METADATA_ANYWHERE = re.compile(
+    r"\b(Source|Genealogy|Taper|Personnel|Highlights?|Quality|Lineage)\s*:", re.I
+)
+
 # "Genealogy:" and its siblings break across the column, leaving the first half
 # hanging off the end of the value that preceded them.
 TRUNCATED_KEY = re.compile(
@@ -693,6 +730,11 @@ def _is_stray_metadata(paragraph: str) -> bool:
     if len(text) > MAX_STRAY_METADATA:
         return False
     if METADATA_KEY.match(text) or GENEALOGY.match(text):
+        return True
+    # The key can sit at the end of the value that preceded it, mid-string.
+    if METADATA_ANYWHERE.search(text):
+        return True
+    if GENEALOGY_CHAIN.fullmatch(text):
         return True
     # A metadata key chopped in half by the column edge, left dangling at the end
     # of its own value: '..."Fire on the Mountain"), Geneal'.
