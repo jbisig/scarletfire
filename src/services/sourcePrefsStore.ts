@@ -28,6 +28,9 @@ export interface SourcePrefs {
   /** Keyed by YYYY-MM-DD. */
   pins: Record<string, SourcePin>;
   nudgeAnswers: Partial<Record<RecordingFormat, NudgeAnswer>>;
+  /** Roll past tracks that are only the band tuning up. */
+  skipTuning: boolean;
+  skipTuningSetAt: number;
 }
 
 export const EMPTY_SOURCE_PREFS: SourcePrefs = {
@@ -35,6 +38,8 @@ export const EMPTY_SOURCE_PREFS: SourcePrefs = {
   preferenceSetAt: 0,
   pins: {},
   nudgeAnswers: {},
+  skipTuning: false,
+  skipTuningSetAt: 0,
 };
 
 const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -75,6 +80,19 @@ export function replaceSourcePrefs(next: SourcePrefs): void {
 export function setSourcePreference(preference: SourcePreference, now: number = Date.now()): void {
   prefs = { ...prefs, preference, preferenceSetAt: now };
   notify();
+}
+
+export function setSkipTuning(skipTuning: boolean, now: number = Date.now()): void {
+  prefs = { ...prefs, skipTuning, skipTuningSetAt: now };
+  notify();
+}
+
+/**
+ * Read synchronously by PlayerContext while advancing a track, which is why
+ * this lives in the store rather than behind a hook.
+ */
+export function getSkipTuning(): boolean {
+  return prefs.skipTuning;
 }
 
 export function getActivePin(date: string): SourcePin | null {
@@ -130,6 +148,7 @@ function pinTimestamp(pin: SourcePin): number {
 /** Latest-wins per field; see Global Constraints for the exact rules. */
 export function mergeSourcePrefs(local: SourcePrefs, remote: SourcePrefs): SourcePrefs {
   const preferenceFrom = remote.preferenceSetAt > local.preferenceSetAt ? remote : local;
+  const skipTuningFrom = remote.skipTuningSetAt > local.skipTuningSetAt ? remote : local;
 
   const pins: Record<string, SourcePin> = { ...local.pins };
   for (const [date, pin] of Object.entries(remote.pins)) {
@@ -148,6 +167,8 @@ export function mergeSourcePrefs(local: SourcePrefs, remote: SourcePrefs): Sourc
     preferenceSetAt: preferenceFrom.preferenceSetAt,
     pins,
     nudgeAnswers,
+    skipTuning: skipTuningFrom.skipTuning,
+    skipTuningSetAt: skipTuningFrom.skipTuningSetAt,
   };
 }
 
@@ -192,7 +213,10 @@ export function normalizeSourcePrefs(input: unknown): SourcePrefs {
     }
   }
 
-  return { preference, preferenceSetAt, pins, nudgeAnswers };
+  const skipTuning = raw.skipTuning === true;
+  const skipTuningSetAt = typeof raw.skipTuningSetAt === 'number' ? raw.skipTuningSetAt : 0;
+
+  return { preference, preferenceSetAt, pins, nudgeAnswers, skipTuning, skipTuningSetAt };
 }
 
 export function resetStoreForTests(): void {

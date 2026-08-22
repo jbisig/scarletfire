@@ -115,6 +115,9 @@ export function ShowDetailScreen() {
   const notesLayout = useRef({ y: 0, height: 0 });
   const [collapseVisible, setCollapseVisible] = useState(false);
 
+  /** What the header's Play button starts: the show from its opening track. */
+  const firstPlayableTrack = useMemo(() => show?.tracks?.[0] ?? null, [show?.tracks]);
+
   /**
    * The floating Collapse stands in for the in-flow toggle while that toggle is
    * out of reach: from the moment the note scrolls into view until its own
@@ -676,6 +679,20 @@ export function ShowDetailScreen() {
   );
   const headerArt = getShareBackground(shareBackgroundIndexForId(showKey));
 
+  /** Starts the show from its opening track. Sits beside the source picker in
+      both the web and native headers, so it is built once here. */
+  const playShowButton = firstPlayableTrack ? (
+    <TouchableOpacity
+      onPress={() => handleTrackPress(firstPlayableTrack)}
+      activeOpacity={0.85}
+      style={styles.playShowButton}
+      accessibilityRole="button"
+      accessibilityLabel="Play this show from the first track"
+    >
+      <Ionicons name="play" size={22} color="#FFFFFF" style={styles.playShowIcon} />
+    </TouchableOpacity>
+  ) : null;
+
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
     <ScrollView
@@ -870,6 +887,8 @@ export function ShowDetailScreen() {
                 {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
               </View>
 
+              {playShowButton}
+
               {/* Play count pill - desktop only */}
               {isDesktop && playCount > 0 && (
                 <View style={[styles.playCountPillWeb, styles.pillsRightSlot]}>
@@ -965,27 +984,32 @@ export function ShowDetailScreen() {
             </View>
           )}
 
-          {/* Version Picker / Source Info Pill */}
-          {displayShow.allVersions && displayShow.allVersions.length > 1 ? (
-            <VersionPicker
-              versions={displayShow.allVersions}
-              selectedVersion={selectedVersion}
-              onVersionChange={handleVersionChange}
-              defaultIdentifier={defaultIdentifier}
-              pinnedIdentifier={activePin?.identifier}
-              onUseDefault={handleUseDefault}
-              nudge={nudge}
-            />
-          ) : show ? (
-            <View style={styles.sourceInfoPill}>
-              <Text style={styles.sourceInfoText}>
-                {formatLabel(displayShow.allVersions?.[0]?.format)}
-              </Text>
-              <Text style={styles.downloadsText}>
-                {formatDownloadsLabel(displayShow.allVersions?.[0]?.downloads)}
-              </Text>
+          {/* Version Picker / Source Info Pill, with Play alongside */}
+          <View style={styles.sourceRow}>
+            <View style={styles.sourceRowPicker}>
+              {displayShow.allVersions && displayShow.allVersions.length > 1 ? (
+                <VersionPicker
+                  versions={displayShow.allVersions}
+                  selectedVersion={selectedVersion}
+                  onVersionChange={handleVersionChange}
+                  defaultIdentifier={defaultIdentifier}
+                  pinnedIdentifier={activePin?.identifier}
+                  onUseDefault={handleUseDefault}
+                  nudge={nudge}
+                />
+              ) : show ? (
+                <View style={styles.sourceInfoPill}>
+                  <Text style={styles.sourceInfoText}>
+                    {formatLabel(displayShow.allVersions?.[0]?.format)}
+                  </Text>
+                  <Text style={styles.downloadsText}>
+                    {formatDownloadsLabel(displayShow.allVersions?.[0]?.downloads)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
+            {playShowButton}
+          </View>
           {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
         </View>
         </View>
@@ -1306,6 +1330,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flexShrink: 0,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  sourceRowPicker: {
+    flex: 1,
+  },
+  playShowButton: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+    ...(Platform.OS === 'web' ? {
+      // @ts-ignore
+      cursor: 'pointer',
+    } : {}),
+  },
+  playShowIcon: {
+    // The glyph's bounding box carries empty space on its left; nudge it back
+    // so the triangle sits on the circle's centre rather than beside it.
+    marginLeft: 3,
   },
   sourceInfoPill: {
     flexDirection: 'row',

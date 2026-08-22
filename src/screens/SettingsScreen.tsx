@@ -19,7 +19,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import Constants from 'expo-constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { useSourcePreference, useSourcePrefs } from '../contexts/SourcePrefsContext';
+import { useSourcePreference, useSourcePrefs, useSkipTuning } from '../contexts/SourcePrefsContext';
 import { profileService, UserProfile } from '../services/profileService';
 import { followService } from '../services/followService';
 import { ProfileImage } from '../components/ProfileImage';
@@ -39,7 +39,30 @@ export function SettingsScreen() {
   // Device-local until sign-in, so this must be read before the auth guard
   // below returns early — the Playback section renders in both states.
   const sourcePreference = useSourcePreference();
-  const { setPreference } = useSourcePrefs();
+  const { setPreference, setSkipTuning } = useSourcePrefs();
+  const skipTuning = useSkipTuning();
+
+  const skipTuningToggle = (
+    <View style={styles.toggleRow}>
+      <View style={styles.toggleInfo}>
+        <Text style={styles.toggleLabel}>Skip Tuning Tracks</Text>
+        <Text style={styles.toggleHint}>
+          Roll past tracks that are only the band tuning up. Tapping one still plays it,
+          and tuning that runs into a song is left alone.
+        </Text>
+      </View>
+      <Switch
+        value={skipTuning}
+        onValueChange={setSkipTuning}
+        trackColor={{ false: COLORS.border, true: COLORS.accent }}
+        thumbColor="#FFFFFF"
+        // @ts-ignore - needed for web compatibility
+        activeThumbColor="#FFFFFF"
+        onTintColor={COLORS.accent}
+      />
+    </View>
+  );
+
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -263,6 +286,7 @@ export function SettingsScreen() {
               Which recording to play when a show has more than one. Picking a recording on a show's page pins it for that show only.
             </Text>
             <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
+            {skipTuningToggle}
           </View>
         </ScrollView>
       </View>
@@ -490,6 +514,7 @@ export function SettingsScreen() {
           Which recording to play when a show has more than one. Picking a recording on a show's page pins it for that show only.
         </Text>
         <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
+        {skipTuningToggle}
       </View>
 
       {/* Public Profile Section */}
