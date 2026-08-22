@@ -14,7 +14,10 @@ interface CollectionCarouselProps {
 }
 
 const CARD_WIDTH = LAYOUT.horizontalCardWidth;
-const CARD_HEIGHT = LAYOUT.horizontalCardHeight;
+// Two lines of name + the count line + padding. The show cards are taller
+// because they carry artwork; these carry only text, so matching their
+// height just made dead space.
+const CARD_HEIGHT = 84;
 
 function formatCountLabel(c: Collection): string {
   const n = c.itemCount ?? 0;
