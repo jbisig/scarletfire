@@ -39,6 +39,26 @@ export function shareBackgroundIndexForId(id: string): number {
   return (hash % 6) + 1;
 }
 
+/**
+ * Background indexes (1–6) for a row of cards: each card gets its id's
+ * preferred artwork unless one of the previous five cards already took it,
+ * in which case it steps to the next free one. Any six neighbours are
+ * therefore all different, while a show keeps its artwork wherever the row
+ * order around it hasn't changed.
+ */
+export function assignShareBackgrounds(ids: readonly string[]): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    const recent = new Set(out.slice(Math.max(0, i - 5)));
+    let idx = shareBackgroundIndexForId(ids[i]);
+    for (let tries = 0; tries < 6 && recent.has(idx); tries++) {
+      idx = (idx % 6) + 1;
+    }
+    out.push(idx);
+  }
+  return out;
+}
+
 export function getShareBackground(bgIndex: number): ImageSourcePropType {
   if (!Number.isFinite(bgIndex)) return BACKGROUNDS[0];
   const i = Math.floor(bgIndex);

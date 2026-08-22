@@ -12,22 +12,25 @@ import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/
 interface HorizontalShowCardProps {
   show: GratefulDeadShow;
   onPress: (show: GratefulDeadShow) => void;
+  /** 1–6, from assignShareBackgrounds() over the whole row so neighbours differ. */
+  bgIndex?: number;
 }
 
 /**
- * Discover carousel card. Same artwork family as the share cards (keyed by
- * the show's identifier so a show always gets the same one), darkened just
- * enough for white type to hold up on the brighter nebulae.
+ * Discover carousel card. Same artwork family as the share cards, chosen per
+ * row so neighbours never match, darkened enough for white type to hold up
+ * on the brighter nebulae.
  */
 export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function HorizontalShowCard({
   show,
   onPress,
+  bgIndex,
 }) {
   const { isDesktop } = useResponsive();
   const resolvedRating = useResolvedShowRating(show.date);
   const background = useMemo(
-    () => getShareBackground(shareBackgroundIndexForId(show.primaryIdentifier)),
-    [show.primaryIdentifier],
+    () => getShareBackground(bgIndex ?? shareBackgroundIndexForId(show.primaryIdentifier)),
+    [bgIndex, show.primaryIdentifier],
   );
 
   const accessibilityLabel = useMemo(() => {
@@ -58,7 +61,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
       {/* Text sits on the left; the gradient buys contrast there and lets the
           artwork show through on the right. */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)']}
+        colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={[styles.gradient, styles.passive]}
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   cardHit: {
     ...StyleSheet.absoluteFillObject,

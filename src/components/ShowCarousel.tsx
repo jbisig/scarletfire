@@ -1,7 +1,8 @@
-import React, { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, Platform } from 'react-native';
 import { GratefulDeadShow } from '../types/show.types';
 import { HorizontalShowCard } from './HorizontalShowCard';
+import { assignShareBackgrounds } from './share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
@@ -35,12 +36,18 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
     return null;
   }
 
-  const renderItem = useCallback(({ item }: { item: GratefulDeadShow }) => (
+  const bgIndexes = useMemo(
+    () => assignShareBackgrounds(shows.map(s => s.primaryIdentifier)),
+    [shows],
+  );
+
+  const renderItem = useCallback(({ item, index }: { item: GratefulDeadShow; index: number }) => (
     <HorizontalShowCard
       show={item}
       onPress={onShowPress}
+      bgIndex={bgIndexes[index]}
     />
-  ), [onShowPress]);
+  ), [onShowPress, bgIndexes]);
 
   // On desktop web, render a wrapping grid instead of a horizontal scroll
   if (isDesktop) {
@@ -48,11 +55,12 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
       <View style={styles.container}>
         <Text style={styles.title}>{title}</Text>
         <View style={styles.webGrid}>
-          {shows.map((show) => (
+          {shows.map((show, index) => (
             <HorizontalShowCard
               key={show.primaryIdentifier}
               show={show}
               onPress={onShowPress}
+              bgIndex={bgIndexes[index]}
             />
           ))}
         </View>
