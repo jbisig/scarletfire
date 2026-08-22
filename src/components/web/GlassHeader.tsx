@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/theme';
 
 export interface GlassHeaderProps {
@@ -23,6 +24,11 @@ export interface GlassHeaderProps {
   /** Extra overrides for the content wrapper (e.g. CollectionDetailScreen's native insets.top padding). */
   contentStyle?: StyleProp<ViewStyle>;
   children: React.ReactNode;
+  /**
+   * Fade the lower part of the header into the page background so the
+   * content below (e.g. a track list) continues without a hard edge.
+   */
+  fadeToBackground?: boolean;
 }
 
 /**
@@ -40,11 +46,19 @@ export function GlassHeader({
   contentGap = 24,
   contentStyle,
   children,
+  fadeToBackground = false,
 }: GlassHeaderProps) {
   return (
     <View style={styles.wrapper}>
       {background ? <View style={styles.backgroundLayer}>{background}</View> : null}
       <GlassBlurOverlay />
+      {fadeToBackground && (
+        <LinearGradient
+          colors={['rgba(18, 18, 18, 0)', COLORS.background]}
+          locations={[0.25, 1]}
+          style={styles.fade}
+        />
+      )}
       <View
         style={[
           styles.content,
@@ -92,6 +106,15 @@ const styles = StyleSheet.create({
     // @ts-ignore - web only
     backdropFilter: 'blur(30px)',
     WebkitBackdropFilter: 'blur(30px)',
+    zIndex: 1,
+  },
+  fade: {
+    pointerEvents: 'none',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 1,
   },
   content: {

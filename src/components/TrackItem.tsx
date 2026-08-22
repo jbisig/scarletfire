@@ -5,6 +5,7 @@ import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
+import { NowPlayingBars } from './NowPlayingBars';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import type { ResolvedRating } from '../services/ratingResolver';
 
@@ -38,13 +39,15 @@ interface TrackItemProps {
    * the row the user just pressed visibly acknowledges it.
    */
   isLoading?: boolean;
+  /** Current track, but playback is paused — the playing mark holds still. */
+  isPaused?: boolean;
 }
 
 /**
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected, isLoading = false }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected, isLoading = false, isPaused = false }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
@@ -78,8 +81,6 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
       style={[
         styles.container,
         isDesktop && styles.containerDesktop,
-        isPlaying && styles.playing,
-        isPlaying && isDesktop && styles.playingDesktop,
         isSelected && !isPlaying && styles.selected,
         isDesktop && isHovered && !isPlaying && !isSelected && styles.hovered,
       ]}
@@ -103,6 +104,14 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
       />
       <View style={[styles.infoContainer, styles.passThrough]}>
         <View style={[styles.titleRow, styles.passThrough]}>
+          {/* Now-playing mark sits flush with the title column, and the
+              title indents past it — Spotify's treatment. Hidden while the
+              stream is still loading; the spinner on the right covers that. */}
+          {isPlaying && !isLoading && (
+            <View style={styles.playingMark}>
+              <NowPlayingBars paused={isPaused} size={isDesktop ? 12 : 14} />
+            </View>
+          )}
           <View
             style={styles.titleWrap}
             accessibilityElementsHidden
@@ -202,7 +211,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
-          <Text style={[styles.duration, isPlaying && styles.playingText, hasSave && !isNative && styles.durationWeb]}>
+          <Text style={[styles.duration, hasSave && !isNative && styles.durationWeb]}>
             {duration}
           </Text>
         </View>
@@ -245,11 +254,10 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     borderRadius: 12,
   },
-  playing: {
-    backgroundColor: `${COLORS.accent}20`,
-  },
-  playingDesktop: {
-    borderRadius: 12,
+  playingMark: {
+    alignSelf: 'center',
+    marginRight: SPACING.sm + 2,
+    pointerEvents: 'none',
   },
   hovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',

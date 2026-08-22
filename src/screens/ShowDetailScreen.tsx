@@ -3,12 +3,16 @@ import {
   Alert,
   View,
   Text,
+  Image,
+  Pressable,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +24,6 @@ import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
-import { OfficialReleaseBadge } from '../components/OfficialReleaseBadge';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
@@ -28,7 +31,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL, GLASS_PILL_BLUR } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL, GLASS_PILL_BLUR, BRAND_COLORS } from '../constants/theme';
+import { getShareBackground, shareBackgroundIndexForId } from '../components/share/shareBackgrounds';
 import { formatLabel } from '../constants/tags';
 import {
   getVenueFromShow,
@@ -105,6 +109,9 @@ export function ShowDetailScreen() {
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
   const { isDesktop } = useResponsive();
   const { openShareTray } = useShareSheet();
+  // Native nav header is transparent over the artwork; pad the header block
+  // by its height. 0 on web, where the navigator header is hidden.
+  const navHeaderHeight = React.useContext(HeaderHeightContext) ?? 0;
 
   // Resolve classicTier synchronously from preview or showsByYear so stars render
   // in the first paint instead of popping in after loadShowDetail completes.
@@ -526,6 +533,7 @@ export function ShowDetailScreen() {
 
   useEffect(() => {
     navigation.setOptions({
+      ...(Platform.OS !== 'web' ? { headerTransparent: true } : {}),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleShareShow}
@@ -617,6 +625,25 @@ export function ShowDetailScreen() {
 
   const isSaved = isShowFavorite(showKey);
 
+  // Same quiet footnote as the list rows; red stays with the rating stars.
+  const releasedAsNote = officialReleases.length > 0 && (
+    <Pressable
+      onPress={() => setReleaseModalVisible(true)}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      style={styles.releasedAs}
+      accessibilityRole="button"
+      accessibilityLabel={`Released as ${officialReleases[0].name}${officialReleases.length > 1 ? ` and ${officialReleases.length - 1} more` : ''}`}
+      accessibilityHint="Double tap to view release details"
+    >
+      <Ionicons name="disc-outline" size={13} color={BRAND_COLORS.textSoft} />
+      <Text style={styles.releasedAsText} numberOfLines={1}>
+        Released as {officialReleases[0].name}
+        {officialReleases.length > 1 ? ` +${officialReleases.length - 1}` : ''}
+      </Text>
+    </Pressable>
+  );
+  const headerArt = getShareBackground(shareBackgroundIndexForId(showKey));
+
   return (
     <ScrollView
       style={[styles.container, isDesktop && styles.containerDesktop]}
@@ -631,6 +658,7 @@ export function ShowDetailScreen() {
           ) : undefined}
           onBackPress={() => navigation.goBack()}
           isDesktop={isDesktop}
+          fadeToBackground
         >
             {/* Show info section */}
             <View style={styles.webInfoSection}>
@@ -731,15 +759,8 @@ export function ShowDetailScreen() {
                 </View>
               </View>
 
-              {/* Badges row (official releases only on web) */}
-              {officialReleases.length > 0 && (
-                <View style={styles.badgesRow}>
-                  <OfficialReleaseBadge
-                    onPress={() => setReleaseModalVisible(true)}
-                    releaseTitle={officialReleases[0].name}
-                  />
-                </View>
-              )}
+              {/* Official release (web) */}
+              {releasedAsNote && <View style={styles.badgesRow}>{releasedAsNote}</View>}
 
             {/* Pills row: Source + Play Count (desktop) + Save */}
             <View style={styles.pillsRow}>
@@ -782,8 +803,17 @@ export function ShowDetailScreen() {
             </View>
         </GlassHeader>
       ) : (
-        /* Native: Original header */
-        <View style={styles.headerContainer}>
+        /* Native: artwork header — same family as the Discover cards, fading
+           into the page under a transparent nav bar. */
+        <View style={styles.headerArt}>
+          <Image source={headerArt} style={styles.headerArtImage} resizeMode="cover" />
+          <View style={styles.headerArtOverlay} />
+          <LinearGradient
+            colors={['rgba(18, 18, 18, 0)', COLORS.background]}
+            locations={[0.15, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        <View style={[styles.headerContainer, { paddingTop: navHeaderHeight + SPACING.sm }]}>
           {/* Venue - full width at top */}
           <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
@@ -842,15 +872,10 @@ export function ShowDetailScreen() {
             </View>
           </View>
 
-          {/* Badges row - Official Release and Play Count */}
+          {/* Official release and play count */}
           {(officialReleases.length > 0 || playCount > 0) && (
             <View style={styles.badgesRow}>
-              {officialReleases.length > 0 && (
-                <OfficialReleaseBadge
-                  onPress={() => setReleaseModalVisible(true)}
-                  releaseTitle={officialReleases[0].name}
-                />
-              )}
+              {releasedAsNote}
               {playCount > 0 && (
                 <View style={styles.playCountBadge}>
                   <Text style={styles.playCountText}>
@@ -883,6 +908,7 @@ export function ShowDetailScreen() {
             </View>
           ) : null}
           {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
+        </View>
         </View>
       )}
 
@@ -939,6 +965,7 @@ export function ShowDetailScreen() {
               justPressedTrackId === track.id
             }
             isLoading={(playerState.isLoading || playerState.isBuffering) && playerState.currentTrack?.id === track.id}
+            isPaused={!playerState.isPlaying}
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
             onRatingPress={(t) => openRatingOverlay({
@@ -1058,6 +1085,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: LAYOUT.listBottomPadding,
   },
+  headerArt: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerArtImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  headerArtOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
   headerContainer: {
     padding: SPACING.xl,
     paddingTop: SPACING.sm,
@@ -1065,6 +1105,18 @@ const styles = StyleSheet.create({
   venue: {
     ...TYPOGRAPHY.heading2,
     marginBottom: SPACING.sm,
+  },
+  releasedAs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: SPACING.xs,
+    paddingVertical: 3,
+  },
+  releasedAsText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 13,
+    color: BRAND_COLORS.textSoft,
   },
   infoRow: {
     flexDirection: 'row',
@@ -1084,11 +1136,11 @@ const styles = StyleSheet.create({
   },
   date: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    color: BRAND_COLORS.textSoft,
   },
   sourceName: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+    color: BRAND_COLORS.textSoft,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -1100,7 +1152,7 @@ const styles = StyleSheet.create({
     // Matches OfficialReleaseBadge's (non-compact) vertical metrics so the
     // two pills in badgesRow render at the same height, borderless.
     justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: COLORS.surfaceMedium,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs + 1,
     borderRadius: RADIUS.full,
@@ -1109,7 +1161,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.captionSmall,
     fontSize: 11,
     fontWeight: '400',
-    color: COLORS.textSecondary,
+    color: BRAND_COLORS.textSoft,
   },
   playCountPillWeb: {
     flexDirection: 'row',
