@@ -659,6 +659,17 @@ export function ShowDetailScreen() {
           onBackPress={() => navigation.goBack()}
           isDesktop={isDesktop}
           fadeToBackground
+          navRight={!isDesktop ? (
+            <TouchableOpacity
+              onPress={handleShareShow}
+              style={styles.navShareButton}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Share show"
+            >
+              <Ionicons name="share-outline" size={26} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          ) : undefined}
         >
             {/* Show info section */}
             <View style={styles.webInfoSection}>
@@ -694,15 +705,8 @@ export function ShowDetailScreen() {
                   </View>
 
                   <View style={styles.webDetailsActions}>
-                    {/* Play count badge - mobile web only */}
-                    {!isDesktop && playCount > 0 && (
-                      <View style={styles.playCountPillWeb}>
-                        <Text style={styles.playCountPillText}>
-                          {formatCount(playCount, 'play')}
-                        </Text>
-                      </View>
-                    )}
-
+                    {isDesktop ? (
+                      <>
                     <TouchableOpacity
                       style={styles.savePillWeb}
                       onPress={handleShareShow}
@@ -755,12 +759,51 @@ export function ShowDetailScreen() {
                         color={COLORS.textPrimary}
                       />
                     </TouchableOpacity>
+                      </>
+                    ) : (
+                      /* Mobile web follows native: plain icons beside the info
+                         block; Share lives in the nav row above. */
+                      <View style={styles.showActionsGroup}>
+                        <TouchableOpacity
+                          style={styles.showActionBtn}
+                          onPress={() => setAddToCollectionVisible(true)}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Add to collection"
+                        >
+                          <Ionicons name="add" size={28} color={COLORS.textPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.showActionBtn}
+                          onPress={handleToggleFavorite}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={isSaved ? 'Remove show from favorites' : 'Save show to favorites'}
+                          accessibilityState={{ selected: isSaved }}
+                        >
+                          <Ionicons
+                            name={isSaved ? 'heart' : 'heart-outline'}
+                            size={26}
+                            color={isSaved ? COLORS.accent : COLORS.textPrimary}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
 
-              {/* Official release (web) */}
-              {releasedAsNote && <View style={styles.badgesRow}>{releasedAsNote}</View>}
+              {/* Official release, and play count on mobile web (native puts it here too) */}
+              {(releasedAsNote || (!isDesktop && playCount > 0)) && (
+                <View style={styles.badgesRow}>
+                  {releasedAsNote}
+                  {!isDesktop && playCount > 0 && (
+                    <View style={styles.playCountBadge}>
+                      <Text style={styles.playCountText}>{formatCount(playCount, 'play')}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
             {/* Pills row: Source + Play Count (desktop) + Save */}
             <View style={styles.pillsRow}>
@@ -1183,6 +1226,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   showActionBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navShareButton: {
     width: 40,
     height: 40,
     alignItems: 'center',

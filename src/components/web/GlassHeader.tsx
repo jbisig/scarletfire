@@ -29,6 +29,8 @@ export interface GlassHeaderProps {
    * content below (e.g. a track list) continues without a hard edge.
    */
   fadeToBackground?: boolean;
+  /** Trailing control(s) in the nav row, opposite the back chevron. */
+  navRight?: React.ReactNode;
 }
 
 /**
@@ -47,6 +49,7 @@ export function GlassHeader({
   contentStyle,
   children,
   fadeToBackground = false,
+  navRight,
 }: GlassHeaderProps) {
   return (
     <View style={styles.wrapper}>
@@ -71,6 +74,7 @@ export function GlassHeader({
           <TouchableOpacity onPress={onBackPress} activeOpacity={0.7} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
           </TouchableOpacity>
+          {navRight}
         </View>
         {children}
       </View>
@@ -130,6 +134,7 @@ const styles = StyleSheet.create({
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
     // @ts-ignore - web only
