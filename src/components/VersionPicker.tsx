@@ -253,7 +253,8 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
 const styles = StyleSheet.create({
   container: {},
   selector: {
-    backgroundColor: COLORS.cardBackground,
+    // Sits on the show's artwork: translucent black, not a grey card.
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: RADIUS.lg,
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,

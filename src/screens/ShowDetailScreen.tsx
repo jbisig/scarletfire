@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   sourceInfoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: RADIUS.xl,
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
