@@ -22,6 +22,42 @@ function formatCountLabel(c: Collection): string {
   return `${n} ${noun}${n === 1 ? '' : 's'}`;
 }
 
+/**
+ * One card for both the horizontal list and the desktop grid. Name and
+ * count only: the section title already says what these are, so a per-card
+ * icon restated it, and the count is the one fact that helps you choose.
+ */
+function CollectionCard({
+  collection,
+  onPress,
+}: {
+  collection: Collection;
+  onPress: (collectionId: string) => void;
+}) {
+  const count = formatCountLabel(collection);
+  const saves =
+    collection.saveCount !== undefined
+      ? ` · ${collection.saveCount} save${collection.saveCount === 1 ? '' : 's'}`
+      : '';
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onPress(collection.id)}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${collection.name}, ${count}${saves}`}
+    >
+      <Text style={styles.cardName} numberOfLines={2}>
+        {collection.name}
+      </Text>
+      <Text style={styles.cardCount} numberOfLines={1}>
+        {count}
+        {saves}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export const CollectionCarousel = React.memo(function CollectionCarousel({
   title,
   collections,
@@ -36,48 +72,25 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
 
   const renderCollection = useCallback(
     ({ item }: { item: Collection }) => (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => onCollectionPress(item.id)}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={item.name}
-      >
-        <View style={styles.cardIcon}>
-          <Ionicons
-            name={item.type === 'playlist' ? 'musical-notes' : 'albums'}
-            size={28}
-            color={COLORS.textSecondary}
-          />
-        </View>
-        <Text style={styles.cardName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.cardCount}>
-          {formatCountLabel(item)}
-          {item.saveCount !== undefined
-            ? ` · ${item.saveCount} save${item.saveCount === 1 ? '' : 's'}`
-            : ''}
-        </Text>
-      </TouchableOpacity>
+      <CollectionCard collection={item} onPress={onCollectionPress} />
     ),
     [onCollectionPress],
   );
 
   const createCard = onCreatePress ? (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, styles.createCard]}
       onPress={onCreatePress}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={createLabel}
     >
-      <View style={styles.cardIcon}>
-        <Ionicons name="add" size={28} color={COLORS.textSecondary} />
+      <View style={styles.createRow}>
+        <Ionicons name="add" size={18} color={COLORS.textPrimary} />
+        <Text style={styles.cardName} numberOfLines={2}>
+          {createLabel}
+        </Text>
       </View>
-      <Text style={styles.cardName} numberOfLines={2}>
-        {createLabel}
-      </Text>
     </TouchableOpacity>
   ) : null;
 
@@ -91,29 +104,7 @@ export const CollectionCarousel = React.memo(function CollectionCarousel({
           {isEmpty
             ? createCard
             : collections.map(c => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.card}
-                  onPress={() => onCollectionPress(c.id)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.cardIcon}>
-                    <Ionicons
-                      name={c.type === 'playlist' ? 'musical-notes' : 'albums'}
-                      size={28}
-                      color={COLORS.textSecondary}
-                    />
-                  </View>
-                  <Text style={styles.cardName} numberOfLines={2}>
-                    {c.name}
-                  </Text>
-                  <Text style={styles.cardCount}>
-                    {formatCountLabel(c)}
-                    {c.saveCount !== undefined
-                      ? ` · ${c.saveCount} save${c.saveCount === 1 ? '' : 's'}`
-                      : ''}
-                  </Text>
-                </TouchableOpacity>
+                <CollectionCard key={c.id} collection={c} onPress={onCollectionPress} />
               ))}
         </View>
       </View>
@@ -166,15 +157,20 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.cardBackground,
     padding: SPACING.md,
-    justifyContent: 'space-between',
+    // Text anchors top-left, in line with the show cards beside it.
+    justifyContent: 'flex-start',
+    gap: SPACING.xs,
   },
-  cardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.background,
+  createCard: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  createRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: SPACING.xs,
   },
   cardName: {
     ...TYPOGRAPHY.label,
