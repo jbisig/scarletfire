@@ -991,6 +991,38 @@ export function ShowDetailScreen() {
         </View>
       )}
 
+      {/* Show notes: a two-line lede under the source picker, opening straight
+          into the commentary. The citation belongs with the text it attributes,
+          so it appears only once the note is open. */}
+      {showNotesText && (
+        <View
+          style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}
+          onLayout={(e) => { notesLayout.current = e.nativeEvent.layout; }}
+        >
+          <Text
+            style={styles.showNotesText}
+            numberOfLines={showNotesExpanded ? undefined : 2}
+          >
+            {showNotesText}
+          </Text>
+          {showNotesExpanded && (
+            <Text style={styles.showNotesCitation}>{SHOW_NOTES_CITATION}</Text>
+          )}
+          <TouchableOpacity
+            onPress={() => (showNotesExpanded ? collapseNotes() : setShowNotesExpanded(true))}
+            activeOpacity={0.7}
+            style={styles.showNotesToggle}
+            accessibilityRole="button"
+            accessibilityLabel={showNotesExpanded ? 'Collapse the show notes' : 'Read the full show notes'}
+            accessibilityState={{ expanded: showNotesExpanded }}
+          >
+            <Text style={styles.showNotesToggleText}>
+              {showNotesExpanded ? 'Read less' : 'Read more'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={[styles.tracksContainer, isDesktop && styles.tracksContainerDesktop]}>
         {trackLoadError && (
           <View style={styles.loadErrorBanner} accessibilityRole="alert" accessibilityLiveRegion="polite">
@@ -1067,36 +1099,6 @@ export function ShowDetailScreen() {
           </View>
         )}
       </View>
-
-      {/* Show Notes Section */}
-      {showNotesText && (
-        <View
-          style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}
-          onLayout={(e) => { notesLayout.current = e.nativeEvent.layout; }}
-        >
-          <View style={styles.divider} />
-          <Text style={styles.showNotesHeader}>Show Notes</Text>
-          <Text
-            style={styles.showNotesText}
-            numberOfLines={showNotesExpanded ? undefined : 3}
-          >
-            {showNotesText}
-          </Text>
-          <TouchableOpacity
-            onPress={() => (showNotesExpanded ? collapseNotes() : setShowNotesExpanded(true))}
-            activeOpacity={0.7}
-            style={styles.showNotesToggle}
-            accessibilityRole="button"
-            accessibilityLabel={showNotesExpanded ? 'Show less of the show notes' : 'Show more of the show notes'}
-            accessibilityState={{ expanded: showNotesExpanded }}
-          >
-            <Text style={styles.showNotesToggleText}>
-              {showNotesExpanded ? 'Show less' : 'Show more'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.showNotesCitation}>{SHOW_NOTES_CITATION}</Text>
-        </View>
-      )}
 
       {/* Next Tour Stops Section */}
       {nextTourStops.length > 0 && (
@@ -1511,20 +1513,10 @@ const styles = StyleSheet.create({
     } : {}),
   },
   showNotesSection: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.lg,
   },
   showNotesSectionDesktop: {
     padding: 24,
-  },
-  showNotesHeader: {
-    ...TYPOGRAPHY.heading2,
-    paddingHorizontal: SPACING.xxl,
-    marginBottom: SPACING.sm,
-    ...(Platform.OS === 'web' ? {
-      paddingHorizontal: 16,
-      paddingTop: 8,
-      paddingBottom: 4,
-    } : {}),
   },
   showNotesText: {
     ...TYPOGRAPHY.body,
@@ -1577,7 +1569,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelSmall,
     color: COLORS.textMuted,
     paddingHorizontal: SPACING.xxl,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.md,
     fontStyle: 'italic',
     ...(Platform.OS === 'web' ? {
       paddingHorizontal: 16,
