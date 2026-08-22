@@ -72,8 +72,8 @@ METADATA_KEY = re.compile(
 # "Set 1:", "Set List:", and the scan's "Set 1.:" — volume 3 sets its setlists at
 # body size, so this label is what marks them there.
 SETLIST_KEY = re.compile(
-    r"^\s*((First|Second|Third|Acoustic|Electric)\s+)?Sets?\s*(List|\d+)?\s*[.,]?\s*:"
-    r"|^\s*Encore\s*[.,]?\s*:",
+    r"^\s*((First|Second|Third|Acoustic|Electric)\s+)?Sets?\s*[.,]?\s*(List|\d+)?\s*[.,]?\s*[:;]"
+    r"|^\s*Encore\s*[.,]?\s*[:;]",
     re.I,
 )
 # Footnotes hung off a setlist: "* with Duane Allman...", "† also with Berry
@@ -83,7 +83,11 @@ SETLIST_NOTE = re.compile(r"^\s*(?:[*\u2020\u2021\u00a7#+]|t\s+(?:also\s+)?with\
 CAPTION_TEXT = re.compile(r"photo credit|^(Back|Front) row, left to right|^Left to right", re.I)
 DATE_TOKEN = re.compile(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{2})")
 # "MC>PCM>RR>PCM" — a tape's genealogy, printed under the Source line.
-GENEALOGY = re.compile(r"^[A-Z0-9 ]{1,8}(\s*>\s*[A-Z0-9 ]{1,8}){1,}$")
+GENEALOGY = re.compile(
+    r"^[A-Z0-9 ]{1,8}(\s*>\s*[A-Z0-9 ]{1,8}){1,}$"
+    # "Genealogy:" itself breaks across the column, stranding its tail: "ogy: MR > C > DAT"
+    r"|^\s*(ogy|logy|alogy)\s*:"
+)
 
 
 def is_date_line(text: str) -> bool:
@@ -577,11 +581,50 @@ def write_ts(notes, path):
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+SENTENCE = re.compile(r"[a-z][.!?](\s|$)")
+
+
+def _is_heading_debris(paragraph: str) -> bool:
+    """Is this paragraph a leftover scrap of the entry's heading, not review prose?
+
+    Three shapes survive classification and land at the top of a note, where the
+    reader meets them first: a stranded metadata value, a tail of the setlist,
+    and a short orphan phrase lifted off a setlist footnote ("on harmonica",
+    "with Duane Allman on guitar").
+
+    A *long* paragraph that opens mid-sentence is left alone — those are real
+    reviews whose first words the scan's reading order lost, and dropping one
+    would throw away a page of writing to tidy a single word.
+    """
+    text = paragraph.strip()
+    if not text:
+        return True
+    if METADATA_KEY.match(text) or GENEALOGY.match(text) or SETLIST_KEY.match(text):
+        return True
+    if text[0].islower() and len(text) < 120:
+        return True
+
+    words = [w for w in text.split() if any(c.isalpha() for c in w)]
+    if len(words) >= 5 and len(SENTENCE.findall(text)) <= 1:
+        capitalised = sum(1 for w in words if w[:1].isupper()) / len(words)
+        if capitalised >= 0.6 and (">" in text or text.count(",") >= 4):
+            return True
+    return False
+
+
+def trim_leading_debris(paragraphs):
+    """Drop heading scraps so a note opens on its commentary."""
+    i = 0
+    while i < len(paragraphs) and _is_heading_debris(paragraphs[i]):
+        i += 1
+    return paragraphs[i:]
+
+
 def build_notes(entries, min_chars=120):
     notes = {}
     stats = collections.Counter()
     for entry in entries:
-        body = "\n\n".join(p for p in entry.paragraphs if p)
+        body = "\n\n".join(p for p in trim_leading_debris(entry.paragraphs) if p)
         if len(body) < min_chars:
             stats["too_short"] += 1
             continue
