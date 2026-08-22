@@ -121,6 +121,7 @@ class AudioPlayerModule: RCTEventEmitter {
   /// reports explicit pauses, and AVPlayer also passes through `.paused`
   /// while items are swapped, which would read as a user pause.
   private func setupTimeControlObserver() {
+    timeControlObserver?.invalidate()
     timeControlObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
       let state: String?
       switch player.timeControlStatus {
@@ -383,6 +384,9 @@ class AudioPlayerModule: RCTEventEmitter {
       if player?.items().isEmpty ?? true {
         player = AVQueuePlayer(playerItem: item)
         setupTimeObserver()
+        // A fresh player means the buffering observer from setupPlayer() is
+        // watching a dead instance — re-attach it.
+        setupTimeControlObserver()
       } else {
         player?.insert(item, after: nil)
       }
@@ -434,6 +438,9 @@ class AudioPlayerModule: RCTEventEmitter {
       if player?.items().isEmpty ?? true {
         player = AVQueuePlayer(playerItem: item)
         setupTimeObserver()
+        // A fresh player means the buffering observer from setupPlayer() is
+        // watching a dead instance — re-attach it.
+        setupTimeControlObserver()
       } else {
         player?.insert(item, after: nil)
       }

@@ -533,7 +533,9 @@ export function ShowDetailScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      ...(Platform.OS !== 'web' ? { headerTransparent: true } : {}),
+      ...(Platform.OS !== 'web'
+        ? { headerTransparent: true, headerStyle: { backgroundColor: 'transparent' } }
+        : {}),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleShareShow}

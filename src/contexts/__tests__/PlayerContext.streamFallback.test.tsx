@@ -72,6 +72,11 @@ jest.mock('../../services/sourceSelection', () => ({
   resolveShowIdentifier: (show: { primaryIdentifier: string }) => show.primaryIdentifier,
 }));
 
+const mockShowToast = jest.fn();
+jest.mock('../ToastContext', () => ({
+  useOptionalToast: () => ({ showToast: mockShowToast }),
+}));
+
 import React from 'react';
 import { Text } from 'react-native';
 import { render, waitFor, act } from '@testing-library/react-native';
@@ -185,6 +190,22 @@ describe('PlayerContext direct-stream fallback', () => {
     });
     await waitFor(() => expect(mockInvalidate).toHaveBeenCalledTimes(1));
     expect(probeApi!.state.loadError).toBeNull();
+  });
+
+  it('toasts a failure once per track even when the player reports it per queued item', async () => {
+    render(<PlayerProvider><Probe /></PlayerProvider>);
+    const show = makeShow('test-show');
+    const track: Track = { id: 'plain', title: 'plain', format: 'VBR MP3', streamUrl: `${DOWNLOAD}/plain.mp3` };
+    await act(async () => {
+      await probeApi!.loadTrack(track, show, [track]);
+    });
+    await act(async () => {
+      emitPlaybackError();
+      emitPlaybackError();
+      emitPlaybackError();
+    });
+    expect(mockShowToast).toHaveBeenCalledTimes(1);
+    expect(probeApi!.state.loadError).toEqual({ trackId: 'plain', showIdentifier: 'test-show' });
   });
 
   it('surfaces playback errors for tracks without a fallback URL as loadError', async () => {

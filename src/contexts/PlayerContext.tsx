@@ -539,6 +539,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // On playback error, retry the current show once via the durable /download
   // URLs and drop the cached (stale) detail so the next fetch is fresh.
   const fallbackAttemptedForTrackRef = useRef<string | null>(null);
+  // The iOS module reports a failed stream once per queued item, so one dead
+  // show can raise a dozen PlaybackError events in a burst. Surface each
+  // failure once per track; the recovery banner holds the state after that.
+  const failureToastRef = useRef<{ trackId: string; at: number } | null>(null);
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackError, (data) => {
       // Radio queues are built incrementally from fresh fetches and rebuilt
@@ -563,6 +567,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // the mini player on a Play glyph with no explanation.
       const surfaceFailure = () => {
         dispatch({ type: 'LOAD_FAILED', trackId: track.id, showIdentifier: show.identifier });
+        const last = failureToastRef.current;
+        const now = Date.now();
+        if (last && last.trackId === track.id && now - last.at < 5000) return;
+        failureToastRef.current = { trackId: track.id, at: now };
         toastRef.current?.showToast(describeLoadError(data?.error, 'that track'), 'error');
       };
 
