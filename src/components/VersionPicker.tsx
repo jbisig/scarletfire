@@ -174,7 +174,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
               {formatDownloads(currentVersion.downloads)} views
             </Text>
           </View>
-          <Ionicons name="chevron-down" size={18} color={webGlassStyle ? COLORS.textPrimary : COLORS.accent} />
+          <Ionicons name="chevron-down" size={18} color={webGlassStyle ? COLORS.textPrimary : COLORS.textSecondary} />
         </View>
         {!webGlassStyle && currentAttribution && (
           <Text style={styles.attribution} numberOfLines={1}>
