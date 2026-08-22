@@ -11,7 +11,6 @@ import { useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
-import { OfficialReleaseBadge } from './OfficialReleaseBadge';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
 import { PlayCountBadge } from './PlayCountBadge';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
@@ -128,19 +127,29 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
 
   const isWeb = Platform.OS === 'web';
 
+  // The official-release note used to be a red pill on the right, which
+  // made it the loudest thing on every row and squeezed the location into
+  // "Washingto…". It's a footnote: one quiet line under the location, still
+  // tappable for the release details. Red is left to the rating stars.
+  const releaseNote = displayRelease && (
+    <Pressable
+      onPress={handleBadgePress}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      style={styles.releaseNote}
+      accessibilityRole="button"
+      accessibilityLabel={`Official release: also on ${displayRelease.release.name}${displayRelease.more ? ` and ${displayRelease.more} more` : ''}`}
+      accessibilityHint="Double tap to view release details"
+    >
+      <Ionicons name="disc-outline" size={12} color={COLORS.textSecondary} />
+      <Text style={styles.releaseNoteText} numberOfLines={1}>
+        also on {displayRelease.release.name}
+        {displayRelease.more ? ` +${displayRelease.more}` : ''}
+      </Text>
+    </Pressable>
+  );
+
   const badges = (
     <>
-      {displayRelease && (
-        <View style={styles.officialReleaseBadgeWrapper}>
-          <OfficialReleaseBadge
-            onPress={handleBadgePress}
-            compact
-            alsoOn
-            releaseTitle={displayRelease.release.name}
-            more={displayRelease.more}
-          />
-        </View>
-      )}
       <Passive><PlayCountBadge count={playCount} size="small" /></Passive>
       {trailingText && (
         <Passive><Text style={styles.trailingText}>{trailingText}</Text></Passive>
@@ -215,6 +224,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
                   </Text>
                 </Passive>
               )}
+              {releaseNote}
             </View>
 
             {/* Mobile: badges in bottom row */}
@@ -375,9 +385,18 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     flexShrink: 1,
   },
-  officialReleaseBadgeWrapper: {
-    flexShrink: 1,
-    minWidth: 0,
+  releaseNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: SPACING.xs,
+    marginTop: 2,
+    // 12px glyph + this padding ≈ a 24pt strip; hitSlop brings it to 36pt.
+    paddingVertical: 3,
+  },
+  releaseNoteText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
   savePill: {
     flexDirection: 'row',
