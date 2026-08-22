@@ -36,7 +36,7 @@ import json
 import re
 import sys
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 try:
@@ -60,6 +60,10 @@ CITATION = (
 )
 
 SOFT_HYPHEN = "\u00ad"
+# Marks where page furniture was lifted out of the middle of a paragraph.
+# Unlike a soft hyphen its default is to put the space back: a caption can
+# interrupt between words as easily as inside one.
+FURNITURE_GAP = "\u0001"
 
 # The band's performing life. Anything outside it is a misread date.
 MIN_YEAR, MAX_YEAR = 1959, 1995
@@ -83,6 +87,8 @@ SETLIST_KEY = re.compile(
 # Footnotes hung off a setlist: "* with Duane Allman...", "† also with Berry
 # Oakley". The scan reads the dagger as a lowercase t.
 SETLIST_NOTE = re.compile(r"^\s*(?:[*\u2020\u2021\u00a7#+]|t\s+(?:also\s+)?with\b)")
+# A plate caption naming the date and place: "7/13/84, Greek Theatre".
+DATE_CAPTION = re.compile(r"^\s*\d{1,2}/\d{1,2}/\d{2}\s*,\s*[A-Z]")
 # Plate captions, which the book sets in italic a size below the body.
 CAPTION_TEXT = re.compile(r"photo credit|^(Back|Front) row, left to right|^Left to right", re.I)
 DATE_TOKEN = re.compile(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{2})")
@@ -242,6 +248,13 @@ def _classify(column: Column, body_size: float):
 
         if is_date_line(text) and line.size >= body_size + 2.5:
             line.role = "header"
+        elif is_date_line(text) or DATE_CAPTION.match(text):
+            # A date on its own below display size is the page-corner marker
+            # repeating the show date, or a plate caption. Either way it is
+            # furniture, and at 9.5pt against a 10pt body it used to fall
+            # through to prose and land mid-sentence: "Jerry 7/24/94 puts
+            # heart and soul into it".
+            line.role = "caption"
         elif caps and line.x1 >= right - 12 and line.x0 > left + 25 and len(text) <= 70:
             # Set flush right at the foot of a review: the reviewer's name.
             line.role = "byline"
@@ -355,7 +368,7 @@ def join_lines(lines):
         text = line.text.strip()
         if not text:
             continue
-        if out and out[-1].endswith(SOFT_HYPHEN):
+        if out and out[-1].endswith((SOFT_HYPHEN, FURNITURE_GAP)):
             out[-1] = out[-1] + text
         else:
             out.append(text)
@@ -363,6 +376,7 @@ def join_lines(lines):
 
 
 WRAP = re.compile(r"(\w+)" + SOFT_HYPHEN + r"(\w+)")
+GAP = re.compile(r"(\w+)" + FURNITURE_GAP + r"(\w+)")
 
 
 def resolve_hyphens(texts):
@@ -396,8 +410,22 @@ def resolve_hyphens(texts):
         stats["closed" if has_closed else "closed-by-default"] += 1
         return closed
 
-    resolved = [WRAP.sub(choose, text).replace(SOFT_HYPHEN, "") for text in texts]
-    return resolved, stats
+    def close_gap(match):
+        """A caption cut this word in half, or fell between two whole words."""
+        a, b = match.group(1), match.group(2)
+        if plain[f"{a}{b}".lower()] > 0:
+            stats["gap-closed"] += 1
+            return f"{a}{b}"
+        stats["gap-spaced"] += 1
+        return f"{a} {b}"
+
+    def finish(text: str) -> str:
+        text = GAP.sub(close_gap, WRAP.sub(choose, text))
+        # A marker with nothing after it — furniture at the end of a paragraph.
+        text = text.replace(SOFT_HYPHEN, "").replace(FURNITURE_GAP, " ")
+        return re.sub(r"\s{2,}", " ", text).strip()
+
+    return [finish(t) for t in texts], stats
 
 
 SUPERSCRIPT_AFTER_QUOTE = re.compile(r'(["”’])\s?\d{1,3}(?=[\s.,;:)]|$)')
@@ -415,6 +443,10 @@ def clean(text: str) -> str:
     # the printed double quotes were misread.
     text = text.replace("\u00b7", " ")
     text = re.sub(r"[\u00ab\u00bb]", '"', text)
+    # The page-corner date marker can be printed straight through a word, the
+    # way a running head is: "subtle but very effec7/5/95 tive". No English word
+    # abuts a date, so rejoining the halves is unambiguous.
+    text = re.sub(r"([A-Za-z])\d{1,2}/\d{1,2}/\d{2}\s+([a-z])", r"\1\2", text)
     text = re.sub(r"[ \t]{2,}", " ", text)
     text = re.sub(r"\s+([,.;:!?])", r"\1", text)
     text = re.sub(r"\(\s+", "(", text)
@@ -483,8 +515,18 @@ def entries_from_stream(lines, volume):
         if current is None:
             continue
 
-        if role in ("footnote", "setlist", "metadata", "caption"):
+        if role in ("setlist", "metadata"):
+            # These mark a real structural break in the entry.
             flush()
+            continue
+
+        if role in ("footnote", "caption"):
+            # Furniture: a footnote at the foot of the page, a plate caption, the
+            # page-corner date marker. The prose runs straight through it, so the
+            # paragraph continues — and it can interrupt mid-word, as in
+            # "subtle but very effec" / 7/5/95 / "tive".
+            if buf and re.search(r"[A-Za-z]$", buf[-1].text):
+                buf[-1] = replace(buf[-1], text=buf[-1].text + FURNITURE_GAP)
             continue
 
         if role == "byline":
@@ -599,6 +641,13 @@ def write_ts(notes, path):
 
 SENTENCE = re.compile(r"[a-z][.!?](\s|$)")
 
+# "Genealogy:" and its siblings break across the column, leaving the first half
+# hanging off the end of the value that preceded them.
+TRUNCATED_KEY = re.compile(
+    r"\b(Geneal|Genealog|Highligh|Highlight|Personne|Lineag|Equipmen|Sourc|Commen|Tape)\s*$",
+    re.I,
+)
+
 
 def _is_heading_debris(paragraph: str) -> bool:
     """Is this paragraph a leftover scrap of the entry's heading, not review prose?
@@ -622,7 +671,11 @@ def _is_heading_debris(paragraph: str) -> bool:
 
     words = [w for w in text.split() if any(c.isalpha() for c in w)]
     if len(words) >= 5 and len(SENTENCE.findall(text)) <= 1:
-        capitalised = sum(1 for w in words if w[:1].isupper()) / len(words)
+        # Strip the punctuation a song title carries — a leading quote hid the
+        # capital on '"Scarlet' and '"Fire', halving the ratio for a line that
+        # is nothing but song titles.
+        stripped = [w.lstrip("\"'\u201c\u2018([") for w in words]
+        capitalised = sum(1 for w in stripped if w[:1].isupper()) / len(words)
         if capitalised >= 0.6 and (">" in text or text.count(",") >= 4):
             return True
     return False
@@ -641,6 +694,10 @@ def _is_stray_metadata(paragraph: str) -> bool:
         return False
     if METADATA_KEY.match(text) or GENEALOGY.match(text):
         return True
+    # A metadata key chopped in half by the column edge, left dangling at the end
+    # of its own value: '..."Fire on the Mountain"), Geneal'.
+    if TRUNCATED_KEY.search(text):
+        return True
     # A bare metadata value the key never made it onto: a running time, or a
     # parenthetical listing what the tape is missing.
     if re.match(r"^\d{1,2}:\d{2}\b", text):
@@ -655,6 +712,8 @@ def trim_leading_debris(paragraphs):
     i = 0
     while i < len(paragraphs) and _is_heading_debris(paragraphs[i]):
         i += 1
+    # _is_stray_metadata runs over everything that survives, so a scrap the trim
+    # failed to recognise cannot shield the ones behind it.
     return [p for p in paragraphs[i:] if not _is_stray_metadata(p)]
 
 
