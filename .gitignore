@@ -63,3 +63,6 @@ figma/
 deadcast_transcripts/
 play-store-credentials.json
 .vercel
+
+# Source PDFs for the data-generation scripts — hundreds of MB, kept locally only.
+reference_files/*.pdf
