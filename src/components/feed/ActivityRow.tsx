@@ -1,9 +1,10 @@
 // src/components/feed/ActivityRow.tsx
-import React, { memo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { ProfileImage } from '../ProfileImage';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import { formatDate } from '../../utils/formatters';
+import { getCorrectVenue } from '../../utils/showLookup';
 import type { ActivityEvent } from '../../services/activityService';
 
 export interface ActivityRowProps {
@@ -15,16 +16,8 @@ export interface ActivityRowProps {
   onPressTarget: () => void;
 }
 
-const ICONS: Record<ActivityEvent['event_type'], keyof typeof Ionicons.glyphMap> = {
-  listened_show: 'headset',
-  favorited_show: 'heart',
-  created_collection: 'add-circle',
-  saved_collection: 'bookmark',
-  followed_user: 'person-add',
-};
-
-function formatRelative(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+export function formatRelative(iso: string, now: number = Date.now()): string {
+  const diffMs = now - new Date(iso).getTime();
   const sec = Math.floor(diffMs / 1000);
   if (sec < 60) return `${sec}s`;
   const min = Math.floor(sec / 60);
@@ -38,27 +31,43 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-function buildHeadline(event: ActivityEvent): string {
+/**
+ * One sentence per event: a lowercase verb phrase followed by the thing it
+ * happened to. `target` is what gets emphasized in the row and what the
+ * sentence is "about" — a show is named by venue and dated, never by a raw
+ * ISO string.
+ */
+export function describeActivity(event: ActivityEvent): { verb: string; target: string } {
   const m = (event.metadata ?? {}) as Record<string, unknown>;
+  const date = typeof m.date === 'string' ? m.date : '';
+  // listened_show events carry only the date; favorited_show also carries
+  // the venue. The bundled catalog knows both, so prefer it and fall back
+  // to whatever the event recorded.
+  const showName = (date && getCorrectVenue(date)) || (typeof m.venue === 'string' ? m.venue : '');
+  const showLabel = [showName, date ? formatDate(date) : ''].filter(Boolean).join(' · ');
+  const collectionNoun = m.type === 'show_collection' ? 'collection' : 'playlist';
+  const name = typeof m.name === 'string' ? m.name : 'Untitled';
+
   switch (event.event_type) {
-    case 'listened_show': {
-      const date = (m.date as string) ?? '';
-      const venue = (m.venue as string) ?? '';
-      return venue ? `Listened to ${date} — ${venue}` : `Listened to ${date}`;
-    }
-    case 'favorited_show': {
-      const date = (m.date as string) ?? '';
-      const venue = (m.venue as string) ?? '';
-      return venue ? `Favorited ${date} — ${venue}` : `Favorited ${date}`;
-    }
+    case 'listened_show':
+      return { verb: 'listened to', target: showLabel || 'a show' };
+    case 'favorited_show':
+      return { verb: 'favorited', target: showLabel || 'a show' };
     case 'created_collection':
-      return `Created the playlist "${(m.name as string) ?? 'Untitled'}"`;
+      return { verb: `created the ${collectionNoun}`, target: name };
     case 'saved_collection':
-      return `Saved ${m.creator_username ? `@${m.creator_username as string}'s` : "someone's"} playlist "${(m.name as string) ?? 'Untitled'}"`;
+      return {
+        verb: `saved ${m.creator_username ? `@${m.creator_username as string}'s` : 'a'} ${collectionNoun}`,
+        target: name,
+      };
     case 'followed_user':
-      return `Followed ${(m.display_name as string) ?? (m.username ? `@${m.username as string}` : 'a user')}`;
+      return {
+        verb: 'followed',
+        target: (typeof m.display_name === 'string' && m.display_name) ||
+          (typeof m.username === 'string' ? `@${m.username}` : 'someone'),
+      };
     default:
-      return '';
+      return { verb: '', target: '' };
   }
 }
 
@@ -70,7 +79,10 @@ function ActivityRowImpl({
   onPressActor,
   onPressTarget,
 }: ActivityRowProps) {
-  const [actorHovered, setActorHovered] = useState(false);
+  const actor = actorDisplayName ?? `@${actorUsername}`;
+  const { verb, target } = describeActivity(event);
+  const when = formatRelative(event.created_at);
+  const sentence = `${actor} ${verb} ${target}`;
 
   const handleActorPress = (e: any) => {
     e?.stopPropagation?.();
@@ -78,34 +90,50 @@ function ActivityRowImpl({
   };
 
   return (
-    <TouchableOpacity style={styles.row} onPress={onPressTarget} activeOpacity={0.8}>
-      <View style={styles.actorRow}>
-        <Pressable onPress={handleActorPress}>
+    <View style={styles.row}>
+      {/* Card-wide tap target beneath the content (see ShowCard for why a
+          hit layer beats a wrapping button). Carries the whole sentence for
+          assistive tech; the text block below is hidden from it. */}
+      <Pressable
+        style={({ pressed }) => [styles.hit, pressed && styles.hitPressed]}
+        onPress={onPressTarget}
+        accessibilityRole="button"
+        accessibilityLabel={`${sentence}, ${when} ago`}
+        accessibilityHint={
+          event.target_type === 'show'
+            ? 'Opens the show'
+            : event.target_type === 'collection'
+              ? 'Opens the collection'
+              : 'Opens their profile'
+        }
+      />
+
+      <View style={styles.content}>
+        <Pressable
+          onPress={handleActorPress}
+          accessibilityRole="button"
+          accessibilityLabel={`${actor}'s profile`}
+          hitSlop={6}
+        >
           <ProfileImage uri={actorAvatarUrl} style={styles.avatar} />
         </Pressable>
-        <View style={styles.actorText}>
-          <Pressable
-            onPress={handleActorPress}
-            onHoverIn={() => setActorHovered(true)}
-            onHoverOut={() => setActorHovered(false)}
-            style={styles.actorTextPressable}
-          >
-            <Text style={[styles.displayName, actorHovered && styles.underline]} numberOfLines={1}>
-              {actorDisplayName ?? actorUsername}
-            </Text>
-            <Text style={[styles.username, actorHovered && styles.underline]} numberOfLines={1}>
-              @{actorUsername}
-            </Text>
-          </Pressable>
-        </View>
-        <Text style={styles.time}>{formatRelative(event.created_at)}</Text>
-      </View>
 
-      <View style={styles.headlineRow}>
-        <Ionicons name={ICONS[event.event_type]} size={16} color={COLORS.textSecondary} style={styles.headlineIcon} />
-        <Text style={styles.headline} numberOfLines={2}>{buildHeadline(event)}</Text>
+        <Text
+          style={styles.sentence}
+          onPress={onPressTarget}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text style={styles.emphasis} onPress={handleActorPress}>{actor}</Text>
+          {` ${verb} `}
+          <Text style={styles.emphasis}>{target}</Text>
+        </Text>
+
+        <Text style={styles.time} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {when}
+        </Text>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -118,32 +146,46 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     maxWidth: 640,
-    marginVertical: SPACING.sm,
-    padding: SPACING.lg,
+    marginVertical: SPACING.xs,
+    borderRadius: RADIUS.md,
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
   },
-  actorRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 },
-  actorText: { flex: 1, marginLeft: SPACING.sm },
-  actorTextPressable: { alignSelf: 'flex-start' },
-  displayName: { ...TYPOGRAPHY.body, color: COLORS.textPrimary, fontWeight: '600' },
-  username: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  time: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  underline: { textDecorationLine: 'underline' },
-  headlineRow: {
+  hit: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RADIUS.md,
+  },
+  hitPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  content: {
+    pointerEvents: 'box-none',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: SPACING.md,
-    paddingLeft: AVATAR_SIZE + SPACING.sm,
+    gap: SPACING.md,
+    padding: SPACING.md,
   },
-  headlineIcon: {
-    marginTop: 1,
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
   },
-  headline: {
+  sentence: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textPrimary,
-    marginLeft: SPACING.xs,
+    color: COLORS.textSecondary,
+    lineHeight: 21,
     flex: 1,
+    // Optically centre a single line against the avatar; wrapped lines
+    // start from the same top edge.
+    paddingTop: 1,
+  },
+  emphasis: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  time: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    paddingTop: 3,
+    pointerEvents: 'none',
   },
 });
