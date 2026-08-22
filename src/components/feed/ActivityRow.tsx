@@ -178,9 +178,11 @@ const styles = StyleSheet.create({
     // start from the same top edge.
     paddingTop: 1,
   },
+  // Emphasis comes from the white-on-gray contrast; the weight step stays
+  // small so the sentence reads as one line, not three chunks.
   emphasis: {
     color: COLORS.textPrimary,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   time: {
     ...TYPOGRAPHY.caption,
