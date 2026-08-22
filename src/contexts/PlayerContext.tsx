@@ -10,6 +10,8 @@ import { radioService } from '../services/radioService';
 import { archiveApi } from '../services/archiveApi';
 import { shuffleArray } from '../utils/shuffle';
 import { logger } from '../utils/logger';
+import { queueWithoutTuning } from '../utils/tuningTracks';
+import { getSkipTuning } from '../services/sourcePrefsStore';
 import { isAllowedStreamUrl } from '../utils/validateStreamUrl';
 import { useOptionalToast } from './ToastContext';
 import { findNextShow } from '../utils/showLookup';
@@ -861,7 +863,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (state.playbackMode === 'shuffle') {
       dispatch({ type: 'EXIT_SHUFFLE' });
     }
-    dispatch({ type: 'LOAD_TRACK', track, show, playlist });
+    dispatch({
+      type: 'LOAD_TRACK', track, show,
+      playlist: queueWithoutTuning(playlist, track, getSkipTuning()),
+    });
   }, [state.playbackMode, toast]);
 
   const play = useCallback(async () => {

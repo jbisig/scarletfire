@@ -21,6 +21,7 @@ import {
   getSourcePrefs,
   getSourcePrefsVersion,
   mergeSourcePrefs,
+  setSkipTuning as storeSetSkipTuning,
   normalizeSourcePrefs,
   NudgeAnswer,
   NudgeFormat,
@@ -40,6 +41,7 @@ interface SourcePrefsContextValue {
   pin: (date: string, identifier: string, format: RecordingFormat) => void;
   clearPin: (date: string) => void;
   answerNudge: (format: RecordingFormat, answer: NudgeAnswer) => void;
+  setSkipTuning: (skipTuning: boolean) => void;
 }
 
 const SourcePrefsContext = createContext<SourcePrefsContextValue | undefined>(undefined);
@@ -56,6 +58,11 @@ export function useSourcePreference(): SourcePreference {
 export function usePendingNudge(): NudgeFormat | null {
   const version = useSourcePrefsVersion();
   return useMemo(() => getPendingNudge(), [version]);
+}
+
+export function useSkipTuning(): boolean {
+  const version = useSourcePrefsVersion();
+  return useMemo(() => getSourcePrefs().skipTuning, [version]);
 }
 
 export function useActivePin(date: string | undefined): SourcePin | null {
@@ -135,6 +142,7 @@ export function SourcePrefsProvider({ children }: { children: React.ReactNode })
     pin: (date, identifier, format) => storeSetPin(date, identifier, format),
     clearPin: (date) => storeClearPin(date),
     answerNudge: (format, answer) => storeAnswerNudge(format, answer),
+    setSkipTuning: (skipTuning) => storeSetSkipTuning(skipTuning),
   }), []);
 
   return <SourcePrefsContext.Provider value={value}>{children}</SourcePrefsContext.Provider>;

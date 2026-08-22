@@ -153,7 +153,15 @@ describe('normalizeSourcePrefs', () => {
       preference: 'aud', preferenceSetAt: 3,
       pins: { '1977-05-08': { identifier: 'a', format: 'aud', pinnedAt: 1 } },
       nudgeAnswers: { aud: 'no' },
+      skipTuning: false, skipTuningSetAt: 0,
     });
+  });
+
+  it('reads skipTuning, defaulting anything that is not a boolean to off', () => {
+    expect(normalizeSourcePrefs({ skipTuning: true, skipTuningSetAt: 9 }))
+      .toMatchObject({ skipTuning: true, skipTuningSetAt: 9 });
+    expect(normalizeSourcePrefs({ skipTuning: 'yes', skipTuningSetAt: 'soon' }))
+      .toMatchObject({ skipTuning: false, skipTuningSetAt: 0 });
   });
 
   it('replaceSourcePrefs notifies subscribers', () => {

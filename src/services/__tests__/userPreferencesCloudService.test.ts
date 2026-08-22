@@ -27,6 +27,8 @@ const PREFS: SourcePrefs = {
   preferenceSetAt: 5,
   pins: { '1977-05-08': { identifier: 'mtx', format: 'matrix', pinnedAt: 1 } },
   nudgeAnswers: { matrix: 'yes' },
+  skipTuning: true,
+  skipTuningSetAt: 7,
 };
 
 beforeEach(() => {
@@ -42,7 +44,10 @@ describe('syncPrefs', () => {
     expect(mockUpsert).toHaveBeenCalledWith(
       {
         user_id: 'u1',
-        prefs: { preference: 'matrix', preferenceSetAt: 5, nudgeAnswers: { matrix: 'yes' } },
+        prefs: {
+          preference: 'matrix', preferenceSetAt: 5, nudgeAnswers: { matrix: 'yes' },
+          skipTuning: true, skipTuningSetAt: 7,
+        },
         pins: PREFS.pins,
         updated_at: expect.any(String),
       },
@@ -65,7 +70,13 @@ describe('syncPrefs', () => {
 describe('loadPrefs', () => {
   it('recomposes the stored row into SourcePrefs, normalizing junk', async () => {
     mockSingle.mockResolvedValue({
-      data: { prefs: { preference: 'matrix', preferenceSetAt: 5, nudgeAnswers: { matrix: 'yes', sbd: 'maybe' } }, pins: PREFS.pins },
+      data: {
+        prefs: {
+          preference: 'matrix', preferenceSetAt: 5, nudgeAnswers: { matrix: 'yes', sbd: 'maybe' },
+          skipTuning: true, skipTuningSetAt: 7,
+        },
+        pins: PREFS.pins,
+      },
       error: null,
     });
     expect(await userPreferencesCloudService.loadPrefs('u1')).toEqual(PREFS);
@@ -75,6 +86,7 @@ describe('loadPrefs', () => {
     mockSingle.mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
     expect(await userPreferencesCloudService.loadPrefs('u1')).toEqual({
       preference: 'popular', preferenceSetAt: 0, pins: {}, nudgeAnswers: {},
+      skipTuning: false, skipTuningSetAt: 0,
     });
   });
 

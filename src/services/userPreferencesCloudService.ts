@@ -20,6 +20,8 @@ class UserPreferencesCloudService {
           preference: prefs.preference,
           preferenceSetAt: prefs.preferenceSetAt,
           nudgeAnswers: prefs.nudgeAnswers,
+          skipTuning: prefs.skipTuning,
+          skipTuningSetAt: prefs.skipTuningSetAt,
         },
         pins: prefs.pins,
         updated_at: new Date().toISOString(),
