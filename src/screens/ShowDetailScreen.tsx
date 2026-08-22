@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeaderHeightContext } from '@react-navigation/elements';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -31,7 +32,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL, GLASS_PILL_BLUR, BRAND_COLORS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, SHADOWS, GLASS_PILL, GLASS_PILL_BLUR, BRAND_COLORS } from '../constants/theme';
 import { getShareBackground, shareBackgroundIndexForId } from '../components/share/shareBackgrounds';
 import { formatLabel } from '../constants/tags';
 import {
@@ -107,6 +108,35 @@ export function ShowDetailScreen() {
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [releaseModalVisible, setReleaseModalVisible] = useState(false);
   const [showNotesExpanded, setShowNotesExpanded] = useState(false);
+  // The longest note runs to 47,000 characters — around twenty screens — and the
+  // in-flow toggle sits under all of it. Track where the section is so a
+  // floating Collapse can stand in while the reader is inside it.
+  const scrollRef = useRef<ScrollView>(null);
+  const notesLayout = useRef({ y: 0, height: 0 });
+  const [collapseVisible, setCollapseVisible] = useState(false);
+
+  /**
+   * The floating Collapse stands in for the in-flow toggle while that toggle is
+   * out of reach: from the moment the note scrolls into view until its own
+   * "Show less" — which sits at the very bottom of the section — comes onscreen.
+   */
+  const handleNotesScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement } = event.nativeEvent;
+    const { y, height } = notesLayout.current;
+    const viewportBottom = contentOffset.y + layoutMeasurement.height;
+    setCollapseVisible(
+      showNotesExpanded && height > 0 && viewportBottom > y && viewportBottom < y + height,
+    );
+  }, [showNotesExpanded]);
+
+  const collapseNotes = useCallback(() => {
+    setShowNotesExpanded(false);
+    setCollapseVisible(false);
+    // Land back on the section heading rather than wherever the collapse left
+    // the viewport, which would otherwise be somewhere in the track list.
+    scrollRef.current?.scrollTo({ y: Math.max(0, notesLayout.current.y - SPACING.md), animated: true });
+  }, []);
+
   const { isDesktop } = useResponsive();
   const { openShareTray } = useShareSheet();
   // Native nav header is transparent over the artwork; pad the header block
@@ -647,10 +677,14 @@ export function ShowDetailScreen() {
   const headerArt = getShareBackground(shareBackgroundIndexForId(showKey));
 
   return (
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={!isDesktop}
+      scrollEventThrottle={32}
+      onScroll={handleNotesScroll}
     >
       {/* Web: Header with video background + blur */}
       {Platform.OS === 'web' ? (
@@ -1036,7 +1070,10 @@ export function ShowDetailScreen() {
 
       {/* Show Notes Section */}
       {showNotesText && (
-        <View style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}>
+        <View
+          style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}
+          onLayout={(e) => { notesLayout.current = e.nativeEvent.layout; }}
+        >
           <View style={styles.divider} />
           <Text style={styles.showNotesHeader}>Show Notes</Text>
           <Text
@@ -1046,7 +1083,7 @@ export function ShowDetailScreen() {
             {showNotesText}
           </Text>
           <TouchableOpacity
-            onPress={() => setShowNotesExpanded(!showNotesExpanded)}
+            onPress={() => (showNotesExpanded ? collapseNotes() : setShowNotesExpanded(true))}
             activeOpacity={0.7}
             style={styles.showNotesToggle}
             accessibilityRole="button"
@@ -1109,6 +1146,20 @@ export function ShowDetailScreen() {
         />
       )}
     </ScrollView>
+
+    {collapseVisible && (
+      <TouchableOpacity
+        onPress={collapseNotes}
+        activeOpacity={0.85}
+        style={[styles.floatingCollapse, isDesktop && styles.floatingCollapseDesktop]}
+        accessibilityRole="button"
+        accessibilityLabel="Collapse the show notes"
+      >
+        <Ionicons name="chevron-up" size={15} color={COLORS.textPrimary} />
+        <Text style={styles.floatingCollapseText}>Collapse</Text>
+      </TouchableOpacity>
+    )}
+    </View>
   );
 }
 
@@ -1483,6 +1534,31 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? {
       paddingHorizontal: 16,
     } : {}),
+  },
+  floatingCollapse: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: LAYOUT.listBottomPadding - 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    ...GLASS_PILL,
+    backgroundColor: BRAND_COLORS.tabBarBackground,
+    ...SHADOWS.lg,
+    ...(Platform.OS === 'web' ? {
+      ...webStyle(GLASS_PILL_BLUR),
+      // @ts-ignore
+      cursor: 'pointer',
+    } : {}),
+  },
+  floatingCollapseDesktop: {
+    bottom: SPACING.xl,
+  },
+  floatingCollapseText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textPrimary,
   },
   showNotesToggle: {
     paddingHorizontal: SPACING.xxl,
