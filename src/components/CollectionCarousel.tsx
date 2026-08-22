@@ -17,7 +17,7 @@ const CARD_WIDTH = LAYOUT.horizontalCardWidth;
 // Two lines of name + the count line + padding. The show cards are taller
 // because they carry artwork; these carry only text, so matching their
 // height just made dead space.
-const CARD_HEIGHT = 84;
+const CARD_HEIGHT = 88;
 
 function formatCountLabel(c: Collection): string {
   const n = c.itemCount ?? 0;
@@ -175,13 +175,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.xs,
   },
+  // Same type as the show cards beside these (HorizontalShowCard.venue / .date).
   cardName: {
     ...TYPOGRAPHY.label,
+    fontSize: 15,
     color: COLORS.textPrimary,
     fontWeight: '600',
   },
   cardCount: {
     ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   grid: {

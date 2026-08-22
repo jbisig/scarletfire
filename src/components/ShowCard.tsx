@@ -137,12 +137,12 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       style={styles.releaseNote}
       accessibilityRole="button"
-      accessibilityLabel={`Official release: also on ${displayRelease.release.name}${displayRelease.more ? ` and ${displayRelease.more} more` : ''}`}
+      accessibilityLabel={`Released as ${displayRelease.release.name}${displayRelease.more ? ` and ${displayRelease.more} more` : ''}`}
       accessibilityHint="Double tap to view release details"
     >
       <Ionicons name="disc-outline" size={12} color={COLORS.textSecondary} />
       <Text style={styles.releaseNoteText} numberOfLines={1}>
-        also on {displayRelease.release.name}
+        Released as {displayRelease.release.name}
         {displayRelease.more ? ` +${displayRelease.more}` : ''}
       </Text>
     </Pressable>

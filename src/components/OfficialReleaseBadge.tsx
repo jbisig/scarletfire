@@ -7,7 +7,7 @@ interface OfficialReleaseBadgeProps {
   onPress: () => void;
   compact?: boolean;  // Smaller version for ShowCard
   releaseTitle?: string;  // Display actual release name instead of "Official Release"
-  alsoOn?: boolean;  // Render as "also on {title}" (show-row badge), with longer truncation
+  alsoOn?: boolean;  // Render as "Released as {title}" (show-row badge), with longer truncation
   more?: number;  // Count of additional releases beyond the one shown, appended as "+{more}"
 }
 
@@ -26,10 +26,10 @@ export const OfficialReleaseBadge: React.FC<OfficialReleaseBadgeProps> = ({
   const maxLen = alsoOn ? 30 : 25;
   const truncated = fullText.length > maxLen ? `${fullText.slice(0, maxLen)}...` : fullText;
   const displayText = alsoOn
-    ? `also on ${truncated}${more ? ` +${more}` : ''}`
+    ? `Released as ${truncated}${more ? ` +${more}` : ''}`
     : truncated;
   const accessibilityLabel = alsoOn
-    ? `Official release: also on ${fullText}${more ? ` +${more}` : ''}`
+    ? `Released as ${fullText}${more ? ` +${more}` : ''}`
     : `Official release: ${fullText}`;
 
   if (compact) {
