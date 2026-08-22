@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   selector: {
     // Sits on the show's artwork: translucent black, not a grey card.
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.full,
     paddingVertical: 14,
     paddingHorizontal: SPACING.xl,
   },
