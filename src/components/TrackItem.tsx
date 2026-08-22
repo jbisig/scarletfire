@@ -246,7 +246,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
-    alignItems: 'baseline',
+    // Centre, not baseline: a View's "baseline" is its bottom edge, so rows
+    // with a heart button and rows without one used to land differently.
+    alignItems: 'center',
   },
   containerDesktop: {
     paddingVertical: 8,
@@ -288,7 +290,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   durationWrap: {
-    alignSelf: 'baseline',
+    alignSelf: 'center',
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,
@@ -303,7 +305,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     marginLeft: SPACING.md,
-    marginTop: 2,
     ...(Platform.OS === 'web' ? {
       fontSize: 14,
       color: COLORS.textPrimary,
@@ -321,7 +322,6 @@ const styles = StyleSheet.create({
     // Match the rendered duration text height so the spinner doesn't nudge
     // the row taller than its neighbours.
     height: 20,
-    marginTop: 0,
   },
   moreButton: {
     // 32pt + 6pt hitSlop on each side = 44pt target.
