@@ -1,0 +1,7 @@
+# Python dependencies for the data-generation scripts.
+#   pip install -r scripts/requirements.txt
+#
+# Used by parse_compendium_pdf.py, which reads the Taper's Compendium PDFs in
+# reference_files/ and regenerates src/data/showNotes.ts. Nothing the app ships
+# depends on this — it is a build-time tool for a checked-in data file.
+pdfplumber>=0.11
