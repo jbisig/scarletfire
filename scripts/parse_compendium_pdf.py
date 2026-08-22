@@ -64,8 +64,12 @@ SOFT_HYPHEN = "\u00ad"
 # The band's performing life. Anything outside it is a misread date.
 MIN_YEAR, MAX_YEAR = 1959, 1995
 
+# The scan mangles "Highlights" freely — "Hiehlights", "Hlihllghts", "Hi~hll~hts" —
+# and numbers the sources with whatever it made of the numeral: "1.", ":1.",
+# ":I..", ".1.". Both are tolerated here rather than enumerated.
 METADATA_KEY = re.compile(
-    r"^\s*(?:\d+\s*\.+\s*)?(Source|Highlights|Comments|Personnel|Taper|Genealogy|"
+    r"^\s*[^A-Za-z\n]{0,4}\s*(?:[\dIiLl]{1,3}\s*\.+\s*)?"
+    r"(Source|H[\w~]{2,12}ts?|More\s+Comments|Comments|Personnel|Taper|Genealogy|"
     r"Quality|Length|Equipment|Lineage|Notes)\s*:",
     re.I,
 )
@@ -134,34 +138,39 @@ def _modal_size(words) -> float:
     return counts.most_common(1)[0][0] if counts else 10.5
 
 
-def _gutter(words, width):
-    """Find the vertical channel between the two text columns, if there is one."""
-    occupied = [False] * (int(width) + 2)
-    for w in words:
-        for x in range(max(0, int(w["x0"])), min(len(occupied) - 1, int(w["x1"]) + 1)):
-            occupied[x] = True
+def _gutter(baselines, width):
+    """Find the channel between the two text columns, if the page has two.
 
-    best = None
-    run_start = None
+    Counting *empty* pixel columns is not enough: a single element straddling
+    the gap — a centred year heading, a wide caption, a photo — bridges it for
+    the whole page height, and the page then reads as one column. Every line of
+    the left column is then welded to the line beside it, producing text like
+    "hun" + "Hornsby, or Branford Marsalis..." + "dred minutes".
+
+    So look for the x that the fewest *words* straddle. On a two-column page
+    every baseline has a wide word gap at the same place; on a single-column
+    page a word covers the middle on nearly every line.
+    """
+    if not baselines:
+        return None
+
     lo, hi = int(width * 0.38), int(width * 0.62)
-    for x in range(lo, hi):
-        if not occupied[x]:
-            if run_start is None:
-                run_start = x
-        else:
-            if run_start is not None and (best is None or x - run_start > best[1] - best[0]):
-                best = (run_start, x)
-            run_start = None
-    if run_start is not None and (best is None or hi - run_start > best[1] - best[0]):
-        best = (run_start, hi)
+    crossings = [0] * (hi - lo)
+    for words in baselines:
+        for w in words:
+            a = max(lo, int(w["x0"]))
+            b = min(hi, int(w["x1"]) + 1)
+            for x in range(a, b):
+                crossings[x - lo] += 1
 
-    # A real gutter is a clear channel; a stray gap inside one wide column is not.
-    if best and best[1] - best[0] >= 8:
-        return (best[0] + best[1]) / 2
+    best = min(range(len(crossings)), key=lambda i: crossings[i])
+    # A few straddling headings are normal; a column of prose is not.
+    if crossings[best] <= max(2, len(baselines) * 0.12):
+        return lo + best
     return None
 
 
-def _group_lines(words, tol=2.6):
+def _baseline_groups(words, tol=2.6):
     words = sorted(words, key=lambda w: (w["top"], w["x0"]))
     groups, cur = [], []
     for w in words:
@@ -171,6 +180,11 @@ def _group_lines(words, tol=2.6):
         cur.append(w)
     if cur:
         groups.append(cur)
+    return groups
+
+
+def _group_lines(words, tol=2.6):
+    groups = _baseline_groups(words, tol)
 
     out = []
     for g in groups:
@@ -299,7 +313,9 @@ def page_columns(page, head_margin=48.0):
         return [], 10.5, running_head
 
     body_size = _modal_size([w for w in words if w["size"] >= 9])
-    split = _gutter(words, page.width)
+    # Measure the gutter against whole lines: individual words never span it, so
+    # word boxes cannot tell a two-column page from a one-column one.
+    split = _gutter(_baseline_groups(words), page.width)
 
     if split is None:
         cols = [Column(x0=min(w["x0"] for w in words), x1=max(w["x1"] for w in words))]
@@ -612,12 +628,54 @@ def _is_heading_debris(paragraph: str) -> bool:
     return False
 
 
+# A short paragraph of pure tape data can survive anywhere in a note, not only at
+# its head: multi-source entries interleave their Source lines with the review.
+# Length is the guard — a long paragraph carries prose even if metadata is glued
+# into it, and dropping it would lose the review.
+MAX_STRAY_METADATA = 300
+
+
+def _is_stray_metadata(paragraph: str) -> bool:
+    text = paragraph.strip()
+    if len(text) > MAX_STRAY_METADATA:
+        return False
+    if METADATA_KEY.match(text) or GENEALOGY.match(text):
+        return True
+    # A bare metadata value the key never made it onto: a running time, or a
+    # parenthetical listing what the tape is missing.
+    if re.match(r"^\d{1,2}:\d{2}\b", text):
+        return True
+    if re.match(r'^[("\u201c].*["\u201d)]\s*$', text) and ">" in text and len(text) < 200:
+        return True
+    return False
+
+
 def trim_leading_debris(paragraphs):
     """Drop heading scraps so a note opens on its commentary."""
     i = 0
     while i < len(paragraphs) and _is_heading_debris(paragraphs[i]):
         i += 1
-    return paragraphs[i:]
+    return [p for p in paragraphs[i:] if not _is_stray_metadata(p)]
+
+
+def _looks_unreflowed(body: str) -> bool:
+    """Did this note come out as column fragments rather than paragraphs?
+
+    A caption or a second text column running alongside the review is spliced
+    into it line by line, and the result reads as gibberish:
+
+        Kresge Plaza, Massachusetts Institute of  chilling subject a timely
+        Technology, Cambridge, Massachusetts      everyone was gathered there
+
+    Reflowed prose is far longer per paragraph than the printed column ever was,
+    so a note whose paragraphs are all column-width was never really reflowed.
+    Better to drop it than to ship it.
+    """
+    paragraphs = [p for p in body.split("\n\n") if p.strip() and not p.startswith("—")]
+    if len(paragraphs) <= 3:
+        return False
+    mean = sum(len(p) for p in paragraphs) / len(paragraphs)
+    return mean < 90
 
 
 def build_notes(entries, min_chars=120):
@@ -627,6 +685,9 @@ def build_notes(entries, min_chars=120):
         body = "\n\n".join(p for p in trim_leading_debris(entry.paragraphs) if p)
         if len(body) < min_chars:
             stats["too_short"] += 1
+            continue
+        if _looks_unreflowed(body):
+            stats["unreflowed"] += 1
             continue
         if entry.byline:
             body += f"\n\n— {entry.byline}"
@@ -691,7 +752,8 @@ def main():
     write_ts(notes, Path(args.out))
 
     lengths = sorted(len(v) for v in notes.values())
-    print(f"\nEntries kept: {stats['kept']}, dropped as too short: {stats['too_short']}")
+    print(f"\nEntries kept: {stats['kept']}, dropped as too short: {stats['too_short']}, "
+          f"dropped as unreflowed columns: {stats['unreflowed']}")
     print(f"Unique dates: {len(notes)}")
     if lengths:
         print(f"Length min/median/max: {lengths[0]} / "
