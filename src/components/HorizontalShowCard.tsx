@@ -65,7 +65,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       >
-        <Text style={styles.venue} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.venue} numberOfLines={2} ellipsizeMode="tail">
           {getVenueFromShow(show)}
         </Text>
 
