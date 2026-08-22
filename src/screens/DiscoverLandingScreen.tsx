@@ -323,8 +323,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
             shows={recentlyPlayedShows}
             onShowPress={handleShowPress}
             extraData={playCounts}
-            color="blue"
-          />
+            />
         )}
 
         {/* Classic Shows Carousel */}
@@ -333,7 +332,6 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
           title="Classic Shows"
           shows={classicShows}
           onShowPress={handleShowPress}
-          color="blue"
         />
 
         {/* Popular Show Collections */}

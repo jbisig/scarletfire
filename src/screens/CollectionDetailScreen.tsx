@@ -42,7 +42,7 @@ import { ReorderableScrollView } from '../components/collections/ReorderableScro
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
 import { MiniSwitch } from '../components/MiniSwitch';
-import { getShareBackground } from '../components/share/shareBackgrounds';
+import { getShareBackground, shareBackgroundIndexForId } from '../components/share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 import { formatCount } from '../utils/formatters';
@@ -56,17 +56,6 @@ import {
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
-// Derive a stable background index (1-6) from the collection id so that
-// returning to a collection shows the same header image.
-function bgIndexFromId(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    // >>> 0 coerces to unsigned 32-bit so the modulo stays positive without
-    // the Math.abs → overflow trap.
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  }
-  return (hash % 6) + 1;
-}
 
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
 type RouteT = RouteProp<RootStackParamList, 'CollectionDetail'>;
@@ -600,7 +589,7 @@ export function CollectionDetailScreen() {
   const typeLabel =
     collection.type === 'playlist' ? 'Playlist' : formatCount(items.length, 'show');
 
-  const bgSource = getShareBackground(bgIndexFromId(collection.id));
+  const bgSource = getShareBackground(shareBackgroundIndexForId(collection.id));
 
   const header = (
     <GlassHeader

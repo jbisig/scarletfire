@@ -26,6 +26,19 @@ const BACKGROUNDS: readonly ImageSourcePropType[] = [bg1, bg2, bg3, bg4, bg5, bg
  * Get the background image for a bg index in 1..6.
  * Out-of-range or non-integer inputs clamp to bg-1 (the safe fallback).
  */
+/**
+ * Stable background index (1–6) for an id, so the same collection/show
+ * always gets the same artwork. Unsigned 32-bit hash keeps the modulo
+ * positive without the Math.abs → overflow trap.
+ */
+export function shareBackgroundIndexForId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 6) + 1;
+}
+
 export function getShareBackground(bgIndex: number): ImageSourcePropType {
   if (!Number.isFinite(bgIndex)) return BACKGROUNDS[0];
   const i = Math.floor(bgIndex);

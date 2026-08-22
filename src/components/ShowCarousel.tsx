@@ -10,7 +10,6 @@ interface ShowCarouselProps {
   shows: GratefulDeadShow[];
   onShowPress: (show: GratefulDeadShow) => void;
   extraData?: unknown;
-  color?: 'blue' | 'red';
 }
 
 export interface ShowCarouselRef {
@@ -22,7 +21,6 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
   shows,
   onShowPress,
   extraData,
-  color,
 }, ref) {
   const flatListRef = useRef<FlatList>(null);
   const { isDesktop } = useResponsive();
@@ -37,14 +35,12 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
     return null;
   }
 
-  const renderItem = useCallback(({ item, index }: { item: GratefulDeadShow; index: number }) => (
+  const renderItem = useCallback(({ item }: { item: GratefulDeadShow }) => (
     <HorizontalShowCard
       show={item}
       onPress={onShowPress}
-      index={index}
-      color={color}
     />
-  ), [onShowPress, color]);
+  ), [onShowPress]);
 
   // On desktop web, render a wrapping grid instead of a horizontal scroll
   if (isDesktop) {
@@ -52,13 +48,11 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
       <View style={styles.container}>
         <Text style={styles.title}>{title}</Text>
         <View style={styles.webGrid}>
-          {shows.map((show, index) => (
+          {shows.map((show) => (
             <HorizontalShowCard
               key={show.primaryIdentifier}
               show={show}
               onPress={onShowPress}
-              index={index}
-              color={color}
             />
           ))}
         </View>
