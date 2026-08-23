@@ -28,6 +28,19 @@ function looseKey(title: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+/**
+ * Titles the catalog used to carry, mapped to what it calls the song now.
+ * Keyed by looseKey of the OLD title. Renaming a catalog entry would otherwise
+ * strand every caller and every stored reference holding the previous spelling,
+ * so a rename adds an entry here rather than silently breaking lookups.
+ *
+ * See scripts/repairSongCatalogTitles.js (RENAME) for why each was renamed.
+ */
+const FORMER_TITLES: Record<string, string> = {
+  estimated: 'Estimated Prophet',
+  mindleftbody: 'Mind Left Body Jam',
+};
+
 function buildIndexes(): void {
   const exact = new Map<string, Song>();
   const loose = new Map<string, Song>();
@@ -63,8 +76,11 @@ function getSongsByLooseTitle(): Map<string, Song> {
  */
 export function findSongByTitle(title: string): Song | undefined {
   if (!title) return undefined;
+  const key = looseKey(title);
+  const former = FORMER_TITLES[key];
   return (
     getSongsByTitle().get(title.toLowerCase()) ??
-    getSongsByLooseTitle().get(looseKey(title))
+    getSongsByLooseTitle().get(key) ??
+    (former ? getSongsByLooseTitle().get(looseKey(former)) : undefined)
   );
 }
