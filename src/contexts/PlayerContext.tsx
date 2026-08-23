@@ -18,6 +18,7 @@ import { findNextShow } from '../utils/showLookup';
 import { describeLoadError } from '../utils/userFacingError';
 import { resolveShowIdentifier, stableShowIdentifier } from '../services/sourceSelection';
 import { reportLocalPlaybackFailure } from '../services/playbackSource';
+import { getNetworkStatus } from '../services/networkStatus';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -601,7 +602,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         const now = Date.now();
         if (last && last.trackId === track.id && now - last.at < 5000) return;
         failureToastRef.current = { trackId: track.id, at: now };
-        toastRef.current?.showToast(describeLoadError(data?.error, 'that track'), 'error');
+        toastRef.current?.showToast(
+          describeLoadError(data?.error, 'that track', { offline: !getNetworkStatus().isConnected }),
+          'error',
+        );
       };
 
       if (!track.fallbackStreamUrl || track.fallbackStreamUrl === track.streamUrl) {

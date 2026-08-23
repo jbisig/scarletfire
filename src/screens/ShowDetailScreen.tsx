@@ -54,6 +54,7 @@ import { SHOW_NOTES_CITATION } from '../data/showNotes';
 import { toFavoriteSong } from '../utils/favoriteSong';
 import { showDetailParams } from '../utils/showDetailParams';
 import { haptics } from '../services/hapticService';
+import { getNetworkStatus } from '../services/networkStatus';
 import { getAllShowsSorted, findShowIndexByDate } from '../utils/showLookup';
 import { getClassicTier } from '../data/classicShowsTiers';
 import { useShareSheet } from '../contexts/ShareSheetContext';
@@ -442,7 +443,7 @@ export function ShowDetailScreen() {
       return loaded;
     } catch (err) {
       if (loadRequestTokenRef.current !== requestToken) return null;
-      setError(describeLoadError(err));
+      setError(describeLoadError(err, 'this show', { offline: !getNetworkStatus().isConnected }));
       return null;
     } finally {
       if (loadRequestTokenRef.current === requestToken) setIsLoading(false);
