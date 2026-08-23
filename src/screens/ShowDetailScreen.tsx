@@ -1559,7 +1559,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     // Same scrim as the VersionPicker it stands in for.
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: RADIUS.full,
     height: SOURCE_PILL_HEIGHT,
     paddingHorizontal: SPACING.xl,
