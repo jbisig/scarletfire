@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, ActivityIndicator, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
 import { formatDuration } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
-import { NowPlayingBars } from './NowPlayingBars';
+import { NowPlayingBars, nowPlayingBarsWidth } from './NowPlayingBars';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import type { ResolvedRating } from '../services/ratingResolver';
 
@@ -56,6 +56,27 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
       ? `Your rating: ${rating.stars} ${rating.stars === 1 ? 'star' : 'stars'}`
       : `${rating.stars} star performance`
     : '';
+  // The mark used to mount and unmount outright, so the title jumped sideways
+  // the instant a track started. Growing the mark's width instead carries the
+  // title across with it. Width is a layout prop, so this cannot run on the
+  // native driver — it is one row at a time, which is well within budget.
+  const markSize = isDesktop ? 12 : 14;
+  const markGap = SPACING.sm + 2;
+  const markWidth = nowPlayingBarsWidth(markSize) + markGap;
+  const showMark = isPlaying && !isLoading;
+  const reveal = useRef(new Animated.Value(showMark ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(reveal, {
+      toValue: showMark ? 1 : 0,
+      // Out slightly quicker than in: the row being left should get out of the
+      // way before the row being started announces itself.
+      duration: showMark ? 260 : 170,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [showMark, reveal]);
+
   const playingText = isLoading ? 'Loading. ' : isPlaying ? 'Now playing. ' : '';
   const selectedText = isSelected && !isPlaying ? 'Selected. ' : '';
   const accessibilityLabel = `${playingText}${selectedText}${track.title}, ${duration}${ratingText ? `. ${ratingText}` : ''}`;
@@ -107,11 +128,21 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           {/* Now-playing mark sits flush with the title column, and the
               title indents past it — Spotify's treatment. Hidden while the
               stream is still loading; the spinner on the right covers that. */}
-          {isPlaying && !isLoading && (
-            <View style={styles.playingMark}>
-              <NowPlayingBars paused={isPaused} size={isDesktop ? 12 : 14} />
-            </View>
-          )}
+          <Animated.View
+            style={[
+              styles.playingMark,
+              {
+                width: reveal.interpolate({ inputRange: [0, 1], outputRange: [0, markWidth] }),
+                opacity: reveal,
+              },
+            ]}
+          >
+            {showMark && (
+              <View style={{ paddingRight: markGap }}>
+                <NowPlayingBars paused={isPaused} size={markSize} />
+              </View>
+            )}
+          </Animated.View>
           <View
             style={styles.titleWrap}
             accessibilityElementsHidden
@@ -226,7 +257,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
             e?.stopPropagation?.();
             onLongPress?.(track);
           }}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={`More options for ${track.title}`}
@@ -244,7 +275,12 @@ TrackItem.displayName = 'TrackItem';
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingVertical: 14,
+    // Both platforms land on a 48pt row, but they get there differently: native
+    // rows carry a 28pt "more" button that sets their height, and web rows are
+    // sized by the title text. Padding makes up the difference, so a single
+    // value would leave the two lists visibly out of step.
+    paddingVertical: 10,
+    ...(Platform.OS === 'web' ? { paddingVertical: 14 } : {}),
     paddingHorizontal: SPACING.xxl,
     // Centre, not baseline: a View's "baseline" is its bottom edge, so rows
     // with a heart button and rows without one used to land differently.
@@ -258,7 +294,9 @@ const styles = StyleSheet.create({
   },
   playingMark: {
     alignSelf: 'center',
-    marginRight: SPACING.sm + 2,
+    // The gap to the title lives inside the animated width, so it grows with
+    // the mark rather than appearing all at once.
+    overflow: 'hidden',
     pointerEvents: 'none',
   },
   hovered: {
@@ -324,9 +362,11 @@ const styles = StyleSheet.create({
     height: 20,
   },
   moreButton: {
-    // 32pt + 6pt hitSlop on each side = 44pt target.
-    width: 32,
-    height: 32,
+    // Native-only, and the tallest thing in the row — it, not the padding, sets
+    // the row height there. 28pt + 8pt hitSlop still clears the 44pt target
+    // while letting the row sit closer to the web list's density.
+    width: 28,
+    height: 28,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',

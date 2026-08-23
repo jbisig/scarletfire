@@ -11,6 +11,14 @@ interface NowPlayingBarsProps {
 
 // Each bar loops between its own low and high point on its own period, so
 // the three never sync up into a mechanical pulse.
+/**
+ * Rendered width at a given size: three bars separated by two gaps of the same
+ * width. Exported so a caller can reserve or animate the space the mark takes.
+ */
+export function nowPlayingBarsWidth(size: number): number {
+  return Math.max(2, Math.round(size / 5)) * 5;
+}
+
 const BARS = [
   { low: 0.35, high: 1.0, period: 620 },
   { low: 0.25, high: 0.85, period: 480 },
