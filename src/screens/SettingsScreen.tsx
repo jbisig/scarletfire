@@ -26,6 +26,7 @@ import { ProfileImage } from '../components/ProfileImage';
 import { BottomSheet } from '../components/BottomSheet';
 import { SourcePreferencePicker } from '../components/SourcePreferencePicker';
 import { useResponsive } from '../hooks/useResponsive';
+import { DownloadsSettingsSection } from '../components/DownloadsSettingsSection';
 import { logger } from '../utils/logger';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -288,6 +289,8 @@ export function SettingsScreen() {
             <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
             {skipTuningToggle}
           </View>
+
+          <DownloadsSettingsSection />
         </ScrollView>
       </View>
     );
@@ -516,6 +519,8 @@ export function SettingsScreen() {
         <SourcePreferencePicker value={sourcePreference} onChange={setPreference} />
         {skipTuningToggle}
       </View>
+
+      <DownloadsSettingsSection />
 
       {/* Public Profile Section */}
       <View style={styles.section}>
