@@ -10,6 +10,7 @@ import type { ShowDetail } from '../types/show.types';
 import { COLORS } from '../constants/theme';
 import { useDownloadSettings, useOptionalDownloadActions, useShowDownload } from '../contexts/DownloadsContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { ProgressRing } from './ProgressRing';
 import { formatBytes } from '../utils/formatters';
 import { describeDownloadError } from '../utils/userFacingError';
 
@@ -108,31 +109,44 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
 
   const streamOnly = show ? show.downloadable !== true : false;
   const percent = Math.round(progress.fraction * 100);
-  let icon: keyof typeof Ionicons.glyphMap = 'download-outline';
+  const inFlight = entry?.status === 'queued' || entry?.status === 'downloading';
+  const paused = entry?.status === 'paused';
+
   let label = 'Download show';
-  let color: string = COLORS.textPrimary;
   let dimmed = !show;
-  let showBar = false;
+  let glyph: React.ReactNode = <Ionicons name="arrow-down-circle-outline" size={26} color={COLORS.textPrimary} />;
 
   if (streamOnly) {
-    icon = 'cloud-offline-outline';
     label = 'Streaming only';
     dimmed = true;
-  } else if (entry?.status === 'queued' || entry?.status === 'downloading') {
-    icon = 'arrow-down-circle-outline';
-    label = `Downloading, ${percent}%`;
-    showBar = true;
-  } else if (entry?.status === 'paused') {
-    icon = 'cloud-download-outline';
-    label = network.isConnected ? 'Waiting for Wi-Fi' : 'Waiting for a connection';
-    showBar = true;
+    glyph = <Ionicons name="cloud-offline-outline" size={26} color={COLORS.textPrimary} />;
+  } else if (inFlight || paused) {
+    label = inFlight
+      ? `Downloading, ${percent}%`
+      : network.isConnected ? 'Waiting for Wi-Fi' : 'Waiting for a connection';
+    // The circle IS the progress bar: accent while downloading, muted while
+    // the show waits for Wi-Fi/connectivity.
+    glyph = (
+      <ProgressRing
+        size={26}
+        thickness={2.5}
+        progress={progress.fraction}
+        color={inFlight ? COLORS.accent : COLORS.textSecondary}
+        trackColor={COLORS.border}
+      >
+        <Ionicons name="arrow-down" size={13} color={COLORS.textPrimary} />
+      </ProgressRing>
+    );
   } else if (entry?.status === 'complete') {
-    icon = 'checkmark-circle';
     label = 'Downloaded';
-    color = COLORS.accent;
+    glyph = (
+      <View style={styles.completeCircle}>
+        <Ionicons name="arrow-down" size={15} color="#FFFFFF" />
+      </View>
+    );
   } else if (entry?.status === 'failed') {
-    icon = 'alert-circle-outline';
     label = 'Download failed';
+    glyph = <Ionicons name="alert-circle-outline" size={26} color={COLORS.textPrimary} />;
   }
 
   return (
@@ -145,12 +159,7 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
       accessibilityLabel={label}
       accessibilityState={{ selected: entry?.status === 'complete', disabled: !show }}
     >
-      <Ionicons name={icon} size={26} color={color} />
-      {showBar ? (
-        <View style={styles.barTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={[styles.barFill, { width: `${Math.max(4, percent)}%` }]} />
-        </View>
-      ) : null}
+      {glyph}
     </TouchableOpacity>
   );
 }
@@ -165,17 +174,12 @@ const styles = StyleSheet.create({
   dimmed: {
     opacity: 0.4,
   },
-  barTrack: {
-    position: 'absolute',
-    bottom: 2,
-    width: 28,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: 2,
+  completeCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
