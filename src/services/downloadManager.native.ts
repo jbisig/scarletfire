@@ -111,19 +111,82 @@ class DownloadManager {
   }
 
   async removeAll(): Promise<void> {
-    throw new Error('implemented in Task 8');
+    for (const show of store.listDownloadedShows()) {
+      this.cancelled.add(show.identifier);
+    }
+    const pauses: Promise<unknown>[] = [];
+    for (const resumable of this.inFlight.values()) pauses.push(resumable.pauseAsync().catch(() => undefined));
+    await Promise.all(pauses);
+    store.clearDownloadedShows();
+    await getFS().deleteAsync(downloadsRootUri(), { idempotent: true }).catch(() => {});
+    for (const id of [...this.cancelled]) {
+      if (this.activeIdentifier !== id) this.cancelled.delete(id);
+    }
   }
 
-  allowCellular(_identifier: string): void {
-    throw new Error('implemented in Task 8');
+  allowCellular(identifier: string): void {
+    const show = store.getDownloadedShow(identifier);
+    if (!show) return;
+    store.updateDownloadedShow(identifier, {
+      allowCellular: true,
+      ...(show.status === 'paused' ? { status: 'queued' as const } : {}),
+    });
+    this.kick();
   }
 
-  setWifiOnly(_wifiOnly: boolean): void {
-    throw new Error('implemented in Task 8');
+  setWifiOnly(wifiOnly: boolean): void {
+    store.setWifiOnly(wifiOnly);
+    if (!wifiOnly) this.resumePaused();
   }
 
+  /**
+   * Bring the manifest back in line with the disk after a cold start (the
+   * OS may have killed a download mid-show). Then start the worker.
+   */
   async reconcileOnLaunch(): Promise<void> {
-    throw new Error('implemented in Task 8');
+    const FS = getFS();
+    await FS.makeDirectoryAsync(downloadsRootUri(), { intermediates: true }).catch(() => {});
+    await nativeAudioPlayer.setExcludedFromBackup(downloadsRootUri()).catch(() => {});
+
+    for (const show of store.listDownloadedShows()) {
+      const id = show.identifier;
+      const present: string[] = [];
+      const missing: string[] = [];
+      for (const [trackId, track] of Object.entries(show.tracks)) {
+        const info = await FS.getInfoAsync(toAbsoluteUri(track.relativePath));
+        (info.exists ? present : missing).push(trackId);
+      }
+      if (show.status === 'complete' && present.length === 0 && missing.length > 0) {
+        // Manifest survived but the files did not (e.g. restored from a
+        // backup). Ask before re-downloading hundreds of megabytes.
+        store.updateDownloadedShow(id, { status: 'failed', error: 'unknown', completedAt: undefined });
+        continue;
+      }
+      for (const trackId of present) {
+        if (show.tracks[trackId].status !== 'complete') store.updateDownloadedTrack(id, trackId, { status: 'complete' });
+      }
+      for (const trackId of missing) {
+        if (show.tracks[trackId].status !== 'queued' && show.status !== 'failed') {
+          store.updateDownloadedTrack(id, trackId, { status: 'queued' });
+        }
+      }
+      if (missing.length === 0) {
+        if (show.status !== 'complete') {
+          store.updateDownloadedShow(id, { status: 'complete', completedAt: Date.now(), error: undefined });
+        }
+      } else if (show.status !== 'failed') {
+        store.updateDownloadedShow(id, { status: 'queued' });
+      }
+    }
+
+    const entries = await FS.readDirectoryAsync(downloadsRootUri()).catch(() => [] as string[]);
+    for (const name of entries) {
+      if (!store.getDownloadedShow(name)) {
+        await FS.deleteAsync(`${downloadsRootUri()}${name}`, { idempotent: true }).catch(() => {});
+      }
+    }
+
+    this.start();
   }
 
   /** Idempotent: start network monitoring and the worker. */
@@ -148,14 +211,33 @@ class DownloadManager {
       .sort((a, b) => a.requestedAt - b.requestedAt)[0];
   }
 
-  /** Wi-Fi guard — replaced with the real rule in Task 8 (which also starts
-   * consuming `getNetworkStatus`, imported above). */
-  private canProceed(_show: DownloadedShow): boolean {
+  /** Wi-Fi guard: connected, and either on Wi-Fi, guard off, or the user okayed cellular for this show. */
+  private canProceed(show: DownloadedShow): boolean {
+    const net = getNetworkStatus();
+    if (!net.isConnected) return false;
+    if (store.getWifiOnly() && !net.isWifi && !show.allowCellular) return false;
     return true;
   }
 
+  private resumePaused(): void {
+    let resumed = false;
+    for (const show of store.listDownloadedShows()) {
+      if (show.status === 'paused' && this.canProceed(show)) {
+        store.updateDownloadedShow(show.identifier, { status: 'queued' });
+        resumed = true;
+      }
+    }
+    if (resumed) this.kick();
+  }
+
   private onNetworkChange(): void {
-    // Implemented in Task 8.
+    const active = this.activeIdentifier ? store.getDownloadedShow(this.activeIdentifier) : undefined;
+    if (active && !this.canProceed(active)) {
+      this.pausedByNetwork = true;
+      void this.pauseInFlight(active.identifier);
+      return;
+    }
+    this.resumePaused();
   }
 
   private async runQueue(): Promise<void> {
