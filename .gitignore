@@ -66,3 +66,19 @@ play-store-credentials.json
 
 # Source PDFs for the data-generation scripts — hundreds of MB, kept locally only.
 reference_files/*.pdf
+
+# test coverage
+coverage/
+
+# Playwright MCP session artifacts (screenshots, console logs, snapshots)
+.playwright-mcp/
+
+# Supabase CLI scratch state
+supabase/.temp/
+
+# Screenshots and screen recordings dropped at the repo root while working on
+# the UI. Anchored to the root so real artwork under assets/ still commits.
+/*.png
+/*.jpg
+/*.jpeg
+/*.mov
