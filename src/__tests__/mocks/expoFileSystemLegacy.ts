@@ -100,7 +100,7 @@ export function createFakeFileSystem() {
             return { url, fileUri, options: {}, resumeData: undefined };
           }),
           resumeAsync: jest.fn(
-            () => new Promise((res, rej) => { task.paused = false; resolve = res; reject = rej; }),
+            () => new Promise((res, rej) => { task.settled = false; task.paused = false; resolve = res; reject = rej; }),
           ),
           savable: jest.fn(() => ({ url, fileUri, options: {}, resumeData: undefined })),
         };
