@@ -247,11 +247,11 @@ export const SOURCE_PILL_HEIGHT = 48;
 const styles = StyleSheet.create({
   container: {},
   selector: {
-    // Sits on the show's artwork: translucent black, not a grey card. Height is
+    // Sits on the show's artwork: a faint white wash, not a grey card. Height is
     // fixed to match the Play button beside it, which is why the trigger shows
     // a single line — the taper and transfer credits are listed against every
     // recording inside the picker itself.
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: RADIUS.full,
     height: SOURCE_PILL_HEIGHT,
     justifyContent: 'center',
