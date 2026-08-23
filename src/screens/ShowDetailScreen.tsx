@@ -1558,8 +1558,7 @@ const styles = StyleSheet.create({
     // short of the Play button beside it.
     flexDirection: 'row',
     alignItems: 'center',
-    // Lighter than the picker's scrim: this variant is a label, not a control,
-    // so it sits back further into the artwork.
+    // Same scrim as the VersionPicker it stands in for.
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderRadius: RADIUS.full,
     height: SOURCE_PILL_HEIGHT,
