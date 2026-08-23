@@ -25,6 +25,8 @@ export const STORAGE_KEYS = {
   USER_RATINGS: '@user_ratings',
   /** Global recording preference + per-show pins + nudge answers */
   SOURCE_PREFS: '@source_prefs',
+  /** Offline downloads manifest (local only, never synced) */
+  DOWNLOADS: '@downloads',
 } as const;
 
 /**

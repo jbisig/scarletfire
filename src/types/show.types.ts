@@ -35,6 +35,12 @@ export interface ShowDetail {
   description?: string;
   tracks: Track[];
   allVersions?: RecordingVersion[]; // All available versions for this show
+  /**
+   * False (or absent) for archive.org "stream_only" items — soundboards and
+   * most matrixes, which are streaming-only by arrangement with the band.
+   * Only `true` enables the download UI; absent never does.
+   */
+  downloadable?: boolean;
 }
 
 export interface Track {
@@ -50,6 +56,8 @@ export interface Track {
    */
   fallbackStreamUrl?: string;
   trackNumber?: number;
+  /** File size in bytes from archive.org metadata, when known. */
+  size?: number;
 }
 
 export interface ShowsByYear {

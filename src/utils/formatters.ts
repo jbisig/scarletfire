@@ -295,3 +295,18 @@ export function matchesDateQuery(isoDate: string, query: string): boolean {
   // At least one component must have been specified and matched
   return parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined;
 }
+
+/**
+ * Human-readable byte count for download sizes: whole KB, one decimal for
+ * MB and GB. Used by the Downloads tab, the cellular prompt, and Settings.
+ */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+  if (bytes >= GB) return `${(bytes / GB).toFixed(1)} GB`;
+  if (bytes >= MB) return `${(bytes / MB).toFixed(1)} MB`;
+  if (bytes >= KB) return `${Math.round(bytes / KB)} KB`;
+  return `${Math.round(bytes)} B`;
+}
