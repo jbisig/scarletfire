@@ -144,4 +144,34 @@ describe('archiveApi.getShowDetail', () => {
     await archiveApi.getShowDetail('invalidate-show');
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
+
+  it('marks a recording downloadable unless its collection contains stream_only', async () => {
+    const aud = metadataResponse();
+    aud.metadata = { ...aud.metadata, collection: ['GratefulDead', 'etree'] } as typeof aud.metadata;
+    global.fetch = mockFetchOnce(aud) as unknown as typeof fetch;
+    expect((await archiveApi.getShowDetail('aud-show')).downloadable).toBe(true);
+
+    const sbd = metadataResponse();
+    sbd.metadata = { ...sbd.metadata, collection: ['GratefulDead', 'etree', 'stream_only'] } as typeof sbd.metadata;
+    global.fetch = mockFetchOnce(sbd) as unknown as typeof fetch;
+    expect((await archiveApi.getShowDetail('sbd-show')).downloadable).toBe(false);
+  });
+
+  it('handles a bare-string collection and a missing collection', async () => {
+    const single = metadataResponse();
+    single.metadata = { ...single.metadata, collection: 'stream_only' } as typeof single.metadata;
+    global.fetch = mockFetchOnce(single) as unknown as typeof fetch;
+    expect((await archiveApi.getShowDetail('single-show')).downloadable).toBe(false);
+
+    global.fetch = mockFetchOnce(metadataResponse()) as unknown as typeof fetch;
+    expect((await archiveApi.getShowDetail('no-collection-show')).downloadable).toBe(true);
+  });
+
+  it('carries the archive file size onto each track', async () => {
+    const body = metadataResponse();
+    body.files[0].size = '5242880';
+    global.fetch = mockFetchOnce(body) as unknown as typeof fetch;
+    const detail = await archiveApi.getShowDetail('sized-show');
+    expect(detail.tracks[0].size).toBe(5242880);
+  });
 });

@@ -565,6 +565,16 @@ class ArchiveApiService {
         throw new Error('Unexpected metadata response format');
       }
       const { metadata, files } = data;
+
+      // "stream_only" marks soundboards (and most matrixes) that the band
+      // allows archive.org to stream but not to hand out as files. The app
+      // enforces this itself — the server only blocks the lossless originals.
+      const rawCollection = metadata.collection;
+      const collections = Array.isArray(rawCollection)
+        ? rawCollection
+        : typeof rawCollection === 'string' ? [rawCollection] : [];
+      const downloadable = !collections.includes('stream_only');
+
       const audioFiles = this.selectAudioFiles(files);
 
       // Direct datanode base skips /download's 302 redirect (~1s saved per
@@ -588,7 +598,8 @@ class ArchiveApiService {
               ? `${directBase}/${encodeURIComponent(file.name)}`
               : downloadUrl,
             ...(directBase ? { fallbackStreamUrl: downloadUrl } : {}),
-            trackNumber: parseInt(file.track || String(index + 1))
+            trackNumber: parseInt(file.track || String(index + 1)),
+            ...(Number.isFinite(parseInt(file.size, 10)) ? { size: parseInt(file.size, 10) } : {}),
           };
         })
         .sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0));
@@ -602,6 +613,7 @@ class ArchiveApiService {
         location: metadata.coverage,
         description: metadata.description,
         tracks,
+        downloadable,
       };
 
       // Cache the base show detail (without versions to keep cache entries small)
