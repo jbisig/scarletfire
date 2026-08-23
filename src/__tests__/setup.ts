@@ -53,6 +53,33 @@ jest.mock('expo-file-system/legacy', () =>
   require('./mocks/expoFileSystemLegacy').createFakeFileSystem()
 );
 
+// Mock expo-network: Wi-Fi and connected by default. Tests change it with
+// `require('expo-network').__setNetworkState({ type: 'CELLULAR' })`, which
+// also fires registered listeners.
+jest.mock('expo-network', () => {
+  const listeners = new Set();
+  let state = { type: 'WIFI', isConnected: true, isInternetReachable: true };
+  return {
+    NetworkStateType: {
+      NONE: 'NONE', UNKNOWN: 'UNKNOWN', CELLULAR: 'CELLULAR', WIFI: 'WIFI',
+      BLUETOOTH: 'BLUETOOTH', ETHERNET: 'ETHERNET', WIMAX: 'WIMAX', VPN: 'VPN', OTHER: 'OTHER',
+    },
+    getNetworkStateAsync: jest.fn(async () => state),
+    addNetworkStateListener: jest.fn((listener: (s: unknown) => void) => {
+      listeners.add(listener);
+      return { remove: () => { listeners.delete(listener); } };
+    }),
+    __setNetworkState(next: Partial<typeof state>) {
+      state = { ...state, ...next };
+      listeners.forEach((l: any) => l(state));
+    },
+    __resetNetworkState() {
+      state = { type: 'WIFI', isConnected: true, isInternetReachable: true };
+      listeners.clear();
+    },
+  };
+});
+
 // Mock @gorhom/bottom-sheet — the real library calls getBoundingClientRect
 // and other DOM/native APIs that aren't available in the Jest test renderer.
 // This lightweight stand-in lets children pass through so we can still
