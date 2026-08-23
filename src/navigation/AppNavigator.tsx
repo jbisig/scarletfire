@@ -28,7 +28,7 @@ import { useFullPlayerVisibility } from '../contexts/PlayerContext';
 import { AuthNavigator } from './AuthNavigator';
 import { ProfileOnboardingNavigator } from './ProfileOnboardingNavigator';
 import { useProfile } from '../contexts/ProfileContext';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, FONTS, LAYOUT } from '../constants/theme';
 import { useResponsive } from '../hooks/useResponsive';
 
 // Desktop layout (web only) - lazy import to avoid bundling on native
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   },
   miniPlayerContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 87 : Platform.OS === 'web' ? 69 : 77,
+    bottom: LAYOUT.tabBarHeight,
     left: 0,
     right: 0,
     zIndex: 998,

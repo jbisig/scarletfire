@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 /**
  * Theme constants for the Grateful Dead Player app
  *
@@ -282,6 +283,14 @@ export const LAYOUT = {
   animationDuration: 300,
   /** Bottom padding for lists to account for mini player + tab bar */
   listBottomPadding: 180,
+  /**
+   * Height of the bottom tab bar — equivalently, the y at which the mini player
+   * sits. Anything anchored to the viewport (rather than to scroll content)
+   * measures up from here, so it stays clear of the chrome.
+   */
+  tabBarHeight: Platform.OS === 'ios' ? 87 : Platform.OS === 'web' ? 69 : 77,
+  /** Height of the mini player. Only mounted while a track is loaded. */
+  miniPlayerHeight: 72,
   /** Horizontal show card dimensions */
   horizontalCardWidth: 224,
   horizontalCardHeight: 112,

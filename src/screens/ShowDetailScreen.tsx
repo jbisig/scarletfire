@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Alert,
+  Animated,
   View,
   Text,
   Image,
@@ -22,6 +23,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
+import { useAppActiveState } from '../hooks/useAppActiveState';
 import { TrackItem } from '../components/TrackItem';
 import { VersionPicker, SOURCE_PILL_HEIGHT } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
@@ -58,6 +60,7 @@ import { useShareSheet } from '../contexts/ShareSheetContext';
 import type { ShareItem } from '../services/shareService';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
 import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { BlurBackground } from '../components/shared/BlurBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
 import { ErrorState } from '../components/StateViews';
 import { webStyle } from '../utils/webStyle';
@@ -72,6 +75,21 @@ import { useToast } from '../contexts/ToastContext';
 import { describeLoadError } from '../utils/userFacingError';
 
 // Default profile image for logged out users (web header)
+
+/** Back and share glyphs in the sticky nav. */
+const NAV_ICON_SIZE = 22;
+/**
+ * Raises the nav row off the header's centre line. Applied to the title and the
+ * two buttons alike — anything that lifts one without the other leaves them
+ * visibly out of line.
+ *
+ * It is a transform, not padding: padding takes height out of the container,
+ * and with a 22px glyph in a 38px button there is no slack in the header to
+ * give up, so the back chevron got clipped.
+ */
+const NAV_LIFT = 6;
+/** Brings the tap area back to the 44pt minimum around a 30pt button. */
+const NAV_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 type ShowDetailRouteProp = RouteProp<RootStackParamList, 'ShowDetail'>;
 
@@ -114,6 +132,12 @@ export function ShowDetailScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const notesLayout = useRef({ y: 0, height: 0 });
   const viewportHeight = useRef(0);
+  // Scroll position drives the sticky header's backdrop, which fades in as the
+  // hero leaves. Native-driven: it is a pure opacity change.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [heroHeight, setHeroHeight] = useState(0);
+  const [heroOnScreen, setHeroOnScreen] = useState(true);
+  const [notesTop, setNotesTop] = useState(0);
   const [collapseVisible, setCollapseVisible] = useState(false);
 
   /** What the header's Play button starts: the show from its opening track. */
@@ -127,12 +151,18 @@ export function ShowDetailScreen() {
   const handleNotesScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement } = event.nativeEvent;
     viewportHeight.current = layoutMeasurement.height;
+    // Only one of the two video surfaces plays at a time: the hero while it is
+    // on screen, the header's copy once it is not.
+    if (heroHeight > 0) {
+      const visible = contentOffset.y < heroHeight;
+      setHeroOnScreen((prev) => (prev === visible ? prev : visible));
+    }
     const { y, height } = notesLayout.current;
     const viewportBottom = contentOffset.y + layoutMeasurement.height;
     setCollapseVisible(
       showNotesExpanded && height > 0 && viewportBottom > y && viewportBottom < y + height,
     );
-  }, [showNotesExpanded]);
+  }, [showNotesExpanded, heroHeight]);
 
   const collapseNotes = useCallback(() => {
     setShowNotesExpanded(false);
@@ -213,6 +243,8 @@ export function ShowDetailScreen() {
 
   // Video background for web header
   const { videoSource, videoId, resetToFallback } = useVideoBackground();
+  // Pause the header video when the app is backgrounded, as Discover does.
+  const appState = useAppActiveState();
   const videoUri = useMemo(() => Platform.OS === 'web' ? resolveVideoUri(videoSource) : '', [videoSource]);
 
 
@@ -578,25 +610,122 @@ export function ShowDetailScreen() {
     setPickerTrack(track);
   }, []);
 
+  /**
+   * The sticky header's backdrop: the same background video, blurred and
+   * darkened, fading into the page at its lower edge. Transparent while the
+   * hero is in view, so the header only asserts itself once there is content
+   * running underneath it.
+   */
+  const headerBackdropOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [Math.max(0, heroHeight - 140), Math.max(1, heroHeight - 40)],
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, heroHeight],
+  );
+
+  /**
+   * The notes dim as they climb toward the bar, on the same curve as the hero
+   * above them — but only while collapsed. Expanded, they are what the reader
+   * is actually reading, and fading them out from the top would be perverse.
+   */
+  const notesOpacity = useMemo(() => {
+    if (showNotesExpanded || notesTop === 0) return 1;
+    return scrollY.interpolate({
+      inputRange: [Math.max(0, notesTop - 200), Math.max(1, notesTop - 60)],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+  }, [scrollY, notesTop, showNotesExpanded]);
+
+  /** The hero's own copy dims as it leaves, handing over to the sticky title. */
+  const heroContentOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, Math.max(1, heroHeight * 0.55)],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, heroHeight],
+  );
+
+  const renderHeaderBackdrop = useCallback(() => {
+    const { Video, ResizeMode } = require('expo-av');
+    return (
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: headerBackdropOpacity }]}>
+        <Video
+          key={`show-header-sticky-${videoId}`}
+          source={videoSource}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay={appState === 'active' && !heroOnScreen}
+          isLooping
+          isMuted
+          onError={resetToFallback}
+        />
+        <BlurBackground intensity={40} tint="dark" />
+        <LinearGradient
+          colors={['rgba(18, 18, 18, 0.35)', 'rgba(18, 18, 18, 0.92)']}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    );
+  }, [headerBackdropOpacity, videoId, videoSource, appState, heroOnScreen, resetToFallback]);
+
+  // The venue, for the sticky nav. Taken from the preview params when the show
+  // is still loading, so the bar is never briefly blank.
+  const navTitle = show ? getVenueFromShow(show) : (previewVenue ?? '');
+
   useEffect(() => {
     navigation.setOptions({
       ...(Platform.OS !== 'web'
-        ? { headerTransparent: true, headerStyle: { backgroundColor: 'transparent' } }
+        ? {
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerBackground: renderHeaderBackdrop,
+          }
         : {}),
+      headerTitleAlign: 'center',
+      headerTitleContainerStyle: styles.navTitleContainer,
+      headerLeftContainerStyle: styles.navSideContainer,
+      headerRightContainerStyle: styles.navSideContainer,
+      headerTitle: () => (
+        <Animated.Text
+          style={[styles.navTitle, { opacity: headerBackdropOpacity }]}
+          numberOfLines={1}
+          accessibilityRole="header"
+        >
+          {navTitle}
+        </Animated.Text>
+      ),
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.navButton}
+          // The glyph is small and its padding tight, so the touch target is
+          // widened here rather than in layout, where it would clip.
+          hitSlop={NAV_HIT_SLOP}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={NAV_ICON_SIZE} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleShareShow}
-          // paddingRight matches headerContainer's SPACING.xl so the share icon
-          // aligns vertically with the heart icon in the info row below.
-          style={{ paddingLeft: 16, paddingRight: 26, paddingVertical: 8 }}
+          style={styles.navButton}
+          hitSlop={NAV_HIT_SLOP}
           accessibilityRole="button"
           accessibilityLabel="Share show"
         >
-          <Ionicons name="share-outline" size={26} color={COLORS.textPrimary} />
+          <Ionicons name="share-outline" size={NAV_ICON_SIZE} color={COLORS.textPrimary} />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, handleShareShow]);
+  }, [navigation, handleShareShow, renderHeaderBackdrop, headerBackdropOpacity, navTitle]);
 
   const handleToggleFavorite = () => {
     if (show) {
@@ -693,6 +822,7 @@ export function ShowDetailScreen() {
   );
   const headerArt = getShareBackground(shareBackgroundIndexForId(showKey));
 
+
   /** Starts the show from its opening track. Sits beside the source picker in
       both the web and native headers, so it is built once here. */
   const playShowButton = firstPlayableTrack ? (
@@ -709,13 +839,16 @@ export function ShowDetailScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-    <ScrollView
+    <Animated.ScrollView
       ref={scrollRef}
       style={[styles.container, isDesktop && styles.containerDesktop]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={!isDesktop}
-      scrollEventThrottle={32}
-      onScroll={handleNotesScroll}
+      scrollEventThrottle={16}
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true, listener: handleNotesScroll },
+      )}
     >
       {/* Web: Header with video background + blur */}
       {Platform.OS === 'web' ? (
@@ -767,9 +900,12 @@ export function ShowDetailScreen() {
                     </View>
 
                     {/* Location */}
-                    <Text style={styles.webLocation}>
+                    <Text style={[styles.webLocation, !isDesktop && playCount > 0 && styles.locationWithPlays]}>
                       {displayShow.location || 'Unknown location'}
                     </Text>
+                    {!isDesktop && playCount > 0 && (
+                      <Text style={styles.webLocation}>{formatCount(playCount, 'play')}</Text>
+                    )}
                   </View>
 
                   <View style={styles.webDetailsActions}>
@@ -861,16 +997,11 @@ export function ShowDetailScreen() {
                 </View>
               </View>
 
-              {/* Official release, and play count on mobile web (native puts it here too) */}
-              {(releasedAsNote || (!isDesktop && playCount > 0)) && (
-                <View style={styles.badgesRow}>
-                  {releasedAsNote}
-                  {!isDesktop && playCount > 0 && (
-                    <View style={styles.playCountBadge}>
-                      <Text style={styles.playCountText}>{formatCount(playCount, 'play')}</Text>
-                    </View>
-                  )}
-                </View>
+              {/* Official release. The play count now reads as a line under the
+                  location instead of a pill here; desktop keeps its own pill in
+                  the row below. */}
+              {releasedAsNote && (
+                <View style={styles.badgesRow}>{releasedAsNote}</View>
               )}
 
             {/* Pills row: Source + Play Count (desktop) + Save */}
@@ -891,7 +1022,10 @@ export function ShowDetailScreen() {
                     nudge={nudge}
                   />
                 ) : show ? (
-                  <View style={styles.sourceInfoPillWeb}>
+                  // Desktop keeps the short glass pill, where it sits in a row
+                  // of them; mobile web follows native, matching the Play
+                  // button's height beside it.
+                  <View style={isDesktop ? styles.sourceInfoPillWeb : styles.sourceInfoPill}>
                     <Text style={styles.webSourceText}>
                       {formatLabel(displayShow.allVersions?.[0]?.format)}
                     </Text>
@@ -921,15 +1055,43 @@ export function ShowDetailScreen() {
       ) : (
         /* Native: artwork header — same family as the Discover cards, fading
            into the page under a transparent nav bar. */
-        <View style={styles.headerArt}>
+        <View
+          style={styles.headerArt}
+          onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}
+        >
+          {/* Same treatment as the web header: the shared background video under
+              a dark blur, fading into the page. The artwork stays behind it as
+              the fallback for the moment before the video is ready, and for
+              when it fails and resetToFallback fires. */}
           <Image source={headerArt} style={styles.headerArtImage} resizeMode="cover" />
+          {(() => {
+            const { Video, ResizeMode } = require('expo-av');
+            return (
+              <Video
+                key={`show-header-video-${videoId}`}
+                source={videoSource}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={appState === 'active' && heroOnScreen}
+                isLooping
+                isMuted
+                onError={resetToFallback}
+              />
+            );
+          })()}
+          <BlurBackground intensity={30} tint="dark" />
           <View style={styles.headerArtOverlay} />
           <LinearGradient
             colors={['rgba(18, 18, 18, 0)', COLORS.background]}
             locations={[0.15, 1]}
             style={StyleSheet.absoluteFill}
           />
-        <View style={[styles.headerContainer, { paddingTop: navHeaderHeight + SPACING.sm }]}>
+        <Animated.View
+          style={[
+            styles.headerContainer,
+            { paddingTop: navHeaderHeight + SPACING.sm, opacity: heroContentOpacity },
+          ]}
+        >
           {/* Venue - full width at top */}
           <Text style={styles.venue} numberOfLines={2}>{getVenueFromShow(displayShow)}</Text>
 
@@ -954,10 +1116,14 @@ export function ShowDetailScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Location */}
-              <Text style={styles.sourceName}>
+              {/* Location, then the play count in the same voice beneath it —
+                  spaced like the date is from the location. */}
+              <Text style={[styles.sourceName, playCount > 0 && styles.locationWithPlays]}>
                 {displayShow.location || 'Unknown location'}
               </Text>
+              {playCount > 0 && (
+                <Text style={styles.sourceName}>{formatCount(playCount, 'play')}</Text>
+              )}
             </View>
 
             {/* Action icons: Add to Collection (+) / Save (heart) */}
@@ -989,17 +1155,8 @@ export function ShowDetailScreen() {
           </View>
 
           {/* Official release and play count */}
-          {(officialReleases.length > 0 || playCount > 0) && (
-            <View style={styles.badgesRow}>
-              {releasedAsNote}
-              {playCount > 0 && (
-                <View style={styles.playCountBadge}>
-                  <Text style={styles.playCountText}>
-                    {formatCount(playCount, 'play')}
-                  </Text>
-                </View>
-              )}
-            </View>
+          {officialReleases.length > 0 && (
+            <View style={styles.badgesRow}>{releasedAsNote}</View>
           )}
 
           {/* Version Picker / Source Info Pill, with Play alongside */}
@@ -1029,7 +1186,7 @@ export function ShowDetailScreen() {
             {playShowButton}
           </View>
           {fallbackNote && <Text style={styles.fallbackNote}>{fallbackNote}</Text>}
-        </View>
+        </Animated.View>
         </View>
       )}
 
@@ -1037,9 +1194,16 @@ export function ShowDetailScreen() {
           into the commentary. The citation belongs with the text it attributes,
           so it appears only once the note is open. */}
       {showNotesText && (
-        <View
-          style={[styles.showNotesSection, isDesktop && styles.showNotesSectionDesktop]}
-          onLayout={(e) => { notesLayout.current = e.nativeEvent.layout; }}
+        <Animated.View
+          style={[
+            styles.showNotesSection,
+            isDesktop && styles.showNotesSectionDesktop,
+            { opacity: notesOpacity },
+          ]}
+          onLayout={(e) => {
+            notesLayout.current = e.nativeEvent.layout;
+            setNotesTop(e.nativeEvent.layout.y);
+          }}
         >
           <Text
             style={styles.showNotesText}
@@ -1062,7 +1226,7 @@ export function ShowDetailScreen() {
               {showNotesExpanded ? 'Read less' : 'Read more'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
 
       <View style={[styles.tracksContainer, isDesktop && styles.tracksContainerDesktop]}>
@@ -1189,13 +1353,21 @@ export function ShowDetailScreen() {
           itemMetadata={toFavoriteSong(pickerTrack, show)}
         />
       )}
-    </ScrollView>
+    </Animated.ScrollView>
 
     {collapseVisible && (
       <TouchableOpacity
         onPress={collapseNotes}
         activeOpacity={0.85}
-        style={[styles.floatingCollapse, isDesktop && styles.floatingCollapseDesktop]}
+        style={[
+          styles.floatingCollapse,
+          // Sit just above whatever chrome is actually on screen: the tab bar
+          // always, the mini player only while a track is loaded — it unmounts
+          // otherwise, and using the list's bottom padding left the pill
+          // floating 93px above the tab bar.
+          { bottom: LAYOUT.tabBarHeight + (playerState.currentTrack ? LAYOUT.miniPlayerHeight : 0) + SPACING.md },
+          isDesktop && styles.floatingCollapseDesktop,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Collapse the show notes"
       >
@@ -1242,6 +1414,28 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     paddingTop: SPACING.sm,
   },
+  navButton: {
+    // Symmetric, so the glyph sits on the button's centre line. The lift comes
+    // from the container, applied equally to the title — asymmetric padding
+    // here raised the icons about 4px above it.
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+  },
+  navSideContainer: {
+    transform: [{ translateY: -NAV_LIFT }],
+  },
+  navTitleContainer: {
+    transform: [{ translateY: -NAV_LIFT }],
+    // Leave room for the two buttons so a long venue truncates rather than
+    // colliding with them.
+    maxWidth: '62%',
+  },
+  navTitle: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
   venue: {
     ...TYPOGRAPHY.heading2,
     marginBottom: SPACING.sm,
@@ -1282,26 +1476,15 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: BRAND_COLORS.textSoft,
   },
+  locationWithPlays: {
+    // The same gap the date leaves above the location (see dateRow).
+    marginBottom: SPACING.xs,
+  },
   badgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: SPACING.lg,
-  },
-  playCountBadge: {
-    // Matches OfficialReleaseBadge's (non-compact) vertical metrics so the
-    // two pills in badgesRow render at the same height, borderless.
-    justifyContent: 'center',
-    backgroundColor: COLORS.surfaceMedium,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 1,
-    borderRadius: RADIUS.full,
-  },
-  playCountText: {
-    ...TYPOGRAPHY.captionSmall,
-    fontSize: 11,
-    fontWeight: '400',
-    color: BRAND_COLORS.textSoft,
   },
   playCountPillWeb: {
     flexDirection: 'row',
@@ -1377,11 +1560,14 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
   sourceInfoPill: {
+    // The single-recording variant of the picker: same pill, no chevron. It has
+    // to carry the same fixed height and radius, or it stands a few pixels
+    // short of the Play button beside it.
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: RADIUS.xl,
-    paddingVertical: 14,
+    borderRadius: RADIUS.full,
+    height: SOURCE_PILL_HEIGHT,
     paddingHorizontal: SPACING.xl,
     gap: SPACING.md,
   },
@@ -1592,14 +1778,16 @@ const styles = StyleSheet.create({
     } : {}),
   },
   showNotesSection: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.sm,
     // The page's content margin, matching the track rows (TrackItem uses the
     // same value). Held here rather than on each child so the text, citation
     // and toggle cannot drift apart.
     paddingHorizontal: SPACING.xxl,
   },
   showNotesSectionDesktop: {
-    paddingHorizontal: SPACING.lg,
+    // Desktop indents its content further than mobile: the header, source
+    // picker and track rows all start 24px inside where the notes were.
+    paddingHorizontal: SPACING.xxxxl,
     paddingVertical: SPACING.xxl,
   },
   showNotesText: {
@@ -1612,7 +1800,6 @@ const styles = StyleSheet.create({
   floatingCollapse: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: LAYOUT.listBottomPadding - 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
