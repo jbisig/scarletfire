@@ -37,9 +37,9 @@ export interface GlassHeaderProps {
  * Full-bleed "glass" header: a background layer at 0.68 opacity, a
  * rgba(0,0,0,0.4) + blur(30px) overlay, and a zIndex-2 content area starting
  * with a back-chevron nav row. Shared by ShowDetailScreen and
- * CollectionDetailScreen; DiscoverLandingScreen reuses just the blur-overlay
- * piece via `GlassBlurOverlay` since its show-of-the-day card is structurally
- * different (native video/BlurBackground fallback, card rather than full header).
+ * CollectionDetailScreen. The show-of-the-day card used to borrow the overlay
+ * piece from here; it darkens with CARD_SCRIM now, to match the carousel cards
+ * beside it.
  */
 export function GlassHeader({
   background,

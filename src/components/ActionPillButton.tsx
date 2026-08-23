@@ -49,7 +49,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.accent,
+    // COLORS.accent at 33%, so the button reads as a tinted surface over the
+    // page rather than a solid fill.
+    backgroundColor: 'rgba(229, 76, 79, 0.33)',
     paddingVertical: SPACING.md + 2,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md,
