@@ -103,6 +103,9 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     paddingTop: SPACING.md,
+    // Pulls the outer tabs in off the screen edges. The buttons are flex: 1,
+    // so this narrows every slot evenly rather than only the end ones.
+    paddingHorizontal: SPACING.lg,
   },
   tabButton: {
     flex: 1,
