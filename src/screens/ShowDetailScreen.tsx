@@ -25,6 +25,7 @@ import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { TrackItem } from '../components/TrackItem';
+import { DownloadButton } from '../components/DownloadButton';
 import { VersionPicker, SOURCE_PILL_HEIGHT } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
@@ -1152,6 +1153,10 @@ export function ShowDetailScreen() {
                   color={isSaved ? COLORS.accent : COLORS.textPrimary}
                 />
               </TouchableOpacity>
+              <DownloadButton
+                show={show && show.identifier === (selectedVersion || route.params.identifier) ? show : null}
+                identifier={selectedVersion || route.params.identifier}
+              />
             </View>
           </View>
 
