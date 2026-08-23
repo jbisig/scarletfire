@@ -92,6 +92,8 @@ export interface NativeAudioPlayerInterface {
   refreshAudioSession(): Promise<void>;
   getCastState(): Promise<CastState>;
   showCastDialog(): Promise<void>;
+  /** iOS: mark a directory as excluded from iCloud backup. No-op elsewhere. */
+  setExcludedFromBackup(uri: string): Promise<void>;
 
   addEventListener(event: Event.PlaybackState, handler: (data: PlaybackStateEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackTrackChanged, handler: (data: PlaybackTrackChangedEventData) => void): { remove: () => void };

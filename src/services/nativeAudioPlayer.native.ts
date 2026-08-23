@@ -95,6 +95,13 @@ class NativeAudioPlayer {
     return AudioPlayerModule.showCastDialog();
   }
 
+  async setExcludedFromBackup(uri: string): Promise<void> {
+    if (Platform.OS !== 'ios' || typeof AudioPlayerModule.setExcludedFromBackup !== 'function') {
+      return;
+    }
+    return AudioPlayerModule.setExcludedFromBackup(uri);
+  }
+
   // Overloaded addEventListener for type-safe event handling
   addEventListener(event: Event.PlaybackState, handler: (data: PlaybackStateEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackTrackChanged, handler: (data: PlaybackTrackChangedEventData) => void): { remove: () => void };

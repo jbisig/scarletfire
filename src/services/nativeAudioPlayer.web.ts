@@ -177,6 +177,8 @@ class NativeAudioPlayer {
     // No-op on web
   }
 
+  async setExcludedFromBackup(_uri: string): Promise<void> {}
+
   // Overloaded addEventListener for type-safe event handling
   addEventListener(event: Event.PlaybackState, handler: (data: PlaybackStateEventData) => void): { remove: () => void };
   addEventListener(event: Event.PlaybackTrackChanged, handler: (data: PlaybackTrackChangedEventData) => void): { remove: () => void };
