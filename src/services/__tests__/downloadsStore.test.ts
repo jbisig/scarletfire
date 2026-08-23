@@ -152,4 +152,27 @@ describe('persistence', () => {
     expect(normalizeManifest({ version: 2, shows: {} })).toEqual({ version: 1, wifiOnly: true, shows: {} });
     expect(normalizeManifest({ version: 1, wifiOnly: false, shows: { x: { identifier: 'y' } } }).shows).toEqual({});
   });
+
+  it('flushes immediately when a track reaches a terminal status', async () => {
+    upsertDownloadedShow(createDownloadedShow(detail('a'), { allowCellular: false, now: 1 }));
+    updateDownloadedTrack('a', 'd1t01.mp3', { status: 'complete' });
+    await new Promise(r => setTimeout(r, 0));
+    let raw = await AsyncStorage.getItem(STORAGE_KEYS.DOWNLOADS);
+    expect(raw).toContain('"d1t01.mp3":{"relativePath":"downloads/a/d1t01.mp3","bytes":1000,"status":"complete"}');
+
+    resetDownloadsStoreForTests();
+    await AsyncStorage.clear();
+    upsertDownloadedShow(createDownloadedShow(detail('a'), { allowCellular: false, now: 1 }));
+    updateDownloadedTrack('a', 'd1t02.mp3', { status: 'failed' });
+    await new Promise(r => setTimeout(r, 0));
+    raw = await AsyncStorage.getItem(STORAGE_KEYS.DOWNLOADS);
+    expect(raw).toContain('"status":"failed"');
+  });
+
+  it('drops in-flight progress when a track fails', () => {
+    upsertDownloadedShow(createDownloadedShow(detail('a'), { allowCellular: false, now: 1 }));
+    setTrackProgress('a', 'd1t02.mp3', 1500);
+    updateDownloadedTrack('a', 'd1t02.mp3', { status: 'failed' });
+    expect(getShowProgress('a').bytesDownloaded).toBe(0);
+  });
 });

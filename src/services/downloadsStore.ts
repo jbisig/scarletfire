@@ -240,8 +240,8 @@ export function updateDownloadedTrack(
       [identifier]: { ...existing, tracks: { ...existing.tracks, [trackId]: { ...track, ...patch } } },
     },
   };
-  if (patch.status === 'complete' && progress[identifier]) delete progress[identifier][trackId];
-  schedulePersist();
+  if ((patch.status === 'complete' || patch.status === 'failed') && progress[identifier]) delete progress[identifier][trackId];
+  schedulePersist(patch.status === 'complete' || patch.status === 'failed');
   notify();
 }
 
