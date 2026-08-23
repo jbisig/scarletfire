@@ -22,7 +22,7 @@ export interface ResolveContext {
   sessionConstraint?: SourceConstraint;
 }
 
-export type ResolvedVia = 'user-pin' | 'editorial' | 'filter' | 'preference' | 'popular';
+export type ResolvedVia = 'user-pin' | 'downloaded' | 'editorial' | 'filter' | 'preference' | 'popular';
 
 export interface FallbackInfo {
   requested: SourceTagId[];

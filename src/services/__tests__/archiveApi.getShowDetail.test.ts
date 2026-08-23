@@ -6,6 +6,9 @@ jest.mock('../../utils/logger', () => ({
   logger: {
     api: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     player: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    // downloadsStore (pulled in for the offline-snapshot tests) calls
+    // logger.create() at module load time.
+    create: jest.fn(() => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
   },
 }));
 
@@ -13,6 +16,8 @@ jest.mock('../../utils/logger', () => ({
 // src/__tests__/setup.ts.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { archiveApi } from '../archiveApi';
+import { createDownloadedShow, resetDownloadsStoreForTests, upsertDownloadedShow } from '../downloadsStore';
+import { applyNetworkState, resetNetworkStatusForTests } from '../networkStatus';
 
 function metadataResponse(overrides: { server?: string | null } = {}) {
   const server = overrides.server === undefined ? 'ia600106.us.archive.org' : overrides.server;
@@ -51,6 +56,8 @@ describe('archiveApi.getShowDetail', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     jest.clearAllMocks();
+    resetDownloadsStoreForTests();
+    resetNetworkStatusForTests();
   });
 
   afterEach(() => {
@@ -173,5 +180,33 @@ describe('archiveApi.getShowDetail', () => {
     global.fetch = mockFetchOnce(body) as unknown as typeof fetch;
     const detail = await archiveApi.getShowDetail('sized-show');
     expect(detail.tracks[0].size).toBe(5242880);
+  });
+
+  it('serves the downloaded snapshot without a network call when offline', async () => {
+    const snapshot = { identifier: 'offline-show', title: 'Snap', date: '1977-05-08', year: '1977', downloadable: true, tracks: [] };
+    upsertDownloadedShow(createDownloadedShow(snapshot, { allowCellular: false, now: 1 }));
+    const fetchSpy = jest.fn();
+    global.fetch = fetchSpy as unknown as typeof fetch;
+    applyNetworkState({ type: 'NONE', isConnected: false });
+
+    const detail = await archiveApi.getShowDetail('offline-show');
+    expect(detail.title).toBe('Snap');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the downloaded snapshot when the fetch fails online', async () => {
+    const snapshot = { identifier: 'flaky-show', title: 'Snap', date: '1977-05-08', year: '1977', downloadable: true, tracks: [] };
+    upsertDownloadedShow(createDownloadedShow(snapshot, { allowCellular: false, now: 1 }));
+    // A 404 fails fast (fetchWithRetry only backs off on 5xx/network errors,
+    // which would add 3 s of real sleeps to this test).
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) }) as unknown as typeof fetch;
+
+    const detail = await archiveApi.getShowDetail('flaky-show');
+    expect(detail.title).toBe('Snap');
+  });
+
+  it('still throws for non-downloaded shows when the fetch fails', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) }) as unknown as typeof fetch;
+    await expect(archiveApi.getShowDetail('nope-show')).rejects.toThrow('Failed to fetch show details: HTTP 404');
   });
 });

@@ -14,6 +14,8 @@ import {
 import { normalizeSongTitle } from '../utils/titleNormalization';
 import { logger } from '../utils/logger';
 import { recordingFromDoc } from './recordingParser';
+import { getDownloadedShowDetail } from './downloadsStore';
+import { getNetworkStatus } from './networkStatus';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /** Persistent show-detail cache keys (AsyncStorage — proven on both platforms here). */
@@ -547,6 +549,13 @@ class ArchiveApiService {
       return persisted;
     }
 
+    // Tier 3: a downloaded show carries its own ShowDetail snapshot, so it
+    // opens with no network at all — and survives a flaky fetch below.
+    const snapshot = getDownloadedShowDetail(identifier);
+    if (snapshot && !getNetworkStatus().isConnected) {
+      return snapshot;
+    }
+
     // Cache miss - fetch fresh data
     try {
       const response = await this.fetchWithRetry(
@@ -622,6 +631,10 @@ class ArchiveApiService {
 
       return baseShowDetail;
     } catch (error) {
+      if (snapshot) {
+        logger.api.warn('Show detail fetch failed; serving downloaded snapshot', error);
+        return snapshot;
+      }
       this.handleError(error, 'Failed to fetch show details');
     }
   }

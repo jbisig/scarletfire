@@ -11,6 +11,7 @@ jest.mock('../../utils/showLookup', () => ({
 
 import { resolveForDate, resolveShowIdentifier, resolveRouteIdentifier, stableShowIdentifier } from '../sourceSelection';
 import { resetStoreForTests, setSourcePreference, setPin } from '../sourcePrefsStore';
+import { createDownloadedShow, resetDownloadsStoreForTests, updateDownloadedShow, upsertDownloadedShow } from '../downloadsStore';
 import type { GratefulDeadShow, RecordingVersion } from '../../types/show.types';
 
 const v = (identifier: string, over: Partial<RecordingVersion> = {}): RecordingVersion => ({
@@ -25,7 +26,10 @@ const mockShows: Record<string, GratefulDeadShow> = {
   '1977-05-08': { date: '1977-05-08T00:00:00Z', year: '1977', versions: mockCatalog['1977-05-08'], primaryIdentifier: 'mtx', title: 'Cornell' },
 };
 
-beforeEach(() => resetStoreForTests());
+beforeEach(() => {
+  resetStoreForTests();
+  resetDownloadsStoreForTests();
+});
 
 describe('resolveForDate', () => {
   it('resolves through preference, pins, and editorial pins from the stores', () => {
@@ -52,6 +56,19 @@ describe('resolveForDate', () => {
   it('returns the fallback identifier when the date is not in the catalog, else null', () => {
     expect(resolveForDate('1966-01-01')).toBeNull();
     expect(resolveForDate('1966-01-01', { fallbackIdentifier: 'gd66.xyz' })).toEqual({ identifier: 'gd66.xyz', via: 'popular' });
+  });
+
+  it('treats a complete download for the date as a pin, below a real user pin', () => {
+    upsertDownloadedShow(createDownloadedShow(
+      { identifier: 'aud', title: 'Cornell', date: '1977-05-08', year: '1977', downloadable: true, tracks: [] },
+      { allowCellular: false, now: 1 },
+    ));
+    expect(resolveForDate('1977-05-08')).toEqual({ identifier: 'mtx', via: 'popular' }); // not complete yet
+    updateDownloadedShow('aud', { status: 'complete', completedAt: 2 });
+    expect(resolveForDate('1977-05-08')).toEqual({ identifier: 'aud', via: 'downloaded' });
+    expect(resolveForDate('1977-05-08', { ignoreUserPin: true })).toEqual({ identifier: 'mtx', via: 'popular' });
+    setPin('1977-05-08', 'betty', 'sbd', 3);
+    expect(resolveForDate('1977-05-08')).toEqual({ identifier: 'betty', via: 'user-pin' });
   });
 });
 

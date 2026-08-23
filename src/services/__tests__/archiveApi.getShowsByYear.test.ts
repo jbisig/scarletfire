@@ -3,6 +3,9 @@ jest.mock('../../utils/logger', () => ({
     api: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     player: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     profile: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    // downloadsStore (pulled in transitively via archiveApi's offline-snapshot
+    // fallback) calls logger.create() at module load time.
+    create: jest.fn(() => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
   },
 }));
 

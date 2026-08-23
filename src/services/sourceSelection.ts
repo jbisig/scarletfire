@@ -10,6 +10,7 @@ import { resolveRecording, ResolvedRecording, SourceConstraint } from './recordi
 import { getCatalogVersions } from './recordingCatalog';
 import { editorialPins } from '../data/recordingOverrides';
 import { findShowByDate } from '../utils/showLookup';
+import { getDownloadedIdentifierForDate } from './downloadsStore';
 
 export interface SelectionOptions {
   sessionConstraint?: SourceConstraint;
@@ -27,9 +28,18 @@ export function resolveForDate(date: string, opts: SelectionOptions = {}): Resol
   if (versions.length === 0) {
     return opts.fallbackIdentifier ? { identifier: opts.fallbackIdentifier, via: 'popular' } : null;
   }
+  const userPin = opts.ignoreUserPin ? undefined : getActivePin(key)?.identifier;
+  // A recording on disk is the one the user expects to hear (and the only
+  // one that plays offline). It ranks just below an explicit pin.
+  if (!userPin && !opts.ignoreUserPin) {
+    const downloaded = getDownloadedIdentifierForDate(key);
+    if (downloaded && versions.some(v => v.identifier === downloaded)) {
+      return { identifier: downloaded, via: 'downloaded' };
+    }
+  }
   return resolveRecording(versions, {
     preference: getSourcePrefs().preference,
-    userPinIdentifier: opts.ignoreUserPin ? undefined : getActivePin(key)?.identifier,
+    userPinIdentifier: userPin,
     editorialPinIdentifier: editorialPins[key],
     sessionConstraint: opts.sessionConstraint,
   });
