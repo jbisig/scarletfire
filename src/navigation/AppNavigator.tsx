@@ -149,10 +149,10 @@ const webCardStyle = Platform.OS === 'web'
 
 // Custom browser tab title formatter for web
 const SCREEN_TITLES: Record<string, string> = {
-  DiscoverLanding: 'Discover',
+  DiscoverLanding: 'Home',
   Home: 'Shows',
   SongList: 'Songs',
-  Favorites: 'Favorites',
+  Favorites: 'Saved',
   Settings: 'Settings',
   PrivacyPolicy: 'Privacy Policy',
   PublicProfile: 'Profile',
@@ -395,7 +395,7 @@ function MainTabsWithPlayer() {
         <Tab.Screen
           name="DiscoverTab"
           component={DiscoverStack}
-          options={{ tabBarLabel: 'Discover' }}
+          options={{ tabBarLabel: 'Home' }}
         />
         <Tab.Screen
           name="ShowsTab"
@@ -410,7 +410,7 @@ function MainTabsWithPlayer() {
         <Tab.Screen
           name="FavoritesTab"
           component={FavoritesStack}
-          options={{ tabBarLabel: 'Favorites' }}
+          options={{ tabBarLabel: 'Saved' }}
         />
         <Tab.Screen
           name="FeedTab"

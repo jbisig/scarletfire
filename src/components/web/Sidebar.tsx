@@ -16,10 +16,10 @@ interface SidebarItem {
 }
 
 const NAV_ITEMS: SidebarItem[] = [
-  { key: 'DiscoverTab', label: 'Discover', iconActive: 'compass', iconInactive: 'compass-outline' },
+  { key: 'DiscoverTab', label: 'Home', iconActive: 'home', iconInactive: 'home-outline' },
   { key: 'ShowsTab', label: 'Shows', iconActive: 'albums', iconInactive: 'albums-outline' },
   { key: 'SongsTab', label: 'Songs', iconActive: 'musical-notes', iconInactive: 'musical-notes-outline' },
-  { key: 'FavoritesTab', label: 'Favorites', iconActive: 'heart', iconInactive: 'heart-outline' },
+  { key: 'FavoritesTab', label: 'Saved', iconActive: 'heart', iconInactive: 'heart-outline' },
   { key: 'FeedTab', label: 'Feed', iconActive: 'people', iconInactive: 'people-outline' },
 ];
 

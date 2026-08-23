@@ -202,7 +202,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <PageHeader title="Discover" />
+      <PageHeader title="Home" />
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, isDesktop && styles.scrollContentDesktop]}>
         {/* Show of the Day Section */}
         <View style={styles.section}>

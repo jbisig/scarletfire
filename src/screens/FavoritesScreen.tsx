@@ -399,7 +399,7 @@ export function FavoritesScreen() {
           <View style={[styles.header, isDesktop && styles.headerDesktop]}>
             <View style={[styles.headerLeft, isDesktop && styles.headerLeftDesktop]}>
               {!isDesktop && <ProfileImage uri={null} style={styles.avatar} />}
-              <Text style={styles.headerTitle}>Favorites</Text>
+              <Text style={styles.headerTitle}>Saved</Text>
             </View>
           </View>
         </View>
@@ -414,8 +414,8 @@ export function FavoritesScreen() {
         <View style={styles.emptyContainer}>
           <EmptyState
             icon={null}
-            title="No favorites yet"
-            message={"Tap the save button on any show\nto add it to your favorites."}
+            title="Nothing saved yet"
+            message={"Tap the save button on any show\nto add it to your saved shows."}
             transparentBackground
           />
         </View>
@@ -447,7 +447,7 @@ export function FavoritesScreen() {
               style={styles.shuffleButton}
               onPress={handleShuffleShows}
               accessibilityRole="button"
-              accessibilityLabel="Shuffle all favorite shows"
+              accessibilityLabel="Shuffle all saved shows"
               accessibilityHint="Double tap to play your favorite shows in random order"
             >
               <Ionicons name="shuffle" size={16} color={COLORS.accent} />
@@ -504,8 +504,8 @@ export function FavoritesScreen() {
         <View style={styles.emptyContainer}>
           <EmptyState
             icon={null}
-            title="No favorites yet"
-            message={"Tap the save button on any song to\nadd it to your favorites."}
+            title="Nothing saved yet"
+            message={"Tap the save button on any song to\nadd it to your saved songs."}
             transparentBackground
           />
         </View>
@@ -538,7 +538,7 @@ export function FavoritesScreen() {
               onPress={handleShuffleSongs}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Shuffle all favorite songs"
+              accessibilityLabel="Shuffle all saved songs"
               accessibilityHint="Double tap to play your favorite songs in random order"
             >
               <Ionicons name="shuffle" size={16} color={COLORS.accent} />
@@ -590,7 +590,7 @@ export function FavoritesScreen() {
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       <ScreenHeader
-        title="Favorites"
+        title="Saved"
         isDesktop={isDesktop}
         topPadding={insets.top + 8}
         onHeaderLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
@@ -609,7 +609,7 @@ export function FavoritesScreen() {
                 onPress={handleShareProfile}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel="Share favorites"
+                accessibilityLabel="Share saved"
               >
                 <Ionicons
                   name="share-outline"

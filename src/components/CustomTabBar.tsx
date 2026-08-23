@@ -10,7 +10,7 @@ import { haptics } from '../services/hapticService';
 const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   ShowsTab: { active: 'albums', inactive: 'albums-outline' },
   SongsTab: { active: 'musical-notes', inactive: 'musical-notes-outline' },
-  DiscoverTab: { active: 'compass', inactive: 'compass-outline' },
+  DiscoverTab: { active: 'home', inactive: 'home-outline' },
   FeedTab: { active: 'people', inactive: 'people-outline' },
   FavoritesTab: { active: 'heart', inactive: 'heart-outline' },
 };
@@ -18,9 +18,9 @@ const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inacti
 const TAB_LABELS: Record<string, string> = {
   ShowsTab: 'Shows',
   SongsTab: 'Songs',
-  DiscoverTab: 'Discover',
+  DiscoverTab: 'Home',
   FeedTab: 'Feed',
-  FavoritesTab: 'Favorites',
+  FavoritesTab: 'Saved',
 };
 
 export const CustomTabBar = React.memo(function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
