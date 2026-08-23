@@ -233,20 +233,67 @@ function withCastManifest(config) {
   });
 }
 
+// Our android:fullBackupContent / android:dataExtractionRules below WIN over
+// expo-secure-store's own withSecureStore plugin (see
+// node_modules/expo-secure-store/plugin/src/withSecureStore.ts): whichever
+// plugin's AndroidManifest mod applies its attributes first "claims" them,
+// and the other backs off with a console.warn ("tried to apply Android Auto
+// Backup rules, but other backup rules are already present"). Since ours
+// wins, expo-secure-store's own secure_store_backup_rules.xml /
+// secure_store_data_extraction_rules.xml (bundled inside its module,
+// pointed at only when IT wins) never get referenced by the manifest — so
+// our XML below must carry secure-store's exclusions itself, or its
+// SecureStore SharedPreferences file (Keystore-encrypted secrets) would
+// fall back to Android's default "back up everything" behavior and get
+// included in Auto Backup / device transfer, where it cannot be decrypted
+// after restore (the Keystore key doesn't travel with a backup).
+//
+// This also means the moment any <include> element appears anywhere in one
+// of these files, backup switches from "back up everything except
+// <exclude>s" to whitelist mode: ONLY domains/paths named in an <include>
+// are backed up at all (see
+// https://developer.android.com/guide/topics/data/autobackup#XMLSyntax).
+// That's why both the sharedpref rows AND the file rows below need their
+// own <include>+<exclude> pair — dropping the `<include domain="file" .../>`
+// would silently make our `downloads` exclude a no-op (the whole `file`
+// domain would already be excluded), and dropping the sharedpref rows is
+// exactly the regression this fixes.
 const BACKUP_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
 <!-- Offline downloads are re-downloadable; keep them out of Auto Backup
-     (which silently stops backing the app up past 25 MB otherwise). -->
+     (which silently stops backing the app up past 25 MB otherwise).
+
+     This file supersedes expo-secure-store's generated
+     secure_store_backup_rules.xml (our android:fullBackupContent wins over
+     secure-store's — see the comment above withDownloadsBackupRules), so it
+     also carries secure-store's own SecureStore exclusion below. Keep the
+     sharedpref rows in sync with
+     node_modules/expo-secure-store/android/src/main/res/xml/secure_store_backup_rules.xml
+     if that file ever changes. -->
 <full-backup-content>
+  <include domain="sharedpref" path="." />
+  <exclude domain="sharedpref" path="SecureStore" />
+  <include domain="file" path="." />
   <exclude domain="file" path="downloads" />
 </full-backup-content>
 `;
 
 const DATA_EXTRACTION_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
+<!-- Supersedes expo-secure-store's generated
+     secure_store_data_extraction_rules.xml for the same reason as
+     backup_rules.xml above — keep the sharedpref rows in sync with
+     node_modules/expo-secure-store/android/src/main/res/xml/secure_store_data_extraction_rules.xml
+     if that file ever changes. -->
 <data-extraction-rules>
   <cloud-backup>
+    <include domain="sharedpref" path="." />
+    <exclude domain="sharedpref" path="SecureStore" />
+    <include domain="file" path="." />
     <exclude domain="file" path="downloads" />
   </cloud-backup>
   <device-transfer>
+    <include domain="sharedpref" path="." />
+    <exclude domain="sharedpref" path="SecureStore" />
+    <include domain="file" path="." />
     <exclude domain="file" path="downloads" />
   </device-transfer>
 </data-extraction-rules>
@@ -268,6 +315,10 @@ function withDownloadsBackupRules(config) {
       return config;
     },
   ]);
+  // NOTE: this intentionally overrides whatever expo-secure-store's own
+  // withSecureStore plugin set (or will set) on these two attributes — see
+  // the comment above BACKUP_RULES_XML for why our XML has to carry
+  // secure-store's SecureStore exclusion forward as a result.
   return withAndroidManifest(config, async (config) => {
     const application = config.modResults.manifest.application?.[0];
     if (application) {
