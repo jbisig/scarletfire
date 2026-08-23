@@ -272,18 +272,16 @@ const styles = StyleSheet.create({
     // own, so the padding had to differ to compensate).
     paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
-    // Baseline, so the duration sits on the title's first line rather than
-    // floating in the gutter of a title that wrapped (10.5px out on
-    // "Scarlet Begonias > Fire on the Mountain"), and so the two land on the
-    // same baseline despite being different sizes — centring boxes can't do
-    // that, it leaves the smaller text 0.75px high.
+    // Centre. The duration belongs with the heart and the "more" button as one
+    // cluster at the right of the row, and on a title that wrapped to two
+    // lines they have to move together — aligning the duration to the title's
+    // first line instead left it sitting above its own neighbours.
     //
-    // This was tried once before and reverted: a View's baseline is its bottom
-    // edge, so the heart button was setting the row's baseline and rows with
-    // and without one landed differently. What makes it safe is that every
-    // non-text child below is pinned to alignSelf: 'center', leaving only the
-    // title and the duration to be aligned by their text.
-    alignItems: 'baseline',
+    // The cost is that a 16pt title and a 14pt duration can't share a baseline
+    // this way: a text box's baseline sits fs*(asc-desc)/2 below its centre,
+    // so the smaller one rides about 0.75px high. Sub-pixel, and the price of
+    // the cluster holding together.
+    alignItems: 'center',
   },
   containerDesktop: {
     // 12 + 20 + 12 keeps the 44pt desktop row it had when the 28pt buttons
@@ -329,9 +327,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   durationWrap: {
-    // One of the two children that align by their text baseline; everything
-    // else in the row is pinned to centre.
-    alignSelf: 'baseline',
+    alignSelf: 'center',
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,
@@ -364,16 +360,14 @@ const styles = StyleSheet.create({
     height: 20,
   },
   moreButton: {
-    // Native-only. Capped to the title's 20pt line: baseline-aligned text sits
-    // flush to the top of the line, so a button taller than the text pushes
-    // the text up and leaves itself sitting low (4.2px, measured). 28 x 20
-    // plus hitSlop still clears the 44pt target.
+    // Native-only, and capped to the title's 20pt line so the padding sets the
+    // row height rather than this button. 28 x 20 plus hitSlop still clears
+    // the 44pt target.
     width: 28,
     height: 20,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
     marginLeft: SPACING.xs,
     marginRight: -SPACING.sm,
   },
@@ -406,7 +400,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.sm,
-    alignSelf: 'center',
   },
   iconButtonActive: {},
   iconButtonSaved: {},
