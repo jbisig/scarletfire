@@ -32,6 +32,10 @@ interface ShowCardProps {
   hideSaveBadge?: boolean;
   /** Custom trailing text shown after badges (e.g. "2d ago", "12 plays") */
   trailingText?: string;
+  /** Show the small red downloaded badge before the venue title. */
+  downloaded?: boolean;
+  /** Grey the whole card out (offline and not downloaded). */
+  dimmed?: boolean;
 }
 
 /**
@@ -55,7 +59,7 @@ function Passive({ children, hideFromA11y }: { children: React.ReactNode; hideFr
  * Show card component for displaying Grateful Dead show information
  * Memoized to prevent unnecessary re-renders in lists
  */
-export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideResolvedRating, onRatingPress, overridePlayCount, hideSaveBadge, trailingText }) => {
+export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideResolvedRating, onRatingPress, overridePlayCount, hideSaveBadge, trailingText, downloaded, dimmed }) => {
   const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { itemCountsByIdentifier } = useCollections();
@@ -122,8 +126,8 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
         : `${displayRating.stars} star rating`
       : '';
     const location = show.location || '';
-    return `${venue}, ${date}${location ? `, ${location}` : ''}${rating ? `. ${rating}` : ''}`;
-  }, [show, displayRating]);
+    return `${venue}, ${date}${location ? `, ${location}` : ''}${downloaded ? ', downloaded' : ''}${rating ? `. ${rating}` : ''}`;
+  }, [show, displayRating, downloaded]);
 
   const isWeb = Platform.OS === 'web';
 
@@ -160,7 +164,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
   return (
     <>
       <View
-        style={[styles.container, isDesktop && styles.containerDesktop, isDesktop && isHovered && styles.hovered]}
+        style={[styles.container, isDesktop && styles.containerDesktop, isDesktop && isHovered && styles.hovered, dimmed && styles.dimmedCard]}
         // @ts-ignore - web only mouse events
         onMouseEnter={isDesktop ? () => setIsHovered(true) : undefined}
         onMouseLeave={isDesktop ? () => setIsHovered(false) : undefined}
@@ -183,11 +187,18 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
 
         {/* Text content: on desktop wrapped for flex layout */}
         <View style={[styles.passThrough, isDesktop && styles.cardContentDesktop]}>
-          {/* Venue name - full width at top */}
+          {/* Venue name - full width at top, with the downloaded badge before it */}
           <Passive hideFromA11y>
-            <Text style={styles.venue} numberOfLines={1}>
-              {getVenueFromShow(show)}
-            </Text>
+            <View style={styles.venueRow}>
+              {downloaded ? (
+                <View style={styles.downloadedBadge}>
+                  <Ionicons name="arrow-down" size={10} color="#FFFFFF" />
+                </View>
+              ) : null}
+              <Text style={styles.venue} numberOfLines={1}>
+                {getVenueFromShow(show)}
+              </Text>
+            </View>
           </Passive>
 
           {/* Info row: on mobile includes badges, on desktop just text */}
@@ -352,9 +363,26 @@ const styles = StyleSheet.create({
   hovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
+  venueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: SPACING.xs,
+  },
+  downloadedBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dimmedCard: {
+    opacity: 0.4,
+  },
   venue: {
     ...TYPOGRAPHY.heading4,
-    marginBottom: SPACING.xs,
+    flexShrink: 1,
   },
   bottomRow: {
     flexDirection: 'row',

@@ -39,9 +39,13 @@ export type SavedItemSortType =
   | 'dateSavedOldest'
   | 'dateSavedNewest'
   | 'performanceDateOldest'
-  | 'performanceDateNewest';
+  | 'performanceDateNewest'
+  // Shows dropdown only (never offered for songs): downloaded shows first,
+  // most recently saved on top. Auto-selected when the device goes offline.
+  | 'downloadedFirst';
 
 export const SAVED_SHOW_SORT_OPTIONS: SortOption<SavedItemSortType>[] = [
+  { value: 'downloadedFirst', label: 'Downloaded' },
   { value: 'alphabetical', label: 'Alphabetical' },
   { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
   { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
@@ -71,6 +75,8 @@ export function getSavedItemSortLabel(sortType: SavedItemSortType, itemKind: 'sh
     case 'performanceDateOldest':
     case 'performanceDateNewest':
       return itemKind === 'show' ? 'Show Date' : 'Performance Date';
+    case 'downloadedFirst':
+      return 'Downloaded';
     default:
       return 'Sort';
   }

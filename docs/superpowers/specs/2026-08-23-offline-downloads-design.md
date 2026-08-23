@@ -435,3 +435,19 @@ in `src/utils/userFacingError.ts` (`describeDownloadError(error)`).
   AUD instead".
 - Cloud sync of the download list.
 - Full offline browsing (catalog, ratings, show notes).
+
+## Post-ship amendments (2026-08-23, product-owner directed)
+
+- **Download button states restyled** (commit `a67559c`): idle is
+  `arrow-down-circle-outline`; while downloading the circle itself is the
+  progress indicator (pure-RN ring, no SVG dependency), muted while waiting
+  for Wi-Fi; complete is a filled accent circle with a white down arrow.
+- **The Saved tab's Downloads segment is removed.** Downloads live in the
+  Shows tab instead: complete downloads get a small accent circle-arrow
+  badge before the venue title; complete-but-unsaved downloads appear as
+  ordinary rows (`mergeUnsavedDownloads`); a "Downloaded" sort option puts
+  downloaded shows first (most recently saved on top, falling back to the
+  download time); going offline greys out non-downloaded rows and
+  auto-selects the "Downloaded" sort (one-way — coming back online leaves
+  the sort alone). Download management (cancel/retry/remove) lives on the
+  show screen button and Settings; `DownloadsTab` was deleted.

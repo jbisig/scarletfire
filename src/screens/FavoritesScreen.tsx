@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,6 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { ShowsByYear } from '../types/show.types';
 import { showDetailParams } from '../utils/showDetailParams';
 import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
-import { formatDateMMDDYYYY } from '../utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -59,25 +58,21 @@ import {
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
-import { DownloadsTab } from '../components/DownloadsTab';
-import { useDownloads, useOptionalDownloadActions } from '../contexts/DownloadsContext';
+import { useDownloads } from '../contexts/DownloadsContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import type { DownloadedShow } from '../types/downloads.types';
+import { mergeUnsavedDownloads, sortDownloadedFirst } from '../utils/savedShowsDownloads';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
-type TabType = 'shows' | 'songs' | 'collections' | 'downloads';
+type TabType = 'shows' | 'songs' | 'collections';
 type SongSortType = SavedItemSortType;
 type ShowSortType = SavedItemSortType;
 
-const BASE_FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
+const FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
   { key: 'shows', label: 'Shows' },
   { key: 'songs', label: 'Songs' },
   { key: 'collections', label: 'Collections' },
 ];
-// Downloads are native-only; the web build never shows the segment.
-const FAVORITES_TABS: SegmentedTabItem<TabType>[] =
-  Platform.OS === 'web' ? BASE_FAVORITES_TABS : [...BASE_FAVORITES_TABS, { key: 'downloads', label: 'Downloads' }];
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -114,22 +109,25 @@ export function FavoritesScreen() {
   const songsListRef = useRef<FlatList>(null);
 
   const downloadedShows = useDownloads();
-  const downloadActions = useOptionalDownloadActions();
   const { isConnected } = useNetworkStatus();
 
-  const handleDownloadPress = useCallback((s: DownloadedShow) => {
-    navigation.navigate('ShowDetail', { identifier: s.identifier, date: s.date, venue: s.venue, location: s.location });
-  }, [navigation]);
+  // Complete downloads keyed by show date: drives the row badge, the
+  // "Downloaded" sort, and the offline grey-out. (Downloads are keyed to the
+  // exact recording; favorites to the catalog primary — the date is the
+  // stable join.)
+  const downloadsByDate = useMemo(() => {
+    const map = new Map<string, number>(); // date → requestedAt
+    for (const d of downloadedShows) {
+      if (d.status === 'complete') map.set(d.date.slice(0, 10), d.requestedAt);
+    }
+    return map;
+  }, [downloadedShows]);
 
-  const handleDownloadLongPress = useCallback((s: DownloadedShow) => {
-    if (!downloadActions) return;
-    const buttons = [
-      ...(s.status === 'failed' ? [{ text: 'Retry', onPress: () => { void downloadActions.retryShow(s.identifier); } }] : []),
-      { text: 'Remove download', style: 'destructive' as const, onPress: () => { void downloadActions.removeShow(s.identifier); } },
-      { text: 'Cancel', style: 'cancel' as const },
-    ];
-    Alert.alert(`${formatDateMMDDYYYY(s.date)} · ${s.venue ?? 'Unknown venue'}`, undefined, buttons);
-  }, [downloadActions]);
+  // Offline, lead with what can actually play. One-way: coming back online
+  // leaves the sort where the user had it.
+  useEffect(() => {
+    if (!isConnected) setShowSortType('downloadedFirst');
+  }, [isConnected]);
 
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -292,7 +290,9 @@ export function FavoritesScreen() {
 
   // Filter and sort shows based on search query, filters, and sort type
   const sortedAndFilteredShows = useMemo(() => {
-    let shows = [...favoriteShows];
+    // Saved shows plus complete-but-unsaved downloads (copied: the sorts
+    // below mutate in place and must never reorder context state).
+    let shows = [...mergeUnsavedDownloads(favoriteShows, downloadedShows)];
 
     // Filter by selected years
     if (appliedFilters.selectedYears.length > 0) {
@@ -345,10 +345,17 @@ export function FavoritesScreen() {
       case 'performanceDateNewest':
         return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
 
+      case 'downloadedFirst':
+        return sortDownloadedFirst(
+          shows,
+          s => downloadsByDate.has(s.date.slice(0, 10)),
+          s => downloadsByDate.get(s.date.slice(0, 10)),
+        );
+
       default:
         return shows;
     }
-  }, [favoriteShows, showSortType, debouncedSearchQuery, appliedFilters]);
+  }, [favoriteShows, downloadedShows, downloadsByDate, showSortType, debouncedSearchQuery, appliedFilters]);
 
   const filteredLibraryEntries = useMemo(() => {
     if (!debouncedSearchQuery) return libraryEntries;
@@ -435,7 +442,7 @@ export function FavoritesScreen() {
   }
 
   const renderShowsTab = () => {
-    if (favoriteShows.length === 0) {
+    if (favoriteShows.length === 0 && downloadsByDate.size === 0) {
       return (
         <View style={styles.emptyContainer}>
           <EmptyState
@@ -498,9 +505,17 @@ export function FavoritesScreen() {
             ref={showsListRef}
             data={sortedAndFilteredShows}
             keyExtractor={(item) => item.primaryIdentifier}
-            renderItem={({ item }) => (
-              <ShowCard show={item} onPress={handleShowPress} />
-            )}
+            renderItem={({ item }) => {
+              const isDownloaded = downloadsByDate.has(item.date.slice(0, 10));
+              return (
+                <ShowCard
+                  show={item}
+                  onPress={handleShowPress}
+                  downloaded={isDownloaded}
+                  dimmed={!isConnected && !isDownloaded}
+                />
+              );
+            }}
             contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -713,13 +728,6 @@ export function FavoritesScreen() {
         renderShowsTab()
       ) : activeTab === 'songs' ? (
         renderSongsTab()
-      ) : activeTab === 'downloads' ? (
-        <DownloadsTab
-          shows={downloadedShows}
-          isOffline={!isConnected}
-          onPress={handleDownloadPress}
-          onLongPress={handleDownloadLongPress}
-        />
       ) : (
         <>
           <CollectionsTab
