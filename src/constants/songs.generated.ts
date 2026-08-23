@@ -113204,27 +113204,6 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
     ],
   },
   {
-    title: "Playin\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\' in the Band",
-    performanceCount: 3,
-    performances: [
-      {
-        date: "1987-05-10",
-        identifier: "gd87-05-10.sbd.schneiderman.2256.sbeok.shnf",
-        venue: "Laguna Seca Recreation Area",
-      },
-      {
-        date: "1987-07-04",
-        identifier: "gd87-07-04.fob-senn.lai.3858.sbeok.shnf",
-        venue: "Sullivan Stadium",
-      },
-      {
-        date: "1990-12-08",
-        identifier: "gd90-12-08.sbd.hollister.472.sbeok.shnf",
-        venue: "Compton Terrace Amphitheatre",
-      },
-    ],
-  },
-  {
     title: "Playing in the Band",
     performanceCount: 576,
     performances: [
@@ -156364,8 +156343,8 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
     ],
   },
   {
-    title: "Truckin",
-    performanceCount: 503,
+    title: "Truckin'",
+    performanceCount: 506,
     performances: [
       {
         date: "1969-05-10",
@@ -156381,6 +156360,11 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         date: "1970-08-19",
         identifier: "gd70-08-19.aud.cotsman.11797.sbeok.shnf",
         venue: "Fillmore West",
+      },
+      {
+        date: "1970-09-17",
+        identifier: "gd70-09-17.aud.warner.16090.sbeok.shnf",
+        venue: "Fillmore East",
       },
       {
         date: "1970-09-20",
@@ -158198,6 +158182,11 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         venue: "Greek Theatre, U. of California",
       },
       {
+        date: "1985-06-21",
+        identifier: "gd85-06-21.sbd.barbella.11492.sbeok.shnf",
+        venue: "Alpine Valley Music Theatre",
+      },
+      {
         date: "1985-06-27",
         identifier: "gd85-06-27.sbd.clugston.6104.sbeok.shnf",
         venue: "Saratoga Performing Arts Center",
@@ -158236,6 +158225,11 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         date: "1985-11-10",
         identifier: "gd85-11-10.oade.connor.7955.sbeok.shnf",
         venue: "Meadowlands Arena",
+      },
+      {
+        date: "1985-11-16",
+        identifier: "gd85-11-16.sbd.18374.sbeok.shnf",
+        venue: "Long Beach Arena",
       },
       {
         date: "1985-12-31",
@@ -158891,27 +158885,6 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         date: "1995-07-06",
         identifier: "gd95-07-06.NEWsbd.30888.sbeok.shnf_shn",
         venue: "Riverport Amphitheatre",
-      },
-    ],
-  },
-  {
-    title: "Truckinâ",
-    performanceCount: 3,
-    performances: [
-      {
-        date: "1970-09-17",
-        identifier: "gd70-09-17.aud.warner.16090.sbeok.shnf",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1985-06-21",
-        identifier: "gd85-06-21.sbd.barbella.11492.sbeok.shnf",
-        venue: "Alpine Valley Music Theatre",
-      },
-      {
-        date: "1985-11-16",
-        identifier: "gd85-11-16.sbd.18374.sbeok.shnf",
-        venue: "Long Beach Arena",
       },
     ],
   },
@@ -162163,28 +162136,7 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
     ],
   },
   {
-    title: "Uncle John\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'s Band",
-    performanceCount: 3,
-    performances: [
-      {
-        date: "1987-07-04",
-        identifier: "gd87-07-04.fob-senn.lai.3858.sbeok.shnf",
-        venue: "Sullivan Stadium",
-      },
-      {
-        date: "1990-12-08",
-        identifier: "gd90-12-08.sbd.hollister.472.sbeok.shnf",
-        venue: "Compton Terrace Amphitheatre",
-      },
-      {
-        date: "1995-03-18",
-        identifier: "gd95-03-18.sbd.1362.sbeok.shnf",
-        venue: "The Spectrum",
-      },
-    ],
-  },
-  {
-    title: "Uncle Johns Band",
+    title: "Uncle John's Band",
     performanceCount: 307,
     performances: [
       {
