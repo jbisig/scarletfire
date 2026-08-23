@@ -17,6 +17,7 @@ export const TIER_1_SHOWS: ClassicShowEntry[] = [
   { date: '1970-05-02', tier: 1, notes: 'Harpur College - #2 Tapers Poll' },
   { date: '1977-05-22', tier: 1, notes: 'Pembroke Pines - legendary Scarlet>Fire' },
   { date: '1977-05-09', tier: 1, notes: 'Buffalo Memorial Auditorium' },
+  { date: '1977-05-07', tier: 1, notes: 'Boston Garden - May 77, opens the Cornell run' },
   { date: '1989-07-07', tier: 1, notes: 'JFK Stadium - peak Brent era' },
   { date: '1973-11-30', tier: 1, notes: 'Boston Music Hall - top trader list' },
 

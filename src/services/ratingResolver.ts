@@ -5,8 +5,10 @@
  * ratings; a 0-star override suppresses the system rating entirely.
  */
 import { getClassicTier } from '../data/classicShowsTiers';
+import { getCompendiumTier } from '../data/compendiumRatings';
 import { getSongPerformanceRating } from '../data/songPerformanceRatings';
 import { findSongByTitle } from '../utils/songLookup';
+import { getCompendiumPerformanceTier } from './compendiumPerformances';
 import { getActiveShowRating, getActivePerformanceRating } from './userRatingsStore';
 
 export interface ResolvedRating {
@@ -25,7 +27,12 @@ export function tierToStars(tier: 1 | 2 | 3): 1 | 2 | 3 {
  * any user override, e.g. RatingOverlay's "Community rating" row.
  */
 export function resolveSystemShowStars(date: string): 1 | 2 | 3 | null {
-  const tier = getClassicTier(date);
+  // classicShowsTiers is multi-source community consensus (tapers' polls,
+  // official releases, Deadcast) and stays authoritative. The Compendium is a
+  // single book, so it only fills in shows consensus has nothing to say about —
+  // it never overrides a curated tier. Where the two genuinely disagree, the
+  // date is listed in CURATED_TIER_DISPUTES for review rather than demoted here.
+  const tier = getClassicTier(date) ?? getCompendiumTier(date);
   return tier ? tierToStars(tier) : null;
 }
 
@@ -43,7 +50,14 @@ export function resolveSystemPerformanceStars(songTitle: string, showDate: strin
   const catalogTier = findSongByTitle(songTitle)?.performances.find(
     p => p.date.split('T')[0] === dateOnly
   )?.rating;
-  return catalogTier ? tierToStars(catalogTier) : null;
+  if (catalogTier) return tierToStars(catalogTier);
+
+  // Last: the Taping Compendium's own highlights. Both sources above are the
+  // same vote-based lineage (the catalog is baked from songPerformanceRatings),
+  // so this only ever fills a gap neither of them covers — the large majority
+  // of the highlights name a performance nothing else rates.
+  const compendiumTier = getCompendiumPerformanceTier(songTitle, showDate);
+  return compendiumTier ? tierToStars(compendiumTier) : null;
 }
 
 export function resolveShowRating(date: string): ResolvedRating | null {
