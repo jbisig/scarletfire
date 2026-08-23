@@ -47,6 +47,12 @@ jest.mock('expo-av', () => ({
   ResizeMode: { COVER: 'cover', CONTAIN: 'contain' },
 }));
 
+// Mock expo-file-system/legacy with an in-memory fake (see mocks/expoFileSystemLegacy.ts).
+// Tests reach the fake via `require('expo-file-system/legacy')` and its `__*` helpers.
+jest.mock('expo-file-system/legacy', () =>
+  require('./mocks/expoFileSystemLegacy').createFakeFileSystem()
+);
+
 // Mock @gorhom/bottom-sheet — the real library calls getBoundingClientRect
 // and other DOM/native APIs that aren't available in the Jest test renderer.
 // This lightweight stand-in lets children pass through so we can still
