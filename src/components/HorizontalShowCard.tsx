@@ -18,8 +18,8 @@ interface HorizontalShowCardProps {
 
 /**
  * Discover carousel card. Same artwork family as the share cards, chosen per
- * row so neighbours never match, darkened enough for white type to hold up
- * on the brighter nebulae.
+ * row so neighbours never match, blurred and darkened enough for white type to
+ * hold up on the brighter nebulae.
  */
 export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function HorizontalShowCard({
   show,
@@ -47,7 +47,7 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      <Image source={background} style={styles.background} resizeMode="cover" />
+      <Image source={background} style={styles.background} resizeMode="cover" blurRadius={12} />
       <View style={styles.overlay} />
 
       <Pressable
@@ -102,6 +102,10 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: undefined,
     height: undefined,
+    // Blur fades toward transparency at the image's own edge, which would show
+    // as a soft halo inside the card's corners. Oversizing it pushes that edge
+    // outside the container's clip.
+    transform: [{ scale: 1.15 }],
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
