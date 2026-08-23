@@ -330,11 +330,15 @@ def _carry_wrapped_values(lines):
             continue
         if line.top - prev.top > leading * 1.55:
             continue
-        # A metadata or setlist value is a fragment; a line that closes on a full
-        # stop and runs to a sentence's length is the review resuming.
-        finished = re.search(r"[.!?][\"'\u201d)]?$", line.text.strip())
-        if finished and len(line.text.split()) >= 6:
-            continue
+        # A setlist value is a fragment, so a line that closes on a full stop and
+        # runs to a sentence's length is the review resuming — that is how prose
+        # under a mis-sized word gets rescued. Metadata gets no such escape:
+        # "Comments:" runs to whole sentences, and letting them through put the
+        # tail of a tape note at the head of the review.
+        if prev.role == "setlist":
+            finished = re.search(r"[.!?][\"'\u201d)]?$", line.text.strip())
+            if finished and len(line.text.split()) >= 6:
+                continue
         line.role = prev.role
 
 
