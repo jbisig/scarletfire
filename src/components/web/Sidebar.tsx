@@ -20,7 +20,7 @@ const NAV_ITEMS: SidebarItem[] = [
   { key: 'ShowsTab', label: 'Shows', iconActive: 'albums', iconInactive: 'albums-outline' },
   { key: 'SongsTab', label: 'Songs', iconActive: 'musical-notes', iconInactive: 'musical-notes-outline' },
   { key: 'FavoritesTab', label: 'Favorites', iconActive: 'heart', iconInactive: 'heart-outline' },
-  { key: 'FeedTab', label: 'Feed', iconActive: 'pulse', iconInactive: 'pulse-outline' },
+  { key: 'FeedTab', label: 'Feed', iconActive: 'people', iconInactive: 'people-outline' },
 ];
 
 const appIcon = require('../../../assets/images/sign-in-logo.png');
