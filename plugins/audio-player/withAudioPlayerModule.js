@@ -248,19 +248,22 @@ function withCastManifest(config) {
 // included in Auto Backup / device transfer, where it cannot be decrypted
 // after restore (the Keystore key doesn't travel with a backup).
 //
-// This also means the moment any <include> element appears anywhere in one
-// of these files, backup switches from "back up everything except
-// <exclude>s" to whitelist mode: ONLY domains/paths named in an <include>
-// are backed up at all (see
+// The moment any <include> element appears anywhere in one of these files,
+// backup switches from "back up everything except <exclude>s" to whitelist
+// mode: ONLY domains/paths named in an <include> are backed up at all (see
 // https://developer.android.com/guide/topics/data/autobackup#XMLSyntax).
-// That's why both the sharedpref rows AND the file rows below need their
-// own <include>+<exclude> pair — dropping the `<include domain="file" .../>`
-// would silently make our `downloads` exclude a no-op (the whole `file`
-// domain would already be excluded), and dropping the sharedpref rows is
-// exactly the regression this fixes.
+// We only ever add an <include>+<exclude> pair for the `sharedpref` domain
+// (secure-store's), so under that whitelist the `file` domain is never
+// included at all — offline downloads (and the video cache) stay out of
+// Auto Backup / cloud backup / device transfer implicitly, with no
+// file-domain rows needed here.
 const BACKUP_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
 <!-- Offline downloads are re-downloadable; keep them out of Auto Backup
-     (which silently stops backing the app up past 25 MB otherwise).
+     (which silently stops backing the app up past 25 MB otherwise). We do
+     this by omission: only sharedpref is <include>d below, which — per
+     Android's whitelist semantics once any <include> is present — means the
+     file domain (downloads/, videos/) is never backed up at all. No
+     explicit "downloads" exclude is needed or present.
 
      This file supersedes expo-secure-store's generated
      secure_store_backup_rules.xml (our android:fullBackupContent wins over
@@ -272,8 +275,6 @@ const BACKUP_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
   <include domain="sharedpref" path="." />
   <exclude domain="sharedpref" path="SecureStore" />
-  <include domain="file" path="." />
-  <exclude domain="file" path="downloads" />
 </full-backup-content>
 `;
 
@@ -282,19 +283,16 @@ const DATA_EXTRACTION_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
      secure_store_data_extraction_rules.xml for the same reason as
      backup_rules.xml above — keep the sharedpref rows in sync with
      node_modules/expo-secure-store/android/src/main/res/xml/secure_store_data_extraction_rules.xml
-     if that file ever changes. -->
+     if that file ever changes. The downloads exclusion is implicit here too:
+     no file-domain <include> means the file domain is not backed up. -->
 <data-extraction-rules>
   <cloud-backup>
     <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="SecureStore" />
-    <include domain="file" path="." />
-    <exclude domain="file" path="downloads" />
   </cloud-backup>
   <device-transfer>
     <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="SecureStore" />
-    <include domain="file" path="." />
-    <exclude domain="file" path="downloads" />
   </device-transfer>
 </data-extraction-rules>
 `;

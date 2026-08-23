@@ -237,9 +237,11 @@ Runs once after hydrate, off the critical path (`InteractionManager.runAfterInte
 1. Ensure `downloads/` exists; on iOS call the backup-exclusion native
    method (see Native & config).
 2. For every show not `complete`: `getInfoAsync` each track's final path;
-   present → `complete`, absent → `queued` (a `.part` is left in place so
-   the resumable continues from it). Shows that end up fully present become
-   `complete`; others are re-queued (or `paused` if the Wi-Fi rule applies).
+   present → `complete`, absent → `queued` (a re-queued track restarts from
+   byte 0 with a fresh resumable — any stray `.part` from the killed
+   download is overwritten, not resumed). Shows that end up fully present
+   become `complete`; others are re-queued (or `paused` if the Wi-Fi rule
+   applies).
 3. For every `complete` show: if **no** track files exist at all (e.g.
    manifest restored from a backup without the files), mark the show
    `failed` with `error: 'unknown'` so the user gets an explicit Retry
@@ -361,9 +363,11 @@ decimal above KB).
   excluding `downloads/` and reference them from `<application>`
   (`android:fullBackupContent`, `android:dataExtractionRules`). Without
   this, Auto Backup silently stops backing the app up past 25 MB.
-- No new permissions. The existing media foreground service keeps the
-  process alive while music plays; downloads while idle rely on the
-  background session / OS grace period plus reconcile.
+- No new *runtime* permissions. `expo-network` autolinks the normal,
+  non-dangerous `ACCESS_NETWORK_STATE` / `ACCESS_WIFI_STATE` Android
+  permissions (no runtime prompt). The existing media foreground service
+  keeps the process alive while music plays; downloads while idle rely on
+  the background session / OS grace period plus reconcile.
 
 ## Error handling
 
@@ -371,7 +375,7 @@ decimal above KB).
 |---|---|
 | Track HTTP 404 / 5xx | 3 retries w/ backoff → `fallbackStreamUrl` → track `failed`; show `failed` with Retry once the rest finish; completed tracks kept |
 | Disk full | show `failed`, `error: 'disk-full'`, message "Not enough space on this device" |
-| Process killed mid-download | `reconcileOnLaunch` re-queues incomplete tracks; `.part` files resume |
+| Process killed mid-download | `reconcileOnLaunch` re-queues incomplete tracks; each restarts from byte 0 with a fresh resumable |
 | Network drops to cellular with Wi-Fi-only on | show `paused`; auto-resume on Wi-Fi |
 | Local file missing or corrupt at play time | existing PlayerContext ladder falls back to the stream URL; `playbackSource` reports the failure to the store, which marks the track `failed` and the show `failed` so Retry re-fetches it |
 | User removes the currently playing show | current track finishes from the open handle; the next track streams |

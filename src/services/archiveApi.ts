@@ -18,9 +18,14 @@ import { getDownloadedShowDetail } from './downloadsStore';
 import { getNetworkStatus } from './networkStatus';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/** Persistent show-detail cache keys (AsyncStorage — proven on both platforms here). */
-const PERSIST_PREFIX = 'showDetail:';
-const PERSIST_INDEX_KEY = 'showDetail:index';
+/**
+ * Persistent show-detail cache keys (AsyncStorage — proven on both platforms
+ * here). v2: entries carry `downloadable` + `Track.size`; v1 entries are
+ * ignored (a different key, so they're simply never read) and expire via
+ * TTL/eviction on their own — no migration needed.
+ */
+const PERSIST_PREFIX = 'showDetail:v2:';
+const PERSIST_INDEX_KEY = 'showDetail:v2:index';
 const PERSIST_MAX_ENTRIES = 200;
 /**
  * Show metadata is historical, but the direct datanode stream URLs baked into

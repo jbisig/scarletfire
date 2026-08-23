@@ -190,6 +190,28 @@ describe('reconcileOnLaunch', () => {
     expect(FS.__tasks).toHaveLength(0);
   });
 
+  it('retries out of a files-missing failure instead of dead-ending (tracks were re-queued)', async () => {
+    const show = createDownloadedShow(detail('aud', 2), { allowCellular: false, now: 1 });
+    upsertDownloadedShow(show);
+    updateDownloadedTrack('aud', 'd1t01.mp3', { status: 'complete' });
+    updateDownloadedTrack('aud', 'd1t02.mp3', { status: 'complete' });
+    updateDownloadedShow('aud', { status: 'complete', completedAt: 2 });
+    await downloadManager.reconcileOnLaunch();
+    await flush();
+    expect(getDownloadedShow('aud')?.status).toBe('failed');
+    expect(getDownloadedShow('aud')?.tracks['d1t01.mp3'].status).toBe('queued');
+    expect(getDownloadedShow('aud')?.tracks['d1t02.mp3'].status).toBe('queued');
+
+    await downloadManager.retryShow('aud');
+    await flush();
+    expect(FS.__tasks.length).toBeGreaterThan(0);
+    expect(['downloading', 'complete']).toContain(getDownloadedShow('aud')?.status);
+
+    for (const task of FS.__tasks) task.complete();
+    await flush();
+    expect(getDownloadedShow('aud')?.status).toBe('complete');
+  });
+
   it('leaves a show that playback marked failed alone even though its files are still on disk', async () => {
     const show = createDownloadedShow(detail('aud', 2), { allowCellular: false, now: 1 });
     upsertDownloadedShow(show);
@@ -206,6 +228,34 @@ describe('reconcileOnLaunch', () => {
     expect(after.status).toBe('failed');
     expect(after.tracks['d1t01.mp3'].status).toBe('failed');
     expect(FS.__tasks).toHaveLength(0);
+  });
+
+  it('resolves and keeps network monitoring alive when a per-track getInfoAsync call throws', async () => {
+    // Undo beforeEach's own start() so this test isolates
+    // reconcileOnLaunch's `finally { this.start(); }` as the thing that
+    // re-wires network monitoring, even though the getInfoAsync call below
+    // throws partway through the reconcile loop.
+    downloadManager.__resetForTests();
+    downloadManager.__setSleepForTests(async () => {});
+
+    const show = createDownloadedShow(detail('aud', 2), { allowCellular: false, now: 1 });
+    upsertDownloadedShow(show);
+    ExpoNetwork.__setNetworkState({ type: 'CELLULAR' });
+
+    FS.getInfoAsync.mockImplementationOnce(() => { throw new Error('boom'); });
+
+    await expect(downloadManager.reconcileOnLaunch()).resolves.toBeUndefined();
+    await flush();
+    // Paused by the Wi-Fi guard (cellular, no allowCellular) — reconcile
+    // itself didn't crash and lose the show along the way.
+    expect(getDownloadedShow('aud')?.status).toBe('paused');
+
+    // Only possible if reconcileOnLaunch's `finally` ran start() and
+    // re-subscribed network monitoring despite the throw above.
+    ExpoNetwork.__setNetworkState({ type: 'WIFI' });
+    await flush();
+    expect(getDownloadedShow('aud')?.status).not.toBe('paused');
+    expect(FS.__tasks.length).toBeGreaterThan(0);
   });
 
   it('deletes orphan directories and leaves failed shows alone', async () => {

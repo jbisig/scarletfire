@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
   },
   error: {
-    color: COLORS.accent,
+    color: COLORS.error,
   },
   barTrack: {
     marginTop: SPACING.xs,

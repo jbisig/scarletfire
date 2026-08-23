@@ -61,3 +61,20 @@ it('disables Remove all when nothing is downloaded', () => {
   getByText('No downloads');
   expect(getByLabelText('Remove all downloads').props.accessibilityState?.disabled).toBe(true);
 });
+
+it('enables Remove all when a show is stuck failed (no complete downloads)', () => {
+  upsertDownloadedShow(createDownloadedShow(
+    { identifier: 'b', title: 't', date: '1977-05-08', year: '1977', downloadable: true,
+      tracks: [{ id: 'x.mp3', title: 'x', format: 'VBR MP3', streamUrl: 'https://archive.org/download/b/x.mp3', size: 1024 }] },
+    { allowCellular: false, now: 1 },
+  ));
+  updateDownloadedShow('b', { status: 'failed', error: 'network' });
+
+  const { getByLabelText, getByText } = render(<DownloadsSettingsSection />);
+  expect(getByLabelText('Remove all downloads').props.accessibilityState?.disabled).toBe(false);
+
+  fireEvent.press(getByLabelText('Remove all downloads'));
+  getByText('Remove all downloads?');
+  fireEvent.press(getByText('Remove'));
+  expect(mockActions.removeAll).toHaveBeenCalledTimes(1);
+});

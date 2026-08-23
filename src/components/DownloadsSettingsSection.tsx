@@ -12,12 +12,12 @@ import { ConfirmModal } from './ConfirmModal';
 
 export function DownloadsSettingsSection() {
   const actions = useOptionalDownloadActions();
-  const { wifiOnly, totalBytes, showCount } = useDownloadSettings();
+  const { wifiOnly, totalBytes, totalShows } = useDownloadSettings();
   const [confirmVisible, setConfirmVisible] = useState(false);
 
   if (Platform.OS === 'web' || !actions || !actions.isSupported) return null;
 
-  const summary = showCount === 0 ? 'No downloads' : `${formatCount(showCount, 'show')} · ${formatBytes(totalBytes)}`;
+  const summary = totalShows === 0 ? 'No downloads' : `${formatCount(totalShows, 'show')} · ${formatBytes(totalBytes)}`;
 
   return (
     <View style={styles.section}>
@@ -46,12 +46,12 @@ export function DownloadsSettingsSection() {
       </View>
 
       <TouchableOpacity
-        style={[styles.removeButton, showCount === 0 ? styles.removeButtonDisabled : null]}
+        style={[styles.removeButton, totalShows === 0 ? styles.removeButtonDisabled : null]}
         onPress={() => setConfirmVisible(true)}
-        disabled={showCount === 0}
+        disabled={totalShows === 0}
         accessibilityRole="button"
         accessibilityLabel="Remove all downloads"
-        accessibilityState={{ disabled: showCount === 0 }}
+        accessibilityState={{ disabled: totalShows === 0 }}
       >
         <Text style={styles.removeButtonText}>Remove all downloads</Text>
       </TouchableOpacity>

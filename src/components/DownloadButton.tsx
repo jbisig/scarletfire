@@ -34,8 +34,11 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
 
   const startDownload = useCallback(() => {
     if (!show || !actions) return;
-    const needsCellular = !network.isWifi;
-    if (wifiOnly && needsCellular) {
+    // Only prompt when we're actually connected and on cellular — not while
+    // fully offline. Offline, the enqueue proceeds normally and the engine
+    // (Wi-Fi guard) pauses it until connectivity returns; there is nothing
+    // useful to ask the user right now.
+    if (wifiOnly && network.isConnected && !network.isWifi) {
       Alert.alert(
         'Download over cellular?',
         `This show is about ${formatBytes(estimatedBytes(show))}. "Download on Wi-Fi only" is on in Settings.`,
@@ -46,8 +49,12 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
       );
       return;
     }
-    void actions.enqueueShow(show, { allowCellular: needsCellular });
-  }, [actions, network.isWifi, show, wifiOnly]);
+    // Every non-prompt path enqueues with allowCellular: false — only the
+    // cellular prompt's explicit "Download" button opts a show into
+    // cellular. The engine's Wi-Fi guard (not this flag) is what pauses an
+    // enqueued show until Wi-Fi/connectivity comes back.
+    void actions.enqueueShow(show, { allowCellular: false });
+  }, [actions, network.isConnected, network.isWifi, show, wifiOnly]);
 
   const onPress = useCallback(() => {
     if (!actions) return;

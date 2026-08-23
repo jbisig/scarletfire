@@ -30,7 +30,3 @@ export function relativePathFor(identifier: string, fileName: string): string {
 export function toAbsoluteUri(relativePath: string): string {
   return `${getFileSystem().documentDirectory}${relativePath}`;
 }
-
-export function isLocalDownloadUri(uri: string): boolean {
-  return typeof uri === 'string' && uri.startsWith(downloadsRootUri());
-}

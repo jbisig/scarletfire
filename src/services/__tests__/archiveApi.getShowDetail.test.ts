@@ -100,7 +100,7 @@ describe('archiveApi.getShowDetail', () => {
       },
       timestamp: Date.now() - 1000,
     };
-    await AsyncStorage.setItem('showDetail:persisted-show', JSON.stringify(persisted));
+    await AsyncStorage.setItem('showDetail:v2:persisted-show', JSON.stringify(persisted));
     const fetchSpy = jest.fn();
     global.fetch = fetchSpy as unknown as typeof fetch;
 
@@ -115,7 +115,7 @@ describe('archiveApi.getShowDetail', () => {
       data: { identifier: 'expired-show', title: 'Old', date: '1970-01-01', year: '1970', tracks: [] },
       timestamp: Date.now() - 15 * 24 * 60 * 60 * 1000, // past the 14-day TTL
     };
-    await AsyncStorage.setItem('showDetail:expired-show', JSON.stringify(persisted));
+    await AsyncStorage.setItem('showDetail:v2:expired-show', JSON.stringify(persisted));
     global.fetch = mockFetchOnce(metadataResponse()) as unknown as typeof fetch;
 
     const detail = await archiveApi.getShowDetail('expired-show');
@@ -131,9 +131,9 @@ describe('archiveApi.getShowDetail', () => {
 
     // The write is fire-and-forget from getShowDetail — flush microtasks.
     await new Promise(resolve => setImmediate(resolve));
-    const entry = JSON.parse((await AsyncStorage.getItem('showDetail:written-show'))!);
+    const entry = JSON.parse((await AsyncStorage.getItem('showDetail:v2:written-show'))!);
     expect(entry.data.identifier).toBe('written-show');
-    const index = JSON.parse((await AsyncStorage.getItem('showDetail:index'))!);
+    const index = JSON.parse((await AsyncStorage.getItem('showDetail:v2:index'))!);
     expect(index).toContain('written-show');
   });
 
@@ -146,7 +146,7 @@ describe('archiveApi.getShowDetail', () => {
     await new Promise(resolve => setImmediate(resolve));
     archiveApi.invalidateShowDetail('invalidate-show');
     await new Promise(resolve => setImmediate(resolve));
-    expect(await AsyncStorage.getItem('showDetail:invalidate-show')).toBeNull();
+    expect(await AsyncStorage.getItem('showDetail:v2:invalidate-show')).toBeNull();
 
     await archiveApi.getShowDetail('invalidate-show');
     expect(global.fetch).toHaveBeenCalledTimes(2);

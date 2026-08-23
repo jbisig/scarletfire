@@ -73,7 +73,7 @@ function pick(candidates: RecordingVersion[], editorialPinIdentifier: string | u
 function resolveConstrained(
   versions: RecordingVersion[],
   constraint: SourceConstraint,
-  via: Exclude<ResolvedVia, 'user-pin' | 'editorial' | 'popular'>,
+  via: Exclude<ResolvedVia, 'user-pin' | 'editorial' | 'popular' | 'downloaded'>,
   editorialPinIdentifier: string | undefined,
 ): ResolvedRecording {
   const requested = constraintTags(constraint);

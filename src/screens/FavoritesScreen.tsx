@@ -29,6 +29,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { ShowsByYear } from '../types/show.types';
 import { showDetailParams } from '../utils/showDetailParams';
 import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
+import { formatDateMMDDYYYY } from '../utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { usePlayerActions } from '../contexts/PlayerContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
@@ -127,7 +128,7 @@ export function FavoritesScreen() {
       { text: 'Remove download', style: 'destructive' as const, onPress: () => { void downloadActions.removeShow(s.identifier); } },
       { text: 'Cancel', style: 'cancel' as const },
     ];
-    Alert.alert(`${s.date.slice(0, 10)} · ${s.venue ?? 'Unknown venue'}`, undefined, buttons);
+    Alert.alert(`${formatDateMMDDYYYY(s.date)} · ${s.venue ?? 'Unknown venue'}`, undefined, buttons);
   }, [downloadActions]);
 
   // Pull-to-refresh state

@@ -61,6 +61,11 @@ describe('enqueueShow', () => {
     ]);
     expect(FS.__tasks[0].fileUri).toBe('file:///mock-documents/downloads/aud/d1t01.mp3.part');
     expect(nativeAudioPlayer.setExcludedFromBackup).toHaveBeenCalledWith('file:///mock-documents/downloads/');
+    // Background URLSession (not FOREGROUND): a show keeps downloading while
+    // the app is backgrounded, per the module doc comment.
+    expect(FS.createDownloadResumable).toHaveBeenCalledWith(
+      expect.any(String), expect.any(String), { sessionType: 0 }, expect.any(Function),
+    );
 
     FS.__tasks[0].progress(400);
     expect(getShowProgress('aud').bytesDownloaded).toBe(400);

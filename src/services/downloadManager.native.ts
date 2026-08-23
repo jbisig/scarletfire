@@ -152,50 +152,67 @@ class DownloadManager {
     // would otherwise be stamped queued mid-download.
     if (this.running) return;
     const FS = getFS();
-    await FS.makeDirectoryAsync(downloadsRootUri(), { intermediates: true }).catch(() => {});
-    await nativeAudioPlayer.setExcludedFromBackup(downloadsRootUri()).catch(() => {});
+    try {
+      await FS.makeDirectoryAsync(downloadsRootUri(), { intermediates: true }).catch(() => {});
+      await nativeAudioPlayer.setExcludedFromBackup(downloadsRootUri()).catch(() => {});
 
-    for (const show of store.listDownloadedShows()) {
-      const id = show.identifier;
-      const present: string[] = [];
-      const missing: string[] = [];
-      for (const [trackId, track] of Object.entries(show.tracks)) {
-        const info = await FS.getInfoAsync(toAbsoluteUri(track.relativePath));
-        (info.exists ? present : missing).push(trackId);
-      }
-      if (show.status === 'complete' && present.length === 0 && missing.length > 0) {
-        // Manifest survived but the files did not (e.g. restored from a
-        // backup). Ask before re-downloading hundreds of megabytes.
-        store.updateDownloadedShow(id, { status: 'failed', error: 'unknown', completedAt: undefined });
-        continue;
-      }
-      if (show.status !== 'failed') {
-        for (const trackId of present) {
-          if (show.tracks[trackId].status !== 'complete') store.updateDownloadedTrack(id, trackId, { status: 'complete' });
+      for (const show of store.listDownloadedShows()) {
+        const id = show.identifier;
+        const present: string[] = [];
+        const missing: string[] = [];
+        for (const [trackId, track] of Object.entries(show.tracks)) {
+          // A throw (not just a resolved { exists: false }) is treated the
+          // same as "missing" — a flaky native call here must never abort
+          // reconcile and skip start(), which would leave network
+          // monitoring dead for the rest of the session.
+          let exists = false;
+          try {
+            exists = (await FS.getInfoAsync(toAbsoluteUri(track.relativePath))).exists;
+          } catch (error) {
+            log.warn(`getInfoAsync failed for ${id}/${trackId}; treating as missing`, error);
+          }
+          (exists ? present : missing).push(trackId);
+        }
+        if (show.status === 'complete' && present.length === 0 && missing.length > 0) {
+          // Manifest survived but the files did not (e.g. restored from a
+          // backup). Ask before re-downloading hundreds of megabytes — but
+          // re-queue every track first so Retry has something to do instead
+          // of landing on a show with no queued/failed tracks left to fetch.
+          for (const trackId of Object.keys(show.tracks)) store.updateDownloadedTrack(id, trackId, { status: 'queued' });
+          store.updateDownloadedShow(id, { status: 'failed', error: 'unknown', completedAt: undefined });
+          continue;
+        }
+        if (show.status !== 'failed') {
+          for (const trackId of present) {
+            if (show.tracks[trackId].status !== 'complete') store.updateDownloadedTrack(id, trackId, { status: 'complete' });
+          }
+        }
+        for (const trackId of missing) {
+          if (show.tracks[trackId].status !== 'queued' && show.status !== 'failed') {
+            store.updateDownloadedTrack(id, trackId, { status: 'queued' });
+          }
+        }
+        if (missing.length === 0) {
+          if (show.status !== 'complete' && show.status !== 'failed') {
+            store.updateDownloadedShow(id, { status: 'complete', completedAt: Date.now(), error: undefined });
+          }
+        } else if (show.status !== 'failed') {
+          store.updateDownloadedShow(id, { status: 'queued' });
         }
       }
-      for (const trackId of missing) {
-        if (show.tracks[trackId].status !== 'queued' && show.status !== 'failed') {
-          store.updateDownloadedTrack(id, trackId, { status: 'queued' });
+
+      const entries = await FS.readDirectoryAsync(downloadsRootUri()).catch(() => [] as string[]);
+      for (const name of entries) {
+        if (!store.getDownloadedShow(name)) {
+          await FS.deleteAsync(`${downloadsRootUri()}${name}`, { idempotent: true }).catch(() => {});
         }
       }
-      if (missing.length === 0) {
-        if (show.status !== 'complete' && show.status !== 'failed') {
-          store.updateDownloadedShow(id, { status: 'complete', completedAt: Date.now(), error: undefined });
-        }
-      } else if (show.status !== 'failed') {
-        store.updateDownloadedShow(id, { status: 'queued' });
-      }
+    } finally {
+      // Always runs, even if the loop above throws — otherwise a single bad
+      // reconcile leaves network monitoring (and the worker) permanently
+      // off for the rest of the app session.
+      this.start();
     }
-
-    const entries = await FS.readDirectoryAsync(downloadsRootUri()).catch(() => [] as string[]);
-    for (const name of entries) {
-      if (!store.getDownloadedShow(name)) {
-        await FS.deleteAsync(`${downloadsRootUri()}${name}`, { idempotent: true }).catch(() => {});
-      }
-    }
-
-    this.start();
   }
 
   /** Idempotent: start network monitoring and the worker. */

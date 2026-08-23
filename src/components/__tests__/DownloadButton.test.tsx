@@ -75,7 +75,20 @@ it('skips the prompt when the guard is off', () => {
   setWifiOnly(false);
   const { getByLabelText } = render(<DownloadButton show={show} identifier="aud" />);
   fireEvent.press(getByLabelText('Download show'));
-  expect(mockActions.enqueueShow).toHaveBeenCalledWith(show, { allowCellular: true });
+  // Deliberate behavior change per final review: only the cellular prompt's
+  // own "Download" button opts a show into cellular; every other enqueue
+  // path (guard off, or fully offline) passes allowCellular: false and lets
+  // the engine's Wi-Fi guard govern whether the show actually transfers.
+  expect(mockActions.enqueueShow).toHaveBeenCalledWith(show, { allowCellular: false });
+});
+
+it('enqueues without prompting while fully offline, even with the guard on', () => {
+  mockNetwork.isConnected = false;
+  mockNetwork.isWifi = false;
+  const { getByLabelText } = render(<DownloadButton show={show} identifier="aud" />);
+  fireEvent.press(getByLabelText('Download show'));
+  expect(Alert.alert).not.toHaveBeenCalled();
+  expect(mockActions.enqueueShow).toHaveBeenCalledWith(show, { allowCellular: false });
 });
 
 it('shows the stream-only state for non-downloadable recordings', () => {

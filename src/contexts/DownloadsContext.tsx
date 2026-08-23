@@ -61,13 +61,17 @@ export function useDownloads(): DownloadedShow[] {
   return useMemo(() => listDownloadedShows(), [version]);
 }
 
-export function useDownloadSettings(): { wifiOnly: boolean; totalBytes: number; showCount: number } {
+export function useDownloadSettings(): { wifiOnly: boolean; totalBytes: number; showCount: number; totalShows: number } {
   const version = useDownloadsVersion();
   return useMemo(
     () => ({
       wifiOnly: getWifiOnly(),
       totalBytes: getDownloadedBytesTotal(),
       showCount: listDownloadedShows().filter(s => s.status === 'complete').length,
+      // Includes queued/downloading/paused/failed shows, not just complete
+      // ones — Remove all should be enabled (and count them) even when a
+      // show is stuck mid-download or failed, not only once it's done.
+      totalShows: listDownloadedShows().length,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [version],

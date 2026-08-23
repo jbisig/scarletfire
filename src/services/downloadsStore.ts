@@ -20,8 +20,6 @@ import { relativePathFor } from './downloadPaths';
 const log = logger.create('Downloads');
 const PERSIST_DEBOUNCE_MS = 500;
 
-export const EMPTY_MANIFEST: DownloadsManifest = { version: 1, wifiOnly: true, shows: {} };
-
 function emptyManifest(): DownloadsManifest {
   return { version: 1, wifiOnly: true, shows: {} };
 }
@@ -104,6 +102,9 @@ async function persistNow(): Promise<void> {
   }
 }
 
+// Throttle-like batching, not debounce: the first call in a window schedules
+// the write immediately; later calls within PERSIST_DEBOUNCE_MS coalesce
+// onto that same pending write instead of each pushing it further out.
 function schedulePersist(immediate = false): void {
   if (immediate) {
     void persistNow();
