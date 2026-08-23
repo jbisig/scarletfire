@@ -3,7 +3,7 @@ import { Animated, InteractionManager } from 'react-native';
 import nativeAudioPlayer, { State, Event } from '../services/nativeAudioPlayer';
 import { PlayerState, PlayerAction, RadioTrack, PlaybackProgress, ShuffleSongItem, isShuffleSongItem, isGratefulDeadShow } from '../types/player.types';
 import { Track, ShowDetail, GratefulDeadShow } from '../types/show.types';
-import { audioService, appIconUri } from '../services/audioService';
+import { audioService, convertToNativeTrack } from '../services/audioService';
 import { usePlayCounts } from './PlayCountsContext';
 import { useOptionalShows } from './ShowsContext';
 import { radioService } from '../services/radioService';
@@ -17,6 +17,7 @@ import { useOptionalToast } from './ToastContext';
 import { findNextShow } from '../utils/showLookup';
 import { describeLoadError } from '../utils/userFacingError';
 import { resolveShowIdentifier, stableShowIdentifier } from '../services/sourceSelection';
+import { reportLocalPlaybackFailure } from '../services/playbackSource';
 
 const initialState: PlayerState = {
   currentTrack: null,
@@ -552,6 +553,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // the complexity, so radio keeps its existing error behavior (but
       // never leaves a spinner running).
       if (playbackModeRef.current === 'radio') {
+        const radioTrack = currentTrackRef.current;
+        const radioShow = currentShowRef.current;
+        if (radioTrack && radioShow) reportLocalPlaybackFailure(radioShow.identifier, radioTrack.id);
         dispatch({ type: 'SET_BUFFERING', isBuffering: false });
         return;
       }
@@ -560,6 +564,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const show = currentShowRef.current;
       // Without a show we can't meaningfully reload; loadTrack requires it.
       if (!track || !show) return;
+
+      // A downloaded file that won't play (deleted, truncated, corrupt):
+      // mark it so Retry re-fetches it, then reload — the conversion seam
+      // now resolves this track to streaming. Not a stream failure, so the
+      // direct→/download ladder below is left untouched.
+      if (reportLocalPlaybackFailure(show.identifier, track.id)) {
+        logger.player.warn('Downloaded file failed to play; falling back to streaming', data?.error);
+        const playlist = playlistRef.current.length > 0 ? playlistRef.current : [track];
+        loadTrackImplRef.current(track, show, playlist);
+        return;
+      }
 
       // This is where a dead stream actually lands on both platforms: the
       // native/web players resolve setQueue() immediately and report the
@@ -632,14 +647,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           if (newTracks.length > 0) {
             // Add tracks to native player queue
             for (const radioTrack of newTracks) {
-              await nativeAudioPlayer.addTrack({
-                id: radioTrack.track.id,
-                url: radioTrack.track.streamUrl,
-                title: radioTrack.track.title,
-                artist: radioTrack.show.venue || 'Grateful Dead',
-                duration: radioTrack.track.duration,
-                artwork: appIconUri,
-              });
+              await nativeAudioPlayer.addTrack(convertToNativeTrack(radioTrack.track, radioTrack.show));
             }
             dispatch({ type: 'ADD_RADIO_TRACKS', tracks: newTracks });
             return; // Success - exit retry loop
@@ -994,14 +1002,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Set up native player queue with initial tracks
-      const nativeTracks = initialTracks.map(rt => ({
-        id: rt.track.id,
-        url: rt.track.streamUrl,
-        title: rt.track.title,
-        artist: rt.show.venue || 'Grateful Dead',
-        duration: rt.track.duration,
-        artwork: appIconUri,
-      }));
+      const nativeTracks = initialTracks.map(rt => convertToNativeTrack(rt.track, rt.show));
 
       await nativeAudioPlayer.setQueue(nativeTracks, 0);
       dispatch({ type: 'ADD_RADIO_TRACKS', tracks: initialTracks });
@@ -1052,14 +1053,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
       if (track) {
         // Set up native player with just this track (not the full show playlist)
-        const nativeTrack = {
-          id: track.id,
-          url: track.streamUrl,
-          title: track.title,
-          artist: showDetail.venue || 'Grateful Dead',
-          duration: track.duration,
-          artwork: appIconUri,
-        };
+        const nativeTrack = convertToNativeTrack(track, showDetail);
 
         await nativeAudioPlayer.setQueue([nativeTrack], 0);
 
@@ -1105,14 +1099,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
       if (validTracks.length > 0) {
         // Set up native player queue with all tracks
-        const nativeTracks = validTracks.map(t => ({
-          id: t.id,
-          url: t.streamUrl,
-          title: t.title,
-          artist: showDetail.venue || 'Grateful Dead',
-          duration: t.duration,
-          artwork: appIconUri,
-        }));
+        const nativeTracks = validTracks.map(t => convertToNativeTrack(t, showDetail));
 
         await nativeAudioPlayer.setQueue(nativeTracks, 0);
 
