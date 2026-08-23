@@ -68,6 +68,7 @@ jest.mock('../../services/archiveApi', () => ({
 
 jest.mock('../../services/sourceSelection', () => ({
   resolveShowIdentifier: (show: { primaryIdentifier: string }) => show.primaryIdentifier,
+  stableShowIdentifier: (_date: string | undefined, fallback: string) => fallback,
 }));
 
 const mockReportLocalFailure = jest.fn();
@@ -134,4 +135,33 @@ it('falls through to the normal stream fallback when the track was not local', a
   await act(async () => { await probeApi!.loadTrack(track, show, [track]); });
   await act(async () => { emitPlaybackError(); });
   await waitFor(() => expect(mockInvalidate).toHaveBeenCalledWith('aud'));
+});
+
+it('suppresses the rest of a local-failure burst without consuming the stream fallback, then still runs the ladder for a later genuine failure', async () => {
+  mockReportLocalFailure.mockReturnValueOnce(true);
+  const { getByTestId } = render(<PlayerProvider><Probe /></PlayerProvider>);
+  await act(async () => { await probeApi!.loadTrack(track, show, [track]); });
+  await waitFor(() => expect(getByTestId('id').props.children).toBe('t1'));
+  const initialCalls = mockLoadTrack.mock.calls.length;
+
+  // The iOS module can raise a dozen PlaybackError events for the same
+  // queued item in one burst — only the first should trigger a reload.
+  await act(async () => {
+    emitPlaybackError();
+    emitPlaybackError();
+    emitPlaybackError();
+  });
+
+  await waitFor(() => expect(mockLoadTrack.mock.calls.length).toBe(initialCalls + 1));
+  expect(mockLoadTrack.mock.calls.length).toBe(initialCalls + 1); // one reload, not three
+  expect(mockInvalidate).not.toHaveBeenCalled();
+  expect(probeApi!.state.loadError).toBeNull();
+
+  // A later, genuinely dead remote stream re-errors outside the suppression
+  // window and must still run the direct→/download fallback ladder.
+  const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 6000);
+  await act(async () => { emitPlaybackError(); });
+  nowSpy.mockRestore();
+
+  await waitFor(() => expect(mockInvalidate).toHaveBeenCalledTimes(1));
 });

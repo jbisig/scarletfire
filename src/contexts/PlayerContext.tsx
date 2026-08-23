@@ -546,6 +546,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // show can raise a dozen PlaybackError events in a burst. Surface each
   // failure once per track; the recovery banner holds the state after that.
   const failureToastRef = useRef<{ trackId: string; at: number } | null>(null);
+  const localFailureRef = useRef<{ trackId: string; at: number } | null>(null);
   useEffect(() => {
     const subscription = nativeAudioPlayer.addEventListener(Event.PlaybackError, (data) => {
       // Radio queues are built incrementally from fresh fetches and rebuilt
@@ -571,8 +572,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // direct→/download ladder below is left untouched.
       if (reportLocalPlaybackFailure(show.identifier, track.id)) {
         logger.player.warn('Downloaded file failed to play; falling back to streaming', data?.error);
+        localFailureRef.current = { trackId: track.id, at: Date.now() };
         const playlist = playlistRef.current.length > 0 ? playlistRef.current : [track];
         loadTrackImplRef.current(track, show, playlist);
+        return;
+      }
+
+      // Suppress the rest of a local-failure burst: the iOS module reports a
+      // failed stream once per queued item, so the reload above can be chased
+      // by a dozen stale events for the same track. They must not consume the
+      // stream-fallback attempt or surface a false error while the reload is
+      // already in flight. A genuinely dead remote stream re-errors after the
+      // reload, outside this window (archive 404s take ~10s+).
+      const localFailure = localFailureRef.current;
+      if (localFailure && localFailure.trackId === track.id && Date.now() - localFailure.at < 5000) {
         return;
       }
 
