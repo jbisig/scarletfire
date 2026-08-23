@@ -270,9 +270,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     ...(Platform.OS === 'web' ? { paddingVertical: 14 } : {}),
     paddingHorizontal: SPACING.xxl,
-    // Centre, not baseline: a View's "baseline" is its bottom edge, so rows
-    // with a heart button and rows without one used to land differently.
-    alignItems: 'center',
+    // Baseline, so the duration sits on the title's first line rather than
+    // floating in the gutter of a title that wrapped (10.5px out on
+    // "Scarlet Begonias > Fire on the Mountain"), and so the two land on the
+    // same baseline despite being different sizes — centring boxes can't do
+    // that, it leaves the smaller text 0.75px high.
+    //
+    // This was tried once before and reverted: a View's baseline is its bottom
+    // edge, so the heart button was setting the row's baseline and rows with
+    // and without one landed differently. What makes it safe is that every
+    // non-text child below is pinned to alignSelf: 'center', leaving only the
+    // title and the duration to be aligned by their text.
+    alignItems: 'baseline',
   },
   containerDesktop: {
     paddingVertical: 8,
@@ -316,7 +325,9 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   durationWrap: {
-    alignSelf: 'center',
+    // One of the two children that align by their text baseline; everything
+    // else in the row is pinned to centre.
+    alignSelf: 'baseline',
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,
@@ -387,6 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.sm,
+    alignSelf: 'center',
   },
   iconButtonActive: {},
   iconButtonSaved: {},
