@@ -136,7 +136,11 @@ class DownloadManager {
 
   setWifiOnly(wifiOnly: boolean): void {
     store.setWifiOnly(wifiOnly);
-    if (!wifiOnly) this.resumePaused();
+    if (wifiOnly) {
+      this.onNetworkChange();
+    } else {
+      this.resumePaused();
+    }
   }
 
   /**
@@ -144,6 +148,9 @@ class DownloadManager {
    * OS may have killed a download mid-show). Then start the worker.
    */
   async reconcileOnLaunch(): Promise<void> {
+    // Launch-time entry point only; a live worker's in-flight `.part` files
+    // would otherwise be stamped queued mid-download.
+    if (this.running) return;
     const FS = getFS();
     await FS.makeDirectoryAsync(downloadsRootUri(), { intermediates: true }).catch(() => {});
     await nativeAudioPlayer.setExcludedFromBackup(downloadsRootUri()).catch(() => {});
@@ -162,8 +169,10 @@ class DownloadManager {
         store.updateDownloadedShow(id, { status: 'failed', error: 'unknown', completedAt: undefined });
         continue;
       }
-      for (const trackId of present) {
-        if (show.tracks[trackId].status !== 'complete') store.updateDownloadedTrack(id, trackId, { status: 'complete' });
+      if (show.status !== 'failed') {
+        for (const trackId of present) {
+          if (show.tracks[trackId].status !== 'complete') store.updateDownloadedTrack(id, trackId, { status: 'complete' });
+        }
       }
       for (const trackId of missing) {
         if (show.tracks[trackId].status !== 'queued' && show.status !== 'failed') {
@@ -171,7 +180,7 @@ class DownloadManager {
         }
       }
       if (missing.length === 0) {
-        if (show.status !== 'complete') {
+        if (show.status !== 'complete' && show.status !== 'failed') {
           store.updateDownloadedShow(id, { status: 'complete', completedAt: Date.now(), error: undefined });
         }
       } else if (show.status !== 'failed') {
@@ -311,7 +320,11 @@ class DownloadManager {
     const current = store.getDownloadedShow(id);
     if (!current) return;
     if (this.pausedByNetwork || outcomes.includes('paused')) {
-      store.updateDownloadedShow(id, { status: 'paused' });
+      // Re-check the guard at the moment of the write: the network (or
+      // allowCellular) may have come back while the workers above were
+      // still unwinding, in which case queue it straight back up instead
+      // of stranding it in `paused` with nothing left to re-check it.
+      store.updateDownloadedShow(id, { status: this.canProceed(current) ? 'queued' : 'paused' });
       return;
     }
     const allComplete = !outcomes.includes('failed') && Object.values(current.tracks).every(t => t.status === 'complete');

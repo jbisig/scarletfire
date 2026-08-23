@@ -9,6 +9,7 @@ import {
   getDownloadedShow,
   getManifest,
   listDownloadedShows,
+  markTrackFailed,
   resetDownloadsStoreForTests,
   updateDownloadedShow,
   updateDownloadedTrack,
@@ -121,6 +122,37 @@ describe('Wi-Fi guard', () => {
     expect(getManifest().wifiOnly).toBe(false);
     expect(getDownloadedShow('aud')?.status).toBe('downloading');
   });
+
+  it('does not strand a show in paused when the network recovers before the pause write lands', async () => {
+    await downloadManager.enqueueShow(detail('aud', 2));
+    await flush();
+    expect(FS.__tasks).toHaveLength(2);
+
+    // No flush() between these two: the network drop and recovery both land
+    // before the still-unwinding worker writes its status.
+    ExpoNetwork.__setNetworkState({ type: 'CELLULAR' });
+    ExpoNetwork.__setNetworkState({ type: 'WIFI' });
+    await flush();
+
+    expect(getDownloadedShow('aud')?.status).not.toBe('paused');
+    expect(['downloading', 'complete']).toContain(getDownloadedShow('aud')?.status);
+    // The unfinished tracks were re-queued and got fresh download tasks.
+    expect(FS.__tasks.length).toBeGreaterThan(2);
+  });
+
+  it('setWifiOnly(true) pauses an active cellular transfer', async () => {
+    downloadManager.setWifiOnly(false);
+    ExpoNetwork.__setNetworkState({ type: 'CELLULAR' });
+    await downloadManager.enqueueShow(detail('aud', 2));
+    await flush();
+    expect(getDownloadedShow('aud')?.status).toBe('downloading');
+
+    downloadManager.setWifiOnly(true);
+    await flush();
+    expect(getDownloadedShow('aud')?.status).toBe('paused');
+    expect(FS.__tasks[0].paused).toBe(true);
+    expect(FS.__tasks[1].paused).toBe(true);
+  });
 });
 
 describe('reconcileOnLaunch', () => {
@@ -155,6 +187,24 @@ describe('reconcileOnLaunch', () => {
     await downloadManager.reconcileOnLaunch();
     await flush();
     expect(getDownloadedShow('aud')?.status).toBe('failed');
+    expect(FS.__tasks).toHaveLength(0);
+  });
+
+  it('leaves a show that playback marked failed alone even though its files are still on disk', async () => {
+    const show = createDownloadedShow(detail('aud', 2), { allowCellular: false, now: 1 });
+    upsertDownloadedShow(show);
+    updateDownloadedTrack('aud', 'd1t01.mp3', { status: 'complete' });
+    updateDownloadedTrack('aud', 'd1t02.mp3', { status: 'complete' });
+    updateDownloadedShow('aud', { status: 'complete', completedAt: 2 });
+    FS.__files.set('file:///mock-documents/downloads/aud/d1t01.mp3', { size: 1000 });
+    FS.__files.set('file:///mock-documents/downloads/aud/d1t02.mp3', { size: 1000 });
+    markTrackFailed('aud', 'd1t01.mp3');
+
+    await downloadManager.reconcileOnLaunch();
+    await flush();
+    const after = getDownloadedShow('aud')!;
+    expect(after.status).toBe('failed');
+    expect(after.tracks['d1t01.mp3'].status).toBe('failed');
     expect(FS.__tasks).toHaveLength(0);
   });
 
