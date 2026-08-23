@@ -2,6 +2,7 @@ import { Image, Platform } from 'react-native';
 import nativeAudioPlayer, { Track as NativeTrack, State } from './nativeAudioPlayer';
 import { Track, ShowDetail } from '../types/show.types';
 import { logger } from '../utils/logger';
+import { resolvePlaybackSource } from './playbackSource';
 
 // Resolve app icon for Now Playing artwork
 const appIcon = require('../../assets/icon.png');
@@ -10,12 +11,14 @@ export const appIconUri = Platform.OS === 'web'
   : Image.resolveAssetSource(appIcon).uri;
 
 /**
- * Convert our Track format to Native Audio Player's Track format
+ * Convert our Track format to the native player's Track format. Downloaded
+ * tracks resolve to their local file here — the only seam where that happens.
  */
-function convertToNativeTrack(track: Track, show?: ShowDetail): NativeTrack {
+export function convertToNativeTrack(track: Track, show?: ShowDetail): NativeTrack {
+  const source = resolvePlaybackSource(show?.identifier, track);
   return {
     id: track.id,
-    url: track.streamUrl,
+    url: source.url,
     title: track.title,
     artist: show?.venue || 'Grateful Dead',
     duration: track.duration,
