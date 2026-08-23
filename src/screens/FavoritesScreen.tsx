@@ -58,18 +58,25 @@ import {
 import { useSortDropdown } from '../hooks/useSortDropdown';
 import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
+import { DownloadsTab } from '../components/DownloadsTab';
+import { useDownloads, useOptionalDownloadActions } from '../contexts/DownloadsContext';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import type { DownloadedShow } from '../types/downloads.types';
 
 type FavoritesScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Favorites'>;
 
-type TabType = 'shows' | 'songs' | 'collections';
+type TabType = 'shows' | 'songs' | 'collections' | 'downloads';
 type SongSortType = SavedItemSortType;
 type ShowSortType = SavedItemSortType;
 
-const FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
+const BASE_FAVORITES_TABS: SegmentedTabItem<TabType>[] = [
   { key: 'shows', label: 'Shows' },
   { key: 'songs', label: 'Songs' },
   { key: 'collections', label: 'Collections' },
 ];
+// Downloads are native-only; the web build never shows the segment.
+const FAVORITES_TABS: SegmentedTabItem<TabType>[] =
+  Platform.OS === 'web' ? BASE_FAVORITES_TABS : [...BASE_FAVORITES_TABS, { key: 'downloads', label: 'Downloads' }];
 
 export function FavoritesScreen() {
   const navigation = useNavigation<FavoritesScreenNavigationProp>();
@@ -104,6 +111,24 @@ export function FavoritesScreen() {
   const songSortDropdown = useSortDropdown();
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
+
+  const downloadedShows = useDownloads();
+  const downloadActions = useOptionalDownloadActions();
+  const { isConnected } = useNetworkStatus();
+
+  const handleDownloadPress = useCallback((s: DownloadedShow) => {
+    navigation.navigate('ShowDetail', { identifier: s.identifier, date: s.date, venue: s.venue, location: s.location });
+  }, [navigation]);
+
+  const handleDownloadLongPress = useCallback((s: DownloadedShow) => {
+    if (!downloadActions) return;
+    const buttons = [
+      ...(s.status === 'failed' ? [{ text: 'Retry', onPress: () => { void downloadActions.retryShow(s.identifier); } }] : []),
+      { text: 'Remove download', style: 'destructive' as const, onPress: () => { void downloadActions.removeShow(s.identifier); } },
+      { text: 'Cancel', style: 'cancel' as const },
+    ];
+    Alert.alert(`${s.date.slice(0, 10)} · ${s.venue ?? 'Unknown venue'}`, undefined, buttons);
+  }, [downloadActions]);
 
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -687,6 +712,13 @@ export function FavoritesScreen() {
         renderShowsTab()
       ) : activeTab === 'songs' ? (
         renderSongsTab()
+      ) : activeTab === 'downloads' ? (
+        <DownloadsTab
+          shows={downloadedShows}
+          isOffline={!isConnected}
+          onPress={handleDownloadPress}
+          onLongPress={handleDownloadLongPress}
+        />
       ) : (
         <>
           <CollectionsTab
