@@ -14,8 +14,6 @@ interface TrackItemProps {
   isPlaying: boolean;
   onPress: (track: Track) => void;
   rating?: ResolvedRating | null;
-  /** Opens the rating overlay for this track's performance */
-  onRatingPress?: (track: Track) => void;
   /** Web only: whether this song is saved as a favorite */
   isSaved?: boolean;
   /** Web only: callback to toggle save state */
@@ -47,7 +45,7 @@ interface TrackItemProps {
  * Individual track item component
  * Memoized to prevent unnecessary re-renders
  */
-export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, onRatingPress, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected, isLoading = false, isPaused = false }) => {
+export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress, rating, isSaved, onToggleSave, onAddToPlaylist, onLongPress, playlistCount = 0, isSelected, isLoading = false, isPaused = false }) => {
   const { isDesktop } = useResponsive();
   const [isHovered, setIsHovered] = useState(false);
   const duration = formatDuration(track.duration);
@@ -148,41 +146,31 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
           >
+            {/* The stars sit inside the title's own text run, so a title that
+                wraps carries them to the end of its last line rather than
+                stranding them beside the first. As a flex sibling they aligned
+                to the first baseline: "Scarlet Begonias > Fire on the ***" /
+                "Mountain". They are decorative here — the row's own label
+                announces the rating, and rating is done from the player.
+
+                Sharing the run means the stars also share the line budget, so a
+                rated title gets a third line to land in — at narrow widths a
+                two-line title would otherwise clamp them away and the rating
+                would silently disappear. The extra line is only ever used when
+                the title needs it. */}
             <Text
               style={[styles.title, isPlaying && styles.playingText]}
-              numberOfLines={2}
+              numberOfLines={rating ? 3 : 2}
             >
               {track.title}
+              {rating ? (
+                <Text>
+                  {'  '}
+                  <StarRating inline rating={rating} size={14} />
+                </Text>
+              ) : null}
             </Text>
           </View>
-          {/* Stars only render when a user or community rating exists —
-              unrated tracks get no placeholder (rate them from the player). */}
-          {rating && (
-            onRatingPress ? (
-              <TouchableOpacity
-                style={styles.ratingContainer}
-                testID="track-rating-button"
-                onPress={(e: any) => {
-                  e?.stopPropagation?.();
-                  onRatingPress(track);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Change your rating"
-              >
-                <StarRating rating={rating} size={14} />
-              </TouchableOpacity>
-            ) : (
-              <View
-                style={[styles.ratingContainer, styles.passive]}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <StarRating rating={rating} size={14} />
-              </View>
-            )
-          )}
         </View>
       </View>
       {/* Add-to-playlist button (web only) — plus icon. */}
@@ -335,9 +323,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flexShrink: 1,
     ...(Platform.OS === 'web' ? { fontSize: 16, fontWeight: '400' as const } : {}),
-  },
-  ratingContainer: {
-    marginLeft: SPACING.sm,
   },
   duration: {
     ...TYPOGRAPHY.body,

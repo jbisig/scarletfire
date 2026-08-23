@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
 import type { ResolvedRating } from '../services/ratingResolver';
@@ -17,6 +17,12 @@ interface StarRatingProps {
   size?: number;
   color?: string;
   style?: object;
+  /**
+   * Render inside a <Text> rather than a <View>, so the stars flow with the
+   * text they follow and land after its last word instead of beside its first
+   * line. The icons are glyphs already, so they sit in the run naturally.
+   */
+  inline?: boolean;
 }
 
 /**
@@ -31,7 +37,8 @@ export const StarRating = React.memo<StarRatingProps>(function StarRating({
   showPlaceholder = false,
   size = 16,
   color = COLORS.accent,
-  style
+  style,
+  inline = false,
 }) {
   let iconName: 'star' | 'star-outline' = 'star';
   let starCount: number;
@@ -64,21 +71,27 @@ export const StarRating = React.memo<StarRatingProps>(function StarRating({
     ratingLabel = starCount === 1 ? '1 star rating' : `${starCount} star rating`;
   }
 
+  const stars = Array.from({ length: starCount }, (_, i) => (
+    <Ionicons
+      key={i}
+      name={iconName}
+      size={size}
+      color={starColor}
+      style={{ marginRight: i < starCount - 1 ? 2 : 0 }}
+    />
+  ));
+
+  if (inline) {
+    return <Text accessibilityLabel={ratingLabel}>{stars}</Text>;
+  }
+
   return (
     <View
       style={[styles.starsContainer, style]}
       accessibilityRole="text"
       accessibilityLabel={ratingLabel}
     >
-      {Array.from({ length: starCount }, (_, i) => (
-        <Ionicons
-          key={i}
-          name={iconName}
-          size={size}
-          color={starColor}
-          style={{ marginRight: i < starCount - 1 ? 2 : 0 }}
-        />
-      ))}
+      {stars}
     </View>
   );
 });

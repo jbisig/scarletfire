@@ -1285,13 +1285,6 @@ export function ShowDetailScreen() {
             isPaused={!playerState.isPlaying}
             onPress={handleTrackPress}
             rating={trackRatings[track.id]}
-            onRatingPress={(t) => openRatingOverlay({
-              kind: 'performance',
-              songTitle: t.title,
-              date: show.date,
-              venue: getVenueFromShow(displayShow),
-              showIdentifier: show.identifier,
-            })}
             isSaved={isSongFavorite(track.id, show.identifier)}
             onToggleSave={handleToggleSaveSong}
             onAddToPlaylist={handleAddToPlaylist}
