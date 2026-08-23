@@ -23,7 +23,7 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useVideoBackground } from '../contexts/VideoBackgroundContext';
 import { TrackItem } from '../components/TrackItem';
-import { VersionPicker } from '../components/VersionPicker';
+import { VersionPicker, SOURCE_PILL_HEIGHT } from '../components/VersionPicker';
 import { StarRating } from '../components/StarRating';
 import { OfficialReleaseModal } from '../components/OfficialReleaseModal';
 import { ShowCard } from '../components/ShowCard';
@@ -1358,8 +1358,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playShowButton: {
-    width: 48,
-    height: 48,
+    // Same height as the source picker it sits beside.
+    width: SOURCE_PILL_HEIGHT,
+    height: SOURCE_PILL_HEIGHT,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.accent,
     alignItems: 'center',

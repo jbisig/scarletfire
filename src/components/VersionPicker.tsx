@@ -50,7 +50,6 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
 
   if (!currentVersion) return null;
 
-  const currentAttribution = formatAttribution(currentVersion);
 
   const renderVersionOptions = () =>
     versions.map((version) => {
@@ -155,10 +154,7 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
     <View style={styles.container}>
       {/* Current Selection - Pill Style */}
       <TouchableOpacity
-        style={[
-          webGlassStyle ? styles.selectorGlass : styles.selector,
-          !webGlassStyle && currentAttribution && styles.selectorWithAttribution,
-        ]}
+        style={webGlassStyle ? styles.selectorGlass : styles.selector}
         onPress={() => setIsOpen(true)}
         activeOpacity={0.7}
         accessibilityRole="button"
@@ -176,11 +172,6 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           </View>
           <Ionicons name="chevron-down" size={18} color={webGlassStyle ? COLORS.textPrimary : COLORS.textSecondary} />
         </View>
-        {!webGlassStyle && currentAttribution && (
-          <Text style={styles.attribution} numberOfLines={1}>
-            {currentAttribution}
-          </Text>
-        )}
       </TouchableOpacity>
 
       {/* Modal */}
@@ -250,13 +241,20 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
   );
 });
 
+/** Matches the Play button beside it in the show header. */
+export const SOURCE_PILL_HEIGHT = 48;
+
 const styles = StyleSheet.create({
   container: {},
   selector: {
-    // Sits on the show's artwork: translucent black, not a grey card.
+    // Sits on the show's artwork: translucent black, not a grey card. Height is
+    // fixed to match the Play button beside it, which is why the trigger shows
+    // a single line — the taper and transfer credits are listed against every
+    // recording inside the picker itself.
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: RADIUS.full,
-    paddingVertical: 14,
+    height: SOURCE_PILL_HEIGHT,
+    justifyContent: 'center',
     paddingHorizontal: SPACING.xl,
   },
   selectorGlass: {
@@ -270,11 +268,7 @@ const styles = StyleSheet.create({
     minWidth: 220,
     ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
   },
-  selectorWithAttribution: {
-    paddingVertical: 12,
-  },
   selectorTopRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
