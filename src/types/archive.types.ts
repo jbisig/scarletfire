@@ -14,8 +14,7 @@ export interface ArchiveDoc {
   venue?: string;
   coverage?: string; // Location info
   year?: string;
-  /** archive.org returns a bare string for single-collection items. */
-  collection?: string | string[];
+  collection?: string[];
   downloads?: number; // All-time download count
   taper?: string; // Who recorded it
   transferer?: string; // Who did the digital transfer (Archive.org spelling)
@@ -54,6 +53,7 @@ export interface ArchiveMetadata {
   coverage?: string;
   description?: string;
   year?: string;
-  collection?: string[];
+  /** archive.org returns a bare string for single-collection items. */
+  collection?: string | string[];
   creator?: string;
 }
