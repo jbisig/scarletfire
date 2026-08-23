@@ -270,6 +270,7 @@ export function setWifiOnly(wifiOnly: boolean): void {
 }
 
 export function setTrackProgress(identifier: string, trackId: string, bytes: number): void {
+  if (!manifest.shows[identifier]) return;
   (progress[identifier] ??= {})[trackId] = bytes;
   notify();
 }

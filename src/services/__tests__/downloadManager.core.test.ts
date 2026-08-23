@@ -5,12 +5,15 @@ jest.mock('../nativeAudioPlayer', () => ({
 
 import type { ShowDetail } from '../../types/show.types';
 import {
+  createDownloadedShow,
   getDownloadedShow,
   getShowProgress,
   resetDownloadsStoreForTests,
+  upsertDownloadedShow,
 } from '../downloadsStore';
 import { downloadManager, StreamOnlyError, classifyDownloadError } from '../downloadManager';
 import { resetNetworkStatusForTests } from '../networkStatus';
+import nativeAudioPlayer from '../nativeAudioPlayer';
 
 const FS = require('expo-file-system/legacy');
 const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0)); };
@@ -57,6 +60,7 @@ describe('enqueueShow', () => {
       'https://ia600106.us.archive.org/1/items/aud/d1t02.mp3',
     ]);
     expect(FS.__tasks[0].fileUri).toBe('file:///mock-documents/downloads/aud/d1t01.mp3.part');
+    expect(nativeAudioPlayer.setExcludedFromBackup).toHaveBeenCalledWith('file:///mock-documents/downloads/');
 
     FS.__tasks[0].progress(400);
     expect(getShowProgress('aud').bytesDownloaded).toBe(400);
@@ -97,12 +101,21 @@ describe('enqueueShow', () => {
 
 describe('failure ladder', () => {
   it('falls back to the /download URL on 404 and completes', async () => {
+    const sleepStub = jest.fn(async () => {});
+    downloadManager.__setSleepForTests(sleepStub);
     await downloadManager.enqueueShow(detail('aud', 1));
     await flush();
     FS.__tasks[0].complete({ status: 404 });
     await flush();
+    expect(sleepStub).toHaveBeenCalledWith(4000);
     expect(FS.__tasks[1].url).toBe('https://archive.org/download/aud/d1t01.mp3');
     expect(FS.__files.has('file:///mock-documents/downloads/aud/d1t01.mp3.part')).toBe(false);
+    // The 4s pre-fallback wait happens before the fallback task is created.
+    const sleepOrder = sleepStub.mock.invocationCallOrder[0];
+    const fallbackTaskOrder = FS.createDownloadResumable.mock.invocationCallOrder[
+      FS.createDownloadResumable.mock.calls.length - 1
+    ];
+    expect(sleepOrder).toBeLessThan(fallbackTaskOrder);
     FS.__tasks[1].complete();
     await flush();
     expect(getDownloadedShow('aud')?.status).toBe('complete');
@@ -157,6 +170,19 @@ describe('failure ladder', () => {
     expect(show.error).toBe('disk-full');
     expect(FS.__tasks).toHaveLength(2); // third track never started
   });
+
+  it('fails the show (not stuck downloading) when a manifest track entry is missing', async () => {
+    const show = createDownloadedShow(detail('aud', 2), { allowCellular: false, now: Date.now() });
+    delete show.tracks['d1t02.mp3'];
+    upsertDownloadedShow(show);
+    downloadManager.start();
+    await flush();
+    FS.__tasks[0].complete();
+    await flush();
+    const result = getDownloadedShow('aud')!;
+    expect(result.status).toBe('failed');
+    expect(result.tracks['d1t01.mp3'].status).toBe('complete');
+  });
 });
 
 describe('removeShow / cancelShow', () => {
@@ -165,8 +191,10 @@ describe('removeShow / cancelShow', () => {
     await flush();
     FS.__tasks[0].complete();
     await flush();
+    const tasksBeforeCancel = FS.__tasks.length;
     await downloadManager.cancelShow('aud');
     await flush();
+    expect(FS.__tasks).toHaveLength(tasksBeforeCancel); // no further task started
     expect(FS.__tasks[1].paused).toBe(true);
     expect(getDownloadedShow('aud')).toBeUndefined();
     expect([...FS.__files.keys()].some(k => k.includes('/downloads/aud/'))).toBe(false);

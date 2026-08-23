@@ -17,6 +17,8 @@ const log = logger.create('Downloads');
 
 const CONCURRENCY = 2;
 const MAX_ATTEMPTS_PER_URL = 3;
+// Ladder per URL: attempt, 1s, attempt, 2s, attempt, 4s -> fallback URL. The
+// 4s step is the wait between exhausting one URL and starting the next.
 const BACKOFF_MS = [1000, 2000, 4000];
 const PROGRESS_THROTTLE_MS = 250;
 
@@ -146,7 +148,8 @@ class DownloadManager {
       .sort((a, b) => a.requestedAt - b.requestedAt)[0];
   }
 
-  /** Wi-Fi guard — replaced with the real rule in Task 8. */
+  /** Wi-Fi guard — replaced with the real rule in Task 8 (which also starts
+   * consuming `getNetworkStatus`, imported above). */
   private canProceed(_show: DownloadedShow): boolean {
     return true;
   }
@@ -198,7 +201,23 @@ class DownloadManager {
         if (this.cancelled.has(id) || this.halted.has(id) || this.pausedByNetwork) return;
         const track = pending.shift();
         if (!track) return;
-        outcomes.push(await this.downloadTrack(id, track, show.tracks[track.id].relativePath));
+        const entry = show.tracks[track.id];
+        if (!entry) {
+          // Manifest entry missing (e.g. a stale hydrated manifest that
+          // disagrees with detail.tracks) — fail the track, never throw.
+          this.failTrack(id, track.id, 'unknown');
+          outcomes.push('failed');
+          continue;
+        }
+        try {
+          outcomes.push(await this.downloadTrack(id, track, entry.relativePath));
+        } catch (error) {
+          // A sync/async throw here (e.g. from createDownloadResumable)
+          // must never escape Promise.all below — that would abandon the
+          // show mid-"downloading" with no error and no way to recover it.
+          this.failTrack(id, track.id, classifyDownloadError(error));
+          outcomes.push('failed');
+        }
       }
     };
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
@@ -213,7 +232,7 @@ class DownloadManager {
       store.updateDownloadedShow(id, { status: 'paused' });
       return;
     }
-    const allComplete = Object.values(current.tracks).every(t => t.status === 'complete');
+    const allComplete = !outcomes.includes('failed') && Object.values(current.tracks).every(t => t.status === 'complete');
     if (allComplete) {
       store.updateDownloadedShow(id, { status: 'complete', completedAt: Date.now(), error: undefined });
     } else {
@@ -230,26 +249,27 @@ class DownloadManager {
     if (track.fallbackStreamUrl && track.fallbackStreamUrl !== track.streamUrl) urls.push(track.fallbackStreamUrl);
 
     let lastError: DownloadError = 'unknown';
-    for (const url of urls) {
+    for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
+      const url = urls[urlIndex];
       for (let attempt = 0; attempt < MAX_ATTEMPTS_PER_URL; attempt++) {
         if (this.cancelled.has(identifier)) return 'cancelled';
         if (this.halted.has(identifier)) return 'failed';
         if (this.pausedByNetwork) return 'paused';
 
         let lastProgressAt = 0;
-        const resumable = FS.createDownloadResumable(
-          url,
-          partUri,
-          { sessionType: FS.FileSystemSessionType.BACKGROUND },
-          ({ totalBytesWritten }) => {
-            const now = Date.now();
-            if (now - lastProgressAt < PROGRESS_THROTTLE_MS) return;
-            lastProgressAt = now;
-            store.setTrackProgress(identifier, track.id, totalBytesWritten);
-          },
-        );
-        this.inFlight.set(key, resumable);
         try {
+          const resumable = FS.createDownloadResumable(
+            url,
+            partUri,
+            { sessionType: FS.FileSystemSessionType.BACKGROUND },
+            ({ totalBytesWritten }) => {
+              const now = Date.now();
+              if (now - lastProgressAt < PROGRESS_THROTTLE_MS) return;
+              lastProgressAt = now;
+              store.setTrackProgress(identifier, track.id, totalBytesWritten);
+            },
+          );
+          this.inFlight.set(key, resumable);
           const result = await resumable.downloadAsync();
           if (!result) {
             // pauseAsync() resolves downloadAsync with undefined.
@@ -285,6 +305,10 @@ class DownloadManager {
         }
         if (attempt < MAX_ATTEMPTS_PER_URL - 1) await this.sleep(BACKOFF_MS[attempt]);
       }
+      const hasMoreUrls = urlIndex < urls.length - 1;
+      if (hasMoreUrls && !this.cancelled.has(identifier) && !this.halted.has(identifier) && !this.pausedByNetwork) {
+        await this.sleep(BACKOFF_MS[MAX_ATTEMPTS_PER_URL - 1]);
+      }
     }
     this.failTrack(identifier, track.id, lastError);
     return 'failed';
@@ -292,7 +316,10 @@ class DownloadManager {
 
   private failTrack(identifier: string, trackId: string, error: DownloadError): void {
     store.updateDownloadedTrack(identifier, trackId, { status: 'failed' });
-    store.updateDownloadedShow(identifier, { error });
+    // Never let a later, less-severe error downgrade a disk-full show error.
+    const current = store.getDownloadedShow(identifier);
+    const nextError = current?.error === 'disk-full' ? 'disk-full' : error;
+    store.updateDownloadedShow(identifier, { error: nextError });
   }
 
   private async pauseInFlight(identifier: string): Promise<void> {

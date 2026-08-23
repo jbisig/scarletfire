@@ -97,6 +97,8 @@ describe('reads and writes', () => {
     expect(getDownloadedBytesTotal()).toBe(1234);
     removeDownloadedShow('a');
     expect(getDownloadedShow('a')).toBeUndefined();
+    setTrackProgress('a', 'x', 5); // a late progress callback for a removed show is a no-op
+    expect(getShowProgress('a').bytesDownloaded).toBe(0);
     clearDownloadedShows();
     expect(listDownloadedShows()).toEqual([]);
   });
