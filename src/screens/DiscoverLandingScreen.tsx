@@ -11,7 +11,7 @@ import {
 import { logger } from '../utils/logger';
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { WebVideoBackground } from '../components/shared/WebVideoBackground';
-import { GlassBlurOverlay } from '../components/web/GlassHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -38,7 +38,7 @@ import { useShowRatingsVersion, useResolvedShowRating } from '../contexts/UserRa
 import { collectResolvedClassics, mergeCuratedClassics } from '../utils/classicShowsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS, CARD_SCRIM } from '../constants/theme';
 import { resolveVideoUri } from '../utils/resolveVideoUri';
 
 type DiscoverLandingNavigationProp = StackNavigationProp<RootStackParamList, 'DiscoverLanding'>;
@@ -252,10 +252,21 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                   />
                 );
               })()}
-              {/* Overlay */}
-              {Platform.OS === 'web' && <GlassBlurOverlay />}
-              <View style={styles.sotdBlurOverlay}>
-                {Platform.OS !== 'web' && <BlurBackground intensity={30} tint="dark" />}
+              {/* Softens the video, the way the carousel cards blur their
+                  artwork. Blur only — the darkening is the shared scrim below,
+                  so this card and those darken by the same amount. */}
+              {Platform.OS === 'web' ? (
+                <View style={styles.sotdBlur} />
+              ) : (
+                <BlurBackground intensity={30} tint="dark" />
+              )}
+              <View style={styles.sotdScrim} />
+              <LinearGradient
+                colors={CARD_SCRIM.gradient}
+                start={CARD_SCRIM.gradientStart}
+                end={CARD_SCRIM.gradientEnd}
+                style={styles.sotdBlurOverlay}
+              >
                 {isLoading ? (
                   <View style={styles.sotdLoading}>
                     <ActivityIndicator size="large" color={COLORS.accent} />
@@ -274,7 +285,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
                     )}
                   </View>
                 ) : null}
-              </View>
+              </LinearGradient>
             </View>
           </TouchableOpacity>
         </View>
@@ -403,6 +414,18 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.68,
+  },
+  sotdBlur: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+    // @ts-ignore - web only
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+  },
+  sotdScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: CARD_SCRIM.fill,
+    zIndex: 1,
   },
   sotdBlurOverlay: {
     paddingVertical: SPACING.md,

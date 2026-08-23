@@ -204,6 +204,23 @@ export const TYPOGRAPHY = {
  *   marginBottom: SPACING.lg
  *   gap: SPACING.sm
  */
+/**
+ * The darkening the Discover cards share, so the show-of-the-day card and the
+ * carousel cards beneath it read as one family: a flat scrim over the whole
+ * card, plus a left-weighted gradient that buys contrast under the text while
+ * letting the artwork show through on the right.
+ *
+ * The background behind it is blurred by whatever suits it — blurRadius on an
+ * image, a BlurView or backdrop-filter over video — but the darkening is this,
+ * and only this, or the cards drift apart.
+ */
+export const CARD_SCRIM = {
+  fill: 'rgba(0, 0, 0, 0.5)',
+  gradient: ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)'] as const,
+  gradientStart: { x: 0, y: 0.5 },
+  gradientEnd: { x: 1, y: 0.5 },
+};
+
 export const SPACING = {
   /** 4px - Minimal spacing */
   xs: 4,

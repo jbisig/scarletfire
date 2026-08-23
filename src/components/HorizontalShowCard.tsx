@@ -7,7 +7,7 @@ import { StarRating } from './StarRating';
 import { getShareBackground, shareBackgroundIndexForId } from './share/shareBackgrounds';
 import { useResponsive } from '../hooks/useResponsive';
 import { useResolvedShowRating } from '../contexts/UserRatingsContext';
-import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
+import { TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS, CARD_SCRIM } from '../constants/theme';
 
 interface HorizontalShowCardProps {
   show: GratefulDeadShow;
@@ -61,9 +61,9 @@ export const HorizontalShowCard = React.memo<HorizontalShowCardProps>(function H
       {/* Text sits on the left; the gradient buys contrast there and lets the
           artwork show through on the right. */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
+        colors={CARD_SCRIM.gradient}
+        start={CARD_SCRIM.gradientStart}
+        end={CARD_SCRIM.gradientEnd}
         style={[styles.gradient, styles.passive]}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: CARD_SCRIM.fill,
   },
   cardHit: {
     ...StyleSheet.absoluteFillObject,
