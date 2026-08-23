@@ -14,6 +14,7 @@ import { UserRatingsProvider } from './src/contexts/UserRatingsContext';
 import { SourcePrefsProvider } from './src/contexts/SourcePrefsContext';
 import { RatingOverlayProvider } from './src/contexts/RatingOverlayContext';
 import { PlayCountsProvider } from './src/contexts/PlayCountsContext';
+import { DownloadsProvider } from './src/contexts/DownloadsContext';
 import { ShowOfTheDayProvider } from './src/contexts/ShowOfTheDayContext';
 import { VideoBackgroundProvider } from './src/contexts/VideoBackgroundContext';
 import { ToastProvider } from './src/contexts/ToastContext';
@@ -129,6 +130,7 @@ export default function App() {
                   <ShowOfTheDayProvider>
                     <FavoritesProvider>
                       <CollectionsProvider>
+                        <DownloadsProvider>
                         <PlayCountsProvider>
                         <PlayerProvider>
                           <VideoBackgroundProvider>
@@ -141,6 +143,7 @@ export default function App() {
                           </VideoBackgroundProvider>
                         </PlayerProvider>
                         </PlayCountsProvider>
+                        </DownloadsProvider>
                       </CollectionsProvider>
                     </FavoritesProvider>
                   </ShowOfTheDayProvider>
