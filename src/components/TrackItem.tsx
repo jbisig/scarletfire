@@ -320,9 +320,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,
+    // A point under bodyLarge: the long taper labels in a track list read
+    // better a little smaller, and the token is shared too widely to move.
+    fontSize: 16,
     fontWeight: '500',
     flexShrink: 1,
-    ...(Platform.OS === 'web' ? { fontSize: 16, fontWeight: '400' as const } : {}),
+    ...(Platform.OS === 'web' ? { fontSize: 15, fontWeight: '400' as const } : {}),
   },
   duration: {
     ...TYPOGRAPHY.body,
