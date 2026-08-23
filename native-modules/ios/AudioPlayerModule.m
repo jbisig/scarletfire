@@ -43,4 +43,8 @@ RCT_EXTERN_METHOD(getProgress:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(reset:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(setExcludedFromBackup:(NSString *)path
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 @end

@@ -1,4 +1,4 @@
-const { withXcodeProject, withMainApplication, withAppBuildGradle, withAndroidManifest } = require('@expo/config-plugins');
+const { withXcodeProject, withMainApplication, withAppBuildGradle, withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -233,6 +233,51 @@ function withCastManifest(config) {
   });
 }
 
+const BACKUP_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
+<!-- Offline downloads are re-downloadable; keep them out of Auto Backup
+     (which silently stops backing the app up past 25 MB otherwise). -->
+<full-backup-content>
+  <exclude domain="file" path="downloads" />
+</full-backup-content>
+`;
+
+const DATA_EXTRACTION_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+  <cloud-backup>
+    <exclude domain="file" path="downloads" />
+  </cloud-backup>
+  <device-transfer>
+    <exclude domain="file" path="downloads" />
+  </device-transfer>
+</data-extraction-rules>
+`;
+
+/**
+ * Write res/xml backup rules that exclude the offline-downloads directory,
+ * and point the <application> at them.
+ */
+function withDownloadsBackupRules(config) {
+  config = withDangerousMod(config, [
+    'android',
+    async (config) => {
+      const xmlDir = path.join(config.modRequest.platformProjectRoot, 'app', 'src', 'main', 'res', 'xml');
+      fs.mkdirSync(xmlDir, { recursive: true });
+      fs.writeFileSync(path.join(xmlDir, 'backup_rules.xml'), BACKUP_RULES_XML);
+      fs.writeFileSync(path.join(xmlDir, 'data_extraction_rules.xml'), DATA_EXTRACTION_RULES_XML);
+      console.log('[AudioPlayerModule] Wrote downloads backup rules');
+      return config;
+    },
+  ]);
+  return withAndroidManifest(config, async (config) => {
+    const application = config.modResults.manifest.application?.[0];
+    if (application) {
+      application.$['android:fullBackupContent'] = '@xml/backup_rules';
+      application.$['android:dataExtractionRules'] = '@xml/data_extraction_rules';
+    }
+    return config;
+  });
+}
+
 /**
  * Main plugin that combines iOS and Android setup
  */
@@ -244,6 +289,7 @@ function withAudioPlayerModule(config) {
   config = withAudioPlayerModuleAndroidFiles(config);
   config = withAudioPlayerModuleAndroidDependencies(config);
   config = withCastManifest(config);
+  config = withDownloadsBackupRules(config);
 
   return config;
 }

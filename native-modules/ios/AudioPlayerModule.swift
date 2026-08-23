@@ -302,6 +302,26 @@ class AudioPlayerModule: RCTEventEmitter {
     resolve(nil)
   }
 
+  // MARK: - Backup exclusion (offline downloads)
+
+  /// Offline downloads live under Documents/downloads, which iCloud would
+  /// otherwise back up. App Review rejects large re-downloadable content in
+  /// backups (guideline 2.23), so the JS side calls this once per launch.
+  @objc func setExcludedFromBackup(_ path: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    guard var url = URL(string: path), url.isFileURL else {
+      reject("INVALID_PATH", "Expected a file:// URL", nil)
+      return
+    }
+    do {
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      try url.setResourceValues(values)
+      resolve(nil)
+    } catch {
+      reject("BACKUP_EXCLUSION_FAILED", error.localizedDescription, error)
+    }
+  }
+
   @objc func seekTo(_ position: Double, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
     seekToInternal(position)
     resolve(nil)
