@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     // fixed to match the Play button beside it, which is why the trigger shows
     // a single line — the taper and transfer credits are listed against every
     // recording inside the picker itself.
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: RADIUS.full,
     height: SOURCE_PILL_HEIGHT,
     justifyContent: 'center',
