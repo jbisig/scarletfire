@@ -427,10 +427,13 @@ function generateTypeScriptCode(songMap) {
 
 function escapeString(str) {
   if (!str) return '';
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n');
+  // JSON.stringify handles every escape, and — unlike hand-rolled backslash
+  // doubling — is safe to run over already-escaped input. The old version did
+  // `.replace(/\\/g, '\\\\')`, so regenerating the catalog from its own output
+  // doubled every backslash; one apostrophe grew to 64 of them across six
+  // passes. See scripts/repairSongCatalogTitles.js for the cleanup.
+  // Returns the body without surrounding quotes, since callers supply them.
+  return JSON.stringify(String(str)).slice(1, -1);
 }
 
 // Main execution
