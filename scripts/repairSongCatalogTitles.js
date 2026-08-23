@@ -40,6 +40,42 @@ const CANONICAL_TITLE = {
   playingintheband_reprise: 'Playing in the Band Reprise',
 };
 
+/**
+ * Catalog titles that are simply the wrong name for the song, keyed by the
+ * damaged title. Each is corroborated by BOTH independent vocabularies — the
+ * Compendium's prose and HeadyVersion's titles — and has no competing entry it
+ * could be confused with.
+ *
+ * Deliberately NOT renamed, though they look similar:
+ *   "It's All Over Now" (255)  — a real Dead song (Womack/Stones), distinct
+ *                                from "Baby Blue" (3); renaming would merge two
+ *                                different songs.
+ *   "Smokestack Lightning"     — the query spelling varies, the catalog is right.
+ *   "The Mighty Quinn"         — the query carries a parenthetical, not the title.
+ */
+const RENAME = {
+  Estimated: 'Estimated Prophet',
+  'Mind Left Body': 'Mind Left Body Jam',
+};
+
+/**
+ * A track literally titled "X > Y" becomes its own catalog entry, so a song
+ * that Archive almost always labels inside a segue never gets a standalone
+ * entry. "Drums" and "Space" are the casualties: neither exists on its own,
+ * despite being played at nearly every post-1978 show.
+ *
+ * The catalog already models composites and their parts side by side — 31 of
+ * the 138 "China Cat Sunflower > I Know You Rider" performances also sit in the
+ * standalone "China Cat Sunflower" — so this follows the existing shape rather
+ * than inventing one.
+ *
+ * COVERAGE IS PARTIAL BY CONSTRUCTION. These entries can only carry the
+ * performances whose track title names the segment, which is far short of how
+ * often the band actually played it. They make the song findable; they are not
+ * a performance census.
+ */
+const SPLIT_COMPOSITES = true;
+
 const src = fs.readFileSync(CATALOG, 'utf8');
 
 // ---- parse -----------------------------------------------------------------
@@ -137,6 +173,51 @@ for (const [k, group] of groups) {
   if (title !== base.title) retitled++;
 
   out.push({ ...base, title, performanceCount: performances.length, performances });
+}
+
+// ---- rename catalog titles that are simply wrong -------------------------
+let renamed = 0;
+for (const song of out) {
+  const next = RENAME[song.title];
+  if (!next) continue;
+  if (out.some(o => o !== song && mergeKey(o.title) === mergeKey(next))) {
+    throw new Error(`rename "${song.title}" -> "${next}" would collide with an existing entry`);
+  }
+  song.title = next;
+  renamed++;
+}
+if (renamed) console.log('\ncatalog titles renamed:', renamed);
+
+// ---- give segue-only songs a standalone entry ----------------------------
+if (SPLIT_COMPOSITES) {
+  const have = new Set(out.map(s => mergeKey(s.title)));
+  const created = new Map();
+
+  for (const song of out) {
+    if (!song.title.includes('>')) continue;
+    const parts = [...new Set(song.title.split('>').map(p => p.trim()).filter(Boolean))];
+    for (const part of parts) {
+      const k = mergeKey(part);
+      if (!k || have.has(k)) continue;
+      if (!created.has(k)) created.set(k, { title: part, performances: [], seen: new Set() });
+      const target = created.get(k);
+      for (const p of song.performances) {
+        const id = `${p.identifier}|${p.date}`;
+        if (target.seen.has(id)) continue;
+        target.seen.add(id);
+        // Drop the parent's rating: it was voted on the segue, not this part.
+        const { rating, ...rest } = p;
+        target.performances.push(rest);
+      }
+    }
+  }
+
+  for (const { title, performances } of created.values()) {
+    performances.sort((a, b) => a.date.localeCompare(b.date) || a.identifier.localeCompare(b.identifier));
+    out.push({ title, performanceCount: performances.length, performances });
+    console.log(`   created standalone "${title}" from segue titles (${performances.length} perfs, partial coverage)`);
+  }
+  if (created.size) console.log('standalone entries created:', created.size);
 }
 
 out.sort((a, b) => a.title.localeCompare(b.title));

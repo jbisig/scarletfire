@@ -63,7 +63,48 @@ describe('song catalog integrity', () => {
     expect(findSongByTitle("Truckin'")?.performanceCount).toBe(506);
     expect(findSongByTitle("Uncle John's Band")?.performanceCount).toBe(307);
     expect(findSongByTitle('Playing in the Band')?.performanceCount).toBe(576);
-    expect(GRATEFUL_DEAD_SONGS.length).toBe(362);
+    expect(GRATEFUL_DEAD_SONGS.length).toBe(364);
+  });
+
+  it('names Estimated Prophet in full', () => {
+    const song = findSongByTitle('Estimated Prophet');
+    expect(song?.performanceCount).toBe(378);
+    // The truncated name still resolves, via the loose index.
+    expect(findSongByTitle('Estimated')).toBe(song);
+    // ...and there is exactly one entry, not two.
+    expect(GRATEFUL_DEAD_SONGS.filter(s => /^estimated/i.test(s.title))).toHaveLength(1);
+  });
+
+  it('gives Drums and Space standalone entries', () => {
+    // Archive labels these inside segues, so they had no entry of their own
+    // despite being played at nearly every post-1978 show. Coverage is partial
+    // by construction — only the tracks whose title names the segment.
+    const drums = findSongByTitle('Drums');
+    const space = findSongByTitle('Space');
+    expect(drums?.performanceCount).toBe(62);
+    expect(space?.performanceCount).toBe(54);
+
+    // The composite they were derived from is still there, matching how the
+    // catalog already models China Cat > Rider alongside its parts.
+    expect(findSongByTitle('Drums > Space')?.performanceCount).toBe(54);
+    // "Space Jam" is its own thing and was not folded in.
+    expect(findSongByTitle('Space Jam')?.performanceCount).toBe(3);
+
+    // Derived performances carry no rating: the vote was on the segue.
+    for (const song of [drums!, space!]) {
+      for (const p of song.performances) {
+        expect([song.title, p.identifier, p.rating]).toEqual([song.title, p.identifier, undefined]);
+      }
+    }
+  });
+
+  it('keeps genuinely distinct songs apart', () => {
+    // Both are real Dead songs; a careless "truncation" fix would merge them.
+    const allOverNow = findSongByTitle("It's All Over Now");
+    const babyBlue = findSongByTitle('Baby Blue');
+    expect(allOverNow).toBeDefined();
+    expect(babyBlue).toBeDefined();
+    expect(allOverNow).not.toBe(babyBlue);
   });
 
   it('resolves a title whatever its punctuation', () => {
