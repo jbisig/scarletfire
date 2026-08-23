@@ -185,6 +185,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
             e.stopPropagation();
             onAddToPlaylist?.(track);
           }}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={
@@ -208,6 +209,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
             e.stopPropagation();
             onToggleSave(track);
           }}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={isSaved ? 'Remove from favorites' : 'Add to favorites'}
@@ -245,7 +247,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
             e?.stopPropagation?.();
             onLongPress?.(track);
           }}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={`More options for ${track.title}`}
@@ -263,12 +265,12 @@ TrackItem.displayName = 'TrackItem';
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    // Both platforms land on a 48pt row, but they get there differently: native
-    // rows carry a 28pt "more" button that sets their height, and web rows are
-    // sized by the title text. Padding makes up the difference, so a single
-    // value would leave the two lists visibly out of step.
-    paddingVertical: 10,
-    ...(Platform.OS === 'web' ? { paddingVertical: 14 } : {}),
+    // 14 + a 20pt title line + 14 = a 48pt row on both platforms. The height
+    // is the padding's job: the icon buttons are capped to the line height so
+    // none of them can set it, which is what let the two lists drift apart
+    // (native's "more" button used to size its rows and web's text sized its
+    // own, so the padding had to differ to compensate).
+    paddingVertical: 14,
     paddingHorizontal: SPACING.xxl,
     // Baseline, so the duration sits on the title's first line rather than
     // floating in the gutter of a title that wrapped (10.5px out on
@@ -284,7 +286,9 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   containerDesktop: {
-    paddingVertical: 8,
+    // 12 + 20 + 12 keeps the 44pt desktop row it had when the 28pt buttons
+    // were setting the height.
+    paddingVertical: 12,
     paddingHorizontal: 16,
     marginVertical: 2,
     borderRadius: 12,
@@ -331,6 +335,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.bodyLarge,
+    // Explicit, because the row's height is measured from it.
+    lineHeight: 20,
     fontWeight: '500',
     flexShrink: 1,
     ...(Platform.OS === 'web' ? { fontWeight: '400' as const } : {}),
@@ -358,11 +364,12 @@ const styles = StyleSheet.create({
     height: 20,
   },
   moreButton: {
-    // Native-only, and the tallest thing in the row — it, not the padding, sets
-    // the row height there. 28pt + 8pt hitSlop still clears the 44pt target
-    // while letting the row sit closer to the web list's density.
+    // Native-only. Capped to the title's 20pt line: baseline-aligned text sits
+    // flush to the top of the line, so a button taller than the text pushes
+    // the text up and leaves itself sitting low (4.2px, measured). 28 x 20
+    // plus hitSlop still clears the 44pt target.
     width: 28,
-    height: 28,
+    height: 20,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -392,8 +399,9 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   iconButton: {
+    // Capped to the title's line height for the same reason as moreButton.
     width: 28,
-    height: 28,
+    height: 20,
     borderRadius: RADIUS.full,
     justifyContent: 'center',
     alignItems: 'center',
