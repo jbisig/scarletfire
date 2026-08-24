@@ -2,6 +2,7 @@
 jest.mock('../authService', () => ({
   authService: {
     getClient: jest.fn(),
+    getCurrentUser: jest.fn(),
   },
 }));
 
@@ -31,9 +32,9 @@ function makeSupabaseMock(overrides: Partial<Record<string, any>> = {}) {
   const from = jest.fn().mockReturnValue(chain);
   (authService.getClient as jest.Mock).mockReturnValue({
     from,
-    auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'me' } }, error: null }) },
     storage: { from: jest.fn() },
   });
+  (authService.getCurrentUser as jest.Mock).mockResolvedValue({ id: 'me' });
   return { from, chain };
 }
 
@@ -66,10 +67,8 @@ describe('followService mutations', () => {
 
   it('followUser throws when signed out', async () => {
     makeSupabaseMock();
-    (authService.getClient as jest.Mock).mockReturnValue({
-      from: jest.fn(),
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }) },
-    });
+    (authService.getClient as jest.Mock).mockReturnValue({ from: jest.fn() });
+    (authService.getCurrentUser as jest.Mock).mockResolvedValue(null);
     await expect(followService.followUser('x')).rejects.toThrow(/signed in/i);
   });
 });
@@ -89,7 +88,6 @@ describe('followService reads', () => {
         };
         return chain;
       }),
-      auth: { getUser: jest.fn() },
     };
     (authService.getClient as jest.Mock).mockReturnValue(supabase);
 
@@ -105,16 +103,14 @@ describe('followService reads', () => {
     };
     (authService.getClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockReturnValue(chain),
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'me' } }, error: null }) },
     });
+    (authService.getCurrentUser as jest.Mock).mockResolvedValue({ id: 'me' });
     await expect(followService.isFollowing('target-1')).resolves.toBe(true);
   });
 
   it('isFollowing returns false when not signed in', async () => {
-    (authService.getClient as jest.Mock).mockReturnValue({
-      from: jest.fn(),
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }) },
-    });
+    (authService.getClient as jest.Mock).mockReturnValue({ from: jest.fn() });
+    (authService.getCurrentUser as jest.Mock).mockResolvedValue(null);
     await expect(followService.isFollowing('target-1')).resolves.toBe(false);
   });
 });
@@ -205,7 +201,6 @@ describe('followService lists', () => {
         table === 'user_follows' ? followChain : profilesChain,
       ),
       storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
-      auth: { getUser: jest.fn() },
     });
 
     const result = await followService.getFollowers('target-1');
@@ -240,7 +235,6 @@ describe('followService lists', () => {
         table === 'user_follows' ? followChain : profilesChain,
       ),
       storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
-      auth: { getUser: jest.fn() },
     });
 
     const result = await followService.getFollowers('target-1');
@@ -284,7 +278,6 @@ describe('followService lists', () => {
         table === 'user_follows' ? followChain : profilesChain,
       ),
       storage: { from: jest.fn().mockReturnValue({ list: storageList, getPublicUrl }) },
-      auth: { getUser: jest.fn() },
     });
 
     const result = await followService.getFollowers('target-1');

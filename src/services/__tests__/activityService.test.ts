@@ -6,6 +6,7 @@ const authStateCallbacks: ((user: { id: string } | null) => void)[] = [];
 jest.mock('../authService', () => ({
   authService: {
     getClient: jest.fn(),
+    getCurrentUser: jest.fn(),
     onAuthStateChanged: jest.fn((cb: (user: any) => void) => {
       authStateCallbacks.push(cb);
       return mockUnsubscribe;
@@ -48,10 +49,8 @@ function setup({
     return { insert };
   });
 
-  (authService.getClient as jest.Mock).mockReturnValue({
-    from,
-    auth: { getUser: jest.fn().mockResolvedValue({ data: { user } }) },
-  });
+  (authService.getClient as jest.Mock).mockReturnValue({ from });
+  (authService.getCurrentUser as jest.Mock).mockResolvedValue(user);
 
   return { from, insertCalls, profileSingle };
 }
@@ -99,8 +98,8 @@ describe('activityService.emitEvent', () => {
         ? { select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(),
             single: jest.fn().mockResolvedValue({ data: { is_public: true }, error: null }) }
         : { insert: jest.fn().mockResolvedValue({ error: null }) }),
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'me2' } } }) },
     });
+    (authService.getCurrentUser as jest.Mock).mockResolvedValue({ id: 'me2' });
     await activityService.emitEvent('followed_user', 'user', 't2', {});
     // Profile was re-queried after invalidation.
   });

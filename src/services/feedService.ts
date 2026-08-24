@@ -41,8 +41,10 @@ export interface GetActivityFeedResult {
 class FeedService {
   async getActivityFeed(args: GetActivityFeedArgs): Promise<GetActivityFeedResult> {
     const supabase = authService.getClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const me = userData?.user?.id;
+    // Local session read — getUser() hits the Auth server and serialized a
+    // full network round trip before the RPC. The RPC authorizes via
+    // auth.uid() server-side; this is only the "not signed in" early exit.
+    const me = (await authService.getCurrentUser())?.id;
     if (!me) {
       return {
         events: [],
@@ -96,8 +98,8 @@ class FeedService {
     pageSize: number;
   }): Promise<SectionedPeople> {
     const supabase = authService.getClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const me = userData?.user?.id;
+    // Local session read — see getActivityFeed above.
+    const me = (await authService.getCurrentUser())?.id;
     if (!me) return { following: [], discover: [], search: [] };
 
     // viewer_id is no longer passed — the RPC derives it from auth.uid()

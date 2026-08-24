@@ -82,8 +82,8 @@ class ActivityService {
   ): Promise<void> {
     try {
       const supabase = authService.getClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const me = userData?.user?.id;
+      // Local session read — no Auth-server round trip per emitted event.
+      const me = (await authService.getCurrentUser())?.id;
       if (!me) return;
 
       const isPublic = await this.ensureIsPublic(me);

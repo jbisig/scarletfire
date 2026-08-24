@@ -2,6 +2,7 @@
 jest.mock('../authService', () => ({
   authService: {
     getClient: jest.fn(),
+    getCurrentUser: jest.fn(),
   },
 }));
 
@@ -10,10 +11,8 @@ import { authService } from '../authService';
 
 function setupRpc(rpcResponse: any) {
   const rpc = jest.fn().mockResolvedValue(rpcResponse);
-  (authService.getClient as jest.Mock).mockReturnValue({
-    rpc,
-    auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'me' } } }) },
-  });
+  (authService.getClient as jest.Mock).mockReturnValue({ rpc });
+  (authService.getCurrentUser as jest.Mock).mockResolvedValue({ id: 'me' });
   return rpc;
 }
 
@@ -96,10 +95,8 @@ describe('feedService.getActivityFeed', () => {
   });
 
   it('returns empty + both-not-exhausted when not signed in', async () => {
-    (authService.getClient as jest.Mock).mockReturnValue({
-      rpc: jest.fn(),
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null } }) },
-    });
+    (authService.getClient as jest.Mock).mockReturnValue({ rpc: jest.fn() });
+    (authService.getCurrentUser as jest.Mock).mockResolvedValue(null);
     const result = await feedService.getActivityFeed({
       followingCursor: null, publicCursor: null,
       includeFollowing: true, includePublic: true, pageSize: 30,

@@ -18,10 +18,10 @@ export interface FollowCounts {
 
 class FollowService {
   private async currentUserId(): Promise<string> {
-    const supabase = authService.getClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user) throw new Error('Must be signed in');
-    return data.user.id;
+    // Local session read — no Auth-server round trip.
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Must be signed in');
+    return user.id;
   }
 
   async followUser(targetUserId: string): Promise<void> {
@@ -78,8 +78,7 @@ class FollowService {
 
   async isFollowing(targetUserId: string): Promise<boolean> {
     const supabase = authService.getClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const me = userData?.user?.id;
+    const me = (await authService.getCurrentUser())?.id;
     if (!me) return false;
     const { data, error } = await supabase
       .from('user_follows')

@@ -14,23 +14,37 @@ import type { RootStackParamList } from '../../navigation/AppNavigator';
 
 const PAGE_SIZE = 30;
 
+// Module-level cache: the list unmounts on every Activity/People toggle (and
+// tab revisit), and reloading from zero showed a spinner for the full round
+// trip each time. Returning mounts render this immediately and refresh in the
+// background (stale-while-revalidate).
+let cachedFeed: {
+  events: ActivityEvent[];
+  followingCursor: string | null;
+  publicCursor: string | null;
+} | null = null;
+
+type LoadMode = 'initial' | 'refresh' | 'silent';
+
 export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => void }) {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { isDesktop } = useResponsive();
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
+  const [events, setEvents] = useState<ActivityEvent[]>(() => cachedFeed?.events ?? []);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(cachedFeed === null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [followingCursor, setFollowingCursor] = useState<string | null>(null);
-  const [publicCursor, setPublicCursor] = useState<string | null>(null);
+  const [followingCursor, setFollowingCursor] = useState<string | null>(cachedFeed?.followingCursor ?? null);
+  const [publicCursor, setPublicCursor] = useState<string | null>(cachedFeed?.publicCursor ?? null);
   const [followingExhausted, setFollowingExhausted] = useState(false);
   const [publicExhausted, setPublicExhausted] = useState(false);
 
   const bothExhausted = followingExhausted && publicExhausted;
 
-  const load = useCallback(async (refreshing: boolean) => {
-    if (refreshing) setIsRefreshing(true); else setIsLoading(true);
+  const load = useCallback(async (mode: LoadMode) => {
+    // 'silent' refreshes behind cached content — no spinner of either kind.
+    if (mode === 'refresh') setIsRefreshing(true);
+    else if (mode === 'initial') setIsLoading(true);
     try {
       const result = await feedService.getActivityFeed({
         followingCursor: null,
@@ -44,6 +58,11 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
       setPublicCursor(result.nextPublicCursor);
       setFollowingExhausted(false); // fresh load resets exhaustion
       setPublicExhausted(false);
+      cachedFeed = {
+        events: result.events,
+        followingCursor: result.nextFollowingCursor,
+        publicCursor: result.nextPublicCursor,
+      };
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -66,7 +85,13 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
         setFollowingExhausted(true);
         setPublicExhausted(true);
       } else {
-        setEvents(prev => [...prev, ...result.events]);
+        const nextFollowing = result.nextFollowingCursor ?? followingCursor;
+        const nextPublic = result.nextPublicCursor ?? publicCursor;
+        setEvents(prev => {
+          const next = [...prev, ...result.events];
+          cachedFeed = { events: next, followingCursor: nextFollowing, publicCursor: nextPublic };
+          return next;
+        });
         if (result.nextFollowingCursor) setFollowingCursor(result.nextFollowingCursor);
         if (result.nextPublicCursor) setPublicCursor(result.nextPublicCursor);
         if (result.followingExhausted) setFollowingExhausted(true);
@@ -77,7 +102,8 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
     }
   }, [isLoadingMore, bothExhausted, followingCursor, publicCursor, followingExhausted, publicExhausted]);
 
-  useEffect(() => { load(false); }, [load]);
+  // Cached content renders instantly; the network refresh happens quietly.
+  useEffect(() => { load(cachedFeed ? 'silent' : 'initial'); }, [load]);
 
   const handlePressActor = (event: ActivityEvent) => {
     navigation.navigate('PublicProfile', { username: event.actor_username });
@@ -133,7 +159,7 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
-          onRefresh={() => load(true)}
+          onRefresh={() => load('refresh')}
           tintColor={COLORS.accent}
         />
       }
