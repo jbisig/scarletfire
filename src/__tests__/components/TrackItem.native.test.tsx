@@ -44,9 +44,20 @@ it('exposes a visible, labelled "more" button that opens the row menu', () => {
   expect(onLongPress).toHaveBeenCalledWith(track);
 });
 
-it('swaps the duration for a spinner and announces loading while the stream starts', () => {
-  const tree = render({ isLoading: true, isPlaying: true });
-  expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(1);
-  const row = tree.root.findByProps({ accessibilityHint: 'Double tap to play this track' });
-  expect(row.props.accessibilityLabel).toMatch(/^Loading\. Scarlet Begonias/);
+it('announces loading immediately but holds the spinner until the load has dragged (1.5s)', () => {
+  jest.useFakeTimers();
+  try {
+    const tree = render({ isLoading: true, isPlaying: true });
+    // Announced right away for screen readers…
+    const row = tree.root.findByProps({ accessibilityHint: 'Double tap to play this track' });
+    expect(row.props.accessibilityLabel).toMatch(/^Loading\. Scarlet Begonias/);
+    // …but no visual spinner yet: most tracks start in well under a second,
+    // and a spinner that flashes for a few frames reads as jank.
+    expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
+
+    act(() => { jest.advanceTimersByTime(1500); });
+    expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(1);
+  } finally {
+    jest.useRealTimers();
+  }
 });

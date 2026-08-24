@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, ActivityIndicator, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Track } from '../types/show.types';
+import { useSlowLoading } from '../hooks/useSlowLoading';
 import { formatDuration } from '../utils/formatters';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
@@ -62,6 +63,10 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
   const markGap = SPACING.sm + 2;
   const markWidth = nowPlayingBarsWidth(markSize) + markGap;
   const showMark = isPlaying && !isLoading;
+  // Most tracks start in well under a second, and a spinner that flashes for
+  // a few frames reads as jank. Only show it once the load has actually
+  // dragged; until then the duration stays put.
+  const showSpinner = useSlowLoading(isLoading, 1500);
   const reveal = useRef(new Animated.Value(showMark ? 1 : 0)).current;
 
   useEffect(() => {
@@ -222,7 +227,7 @@ export const TrackItem = React.memo<TrackItemProps>(({ track, isPlaying, onPress
           />
         </TouchableOpacity>
       )}
-      {isLoading ? (
+      {showSpinner ? (
         <View style={[styles.duration, styles.loadingSlot, hasSave && !isNative && styles.durationWeb, styles.passive]} testID="track-loading">
           <ActivityIndicator size="small" color={COLORS.accent} />
         </View>
