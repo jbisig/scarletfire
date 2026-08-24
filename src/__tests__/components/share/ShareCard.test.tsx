@@ -8,6 +8,7 @@ const showItem: ShareItem = {
   showId: 'gd1982',
   date: '1982-08-06',
   venue: 'Sound City Recording Studios',
+  location: 'Van Nuys, CA',
   tier: 1,
 };
 
@@ -23,10 +24,18 @@ const songItem: ShareItem = {
 };
 
 describe('ShareCard', () => {
-  it('renders a show card with date as title and venue as subtitle', () => {
+  it('renders a show card matching the show screen: venue, then date + stars, then location', () => {
     const { getByText } = render(<ShareCard item={showItem} bgIndex={1} />);
-    expect(getByText('08/06/1982')).toBeTruthy();
     expect(getByText('Sound City Recording Studios')).toBeTruthy();
+    expect(getByText('08/06/1982')).toBeTruthy();
+    expect(getByText('Van Nuys, CA')).toBeTruthy();
+  });
+
+  it('renders a show card without a location line when the show has none', () => {
+    const { location, ...rest } = showItem as Extract<ShareItem, { kind: 'show' }>;
+    const { getByText, queryByText } = render(<ShareCard item={rest} bgIndex={1} />);
+    expect(getByText('Sound City Recording Studios')).toBeTruthy();
+    expect(queryByText('Van Nuys, CA')).toBeNull();
   });
 
   it('renders a song card with track title as title, plus date and venue', () => {

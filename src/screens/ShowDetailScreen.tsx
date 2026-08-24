@@ -590,6 +590,7 @@ export function ShowDetailScreen() {
       showId: show.identifier,
       date: show.date,
       venue: getVenueFromShow(show),
+      location: show.location,
       tier: resolvedShowRating && resolvedShowRating.stars > 0
         ? ((4 - resolvedShowRating.stars) as 1 | 2 | 3)
         : null,

@@ -15,6 +15,7 @@ export type ShareItem =
       showId: string;             // archive identifier (e.g. "gd1982-08-06.sbd.miller.110987")
       date: string;               // ISO "1982-08-06"
       venue: string;
+      location?: string;          // "City, ST" — third line on the card, as on the show screen
       tier: 1 | 2 | 3 | null;     // classicTier — drives star count on the card
       isUserRating?: boolean;     // tier came from the user's override (gold on local card)
     }

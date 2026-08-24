@@ -16,8 +16,9 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
   const bgSource = getShareBackground(bgIndex);
 
   let title: string;
-  let subtitle: string;
+  let subtitle: string | null = null;
   let metaDate: string | null = null;
+  let locationText: string | null = null;
   let tier: 1 | 2 | 3 | null = null;
   let isUserRating = false;
 
@@ -28,13 +29,19 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
     const noun = item.type === 'playlist' ? 'tracks' : 'shows';
     title = item.name;
     subtitle = `${item.itemCount} ${noun} · by @${item.ownerUsername}`;
-  } else {
-    const formattedDate = formatDateMMDDYYYY(item.date);
-    title = item.kind === 'show' ? formattedDate : item.trackTitle;
-    subtitle = item.venue;
-    tier = item.kind === 'show' ? item.tier : item.rating;
+  } else if (item.kind === 'show') {
+    // Same hierarchy as the show screen: venue, then date + stars, then location.
+    title = item.venue;
+    metaDate = formatDateMMDDYYYY(item.date);
+    locationText = item.location ?? null;
+    tier = item.tier;
     isUserRating = item.isUserRating ?? false;
-    if (item.kind === 'song') metaDate = formattedDate;
+  } else {
+    title = item.trackTitle;
+    subtitle = item.venue;
+    metaDate = formatDateMMDDYYYY(item.date);
+    tier = item.rating;
+    isUserRating = item.isUserRating ?? false;
   }
 
   return (
@@ -51,9 +58,11 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
-            </Text>
+            {subtitle !== null && (
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            )}
             <View style={styles.metaRow}>
               {metaDate && (
                 <Text style={styles.meta}>{metaDate}</Text>
@@ -65,6 +74,11 @@ export function ShareCard({ item, bgIndex }: ShareCardProps) {
                 />
               )}
             </View>
+            {locationText !== null && (
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {locationText}
+              </Text>
+            )}
           </View>
         </View>
       </ImageBackground>
