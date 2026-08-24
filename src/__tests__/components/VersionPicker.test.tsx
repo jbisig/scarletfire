@@ -107,21 +107,12 @@ it('calls onVersionChange with the tapped identifier', async () => {
   expect(onVersionChange).toHaveBeenCalledWith('gd1977-05-08.mtx.dan.29511.flac16');
 });
 
-it('marks the default and pinned recordings and offers "Use default" only when pinned', async () => {
-  const onUseDefault = jest.fn();
-  const { tree } = await render({ defaultIdentifier: VERSIONS[1].identifier, pinnedIdentifier: VERSIONS[0].identifier, onUseDefault });
+it('marks the default recording with plain "(Default)" text and no pin chrome', async () => {
+  const { tree } = await render({ defaultIdentifier: VERSIONS[1].identifier });
   await openPicker(tree);
   const text = allText(tree);
-  expect(text).toContain('Default');
-  expect(text).toContain('Pinned');
-  const useDefault = tree.root.findByProps({ testID: 'version-use-default' });
-  await act(async () => { useDefault.props.onPress(); });
-  expect(onUseDefault).toHaveBeenCalledTimes(1);
-});
-
-it('hides "Use default" when nothing is pinned', async () => {
-  const { tree } = await render({ defaultIdentifier: VERSIONS[0].identifier });
-  await openPicker(tree);
+  expect(text).toContain('(Default)');
+  expect(text).not.toContain('Pinned');
   expect(tree.root.findAllByProps({ testID: 'version-use-default' }, { deep: false })).toHaveLength(0);
 });
 

@@ -69,7 +69,7 @@ import { webStyle } from '../utils/webStyle';
 import { useResolvedShowRating, usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
 import { resolvePerformanceRating, ResolvedRating } from '../services/ratingResolver';
 import { useRatingOverlay } from '../contexts/RatingOverlayContext';
-import { useSourcePrefs, usePendingNudge, useActivePin, useSourcePrefsVersion } from '../contexts/SourcePrefsContext';
+import { useSourcePrefs, usePendingNudge, useSourcePrefsVersion } from '../contexts/SourcePrefsContext';
 import { resolveForDate, resolveRouteIdentifier, stableShowIdentifier } from '../services/sourceSelection';
 import { rankRecordings } from '../services/recordingRanker';
 import { describeFallback, parseSourceConstraint } from '../services/recordingResolver';
@@ -221,10 +221,9 @@ export function ShowDetailScreen() {
   // Source-preference wiring: pin/clearPin/setPreference/answerNudge drive
   // the store; the derived hooks re-render this screen when the pin, the
   // nudge, or the preference changes.
-  const { pin, clearPin, setPreference, answerNudge } = useSourcePrefs();
+  const { pin, setPreference, answerNudge } = useSourcePrefs();
   const pendingNudge = usePendingNudge();
   const sourcePrefsVersion = useSourcePrefsVersion();
-  const activePin = useActivePin(showDate);
   const { showToast } = useToast();
   const [fallbackNote, setFallbackNote] = useState<string | null>(null);
   // Tracks which identifier the fallback toast was last shown for, so a
@@ -504,14 +503,6 @@ export function ShowDetailScreen() {
       setJustPressedTrackId(match.id);
       loadTrack(match, loaded, loaded.tracks);
     }
-  };
-
-  const handleUseDefault = async () => {
-    const date = previewDate ?? show?.date;
-    if (!date) return;
-    clearPin(date);
-    const next = resolveForDate(date, { sessionConstraint, fallbackIdentifier: selectedVersion });
-    if (next && next.identifier !== selectedVersion) await loadShowDetail(next.identifier);
   };
 
   // What would play with no pin — used to mark "Default" in the picker.
@@ -1033,8 +1024,6 @@ export function ShowDetailScreen() {
                     // wash over the artwork.
                     webGlassStyle={isDesktop}
                     defaultIdentifier={defaultIdentifier}
-                    pinnedIdentifier={activePin?.identifier}
-                    onUseDefault={handleUseDefault}
                     nudge={nudge}
                   />
                 ) : show ? (
@@ -1188,8 +1177,6 @@ export function ShowDetailScreen() {
                   selectedVersion={selectedVersion}
                   onVersionChange={handleVersionChange}
                   defaultIdentifier={defaultIdentifier}
-                  pinnedIdentifier={activePin?.identifier}
-                  onUseDefault={handleUseDefault}
                   nudge={nudge}
                 />
               ) : show ? (

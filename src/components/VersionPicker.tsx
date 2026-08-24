@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../hooks/useResponsive';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingVersion } from '../types/show.types';
 import { formatLabel, lineageLabel } from '../constants/tags';
@@ -15,11 +16,8 @@ interface VersionPickerProps {
   onVersionChange: (identifier: string) => void;
   /** Web only: use glass-morphism pill style */
   webGlassStyle?: boolean;
-  /** Resolver's pick for this show — marked "Default" in the list. */
+  /** Resolver's pick for this show — marked "(Default)" in the list. */
   defaultIdentifier?: string;
-  /** The user's pin for this show — marked "Pinned"; enables the "Use default" row. */
-  pinnedIdentifier?: string;
-  onUseDefault?: () => void;
   nudge?: { format: NudgeFormat; onAnswer: (accept: boolean) => void };
 }
 
@@ -37,9 +35,10 @@ const formatRating = (version: RecordingVersion): string | null => {
   return `★ ${version.avgRating.toFixed(1)}${reviews}`;
 };
 
-export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange, webGlassStyle, defaultIdentifier, pinnedIdentifier, onUseDefault, nudge }) {
+export const VersionPicker = React.memo<VersionPickerProps>(function VersionPicker({ versions, selectedVersion, onVersionChange, webGlassStyle, defaultIdentifier, nudge }) {
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
 
   const currentVersion = versions.find(v => v.identifier === selectedVersion);
 
@@ -58,7 +57,6 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
       const rating = formatRating(version);
       const markers = [
         version.identifier === defaultIdentifier ? 'default' : null,
-        version.identifier === pinnedIdentifier ? 'pinned' : null,
       ].filter(Boolean);
       const rowLabel = [
         formatLabel(version.format),
@@ -80,22 +78,25 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           accessibilityHint={isSelected ? undefined : 'Double tap to switch to this recording'}
         >
           <View style={styles.optionInfo}>
+            {/* Line 1: source name with its status (Default/Pinned); the
+                lineage credentials get their own line below. */}
             <View style={styles.tagRow}>
               <Text style={[styles.optionSource, isSelected && styles.selectedText]}>
                 {formatLabel(version.format)}
               </Text>
-              {version.lineage.map(tag => (
-                <View key={tag} style={styles.lineageChip}>
-                  <Text style={styles.lineageChipText}>{lineageLabel(tag)}</Text>
-                </View>
-              ))}
               {version.identifier === defaultIdentifier && (
-                <View style={[styles.lineageChip, styles.markerChip]}><Text style={styles.markerChipText}>Default</Text></View>
-              )}
-              {version.identifier === pinnedIdentifier && (
-                <View style={[styles.lineageChip, styles.markerChip]}><Text style={styles.markerChipText}>Pinned</Text></View>
+                <Text style={styles.defaultLabel}>(Default)</Text>
               )}
             </View>
+            {version.lineage.length > 0 && (
+              <View style={styles.lineageRow}>
+                {version.lineage.map(tag => (
+                  <View key={tag} style={styles.lineageChip}>
+                    <Text style={styles.lineageChipText}>{lineageLabel(tag)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
             <Text style={styles.optionDownloads}>
               {rating ? `${rating} · ` : ''}{formatDownloads(version.downloads)} views
             </Text>
@@ -132,21 +133,6 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
           </View>
         </View>
       )}
-      {pinnedIdentifier && onUseDefault && (
-        <TouchableOpacity
-          testID="version-use-default"
-          style={styles.option}
-          onPress={() => { onUseDefault(); setIsOpen(false); }}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-        >
-          <View style={styles.optionInfo}>
-            <Text style={styles.optionSource}>Use default</Text>
-            <Text style={styles.optionDownloads}>Forget the pin for this show and follow your playback setting</Text>
-          </View>
-          <Ionicons name="refresh" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
-      )}
     </>
   );
 
@@ -174,8 +160,10 @@ export const VersionPicker = React.memo<VersionPickerProps>(function VersionPick
         </View>
       </TouchableOpacity>
 
-      {/* Modal */}
-      {Platform.OS === 'web' ? (
+      {/* Modal. The centered dialog is a desktop pattern; under the desktop
+          breakpoint web gets the same fullscreen sheet as native, matching
+          ShowsFilterTray's convention. */}
+      {Platform.OS === 'web' && isDesktop ? (
         <Modal
           visible={isOpen}
           animationType="fade"
@@ -316,7 +304,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.lg,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
@@ -333,8 +321,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.xl,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
+    paddingVertical: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
   optionInfo: {
@@ -351,26 +339,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
+  lineageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  // Borderless washes: the chip's job is a quiet label, not a button.
   lineageChip: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
     borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.cardBackground,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   lineageChipText: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
   },
-  markerChip: { borderColor: COLORS.accent },
-  markerChipText: { ...TYPOGRAPHY.caption, color: COLORS.accent, fontWeight: '600' },
+  defaultLabel: {
+    // Same size as the source name beside it; muted color and regular weight
+    // keep it subordinate.
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textSecondary,
+  },
   nudgeRow: {
     paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border,
     backgroundColor: COLORS.cardBackground,
   },
   nudgeText: { ...TYPOGRAPHY.body, fontWeight: '600', marginBottom: SPACING.sm },
