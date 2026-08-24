@@ -63,9 +63,19 @@ type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
 type SortType = PerformanceSortType;
 
-// Scroll distance over which the big title hands off to the compact one.
-const TITLE_COLLAPSE_RANGE = 56;
+// Title collapse is a discrete, hysteretic toggle, NOT a continuous map of
+// scroll offset: collapsing the header shifts the list under the user's
+// finger, which drags the offset back and re-grows the header — a feedback
+// oscillation. The gap between these thresholds exceeds the title line's
+// height (~42px), so the collapse's own offset drift can never reach the
+// opposite threshold.
+const TITLE_COLLAPSE_AT = 72;
+const TITLE_EXPAND_AT = 12;
 const CONTROLS_ROW_HEIGHT = LAYOUT.headerButtonSize;
+// Never hide the bar closer to the top than this: hiding shrinks the header
+// by the bar's height, and the resulting offset drift must not be able to
+// land in the force-show zone near zero.
+const CONTROLS_MIN_HIDE_Y = 64;
 // Ignore sub-slop scroll jitter when deciding direction.
 const SCROLL_DIRECTION_SLOP = 2;
 // Require this much deliberate travel in one direction before toggling the
@@ -121,23 +131,33 @@ export function SongPerformancesScreen() {
   // as soon as the user scrolls up.
   const scrollY = useRef(new Animated.Value(0)).current;
   const controlsAnim = useRef(new Animated.Value(1)).current; // 1 = bar shown
+  const collapseAnim = useRef(new Animated.Value(0)).current; // 1 = title collapsed
   const controlsShownRef = useRef(true);
   const controlsAnimatingRef = useRef(false);
+  const titleCollapsedRef = useRef(false);
+  const titleAnimatingRef = useRef(false);
   const lastOffsetYRef = useRef(0);
   const scrollTravelRef = useRef(0);
   const scrollDirRef = useRef(0);
   const isSearchExpandedRef = useRef(false);
 
-  const bigTitleOpacity = scrollY.interpolate({
-    inputRange: [0, TITLE_COLLAPSE_RANGE],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
-  const compactTitleOpacity = scrollY.interpolate({
-    inputRange: [TITLE_COLLAPSE_RANGE * 0.5, TITLE_COLLAPSE_RANGE],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
+  const bigTitleOpacity = collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  const compactTitleOpacity = collapseAnim;
+
+  const setTitleCollapsed = useCallback((collapsed: boolean) => {
+    if (titleCollapsedRef.current === collapsed) return;
+    titleCollapsedRef.current = collapsed;
+    titleAnimatingRef.current = true;
+    Animated.timing(collapseAnim, {
+      toValue: collapsed ? 1 : 0,
+      duration: 220,
+      useNativeDriver: false, // animates the title line's height
+    }).start(() => {
+      titleAnimatingRef.current = false;
+      scrollTravelRef.current = 0;
+      scrollDirRef.current = 0;
+    });
+  }, [collapseAnim]);
 
   const setControlsShown = useCallback((shown: boolean) => {
     if (controlsShownRef.current === shown) return;
@@ -153,6 +173,8 @@ export function SongPerformancesScreen() {
       useNativeDriver: false, // animates the bar's height
     }).start(() => {
       controlsAnimatingRef.current = false;
+      scrollTravelRef.current = 0;
+      scrollDirRef.current = 0;
     });
   }, [controlsAnim]);
 
@@ -172,14 +194,20 @@ export function SongPerformancesScreen() {
           const delta = y - lastOffsetYRef.current;
           lastOffsetYRef.current = y;
           if (isSearchExpandedRef.current) return;
+
+          // Title: discrete + hysteretic (see the threshold comments above).
+          if (y >= TITLE_COLLAPSE_AT) setTitleCollapsed(true);
+          else if (y <= TITLE_EXPAND_AT) setTitleCollapsed(false);
+
+          // Events while either piece is animating are layout compensation
+          // (the header changing size under a stationary finger), not user
+          // intent — this must also shield the force-show rule below.
+          if (controlsAnimatingRef.current || titleAnimatingRef.current) return;
           if (y <= 8) {
             setControlsShown(true);
             scrollTravelRef.current = 0;
             return;
           }
-          // Events during the bar's own slide are layout compensation, not
-          // user intent.
-          if (controlsAnimatingRef.current) return;
           if (Math.abs(delta) <= SCROLL_DIRECTION_SLOP) return;
           const dir = delta > 0 ? 1 : -1;
           if (dir !== scrollDirRef.current) {
@@ -187,11 +215,14 @@ export function SongPerformancesScreen() {
             scrollTravelRef.current = 0;
           }
           scrollTravelRef.current += delta;
-          if (dir === 1 && scrollTravelRef.current > CONTROLS_HIDE_TRAVEL) setControlsShown(false);
-          else if (dir === -1 && -scrollTravelRef.current > CONTROLS_SHOW_TRAVEL) setControlsShown(true);
+          if (dir === 1 && scrollTravelRef.current > CONTROLS_HIDE_TRAVEL && y > CONTROLS_MIN_HIDE_Y) {
+            setControlsShown(false);
+          } else if (dir === -1 && -scrollTravelRef.current > CONTROLS_SHOW_TRAVEL) {
+            setControlsShown(true);
+          }
         },
       }),
-    [scrollY, setControlsShown]
+    [scrollY, setControlsShown, setTitleCollapsed]
   );
 
   // Search bar handlers
@@ -457,11 +488,7 @@ export function SongPerformancesScreen() {
             opacity: bigTitleOpacity,
             overflow: 'hidden',
             height: titleLineHeight > 0
-              ? scrollY.interpolate({
-                  inputRange: [0, TITLE_COLLAPSE_RANGE],
-                  outputRange: [titleLineHeight, 0],
-                  extrapolate: 'clamp',
-                })
+              ? collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [titleLineHeight, 0] })
               : undefined,
           }}
         >
