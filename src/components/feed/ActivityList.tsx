@@ -117,6 +117,7 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
         styles.listContent,
         isDesktop ? styles.listBottomDesktop : styles.listBottomMobile,
       ]}
+      ItemSeparatorComponent={RowDivider}
       renderItem={({ item }) => (
         <ActivityRow
           event={item}
@@ -143,7 +144,18 @@ export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => voi
   );
 }
 
+const RowDivider = () => <View style={styles.divider} />;
+
 const styles = StyleSheet.create({
+  // Same centering and width cap as ActivityRow, so the line spans exactly
+  // the rows it separates.
+  divider: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 640,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.border,
+  },
   listContent: { paddingHorizontal: SPACING.xl },
   // Clear the overlaying mini player + tab bar on mobile; the desktop
   // PlayerBar is docked (not an overlay), so a normal inset suffices.

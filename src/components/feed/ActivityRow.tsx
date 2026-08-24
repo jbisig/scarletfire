@@ -147,8 +147,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 640,
     marginVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.cardBackground,
   },
   hit: {
     ...StyleSheet.absoluteFillObject,
