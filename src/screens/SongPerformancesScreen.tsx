@@ -31,6 +31,12 @@ import {
   createEmptyFilterState,
 } from '../components/ShowsFilterTray';
 import { makeShowTagFilter } from '../services/tagResolver';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
+import { useAppActiveState } from '../hooks/useAppActiveState';
+import { resolveVideoUri } from '../utils/resolveVideoUri';
+import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { BlurBackground } from '../components/shared/BlurBackground';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
@@ -82,6 +88,11 @@ export function SongPerformancesScreen() {
   const sortDropdown = useSortDropdown();
   const ratingsVersion = usePerformanceRatingsVersion();
   const { openRatingOverlay } = useRatingOverlay();
+
+  // Header video backdrop — same treatment as the show detail header.
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
+  const appState = useAppActiveState();
+  const videoUri = useMemo(() => (Platform.OS === 'web' ? resolveVideoUri(videoSource) : ''), [videoSource]);
 
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -285,6 +296,41 @@ export function SongPerformancesScreen() {
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
       {/* Header */}
       <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
+        {/* Blurred gradient video backdrop — the show detail header's layer
+            stack (video, dark blur, scrim, fade into the page), behind the
+            unchanged header layout. pointerEvents="none" keeps the back
+            button, search, and sort control tappable. */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {Platform.OS === 'web' ? (
+            videoUri ? (
+              <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
+            ) : null
+          ) : (
+            (() => {
+              const { Video, ResizeMode } = require('expo-av');
+              return (
+                <Video
+                  key={`song-performances-header-${videoId}`}
+                  source={videoSource}
+                  style={StyleSheet.absoluteFillObject}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={appState === 'active'}
+                  isLooping
+                  isMuted
+                  onError={resetToFallback}
+                />
+              );
+            })()
+          )}
+          <BlurBackground intensity={30} tint="dark" />
+          <View style={styles.headerVideoOverlay} />
+          <LinearGradient
+            colors={['rgba(18, 18, 18, 0)', isDesktop ? COLORS.backgroundSecondary : COLORS.background]}
+            locations={[0.15, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+
         {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
@@ -411,6 +457,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
+    overflow: 'hidden',
   },
   headerDesktop: {
     paddingHorizontal: 32,
@@ -458,6 +505,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: LAYOUT.headerButtonGap,
     zIndex: 10,
+  },
+  headerVideoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   filterButton: {
     width: LAYOUT.headerButtonSize,
