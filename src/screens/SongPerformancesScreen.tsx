@@ -8,8 +8,6 @@ import {
   Platform,
   useWindowDimensions,
   Animated,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -63,13 +61,6 @@ type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
 type SortType = PerformanceSortType;
 
-// The header collapse is one discrete, hysteretic toggle: collapse past 72,
-// expand back under 12. The header is an absolute overlay, so toggling can
-// never resize the list; the hysteresis just keeps slow scrolling near the
-// boundary from flip-flopping the animation.
-const TITLE_COLLAPSE_AT = 72;
-const TITLE_EXPAND_AT = 12;
-const CONTROLS_ROW_HEIGHT = LAYOUT.headerButtonSize;
 
 interface Performance {
   date: string;
@@ -108,65 +99,33 @@ export function SongPerformancesScreen() {
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // Natural height of the big title line, measured so the collapse can
-  // animate it to zero instead of leaving a blank band under the compact title.
-  const [titleLineHeight, setTitleLineHeight] = useState(0);
-
-  // The header is an absolute overlay: its collapse animations must never
-  // resize the list, or the layout shift feeds back into scroll events as
-  // phantom deltas (the popping this replaces). The list instead carries a
-  // CONSTANT top padding equal to the fully-expanded header height —
-  // correct at the top (where the header is always expanded), and irrelevant
-  // once scrolled, where content simply slides under the opaque backdrop.
-  const [listTopPadding, setListTopPadding] = useState(0);
-
-  // Collapsing header (ShowDetail's sticky-title pattern): the big title
-  // crossfades into a compact centered one as the list scrolls, and the
-  // sort/search/filter bar collapses away on scroll-down, sliding back down
-  // as soon as the user scrolls up.
+  // ShowDetail's header architecture, copied outright because it works:
+  // the hero (big title + controls) lives INSIDE the list as its header and
+  // scrolls away with the content — layout never animates, so scrolling can
+  // never feed back into itself. The fixed bar on top only fades opacity
+  // (its backdrop and the compact title), driven directly by scrollY.
   const scrollY = useRef(new Animated.Value(0)).current;
-  const collapseAnim = useRef(new Animated.Value(0)).current; // 1 = header collapsed
-  const titleCollapsedRef = useRef(false);
-  const titleAnimatingRef = useRef(false);
-  const isSearchExpandedRef = useRef(false);
+  const [heroHeight, setHeroHeight] = useState(0);
 
-  const bigTitleOpacity = collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  const compactTitleOpacity = collapseAnim;
+  // Height of the fixed bar — the hero pads itself down past it.
+  const topBarHeight = (isDesktop ? 16 : insets.top + 8) + 28 + SPACING.sm;
 
-  const setTitleCollapsed = useCallback((collapsed: boolean) => {
-    if (titleCollapsedRef.current === collapsed) return;
-    titleCollapsedRef.current = collapsed;
-    titleAnimatingRef.current = true;
-    Animated.timing(collapseAnim, {
-      toValue: collapsed ? 1 : 0,
-      duration: 220,
-      useNativeDriver: false, // animates the title line's height
-    }).start(() => {
-      titleAnimatingRef.current = false;
-    });
-  }, [collapseAnim]);
-
-
-  useEffect(() => {
-    isSearchExpandedRef.current = isSearchExpanded;
-  }, [isSearchExpanded]);
+  /** The hero's copy dims as it leaves, handing over to the bar title. */
+  const fadeRange = Math.max(1, heroHeight > 0 ? (heroHeight - topBarHeight) * 0.7 : 80);
+  const barOpacity = scrollY.interpolate({
+    inputRange: [0, fadeRange],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  const heroContentOpacity = scrollY.interpolate({
+    inputRange: [0, fadeRange],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   const handleScroll = useMemo(
-    () =>
-      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: false,
-        listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-          const y = event.nativeEvent.contentOffset.y;
-          // The header must not change under the user while they're typing
-          // into the search field.
-          if (isSearchExpandedRef.current) return;
-          // One discrete, hysteretic state for the whole header — title and
-          // controls bar together (see the threshold comments above).
-          if (y >= TITLE_COLLAPSE_AT) setTitleCollapsed(true);
-          else if (y <= TITLE_EXPAND_AT) setTitleCollapsed(false);
-        },
-      }),
-    [scrollY, setTitleCollapsed]
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY]
   );
 
   // Search bar handlers
@@ -364,114 +323,67 @@ export function SongPerformancesScreen() {
     );
   }, [handlePerformancePress, getPlayCountStable, songTitle, findShowByDate, openRatingOverlay, ratingsVersion]);
 
-  return (
-    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header — absolute overlay above the list (see listTopPadding) */}
-      <View
-        style={[styles.header, styles.headerOverlay, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]}
-        onLayout={(e) => {
-          setHeaderWidth(e.nativeEvent.layout.width);
-          // Only trust the measurement when fully expanded and at rest —
-          // mid-animation heights would poison the list's constant padding.
-          if (!titleCollapsedRef.current && !titleAnimatingRef.current) {
-            setListTopPadding(e.nativeEvent.layout.height);
-          }
-        }}
-      >
-        {/* Blurred gradient video backdrop — the show detail header's layer
-            stack (video, dark blur, scrim, fade into the page), behind the
-            unchanged header layout. pointerEvents="none" keeps the back
-            button, search, and sort control tappable. */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {Platform.OS === 'web' ? (
-            videoUri ? (
-              <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
-            ) : null
-          ) : (
-            (() => {
-              const { Video, ResizeMode } = require('expo-av');
-              return (
-                <Video
-                  key={`song-performances-header-${videoId}`}
-                  source={videoSource}
-                  style={StyleSheet.absoluteFillObject}
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay={appState === 'active'}
-                  isLooping
-                  isMuted
-                  onError={resetToFallback}
-                />
-              );
-            })()
-          )}
-          <BlurBackground intensity={30} tint="dark" />
-          <View style={styles.headerVideoOverlay} />
-          <LinearGradient
-            colors={['rgba(18, 18, 18, 0)', isDesktop ? COLORS.backgroundSecondary : COLORS.background]}
-            locations={[0.15, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
+  const videoLayers = (blurIntensity: number) => (
+    <>
+      {Platform.OS === 'web' ? (
+        videoUri ? (
+          <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
+        ) : null
+      ) : (
+        (() => {
+          const { Video, ResizeMode } = require('expo-av');
+          return (
+            <Video
+              key={`song-performances-header-${videoId}`}
+              source={videoSource}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={appState === 'active'}
+              isLooping
+              isMuted
+              onError={resetToFallback}
+            />
+          );
+        })()
+      )}
+      <BlurBackground intensity={blurIntensity} tint="dark" />
+    </>
+  );
 
-        {/* Back button, with the compact title fading in beside it as the
-            header collapses */}
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Animated.Text
-            style={[styles.compactTitle, { opacity: compactTitleOpacity }]}
-            numberOfLines={1}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          >
+  // The hero scrolls away with the list. Passed as an ELEMENT (not a
+  // component) so re-renders reconcile instead of remounting — the search
+  // field keeps focus while typing.
+  const listHeader = (
+    <View
+      style={[styles.hero, isDesktop && styles.heroDesktop, { paddingTop: topBarHeight + SPACING.sm }]}
+      onLayout={(e) => {
+        setHeaderWidth(e.nativeEvent.layout.width);
+        setHeroHeight(e.nativeEvent.layout.height);
+      }}
+    >
+      {/* Blurred gradient video backdrop, fading into the page below */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {videoLayers(30)}
+        <View style={styles.headerVideoOverlay} />
+        <LinearGradient
+          colors={['rgba(18, 18, 18, 0)', isDesktop ? COLORS.backgroundSecondary : COLORS.background]}
+          locations={[0.15, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+
+      <Animated.View style={[styles.heroContent, { opacity: heroContentOpacity }]}>
+        {/* Title with performance count */}
+        <View style={styles.titleLine}>
+          <Text style={styles.songTitle} numberOfLines={1}>
             {songTitle}
-          </Animated.Text>
+          </Text>
+          <Text style={styles.performanceCount}>
+            ({performances.length})
+          </Text>
         </View>
 
-        {/* Title with performance count — hands off to the compact title,
-            collapsing its height so no blank band is left behind. The inner
-            view is unconstrained, so its onLayout always reports the natural
-            height even mid-animation. */}
-        <Animated.View
-          style={{
-            opacity: bigTitleOpacity,
-            overflow: 'hidden',
-            ...(isDesktop ? { marginTop: 8 } : null),
-            height: titleLineHeight > 0
-              ? collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [titleLineHeight, 0] })
-              : undefined,
-          }}
-        >
-          {/* Margin lives on the wrapper, NOT here: the measured height must
-              be exactly what the animated wrapper needs to avoid clipping. */}
-          <View
-            style={styles.titleLine}
-            onLayout={(e) => setTitleLineHeight(e.nativeEvent.layout.height)}
-          >
-            <Text style={styles.songTitle} numberOfLines={1}>
-              {songTitle}
-            </Text>
-            <Text style={styles.performanceCount}>
-              ({performances.length})
-            </Text>
-          </View>
-        </Animated.View>
-
-        {/* Controls row: sort at left, vertically centered with the search +
-            filter buttons across from it. Rides the header collapse — only
-            visible with the full header at the top. */}
-        <Animated.View
-          style={{
-            height: collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [CONTROLS_ROW_HEIGHT, 0] }),
-            opacity: bigTitleOpacity,
-            overflow: 'hidden',
-          }}
-        >
+        {/* Controls row: sort at left, search + filter across from it */}
         <View style={styles.controlsRow}>
           <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
@@ -518,7 +430,40 @@ export function SongPerformancesScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      </Animated.View>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+      {/* Fixed bar: back button always visible; backdrop + compact title
+          fade in as the hero scrolls away (ShowDetail's sticky-nav
+          treatment). */}
+      <View style={[styles.topBar, isDesktop && styles.topBarDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: barOpacity }]} pointerEvents="none">
+          {videoLayers(40)}
+          <LinearGradient
+            colors={['rgba(18, 18, 18, 0.35)', 'rgba(18, 18, 18, 0.92)']}
+            style={StyleSheet.absoluteFill}
+          />
         </Animated.View>
+        <View style={styles.topBarRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Animated.Text
+            style={[styles.compactTitle, { opacity: barOpacity }]}
+            numberOfLines={1}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            {songTitle}
+          </Animated.Text>
+        </View>
       </View>
 
       {/* Filter Tray Modal */}
@@ -547,7 +492,8 @@ export function SongPerformancesScreen() {
         scrollEventThrottle={16}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
-        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop, { paddingTop: listTopPadding }]}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           debouncedSearchQuery.trim() || hasActiveFilters(appliedFilters) ? (
@@ -575,26 +521,33 @@ const styles = StyleSheet.create({
   containerDesktop: {
     backgroundColor: COLORS.backgroundSecondary,
   },
-  header: {
-    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
-    paddingBottom: SPACING.sm,
-    gap: SPACING.sm,
-    overflow: 'hidden',
-  },
-  headerOverlay: {
+  topBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 20,
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
+    paddingBottom: SPACING.sm,
+    overflow: 'hidden',
   },
-  headerDesktop: {
+  topBarDesktop: {
     paddingHorizontal: 32,
-    backgroundColor: COLORS.backgroundSecondary,
   },
-  topBar: {
+  topBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  hero: {
+    paddingHorizontal: LAYOUT.HORIZONTAL_PADDING,
+    paddingBottom: SPACING.sm,
+    overflow: 'hidden',
+  },
+  heroDesktop: {
+    paddingHorizontal: 32,
+  },
+  heroContent: {
+    gap: SPACING.sm,
   },
   backButton: {
     width: LAYOUT.headerButtonSize,
@@ -632,7 +585,7 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: CONTROLS_ROW_HEIGHT,
+    height: LAYOUT.headerButtonSize,
   },
   infoActions: {
     position: 'absolute',
@@ -673,7 +626,7 @@ const styles = StyleSheet.create({
     paddingBottom: LAYOUT.listBottomPadding,
   },
   listContentDesktop: {
-    padding: 16,
+    paddingBottom: 16,
   },
   performanceItem: {
     paddingVertical: SPACING.md,
