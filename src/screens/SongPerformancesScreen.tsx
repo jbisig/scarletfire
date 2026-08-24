@@ -42,7 +42,7 @@ import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
 import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
@@ -340,20 +340,37 @@ export function SongPerformancesScreen() {
           <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
 
-        {/* Title Row with Search */}
-        <View style={[styles.titleRow, isDesktop && styles.titleRowDesktop]}>
-          {/* Left side: Title (gets covered by search bar) */}
-          <View style={styles.titleContent}>
-            <Text style={styles.songTitle} numberOfLines={1}>
-              {songTitle}
-            </Text>
+        {/* Title */}
+        <Text style={[styles.songTitle, isDesktop && styles.songTitleDesktop]} numberOfLines={1}>
+          {songTitle}
+        </Text>
+
+        {/* Info block, ShowDetail-style: performance count over the sort
+            control at left; search + filter across from them at right. */}
+        <View style={styles.infoRow}>
+          <View style={styles.infoLeft}>
             <Text style={styles.performanceCount}>
-              ({performances.length})
+              {performances.length} performance{performances.length !== 1 ? 's' : ''}
             </Text>
+
+            {/* Sort Row */}
+            <View style={styles.sortRow}>
+              <View ref={sortDropdown.buttonRef} collapsable={false}>
+                <TouchableOpacity
+                  style={styles.sortLabel}
+                  onPress={sortDropdown.open}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
-          {/* Right side: Search button */}
-          <View style={styles.titleRight}>
+          {/* Search + Filter (absolute so the expanding search bar overlays
+              the count/sort column instead of pushing it) */}
+          <View style={styles.infoActions}>
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
               onExpand={handleSearchExpand}
@@ -382,20 +399,6 @@ export function SongPerformancesScreen() {
                 size={20}
                 color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
               />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Sort Row */}
-        <View style={styles.sortRow}>
-          <View ref={sortDropdown.buttonRef} collapsable={false}>
-            <TouchableOpacity
-              style={styles.sortLabel}
-              onPress={sortDropdown.open}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
-              <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -469,37 +472,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: LAYOUT.headerButtonSize,
-  },
-  titleRowDesktop: {
-    marginTop: 8,
-  },
-  titleContent: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 10,
-    position: 'absolute',
-    left: 0,
-    right: LAYOUT.headerButtonSize + LAYOUT.headerButtonGap,
-    top: 0,
-    bottom: 0,
-  },
   songTitle: {
     ...TYPOGRAPHY.heading2,
     flexShrink: 1,
   },
-  performanceCount: {
-    fontSize: 26,
-    fontFamily: FONTS.primaryRegular,
-    fontWeight: '400',
-    color: COLORS.textTertiary,
+  songTitleDesktop: {
+    marginTop: 8,
   },
-  titleRight: {
+  infoRow: {
+    flexDirection: 'row',
+  },
+  infoLeft: {
     flex: 1,
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  // Same voice as the date on the Show screen.
+  performanceCount: {
+    ...TYPOGRAPHY.body,
+    color: BRAND_COLORS.textSoft,
+  },
+  infoActions: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
