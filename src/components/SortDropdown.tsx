@@ -115,7 +115,9 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    // Darker than the buttons' white wash: a floating menu needs its options
+    // to hold contrast over whatever scrolls beneath it.
+    backgroundColor: 'rgba(20, 20, 20, 0.5)',
     ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
