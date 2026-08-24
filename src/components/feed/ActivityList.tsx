@@ -6,6 +6,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { feedService } from '../../services/feedService';
+import { authService } from '../../services/authService';
 import { ActivityRow } from './ActivityRow';
 import type { ActivityEvent } from '../../services/activityService';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT } from '../../constants/theme';
@@ -23,6 +24,12 @@ let cachedFeed: {
   followingCursor: string | null;
   publicCursor: string | null;
 } | null = null;
+
+// The cache is identity-scoped: without this, signing out (or switching
+// accounts) would hand the next viewer the previous user's personalized
+// feed until the silent refresh landed. Any auth-state change clears it —
+// over-clearing only costs one spinner. Registered once for module lifetime.
+authService.onAuthStateChanged(() => { cachedFeed = null; });
 
 type LoadMode = 'initial' | 'refresh' | 'silent';
 
