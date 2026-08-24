@@ -43,7 +43,8 @@ import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
+import { webStyle } from '../utils/webStyle';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS, GLASS_PILL_BLUR } from '../constants/theme';
 import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
@@ -606,9 +607,11 @@ const styles = StyleSheet.create({
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,

@@ -26,6 +26,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
 import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
+import { webStyle } from '../utils/webStyle';
 import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
 import { isSongTagId } from '../constants/tags';
 import { useDebounce } from '../hooks/useDebounce';
@@ -33,7 +34,7 @@ import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown } from '../components/SortDropdown';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL_BLUR } from '../constants/theme';
 import { getOfficialReleasesForDate } from '../data/officialReleases';
 import { STATE_ABBREVIATIONS } from '../constants/states';
 import {
@@ -494,9 +495,11 @@ const styles = StyleSheet.create({
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,

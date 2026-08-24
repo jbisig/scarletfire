@@ -19,6 +19,7 @@ import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
 import { SongsFilterTray } from '../components/SongsFilterTray';
 import { makeSongTagFilter } from '../services/songTagResolver';
 import { tagLabel, isSongTagId, TagId } from '../constants/tags';
+import { webStyle } from '../utils/webStyle';
 import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
@@ -29,7 +30,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileImage } from '../components/ProfileImage';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL_BLUR } from '../constants/theme';
 
 type SongListNavigationProp = StackNavigationProp<RootStackParamList, 'SongList'>;
 
@@ -478,9 +479,11 @@ const styles = StyleSheet.create({
     width: LAYOUT.headerButtonSize,
     height: LAYOUT.headerButtonSize,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,

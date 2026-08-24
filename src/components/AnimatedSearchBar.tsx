@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL_BLUR } from '../constants/theme';
 import { webStyle } from '../utils/webStyle';
 
 interface AnimatedSearchBarProps {
@@ -198,7 +198,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     borderRadius: RADIUS.full,
     height: LAYOUT.headerButtonSize,
     overflow: 'hidden',
