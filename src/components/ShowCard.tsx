@@ -152,14 +152,11 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
     </Pressable>
   );
 
-  const badges = (
-    <>
-      <Passive><PlayCountBadge count={playCount} size="small" /></Passive>
-      {trailingText && (
-        <Passive><Text style={styles.trailingText}>{trailingText}</Text></Passive>
-      )}
-    </>
-  );
+  // The play count renders inline after the venue title; only the optional
+  // trailing text (e.g. "2d ago") remains in the badge cluster.
+  const badges = trailingText ? (
+    <Passive><Text style={styles.trailingText}>{trailingText}</Text></Passive>
+  ) : null;
 
   return (
     <>
@@ -198,6 +195,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
               <Text style={styles.venue} numberOfLines={1}>
                 {getVenueFromShow(show)}
               </Text>
+              <PlayCountBadge count={playCount} size="small" />
             </View>
           </Passive>
 
