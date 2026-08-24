@@ -283,4 +283,137 @@ export const CURATED_COLLECTIONS: readonly CuratedCollection[] = [
       '1990-04-03', // The Omni, Atlanta
     ],
   },
+  {
+    id: 'pacific-northwest-73-74',
+    title: "Pacific Northwest '73–'74",
+    description: 'Vancouver, Portland, Seattle — the Believe It If You Need It box runs',
+    dates: [
+      '1973-06-22', // P.N.E. Coliseum, Vancouver
+      '1973-06-24', // Memorial Coliseum, Portland
+      '1973-06-26', // Seattle Center Arena
+      '1974-05-14', // Adams Field House, Missoula
+      '1974-05-19', // Portland Memorial Coliseum
+      '1974-05-21', // Hec Edmundson Pavilion, Seattle — legendary Dark Star
+    ],
+  },
+  {
+    id: 'skull-and-roses-71',
+    title: '1971: Skull & Roses',
+    description: 'Port Chester debuts, the Fillmore East farewell, and Keith’s arrival',
+    dates: [
+      '1971-02-18', // Capitol Theater, Port Chester — Bertha/Loser/Wharf Rat debuts
+      '1971-02-19', // Capitol Theater, Port Chester
+      '1971-02-20', // Capitol Theater, Port Chester
+      '1971-02-21', // Capitol Theater, Port Chester
+      '1971-02-23', // Capitol Theater, Port Chester
+      '1971-02-24', // Capitol Theater, Port Chester
+      '1971-04-05', // Manhattan Center — Skull & Roses source
+      '1971-04-06', // Manhattan Center
+      '1971-04-25', // Fillmore East — closing-month run
+      '1971-04-26', // Fillmore East
+      '1971-04-27', // Fillmore East
+      '1971-04-28', // Fillmore East
+      '1971-04-29', // Fillmore East — Three from the Vault
+      '1971-10-19', // Northrop Auditorium, Minneapolis — Keith Godchaux's debut
+      '1971-10-21', // Auditorium Theatre, Chicago
+      '1971-10-22', // Auditorium Theatre, Chicago
+      '1971-12-04', // Felt Forum, MSG
+      '1971-12-05', // Felt Forum, MSG — Dave's Picks 22
+    ],
+  },
+  {
+    id: 'summer-73',
+    title: "Summer '73",
+    description: 'RFK with the Allmans and the 600,000-strong Watkins Glen weekend',
+    dates: [
+      '1973-06-09', // RFK Stadium, Washington DC
+      '1973-06-10', // RFK Stadium — with the Allman Brothers
+      '1973-07-27', // Watkins Glen — soundcheck jam
+      '1973-07-28', // Watkins Glen Summer Jam
+      '1973-07-31', // Roosevelt Stadium, Jersey City
+    ],
+  },
+  {
+    id: 'fall-79',
+    title: "Fall '79",
+    description: 'Brent settles in — Cape Cod to the Uptown, capped by Dick’s Picks 5',
+    dates: [
+      '1979-10-27', // Cape Cod Coliseum
+      '1979-10-28', // Cape Cod Coliseum
+      '1979-10-31', // Nassau Coliseum
+      '1979-11-01', // Nassau Coliseum
+      '1979-11-02', // Nassau Coliseum
+      '1979-11-05', // The Spectrum, Philadelphia
+      '1979-11-06', // The Spectrum, Philadelphia
+      '1979-11-08', // Capital Centre, Landover
+      '1979-12-03', // Uptown Theater, Chicago
+      '1979-12-04', // Uptown Theater, Chicago
+      '1979-12-05', // Uptown Theater, Chicago
+      '1979-12-26', // Oakland Auditorium — Dick's Picks 5
+    ],
+  },
+  {
+    id: 'fall-80-acoustic',
+    title: "Fall '80 Acoustic Revival",
+    description: 'Acoustic sets return — the Warfield and Radio City residencies behind Reckoning',
+    dates: [
+      '1980-09-25', // Warfield Theater, San Francisco — residency opener
+      '1980-09-26', // Warfield Theater
+      '1980-09-27', // Warfield Theater
+      '1980-09-29', // Warfield Theater
+      '1980-09-30', // Warfield Theater
+      '1980-10-02', // Warfield Theater
+      '1980-10-03', // Warfield Theater
+      '1980-10-04', // Warfield Theater
+      '1980-10-06', // Warfield Theater
+      '1980-10-07', // Warfield Theater
+      '1980-10-09', // Warfield Theater
+      '1980-10-10', // Warfield Theater
+      '1980-10-11', // Warfield Theater
+      '1980-10-13', // Warfield Theater
+      '1980-10-14', // Warfield Theater — residency closer
+      '1980-10-22', // Radio City Music Hall, NYC
+      '1980-10-23', // Radio City Music Hall
+      '1980-10-25', // Radio City Music Hall
+      '1980-10-26', // Radio City Music Hall
+      '1980-10-27', // Radio City Music Hall
+      '1980-10-29', // Radio City Music Hall
+      '1980-10-30', // Radio City Music Hall
+      '1980-10-31', // Radio City Music Hall — Halloween, Dead Set / Reckoning sources
+    ],
+  },
+  {
+    id: 'fall-89',
+    title: "Fall '89",
+    description: 'The Warlocks return to Hampton — bust-outs, then Nightfall of Diamonds',
+    dates: [
+      '1989-10-08', // Hampton Coliseum — billed as "Formerly the Warlocks"
+      '1989-10-09', // Hampton Coliseum — Dark Star & Attics bust-outs
+      '1989-10-11', // Meadowlands Arena
+      '1989-10-12', // Meadowlands Arena
+      '1989-10-14', // Meadowlands Arena
+      '1989-10-15', // Meadowlands Arena
+      '1989-10-16', // Meadowlands Arena
+      '1989-10-18', // The Spectrum, Philadelphia
+      '1989-10-19', // The Spectrum, Philadelphia
+      '1989-10-20', // The Spectrum, Philadelphia
+      '1989-10-22', // Charlotte Coliseum
+      '1989-10-23', // Charlotte Coliseum
+      '1989-10-25', // Miami Arena
+      '1989-10-26', // Miami Arena — Nightfall of Diamonds
+    ],
+  },
+  {
+    id: 'msg-sept-90',
+    title: "September '90 MSG",
+    description: 'First steps after Brent — Hornsby and Welnick light up the Garden',
+    dates: [
+      '1990-09-14', // Madison Square Garden
+      '1990-09-15', // Madison Square Garden — Bruce Hornsby joins
+      '1990-09-16', // Madison Square Garden
+      '1990-09-18', // Madison Square Garden
+      '1990-09-19', // Madison Square Garden
+      '1990-09-20', // Madison Square Garden — revered Dark Star show
+    ],
+  },
 ];
