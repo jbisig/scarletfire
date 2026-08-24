@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -60,6 +63,12 @@ type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
 type SortType = PerformanceSortType;
 
+// Scroll distance over which the big title hands off to the compact one.
+const TITLE_COLLAPSE_RANGE = 56;
+const CONTROLS_ROW_HEIGHT = LAYOUT.headerButtonSize;
+// Ignore sub-slop scroll jitter when deciding direction.
+const SCROLL_DIRECTION_SLOP = 2;
+
 interface Performance {
   date: string;
   identifier: string;
@@ -96,6 +105,64 @@ export function SongPerformancesScreen() {
 
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // Collapsing header (ShowDetail's sticky-title pattern): the big title
+  // crossfades into a compact centered one as the list scrolls, and the
+  // sort/search/filter bar collapses away on scroll-down, sliding back down
+  // as soon as the user scrolls up.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const controlsAnim = useRef(new Animated.Value(1)).current; // 1 = bar shown
+  const controlsShownRef = useRef(true);
+  const lastOffsetYRef = useRef(0);
+  const isSearchExpandedRef = useRef(false);
+
+  const bigTitleOpacity = scrollY.interpolate({
+    inputRange: [0, TITLE_COLLAPSE_RANGE],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  const compactTitleOpacity = scrollY.interpolate({
+    inputRange: [TITLE_COLLAPSE_RANGE * 0.5, TITLE_COLLAPSE_RANGE],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const setControlsShown = useCallback((shown: boolean) => {
+    if (controlsShownRef.current === shown) return;
+    controlsShownRef.current = shown;
+    Animated.timing(controlsAnim, {
+      toValue: shown ? 1 : 0,
+      duration: 220,
+      useNativeDriver: false, // animates the bar's height
+    }).start();
+  }, [controlsAnim]);
+
+  // While the search field is open, pin the bar — hiding the control the
+  // user is typing into would be hostile.
+  useEffect(() => {
+    isSearchExpandedRef.current = isSearchExpanded;
+    if (isSearchExpanded) setControlsShown(true);
+  }, [isSearchExpanded, setControlsShown]);
+
+  const handleScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: false,
+        listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const y = event.nativeEvent.contentOffset.y;
+          const delta = y - lastOffsetYRef.current;
+          lastOffsetYRef.current = y;
+          if (isSearchExpandedRef.current) return;
+          if (y <= 8) {
+            setControlsShown(true);
+            return;
+          }
+          if (delta > SCROLL_DIRECTION_SLOP) setControlsShown(false);
+          else if (delta < -SCROLL_DIRECTION_SLOP) setControlsShown(true);
+        },
+      }),
+    [scrollY, setControlsShown]
+  );
 
   // Search bar handlers
   const handleSearchExpand = useCallback(() => {
@@ -331,27 +398,46 @@ export function SongPerformancesScreen() {
           />
         </View>
 
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        {/* Back button, with the compact title fading in beside it as the
+            header collapses */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Animated.Text
+            style={[styles.compactTitle, { opacity: compactTitleOpacity }]}
+            numberOfLines={1}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            {songTitle}
+          </Animated.Text>
+        </View>
 
-        {/* Title with performance count */}
-        <View style={[styles.titleLine, isDesktop && styles.titleLineDesktop]}>
+        {/* Title with performance count — hands off to the compact title */}
+        <Animated.View style={[styles.titleLine, isDesktop && styles.titleLineDesktop, { opacity: bigTitleOpacity }]}>
           <Text style={styles.songTitle} numberOfLines={1}>
             {songTitle}
           </Text>
           <Text style={styles.performanceCount}>
             ({performances.length})
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Controls row: sort at left, vertically centered with the search +
-            filter buttons across from it. */}
+            filter buttons across from it. Collapses on scroll-down; slides
+            back down when the user scrolls up. */}
+        <Animated.View
+          style={{
+            height: controlsAnim.interpolate({ inputRange: [0, 1], outputRange: [0, CONTROLS_ROW_HEIGHT] }),
+            opacity: controlsAnim,
+            overflow: 'hidden',
+          }}
+        >
         <View style={styles.controlsRow}>
           <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
@@ -398,6 +484,7 @@ export function SongPerformancesScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        </Animated.View>
       </View>
 
       {/* Filter Tray Modal */}
@@ -419,9 +506,11 @@ export function SongPerformancesScreen() {
         onSelect={setSortType}
       />
 
-      <FlatList
+      <Animated.FlatList
         ref={flatListRef}
         data={filteredPerformances}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
         contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
@@ -462,11 +551,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     backgroundColor: COLORS.backgroundSecondary,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   backButton: {
     width: LAYOUT.headerButtonSize,
     height: 28,
     justifyContent: 'center',
     alignItems: 'flex-start',
+  },
+  // Same voice as ShowDetail's sticky nav title; inset past the back button
+  // on both sides so it stays centered and truncates before colliding.
+  compactTitle: {
+    position: 'absolute',
+    left: LAYOUT.headerButtonSize + LAYOUT.headerButtonGap,
+    right: LAYOUT.headerButtonSize + LAYOUT.headerButtonGap,
+    alignSelf: 'center',
+    textAlign: 'center',
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   titleLine: {
     flexDirection: 'row',
@@ -489,7 +594,7 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: LAYOUT.headerButtonSize,
+    height: CONTROLS_ROW_HEIGHT,
   },
   infoActions: {
     position: 'absolute',
