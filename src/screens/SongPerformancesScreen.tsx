@@ -106,6 +106,10 @@ export function SongPerformancesScreen() {
   // Search animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // Natural height of the big title line, measured so the collapse can
+  // animate it to zero instead of leaving a blank band under the compact title.
+  const [titleLineHeight, setTitleLineHeight] = useState(0);
+
   // Collapsing header (ShowDetail's sticky-title pattern): the big title
   // crossfades into a compact centered one as the list scrolls, and the
   // sort/search/filter bar collapses away on scroll-down, sliding back down
@@ -418,14 +422,34 @@ export function SongPerformancesScreen() {
           </Animated.Text>
         </View>
 
-        {/* Title with performance count — hands off to the compact title */}
-        <Animated.View style={[styles.titleLine, isDesktop && styles.titleLineDesktop, { opacity: bigTitleOpacity }]}>
-          <Text style={styles.songTitle} numberOfLines={1}>
-            {songTitle}
-          </Text>
-          <Text style={styles.performanceCount}>
-            ({performances.length})
-          </Text>
+        {/* Title with performance count — hands off to the compact title,
+            collapsing its height so no blank band is left behind. The inner
+            view is unconstrained, so its onLayout always reports the natural
+            height even mid-animation. */}
+        <Animated.View
+          style={{
+            opacity: bigTitleOpacity,
+            overflow: 'hidden',
+            height: titleLineHeight > 0
+              ? scrollY.interpolate({
+                  inputRange: [0, TITLE_COLLAPSE_RANGE],
+                  outputRange: [titleLineHeight, 0],
+                  extrapolate: 'clamp',
+                })
+              : undefined,
+          }}
+        >
+          <View
+            style={[styles.titleLine, isDesktop && styles.titleLineDesktop]}
+            onLayout={(e) => setTitleLineHeight(e.nativeEvent.layout.height)}
+          >
+            <Text style={styles.songTitle} numberOfLines={1}>
+              {songTitle}
+            </Text>
+            <Text style={styles.performanceCount}>
+              ({performances.length})
+            </Text>
+          </View>
         </Animated.View>
 
         {/* Controls row: sort at left, vertically centered with the search +
