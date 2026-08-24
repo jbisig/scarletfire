@@ -510,13 +510,16 @@ export function SongPerformancesScreen() {
           style={{
             opacity: bigTitleOpacity,
             overflow: 'hidden',
+            ...(isDesktop ? { marginTop: 8 } : null),
             height: titleLineHeight > 0
               ? collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [titleLineHeight, 0] })
               : undefined,
           }}
         >
+          {/* Margin lives on the wrapper, NOT here: the measured height must
+              be exactly what the animated wrapper needs to avoid clipping. */}
           <View
-            style={[styles.titleLine, isDesktop && styles.titleLineDesktop]}
+            style={styles.titleLine}
             onLayout={(e) => setTitleLineHeight(e.nativeEvent.layout.height)}
           >
             <Text style={styles.songTitle} numberOfLines={1}>
@@ -684,9 +687,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 10,
-  },
-  titleLineDesktop: {
-    marginTop: 8,
   },
   songTitle: {
     ...TYPOGRAPHY.heading2,
