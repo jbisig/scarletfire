@@ -8,6 +8,8 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
 interface ShowCarouselProps {
   title: string;
+  /** Optional one-line description rendered under the title. */
+  subtitle?: string;
   shows: GratefulDeadShow[];
   onShowPress: (show: GratefulDeadShow) => void;
   extraData?: unknown;
@@ -19,6 +21,7 @@ export interface ShowCarouselRef {
 
 export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselProps>(function ShowCarousel({
   title,
+  subtitle,
   shows,
   onShowPress,
   extraData,
@@ -53,7 +56,10 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
   if (isDesktop) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
         <View style={styles.webGrid}>
           {shows.map((show, index) => (
             <HorizontalShowCard
@@ -70,7 +76,10 @@ export const ShowCarousel = React.memo(forwardRef<ShowCarouselRef, ShowCarouselP
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{title}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
       <FlatList
         ref={flatListRef}
         data={shows}
@@ -93,10 +102,16 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: SPACING.xxl,
   },
-  title: {
-    ...TYPOGRAPHY.heading4,
+  header: {
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xl,
+    gap: SPACING.xs,
+  },
+  title: {
+    ...TYPOGRAPHY.heading4,
+  },
+  subtitle: {
+    ...TYPOGRAPHY.caption,
   },
   listContent: {
     paddingHorizontal: SPACING.xl,

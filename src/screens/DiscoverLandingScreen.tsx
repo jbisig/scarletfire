@@ -36,6 +36,8 @@ import { radioService } from '../services/radioService';
 import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useShowRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
 import { collectResolvedClassics, mergeCuratedClassics } from '../utils/classicShowsPool';
+import { CURATED_COLLECTIONS, CLASSIC_SHOWS_DESCRIPTION } from '../data/curatedCollections';
+import { resolveCollectionShows } from '../utils/curatedCollectionsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS, CARD_SCRIM } from '../constants/theme';
@@ -67,12 +69,14 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
   // Refs for carousel scroll reset
   const jumpBackInRef = useRef<ShowCarouselRef>(null);
   const classicsRef = useRef<ShowCarouselRef>(null);
+  const runRefs = useRef<Array<ShowCarouselRef | null>>([]);
 
   // Reset all carousels to the beginning when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       jumpBackInRef.current?.scrollToStart();
       classicsRef.current?.scrollToStart();
+      runRefs.current.forEach(r => r?.scrollToStart());
     }, [])
   );
 
@@ -164,6 +168,19 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
       })
       .slice(0, 25);
   }, [showsByYear, ratingsVersion]);
+
+  // Legendary Runs: hand-curated date lists resolved to shows. ratingsVersion
+  // is a dep so a user's 0-star ejection takes effect without a reload.
+  const curatedRunSections = useMemo(
+    () =>
+      CURATED_COLLECTIONS.map(c => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        shows: resolveCollectionShows(showsByYear, c.dates),
+      })),
+    [showsByYear, ratingsVersion], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   // Popular collections + playlists across all users with public profiles.
   const [popularShowCollections, setPopularShowCollections] = useState<Collection[]>([]);
@@ -341,9 +358,22 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         <ShowCarousel
           ref={classicsRef}
           title="Classic Shows"
+          subtitle={CLASSIC_SHOWS_DESCRIPTION}
           shows={classicShows}
           onShowPress={handleShowPress}
         />
+
+        {/* Legendary Runs — one carousel per curated collection */}
+        {curatedRunSections.map((c, i) => (
+          <ShowCarousel
+            key={c.id}
+            ref={el => { runRefs.current[i] = el; }}
+            title={c.title}
+            subtitle={c.description}
+            shows={c.shows}
+            onShowPress={handleShowPress}
+          />
+        ))}
 
         {/* Popular Show Collections */}
         <CollectionCarousel
