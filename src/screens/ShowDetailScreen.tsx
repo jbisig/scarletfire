@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Alert,
   Animated,
@@ -680,13 +680,18 @@ export function ShowDetailScreen() {
   // is still loading, so the bar is never briefly blank.
   const navTitle = show ? getVenueFromShow(show) : (previewVenue ?? '');
 
-  useEffect(() => {
+  // Static header config, applied before first paint so the default back
+  // button never renders (a plain useEffect left one painted frame of the
+  // stock chevron in a different spot — the button visibly jumped). The
+  // animated backdrop is applied by its own effect below: it changes on every
+  // hero-visibility flip while scrolling, and re-applying headerLeft/right
+  // along with it remounted the buttons mid-scroll, making them flicker.
+  useLayoutEffect(() => {
     navigation.setOptions({
       ...(Platform.OS !== 'web'
         ? {
             headerTransparent: true,
             headerStyle: { backgroundColor: 'transparent' },
-            headerBackground: renderHeaderBackdrop,
           }
         : {}),
       headerTitleAlign: 'center',
@@ -727,7 +732,15 @@ export function ShowDetailScreen() {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, handleShareShow, renderHeaderBackdrop, headerBackdropOpacity, navTitle]);
+  }, [navigation, handleShareShow, headerBackdropOpacity, navTitle]);
+
+  // The scroll-fade backdrop only. Kept out of the static effect above so its
+  // frequent dep changes (hero visibility, app state, video source) never
+  // re-apply the buttons.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    navigation.setOptions({ headerBackground: renderHeaderBackdrop });
+  }, [navigation, renderHeaderBackdrop]);
 
   const handleToggleFavorite = () => {
     if (show) {

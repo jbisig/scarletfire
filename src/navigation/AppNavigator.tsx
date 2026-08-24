@@ -201,6 +201,11 @@ function ShowsStack() {
         options={{
           title: '',
           headerShown: Platform.OS !== 'web',
+          // Render the header inside this screen's card, not the stack's
+          // floating shared header — the float layer kept the transparent
+          // header's buttons hovering over the previous screen during the
+          // back transition.
+          headerMode: 'screen',
           headerBackTitle: ' ',
         }}
       />
@@ -251,6 +256,11 @@ function SongsStack() {
         options={{
           title: '',
           headerShown: Platform.OS !== 'web',
+          // Render the header inside this screen's card, not the stack's
+          // floating shared header — the float layer kept the transparent
+          // header's buttons hovering over the previous screen during the
+          // back transition.
+          headerMode: 'screen',
           headerBackTitle: ' ',
         }}
       />
@@ -297,6 +307,11 @@ function FavoritesStack() {
         options={{
           title: '',
           headerShown: Platform.OS !== 'web',
+          // Render the header inside this screen's card, not the stack's
+          // floating shared header — the float layer kept the transparent
+          // header's buttons hovering over the previous screen during the
+          // back transition.
+          headerMode: 'screen',
           headerBackTitle: ' ',
         }}
       />
@@ -347,6 +362,11 @@ function DiscoverStack() {
         options={{
           title: '',
           headerShown: Platform.OS !== 'web',
+          // Render the header inside this screen's card, not the stack's
+          // floating shared header — the float layer kept the transparent
+          // header's buttons hovering over the previous screen during the
+          // back transition.
+          headerMode: 'screen',
           headerBackTitle: ' ',
         }}
       />
@@ -489,6 +509,7 @@ export function AppNavigator() {
               component={ShowDetailScreen}
               options={{
                 headerShown: Platform.OS !== 'web',
+                headerMode: 'screen',
                 headerStyle: { backgroundColor: COLORS.background },
                 headerTintColor: COLORS.textPrimary,
                 headerTitle: '',
