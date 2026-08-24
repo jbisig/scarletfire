@@ -23,12 +23,20 @@ import { matchesDateQuery } from '../utils/formatters';
 import { findShowByDate } from '../utils/showLookup';
 import { findSongByTitle } from '../utils/songLookup';
 import { ShowCard } from '../components/ShowCard';
+import {
+  ShowsFilterTray,
+  ShowsFilterState,
+  ShowsByYear,
+  hasActiveFilters,
+  createEmptyFilterState,
+} from '../components/ShowsFilterTray';
+import { makeShowTagFilter } from '../services/tagResolver';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
 import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, LAYOUT, FONTS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
 import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
@@ -61,11 +69,13 @@ export function SongPerformancesScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
-  const searchBarFullWidth = headerWidth - (padding * 2);
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const { loadTrack } = usePlayerActions();
   const { getShowDetail } = useShows();
   const { getPlayCountStable } = usePlayCounts();
   const [sortType, setSortType] = useState<SortType>('ratingHighest');
+  const [filterTrayOpen, setFilterTrayOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
@@ -86,10 +96,10 @@ export function SongPerformancesScreen() {
     setIsSearchExpanded(false);
   }, []);
 
-  // Scroll to top when sort type changes
+  // Scroll to top when sort type or filters change
   useEffect(() => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [sortType]);
+  }, [sortType, appliedFilters]);
 
   const { songTitle, performanceDate } = route.params;
 
@@ -157,19 +167,45 @@ export function SongPerformancesScreen() {
     }
   }, [performances, sortType, songTitle, ratingsVersion]);
 
-  // Filter performances based on search query
+  // This song's performances grouped into the shows-by-year shape the
+  // filter tray facets over (a per-song slice of the full catalog).
+  const songShowsByYear = useMemo(() => {
+    const byYear: ShowsByYear = {};
+    for (const performance of performances) {
+      const show = findShowByDate(performance.date);
+      if (!show) continue;
+      const year = performance.date.slice(0, 4);
+      (byYear[year] ??= []).push(show);
+    }
+    return byYear;
+  }, [performances]);
+
+  // Stage 1: year + show-tag filters from the tray. A performance passes on
+  // its show's date — the same predicate the Shows index uses.
+  const trayFilteredPerformances = useMemo(() => {
+    if (!hasActiveFilters(appliedFilters)) return sortedPerformances;
+    const { selectedYears, selectedTags } = appliedFilters;
+    const keep = selectedTags.length > 0 ? makeShowTagFilter(selectedTags) : null;
+    return sortedPerformances.filter(performance => {
+      const date = performance.date.slice(0, 10);
+      if (selectedYears.length > 0 && !selectedYears.includes(date.slice(0, 4))) return false;
+      return !keep || keep(date);
+    });
+  }, [sortedPerformances, appliedFilters]);
+
+  // Stage 2: search on top of the tray results
   const filteredPerformances = useMemo(() => {
     if (!debouncedSearchQuery.trim()) {
-      return sortedPerformances;
+      return trayFilteredPerformances;
     }
 
     const query = debouncedSearchQuery.toLowerCase();
-    return sortedPerformances.filter((performance) => {
+    return trayFilteredPerformances.filter((performance) => {
       const dateMatch = matchesDateQuery(performance.date, debouncedSearchQuery);
       const venueMatch = performance.venue?.toLowerCase().includes(query);
       return dateMatch || venueMatch;
     });
-  }, [sortedPerformances, debouncedSearchQuery]);
+  }, [trayFilteredPerformances, debouncedSearchQuery]);
 
   const handlePerformancePress = useCallback(async (performance: Performance) => {
     try {
@@ -282,6 +318,25 @@ export function SongPerformancesScreen() {
               expandedWidth={searchBarFullWidth}
               closeOnClear
             />
+
+            {/* Filter Button */}
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                hasActiveFilters(appliedFilters) && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterTrayOpen(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={hasActiveFilters(appliedFilters) ? 'Filters active' : 'Filters'}
+              accessibilityHint="Double tap to open filter options"
+            >
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={hasActiveFilters(appliedFilters) ? COLORS.textPrimary : COLORS.textHint}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -299,6 +354,15 @@ export function SongPerformancesScreen() {
           </View>
         </View>
       </View>
+
+      {/* Filter Tray Modal */}
+      <ShowsFilterTray
+        isOpen={filterTrayOpen}
+        onClose={() => setFilterTrayOpen(false)}
+        appliedFilters={appliedFilters}
+        onApply={setAppliedFilters}
+        showsByYear={songShowsByYear}
+      />
 
       {/* Sort Dropdown */}
       <SortDropdown
@@ -318,8 +382,11 @@ export function SongPerformancesScreen() {
         contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
-          debouncedSearchQuery.trim() ? (
-            <NoResultsState query={debouncedSearchQuery} entityName="performances" />
+          debouncedSearchQuery.trim() || hasActiveFilters(appliedFilters) ? (
+            <NoResultsState
+              query={debouncedSearchQuery.trim() || 'the selected filters'}
+              entityName="performances"
+            />
           ) : null
         }
         removeClippedSubviews={true}
@@ -386,8 +453,22 @@ const styles = StyleSheet.create({
   },
   titleRight: {
     flex: 1,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: LAYOUT.headerButtonGap,
     zIndex: 10,
+  },
+  filterButton: {
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
   },
   sortRow: {
     flexDirection: 'row',

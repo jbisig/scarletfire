@@ -54,10 +54,19 @@ export type VenuePhysicalType = 'theater' | 'arena' | 'stadium' | 'amphitheater'
 export type VenueTypeTagId = VenuePhysicalType | 'festival' | 'international' | 'residency';
 export type InstrumentationTagId = 'pedalsteel' | 'acousticset';
 export type NotableTagId = 'classic' | 'historic' | 'guest';
-export type TagId = EraId | SourceTagId | VenueTypeTagId | InstrumentationTagId | NotableTagId;
+// Song tags. 'americanagenre' (not 'americana') because the era registry
+// already owns that id and ids share one URL-facing namespace; likewise the
+// show side owns 'acousticset', so the song character tag is 'acoustic'.
+export type SongTypeTagId = 'original' | 'cover' | 'traditional';
+export type SongWritersTagId = 'huntergarcia' | 'barlowweir' | 'pigpen';
+export type SongGenreTagId = 'blues' | 'gospel' | 'cowboy' | 'americanagenre' | 'funk';
+export type SongCharacterTagId = 'jamvehicle' | 'ballad' | 'acoustic' | 'rare';
+export type SongTagId = SongTypeTagId | SongWritersTagId | SongGenreTagId | SongCharacterTagId;
+export type TagId = EraId | SourceTagId | VenueTypeTagId | InstrumentationTagId | NotableTagId | SongTagId;
 
-export type TagCategoryId = 'era' | 'source' | 'venueType' | 'instrumentation' | 'notable';
-/** What kind of thing a category describes. 'song' is reserved for the later song-tags spec. */
+export type SongTagCategoryId = 'songType' | 'songWriters' | 'songGenre' | 'songCharacter';
+export type TagCategoryId = 'era' | 'source' | 'venueType' | 'instrumentation' | 'notable' | SongTagCategoryId;
+/** What kind of thing a category describes. */
 export type TagEntity = 'show' | 'recording' | 'song';
 
 export interface TagCategory { id: TagCategoryId; label: string; appliesTo: TagEntity }
@@ -69,6 +78,14 @@ export const TAG_CATEGORIES: readonly TagCategory[] = [
   { id: 'venueType', label: 'Venue', appliesTo: 'show' },
   { id: 'instrumentation', label: 'Instrumentation', appliesTo: 'show' },
   { id: 'notable', label: 'Notable', appliesTo: 'show' },
+  { id: 'songType', label: 'Type', appliesTo: 'song' },
+  { id: 'songWriters', label: 'Writers & Singers', appliesTo: 'song' },
+  { id: 'songGenre', label: 'Genre', appliesTo: 'song' },
+  { id: 'songCharacter', label: 'Character', appliesTo: 'song' },
+];
+
+export const SONG_TAG_CATEGORY_IDS: readonly SongTagCategoryId[] = [
+  'songType', 'songWriters', 'songGenre', 'songCharacter',
 ];
 
 const ERA_DEFS: TagDef[] = [
@@ -107,6 +124,33 @@ const INSTRUMENTATION_DEFS: TagDef[] = [
   { id: 'acousticset', category: 'instrumentation', label: 'Acoustic Set' },
 ];
 
+const SONG_TYPE_DEFS: TagDef[] = [
+  { id: 'original', category: 'songType', label: 'Originals' },
+  { id: 'cover', category: 'songType', label: 'Covers' },
+  { id: 'traditional', category: 'songType', label: 'Traditionals' },
+];
+
+const SONG_WRITERS_DEFS: TagDef[] = [
+  { id: 'huntergarcia', category: 'songWriters', label: 'Hunter-Garcia' },
+  { id: 'barlowweir', category: 'songWriters', label: 'Barlow-Weir' },
+  { id: 'pigpen', category: 'songWriters', label: 'Pigpen', description: 'Songs Pigpen wrote or fronted' },
+];
+
+const SONG_GENRE_DEFS: TagDef[] = [
+  { id: 'blues', category: 'songGenre', label: 'Blues' },
+  { id: 'gospel', category: 'songGenre', label: 'Gospel' },
+  { id: 'cowboy', category: 'songGenre', label: 'Cowboy Songs' },
+  { id: 'americanagenre', category: 'songGenre', label: 'Americana' },
+  { id: 'funk', category: 'songGenre', label: 'Funk' },
+];
+
+const SONG_CHARACTER_DEFS: TagDef[] = [
+  { id: 'jamvehicle', category: 'songCharacter', label: 'Jam Vehicle' },
+  { id: 'ballad', category: 'songCharacter', label: 'Ballads' },
+  { id: 'acoustic', category: 'songCharacter', label: 'Acoustic' },
+  { id: 'rare', category: 'songCharacter', label: 'Rare', description: 'Performed 10 times or fewer' },
+];
+
 const NOTABLE_DEFS: TagDef[] = [
   { id: 'classic', category: 'notable', label: 'Consensus Classic' },
   { id: 'historic', category: 'notable', label: 'Historic Event' },
@@ -115,6 +159,7 @@ const NOTABLE_DEFS: TagDef[] = [
 
 export const TAG_DEFS: readonly TagDef[] = [
   ...ERA_DEFS, ...SOURCE_DEFS, ...VENUE_DEFS, ...INSTRUMENTATION_DEFS, ...NOTABLE_DEFS,
+  ...SONG_TYPE_DEFS, ...SONG_WRITERS_DEFS, ...SONG_GENRE_DEFS, ...SONG_CHARACTER_DEFS,
 ];
 
 const TAG_BY_ID: ReadonlyMap<string, TagDef> = new Map(TAG_DEFS.map(t => [t.id, t]));
@@ -129,6 +174,13 @@ export function tagLabel(id: TagId): string {
 
 export function tagCategory(id: TagId): TagCategoryId {
   return TAG_BY_ID.get(id)!.category;
+}
+
+const SONG_CATEGORY_ID_SET: ReadonlySet<string> = new Set(SONG_TAG_CATEGORY_IDS);
+
+/** True for ids in any song category. Guards URL-borne tags against landing on the wrong index. */
+export function isSongTagId(value: string): value is SongTagId {
+  return isTagId(value) && SONG_CATEGORY_ID_SET.has(tagCategory(value));
 }
 
 export function tagsInCategory(category: TagCategoryId): readonly TagDef[] {

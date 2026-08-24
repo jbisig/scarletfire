@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,16 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { GRATEFUL_DEAD_SONGS } from '../constants/songs';
+import { SongsFilterTray } from '../components/SongsFilterTray';
+import { makeSongTagFilter } from '../services/songTagResolver';
+import { tagLabel, isSongTagId, TagId } from '../constants/tags';
+import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { ProfileDropdown } from '../components/ProfileDropdown';
@@ -62,13 +67,20 @@ const SongListItem = React.memo<{ item: SongItem; onPress: (song: SongItem) => v
 
 export function SongListScreen() {
   const navigation = useNavigation<SongListNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'SongList'>>();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const [headerWidth, setHeaderWidth] = useState(windowWidth);
   const padding = isDesktop ? 32 : LAYOUT.HORIZONTAL_PADDING;
-  const searchBarFullWidth = headerWidth - (padding * 2);
+  const searchBarFullWidth = headerWidth - (padding * 2) - LAYOUT.headerButtonSize - LAYOUT.headerButtonGap;
   const [songs, setSongs] = useState<SongItem[]>([]);
+  const [filterTrayOpen, setFilterTrayOpen] = useState(false);
+  // Song tags only — a show tag pasted into the URL would AND-in a category
+  // no song can satisfy and empty the list.
+  const [appliedTags, setAppliedTags] = useState<TagId[]>(
+    () => parseTagsParam(route.params?.tags).filter(isSongTagId)
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,6 +88,17 @@ export function SongListScreen() {
 
   // Search bar animation state
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // Sync applied tags to URL (web only) — same pattern as HomeScreen.
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    navigation.setParams({ tags: stringifyTagsParam(appliedTags) });
+  }, [appliedTags, navigation]);
 
   // Profile dropdown
   const {
@@ -126,14 +149,24 @@ export function SongListScreen() {
     });
   };
 
-  // Filter songs based on search query
+  // Every title in the index — the base the filter tray facets over.
+  const allTitles = useMemo(() => songs.map(song => song.title), [songs]);
+
+  // Stage 1: tag filter (OR within a category, AND between)
+  const tagFilteredSongs = useMemo(() => {
+    if (appliedTags.length === 0) return songs;
+    const keep = makeSongTagFilter(appliedTags);
+    return songs.filter(song => keep(song.title));
+  }, [songs, appliedTags]);
+
+  // Stage 2: search on top of the tag results
   const filteredSongs = useMemo(() => {
     if (!debouncedSearchQuery.trim()) {
-      return songs;
+      return tagFilteredSongs;
     }
     const query = debouncedSearchQuery.toLowerCase();
-    return songs.filter(song => song.title.toLowerCase().includes(query));
-  }, [songs, debouncedSearchQuery]);
+    return tagFilteredSongs.filter(song => song.title.toLowerCase().includes(query));
+  }, [tagFilteredSongs, debouncedSearchQuery]);
 
   // Group songs by first letter
   const getSectionedData = () => {
@@ -243,6 +276,25 @@ export function SongListScreen() {
                 placeholder="Search songs"
                 expandedWidth={searchBarFullWidth}
               />
+
+              {/* Filter Button */}
+              <TouchableOpacity
+                style={[
+                  styles.filterButton,
+                  appliedTags.length > 0 && styles.filterButtonActive,
+                ]}
+                onPress={() => setFilterTrayOpen(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={appliedTags.length > 0 ? 'Filters active' : 'Filters'}
+                accessibilityHint="Double tap to open filter options"
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={20}
+                  color={appliedTags.length > 0 ? COLORS.textPrimary : COLORS.textHint}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -255,8 +307,11 @@ export function SongListScreen() {
         </View>
 
         {/* Songs List */}
-        {filteredSongs.length === 0 && debouncedSearchQuery.trim() ? (
-          <NoResultsState query={debouncedSearchQuery} entityName="songs" />
+        {filteredSongs.length === 0 && (debouncedSearchQuery.trim() || appliedTags.length > 0) ? (
+          <NoResultsState
+            query={debouncedSearchQuery.trim() || appliedTags.map(tagLabel).join(' + ')}
+            entityName="songs"
+          />
         ) : (
           <FlatList
             data={renderFlatListData()}
@@ -279,6 +334,15 @@ export function SongListScreen() {
             initialNumToRender={20}
           />
         )}
+
+        {/* Filter Tray Modal */}
+        <SongsFilterTray
+          isOpen={filterTrayOpen}
+          onClose={() => setFilterTrayOpen(false)}
+          appliedTags={appliedTags}
+          onApply={setAppliedTags}
+          baseTitles={allTitles}
+        />
 
         {/* Profile Dropdown */}
         <ProfileDropdown
@@ -409,6 +473,17 @@ const styles = StyleSheet.create({
       borderRadius: 12,
       marginVertical: 2,
     } : {}),
+  },
+  filterButton: {
+    width: LAYOUT.headerButtonSize,
+    height: LAYOUT.headerButtonSize,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.accent,
   },
   songItemHovered: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',

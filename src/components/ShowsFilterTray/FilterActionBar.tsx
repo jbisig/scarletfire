@@ -7,12 +7,15 @@ import { haptics } from '../../services/hapticService';
 
 interface FilterActionBarProps {
   matchingCount: number;
+  /** What the count counts — "shows" (default) or "songs". */
+  noun?: string;
   onReset: () => void;
   onApply: () => void;
 }
 
 export const FilterActionBar = React.memo<FilterActionBarProps>(function FilterActionBar({
   matchingCount,
+  noun = 'shows',
   onReset,
   onApply,
 }) {
@@ -37,7 +40,7 @@ export const FilterActionBar = React.memo<FilterActionBarProps>(function FilterA
       </TouchableOpacity>
 
       {/* Matching Count */}
-      <Text style={styles.matchingText}>{matchingCount} shows</Text>
+      <Text style={styles.matchingText}>{matchingCount} {noun}</Text>
 
       {/* Apply Button */}
       <TouchableOpacity style={styles.applyButton} onPress={handleApply} activeOpacity={0.7}>

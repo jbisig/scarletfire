@@ -25,10 +25,15 @@ describe('tag labels', () => {
 });
 
 describe('tag registry', () => {
-  it('lists the five categories in menu order, all show-level except source', () => {
-    expect(TAG_CATEGORIES.map(c => c.id)).toEqual(['era', 'source', 'venueType', 'instrumentation', 'notable']);
+  it('lists the nine categories in menu order with the right entity levels', () => {
+    expect(TAG_CATEGORIES.map(c => c.id)).toEqual([
+      'era', 'source', 'venueType', 'instrumentation', 'notable',
+      'songType', 'songWriters', 'songGenre', 'songCharacter',
+    ]);
     expect(TAG_CATEGORIES.find(c => c.id === 'source')?.appliesTo).toBe('recording');
-    TAG_CATEGORIES.filter(c => c.id !== 'source').forEach(c => expect(c.appliesTo).toBe('show'));
+    TAG_CATEGORIES.filter(c => ['era', 'venueType', 'instrumentation', 'notable'].includes(c.id))
+      .forEach(c => expect(c.appliesTo).toBe('show'));
+    TAG_CATEGORIES.filter(c => c.id.startsWith('song')).forEach(c => expect(c.appliesTo).toBe('song'));
   });
 
   it('defines every tag id exactly once with a label and a known category', () => {
@@ -40,6 +45,10 @@ describe('tag registry', () => {
       'theater', 'arena', 'stadium', 'amphitheater', 'festival', 'international', 'residency',
       'pedalsteel', 'acousticset',
       'classic', 'historic', 'guest',
+      'original', 'cover', 'traditional',
+      'huntergarcia', 'barlowweir', 'pigpen',
+      'blues', 'gospel', 'cowboy', 'americanagenre', 'funk',
+      'jamvehicle', 'ballad', 'acoustic', 'rare',
     ]);
     const categoryIds = new Set(TAG_CATEGORIES.map(c => c.id));
     TAG_DEFS.forEach(t => { expect(categoryIds.has(t.category)).toBe(true); expect(t.label.length).toBeGreaterThan(0); });

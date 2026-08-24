@@ -10,6 +10,8 @@ interface FilterPillProps {
   isDisabled?: boolean;
   showCheckmark?: boolean;
   count?: number;
+  /** What `count` counts, for the accessibility label. Default "shows". */
+  noun?: string;
   testID?: string;
   onPress: () => void;
 }
@@ -20,6 +22,7 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
   isDisabled = false,
   showCheckmark = false,
   count,
+  noun = 'shows',
   testID,
   onPress,
 }) {
@@ -40,7 +43,7 @@ export const FilterPill = React.memo<FilterPillProps>(function FilterPill({
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected, disabled: !!isDisabled }}
-      accessibilityLabel={typeof count === 'number' ? `${label}, ${count} shows` : label}
+      accessibilityLabel={typeof count === 'number' ? `${label}, ${count} ${noun}` : label}
       activeOpacity={0.7}
     >
       {showCheckmark && isSelected && (

@@ -109,7 +109,7 @@ export function getShowTags(date: string): TagId[] {
   return list;
 }
 
-function groupByCategory(selected: TagId[]): Map<TagCategoryId, TagId[]> {
+export function groupByCategory(selected: TagId[]): Map<TagCategoryId, TagId[]> {
   const groups = new Map<TagCategoryId, TagId[]>();
   for (const id of selected) {
     if (!isTagId(id)) continue;

@@ -115,7 +115,7 @@ export type RootStackParamList = {
   Favorites: undefined;
   Feed: undefined;
   DiscoverLanding: undefined;
-  SongList: undefined;
+  SongList: { tags?: string } | undefined;
   SongPerformances: {
     songTitle: string;
     performanceDate?: string;

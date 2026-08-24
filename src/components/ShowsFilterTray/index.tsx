@@ -20,13 +20,13 @@ import {
   ShowsFilterState,
   countSelectedInCategory,
 } from './types';
-import { TAG_CATEGORIES, tagsInCategory, TagCategoryId, TagId } from '../../constants/tags';
+import { TAG_CATEGORIES, tagsInCategory, TagCategoryId, SongTagCategoryId, TagId } from '../../constants/tags';
 import { getTagCounts, applyTagFilter } from '../../services/tagResolver';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
 // 'years' is the Years accordion, which took the removed Era section's top
 // slot (era tags were redundant with picking the years directly).
-type SectionId = TagCategoryId | 'years';
+type SectionId = Exclude<TagCategoryId, SongTagCategoryId> | 'years';
 
 const DEFAULT_EXPANDED: Record<SectionId, boolean> = {
   years: true,
@@ -183,8 +183,9 @@ export function ShowsFilterTray({
         />
 
         {/* Era tags are gone from the tray — the Years accordion above covers
-            the same ground with direct year picks. */}
-        {TAG_CATEGORIES.filter(category => category.id !== 'era').map(category => (
+            the same ground with direct year picks. Song categories belong to
+            the Songs filter tray, not here. */}
+        {TAG_CATEGORIES.filter(category => category.appliesTo !== 'song' && category.id !== 'era').map(category => (
           <TagCategorySection
             key={category.id}
             category={category}
@@ -192,10 +193,10 @@ export function ShowsFilterTray({
             selected={pendingTags}
             counts={counts}
             expanded={
-              expandedCategories[category.id] ||
+              expandedCategories[category.id as SectionId] ||
               countSelectedInCategory({ selectedYears: pendingYears, selectedTags: pendingTags }, category.id) > 0
             }
-            onToggleExpanded={() => toggleExpanded(category.id)}
+            onToggleExpanded={() => toggleExpanded(category.id as SectionId)}
             onToggleTag={handleToggleTag}
           />
         ))}

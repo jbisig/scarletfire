@@ -27,6 +27,7 @@ import { matchesDateQuery, normalizeForSearch } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
 import { makeShowTagFilter, sourceConstraintFromTags } from '../services/tagResolver';
 import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
+import { isSongTagId } from '../constants/tags';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
 import { SortDropdown } from '../components/SortDropdown';
@@ -141,7 +142,8 @@ export function HomeScreen() {
     const urlYears = route.params?.years;
     return {
       selectedYears: urlYears ? urlYears.split(',').filter(Boolean) : [],
-      selectedTags: parseTagsParam(route.params?.tags),
+      // Show/recording tags only — song tags in the URL belong to the Songs index.
+      selectedTags: parseTagsParam(route.params?.tags).filter(id => !isSongTagId(id)),
     };
   });
   const [searchQuery, setSearchQuery] = useState('');

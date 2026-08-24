@@ -10,12 +10,14 @@ interface TagCategorySectionProps {
   tags: readonly TagDef[];
   selected: TagId[];
   counts: Record<TagId, number>;
+  /** What the pill counts count — "shows" (default) or "songs". */
+  noun?: string;
   expanded: boolean;
   onToggleExpanded: () => void;
   onToggleTag: (id: TagId) => void;
 }
 
-export function TagCategorySection({ category, tags, selected, counts, expanded, onToggleExpanded, onToggleTag }: TagCategorySectionProps) {
+export function TagCategorySection({ category, tags, selected, counts, noun = 'shows', expanded, onToggleExpanded, onToggleTag }: TagCategorySectionProps) {
   const activeCount = tags.filter(t => selected.includes(t.id)).length;
   return (
     <View style={styles.section}>
@@ -47,6 +49,7 @@ export function TagCategorySection({ category, tags, selected, counts, expanded,
                 testID={`tag-pill-${tag.id}`}
                 label={tag.label}
                 count={count}
+                noun={noun}
                 isSelected={isSelected}
                 isDisabled={isDisabled}
                 onPress={() => onToggleTag(tag.id)}
