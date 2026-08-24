@@ -68,6 +68,11 @@ const TITLE_COLLAPSE_RANGE = 56;
 const CONTROLS_ROW_HEIGHT = LAYOUT.headerButtonSize;
 // Ignore sub-slop scroll jitter when deciding direction.
 const SCROLL_DIRECTION_SLOP = 2;
+// Require this much deliberate travel in one direction before toggling the
+// controls bar — a lone jittery delta (or a layout-compensation event) is
+// never enough to flip it.
+const CONTROLS_HIDE_TRAVEL = 16;
+const CONTROLS_SHOW_TRAVEL = 8;
 
 interface Performance {
   date: string;
@@ -117,7 +122,10 @@ export function SongPerformancesScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const controlsAnim = useRef(new Animated.Value(1)).current; // 1 = bar shown
   const controlsShownRef = useRef(true);
+  const controlsAnimatingRef = useRef(false);
   const lastOffsetYRef = useRef(0);
+  const scrollTravelRef = useRef(0);
+  const scrollDirRef = useRef(0);
   const isSearchExpandedRef = useRef(false);
 
   const bigTitleOpacity = scrollY.interpolate({
@@ -134,11 +142,18 @@ export function SongPerformancesScreen() {
   const setControlsShown = useCallback((shown: boolean) => {
     if (controlsShownRef.current === shown) return;
     controlsShownRef.current = shown;
+    // The height change below shifts the list and fires a compensating
+    // scroll event in the OPPOSITE direction — without this flag the
+    // listener would read that as intent and toggle right back (visible as
+    // the header popping between two heights).
+    controlsAnimatingRef.current = true;
     Animated.timing(controlsAnim, {
       toValue: shown ? 1 : 0,
       duration: 220,
       useNativeDriver: false, // animates the bar's height
-    }).start();
+    }).start(() => {
+      controlsAnimatingRef.current = false;
+    });
   }, [controlsAnim]);
 
   // While the search field is open, pin the bar — hiding the control the
@@ -159,10 +174,21 @@ export function SongPerformancesScreen() {
           if (isSearchExpandedRef.current) return;
           if (y <= 8) {
             setControlsShown(true);
+            scrollTravelRef.current = 0;
             return;
           }
-          if (delta > SCROLL_DIRECTION_SLOP) setControlsShown(false);
-          else if (delta < -SCROLL_DIRECTION_SLOP) setControlsShown(true);
+          // Events during the bar's own slide are layout compensation, not
+          // user intent.
+          if (controlsAnimatingRef.current) return;
+          if (Math.abs(delta) <= SCROLL_DIRECTION_SLOP) return;
+          const dir = delta > 0 ? 1 : -1;
+          if (dir !== scrollDirRef.current) {
+            scrollDirRef.current = dir;
+            scrollTravelRef.current = 0;
+          }
+          scrollTravelRef.current += delta;
+          if (dir === 1 && scrollTravelRef.current > CONTROLS_HIDE_TRAVEL) setControlsShown(false);
+          else if (dir === -1 && -scrollTravelRef.current > CONTROLS_SHOW_TRAVEL) setControlsShown(true);
         },
       }),
     [scrollY, setControlsShown]
