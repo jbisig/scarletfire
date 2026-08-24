@@ -1,4 +1,4 @@
-import { ERAS, eraForDate, eraForYear, groupYearsByEra } from '../eras';
+import { ERAS, eraForDate } from '../eras';
 import { tagLabel } from '../../constants/tags';
 import showsData from '../shows.json';
 import type { ShowsByYear } from '../../types/show.types';
@@ -53,20 +53,5 @@ describe('eraForDate', () => {
     shows.forEach(s => { const e = eraForDate(s.date); counts.set(e, (counts.get(e) ?? 0) + 1); });
     expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(shows.length);
     expect(counts.size).toBe(ERAS.length);
-  });
-});
-
-describe('eraForYear / groupYearsByEra', () => {
-  it('picks the era with the most shows that year (1972 → europe72, 1974 → wallofsound, 1990 → brent)', () => {
-    expect(eraForYear('1972')).toBe('europe72');
-    expect(eraForYear(1974)).toBe('wallofsound');
-    expect(eraForYear('1990')).toBe('brent');
-    expect(eraForYear('1975')).toBe('hiatus');
-  });
-
-  it('groups years in era order and drops empty eras', () => {
-    const groups = groupYearsByEra(['1977', '1965', '1978', '1995', '1976']);
-    expect(groups.map(g => g.era.id)).toEqual(['primal', 'return', 'peakkeith', 'finalyears']);
-    expect(groups.find(g => g.era.id === 'peakkeith')?.years).toEqual(['1977', '1978']);
   });
 });

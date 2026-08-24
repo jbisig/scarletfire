@@ -7,7 +7,6 @@
  * while the PA was being built.
  */
 import type { EraId } from '../constants/tags';
-import { getAllShowsSorted } from '../utils/showLookup';
 
 export interface EraDef {
   id: EraId;
@@ -37,40 +36,4 @@ export function eraForDate(date: string): EraId {
   const era = ERAS.find(e => key >= e.start && key <= e.end);
   if (!era) throw new RangeError(`No era for date ${date}`);
   return era.id;
-}
-
-let eraByYear: Map<string, EraId> | null = null;
-
-function buildEraByYear(): Map<string, EraId> {
-  const tally = new Map<string, Map<EraId, number>>();
-  for (const show of getAllShowsSorted()) {
-    const year = show.date.slice(0, 4);
-    const era = eraForDate(show.date);
-    const perYear = tally.get(year) ?? new Map<EraId, number>();
-    perYear.set(era, (perYear.get(era) ?? 0) + 1);
-    tally.set(year, perYear);
-  }
-  const result = new Map<string, EraId>();
-  for (const [year, perYear] of tally) {
-    let best: EraId | null = null; let bestCount = -1;
-    for (const [era, count] of perYear) if (count > bestCount) { best = era; bestCount = count; }
-    if (best) result.set(year, best);
-  }
-  return result;
-}
-
-/** The era most of that year's catalog shows fall in (July 1 as the fallback for years with no shows). */
-export function eraForYear(year: string | number): EraId {
-  const key = String(year);
-  if (!eraByYear) eraByYear = buildEraByYear();
-  return eraByYear.get(key) ?? eraForDate(`${key}-07-01`);
-}
-
-export function groupYearsByEra(years: string[]): Array<{ era: EraDef; years: string[] }> {
-  const byEra = new Map<EraId, string[]>();
-  for (const year of [...years].sort()) {
-    const era = eraForYear(year);
-    byEra.set(era, [...(byEra.get(era) ?? []), year]);
-  }
-  return ERAS.filter(e => byEra.has(e.id)).map(era => ({ era, years: byEra.get(era.id)! }));
 }

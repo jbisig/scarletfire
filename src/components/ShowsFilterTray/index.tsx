@@ -24,8 +24,13 @@ import { TAG_CATEGORIES, tagsInCategory, TagCategoryId, TagId } from '../../cons
 import { getTagCounts, applyTagFilter } from '../../services/tagResolver';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
-const DEFAULT_EXPANDED: Record<TagCategoryId, boolean> = {
-  era: true,
+// 'years' is the Years accordion, which took the removed Era section's top
+// slot (era tags were redundant with picking the years directly).
+type SectionId = TagCategoryId | 'years';
+
+const DEFAULT_EXPANDED: Record<SectionId, boolean> = {
+  years: true,
+  era: false,
   source: true,
   venueType: false,
   instrumentation: false,
@@ -48,7 +53,7 @@ export function ShowsFilterTray({
   // Local pending state (not applied until user clicks Apply)
   const [pendingTags, setPendingTags] = useState<TagId[]>(appliedFilters.selectedTags);
   const [pendingYears, setPendingYears] = useState<string[]>(appliedFilters.selectedYears);
-  const [expandedCategories, setExpandedCategories] = useState<Record<TagCategoryId, boolean>>(DEFAULT_EXPANDED);
+  const [expandedCategories, setExpandedCategories] = useState<Record<SectionId, boolean>>(DEFAULT_EXPANDED);
 
   // Reset pending state when tray opens with new applied filters
   useEffect(() => {
@@ -67,7 +72,7 @@ export function ShowsFilterTray({
     );
   }, []);
 
-  const toggleExpanded = useCallback((category: TagCategoryId) => {
+  const toggleExpanded = useCallback((category: SectionId) => {
     setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
   }, []);
 
@@ -168,7 +173,18 @@ export function ShowsFilterTray({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {TAG_CATEGORIES.map(category => (
+        <YearsSection
+          selectedYears={pendingYears}
+          showsByYear={showsByYear}
+          expanded={expandedCategories.years}
+          onToggleExpanded={() => toggleExpanded('years')}
+          onToggleYear={handleToggleYear}
+          onSelectAllInEra={handleSelectAllInEra}
+        />
+
+        {/* Era tags are gone from the tray — the Years accordion above covers
+            the same ground with direct year picks. */}
+        {TAG_CATEGORIES.filter(category => category.id !== 'era').map(category => (
           <TagCategorySection
             key={category.id}
             category={category}
@@ -183,13 +199,6 @@ export function ShowsFilterTray({
             onToggleTag={handleToggleTag}
           />
         ))}
-
-        <YearsSection
-          selectedYears={pendingYears}
-          showsByYear={showsByYear}
-          onToggleYear={handleToggleYear}
-          onSelectAllInEra={handleSelectAllInEra}
-        />
       </ScrollView>
 
       {/* Bottom Action Bar */}

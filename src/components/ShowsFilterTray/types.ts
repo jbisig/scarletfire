@@ -25,6 +25,28 @@ export interface ShowsFilterTrayProps {
 }
 
 /**
+ * The five broad era groups the Years section is organized by. Coarser than
+ * the tagging taxonomy in data/eras.ts on purpose — as year buckets for the
+ * filter, five headings scan better than eleven. 1975 (the hiatus year, which
+ * still has a handful of shows) rides with Keith & Donna.
+ */
+export interface FilterEraGroup {
+  name: string;
+  years: readonly string[];
+}
+
+const yearRange = (from: number, to: number): string[] =>
+  Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
+
+export const FILTER_ERA_GROUPS: readonly FilterEraGroup[] = [
+  { name: 'The Early Years', years: yearRange(1965, 1970) },
+  { name: 'Keith & Donna', years: yearRange(1971, 1975) },
+  { name: 'Post-Hiatus', years: yearRange(1976, 1978) },
+  { name: 'Brent Years', years: yearRange(1979, 1990) },
+  { name: 'Final Years', years: yearRange(1991, 1995) },
+];
+
+/**
  * Check if filters have any active selections
  */
 export function hasActiveFilters(filters: ShowsFilterState): boolean {

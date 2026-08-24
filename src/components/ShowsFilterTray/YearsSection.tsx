@@ -1,14 +1,15 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ShowsByYear } from './types';
-import { groupYearsByEra } from '../../data/eras';
-import { useResponsive } from '../../hooks/useResponsive';
+import { ShowsByYear, FILTER_ERA_GROUPS } from './types';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface YearsSectionProps {
   selectedYears: string[];
   showsByYear: ShowsByYear | null;
+  /** Collapsible like the tag sections above it. */
+  expanded: boolean;
+  onToggleExpanded: () => void;
   onToggleYear: (year: string) => void;
   onSelectAllInEra: (years: string[]) => void;
 }
@@ -17,7 +18,8 @@ interface YearButtonProps {
   year: string;
   isSelected: boolean;
   isDisabled: boolean;
-  isDesktop: boolean;
+  /** Column position: edge columns hug the margins, middles center. */
+  justify: 'flex-start' | 'center' | 'flex-end';
   onPress: () => void;
 }
 
@@ -25,36 +27,22 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
   year,
   isSelected,
   isDisabled,
-  isDesktop,
+  justify,
   onPress,
 }) {
-  const animatedValue = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+  const checkmarkOpacity = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.timing(animatedValue, {
+    Animated.timing(checkmarkOpacity, {
       toValue: isSelected ? 1 : 0,
       duration: 200,
       useNativeDriver: true,
     }).start();
-  }, [isSelected, animatedValue]);
-
-  const translateX = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -6],
-  });
-
-  const checkmarkOpacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
+  }, [isSelected, checkmarkOpacity]);
 
   return (
     <TouchableOpacity
-      style={[
-        styles.yearButton,
-        isDesktop && styles.yearButtonDesktop,
-        isDisabled && styles.yearButtonDisabled,
-      ]}
+      style={[styles.yearButton, { justifyContent: justify }, isDisabled && styles.yearButtonDisabled]}
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
@@ -62,26 +50,20 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
       accessibilityLabel={year}
       accessibilityState={{ checked: isSelected, disabled: isDisabled }}
     >
-      <View style={styles.yearButtonInner}>
-        <Animated.View style={[styles.yearContent, { transform: [{ translateX }] }]}>
-          <Text
-            style={[
-              styles.yearText,
-              isSelected && styles.yearTextSelected,
-              isDisabled && styles.yearTextDisabled,
-            ]}
-          >
-            {year}
-          </Text>
-        </Animated.View>
-        <Animated.View style={[styles.checkmark, { opacity: checkmarkOpacity }]}>
-          <Ionicons
-            name="checkmark"
-            size={20}
-            color={COLORS.accent}
-          />
-        </Animated.View>
-      </View>
+      <Text
+        style={[
+          styles.yearText,
+          isSelected && styles.yearTextSelected,
+          isDisabled && styles.yearTextDisabled,
+        ]}
+      >
+        {year}
+      </Text>
+      {/* Fixed-width slot so a button's width is identical selected or not —
+          keeps the wrapped rows from reflowing when a year is toggled. */}
+      <Animated.View style={[styles.checkmark, { opacity: checkmarkOpacity }]}>
+        <Ionicons name="checkmark" size={16} color={COLORS.accent} />
+      </Animated.View>
     </TouchableOpacity>
   );
 });
@@ -89,15 +71,16 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
 export const YearsSection = React.memo<YearsSectionProps>(function YearsSection({
   selectedYears,
   showsByYear,
+  expanded,
+  onToggleExpanded,
   onToggleYear,
   onSelectAllInEra,
 }) {
-  const { isDesktop } = useResponsive();
-
   const availableYears = useMemo(
     () => (showsByYear ? Object.keys(showsByYear).sort() : []),
     [showsByYear]
   );
+  const availableSet = useMemo(() => new Set(availableYears), [availableYears]);
 
   // Years with zero shows are disabled
   const disabledYears = useMemo(() => {
@@ -105,7 +88,14 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
     return new Set(availableYears.filter(y => (showsByYear[y]?.length ?? 0) === 0));
   }, [availableYears, showsByYear]);
 
-  const eraGroups = useMemo(() => groupYearsByEra(availableYears), [availableYears]);
+  // The five broad era groups, narrowed to years the catalog actually has.
+  const eraGroups = useMemo(
+    () =>
+      FILTER_ERA_GROUPS
+        .map(g => ({ name: g.name, years: g.years.filter(y => availableSet.has(y)) }))
+        .filter(g => g.years.length > 0),
+    [availableSet]
+  );
 
   // Check if all years in an era are selected
   const isEraFullySelected = (years: string[]): boolean => {
@@ -113,24 +103,46 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
     return enabledYears.length > 0 && enabledYears.every(y => selectedYears.includes(y));
   };
 
+  const activeCount = selectedYears.length;
+
   return (
     <View style={styles.section}>
-      <Text style={styles.yearsHeading}>Years</Text>
-      {eraGroups.map(({ era, years }) => {
+      {/* Header mirrors TagCategorySection so Years reads as one more accordion. */}
+      <TouchableOpacity
+        testID="years-section-header"
+        style={styles.sectionHeader}
+        onPress={onToggleExpanded}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityLabel={`Year filters${activeCount ? `, ${activeCount} selected` : ''}`}
+      >
+        <Text style={styles.sectionTitle}>Years</Text>
+        {activeCount > 0 && (
+          <View style={styles.activeChip}>
+            <Text style={styles.activeChipText}>{activeCount} selected</Text>
+          </View>
+        )}
+        <View style={styles.spacer} />
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textSecondary} />
+      </TouchableOpacity>
+
+      {expanded && eraGroups.map(({ name, years }) => {
         const eraFullySelected = isEraFullySelected(years);
         const hasEnabledYears = years.some(y => !disabledYears.has(y));
 
         return (
-          <View key={era.id} style={styles.eraContainer}>
+          <View key={name} style={styles.eraContainer}>
+            {/* Flat header with a hairline under it — no fill, no inset. */}
             <View style={styles.eraHeader}>
-              <Text style={styles.eraName}>{era.label}</Text>
+              <Text style={styles.eraName}>{name}</Text>
               {hasEnabledYears && (
                 <TouchableOpacity
                   onPress={() => onSelectAllInEra(years)}
                   activeOpacity={0.7}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
-                  accessibilityLabel={`${eraFullySelected ? 'Clear all' : 'Select all'} years in ${era.label}`}
+                  accessibilityLabel={`${eraFullySelected ? 'Clear all' : 'Select all'} years in ${name}`}
                 >
                   <Text style={styles.selectAllText}>
                     {eraFullySelected ? 'Clear all' : 'Select all'}
@@ -139,13 +151,13 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
               )}
             </View>
             <View style={styles.yearsGrid}>
-              {years.map(year => (
+              {years.map((year, i) => (
                 <YearButton
                   key={year}
                   year={year}
                   isSelected={selectedYears.includes(year)}
                   isDisabled={disabledYears.has(year)}
-                  isDesktop={isDesktop}
+                  justify={i % 5 === 0 ? 'flex-start' : i % 5 === 4 ? 'flex-end' : 'center'}
                   onPress={() => onToggleYear(year)}
                 />
               ))}
@@ -159,29 +171,48 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
 
 const styles = StyleSheet.create({
   section: {
-    paddingTop: SPACING.xxl,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
   },
-  // Styled like TagCategorySection's `title` — uppercase label above the
-  // era groups, matching the tag section headings above it in the tray.
-  yearsHeading: {
+  // Copies TagCategorySection's header styling.
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  sectionTitle: {
     ...TYPOGRAPHY.label,
     fontWeight: '600',
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
+  },
+  activeChip: {
+    marginLeft: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.accent,
+  },
+  activeChipText: {
+    ...TYPOGRAPHY.caption,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  spacer: {
+    flex: 1,
   },
   eraContainer: {
+    marginTop: SPACING.md,
   },
   eraHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: RADIUS.full,
+    paddingBottom: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.borderLight,
   },
   eraName: {
     ...TYPOGRAPHY.label,
@@ -193,23 +224,23 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.accent,
   },
+  // Locked 5-column grid: years align vertically across rows, packed
+  // left-to-right so consecutive years sit side by side.
   yearsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: COLORS.background,
   },
   yearButton: {
-    width: '25%',
-  },
-  yearButtonDesktop: {
-    width: '16.666%',
+    width: '20%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
   },
   yearButtonDisabled: {
     opacity: 0.4,
   },
   yearText: {
     ...TYPOGRAPHY.bodyLarge,
-    textAlign: 'center',
   },
   yearTextSelected: {
     color: COLORS.accent,
@@ -217,19 +248,8 @@ const styles = StyleSheet.create({
   yearTextDisabled: {
     color: COLORS.textSecondary,
   },
-  yearButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.background,
-    height: 64,
-  },
-  yearContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   checkmark: {
-    position: 'absolute',
-    right: SPACING.md,
+    width: 16,
+    marginLeft: 2,
   },
 });
