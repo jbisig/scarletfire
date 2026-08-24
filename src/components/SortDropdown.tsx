@@ -4,12 +4,15 @@ import {
   Text,
   StyleSheet,
   Modal,
+  Platform,
   Pressable,
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { BlurBackground } from './shared/BlurBackground';
+import { webStyle } from '../utils/webStyle';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GLASS_PILL_BLUR } from '../constants/theme';
 
 export interface SortOption<T extends string> {
   value: T;
@@ -70,6 +73,10 @@ export function SortDropdown<T extends string>({
           accessibilityRole="menu"
           accessibilityLabel="Sort options"
         >
+          {/* Native blur under the glass wash; web blurs via the container's
+              backdrop-filter instead (a nested BlurBackground would stack a
+              second, weaker blur on top of it). */}
+          {Platform.OS !== 'web' && <BlurBackground intensity={40} tint="dark" />}
           {options.map((option, index) => (
             <React.Fragment key={option.value}>
               {index > 0 && <View style={styles.divider} />}
@@ -108,10 +115,12 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', // the source picker's faint white wash
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
     minWidth: 150,
+    overflow: 'hidden',
     ...SHADOWS.lg,
   },
   item: {
