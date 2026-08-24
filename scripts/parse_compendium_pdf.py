@@ -733,6 +733,12 @@ def _is_stray_metadata(paragraph: str) -> bool:
     text = paragraph.strip()
     if len(text) > MAX_STRAY_METADATA:
         return False
+    # The decorative rules framing each entry header come through the OCR as
+    # short runs of punctuation — ",~,~", "~ ~", "---", "_" — and survive as
+    # paragraphs of their own. A paragraph with no letter or digit carries
+    # nothing; drop it wherever it appears.
+    if not any(c.isalnum() for c in text):
+        return True
     if METADATA_KEY.match(text) or GENEALOGY.match(text):
         return True
     # The key can sit at the end of the value that preceded it, mid-string.

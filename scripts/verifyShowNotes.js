@@ -61,6 +61,14 @@ for (const [date, text] of Object.entries(notes)) {
   const avg = lines.reduce((n, l) => n + l.length, 0) / lines.length;
   if (lines.length > 3 && avg < 90) fail('still hard-wrapped', `${date} (avg line ${Math.round(avg)})`);
 
+  // OCR'd decorative rules (",~,~", "~ ~", "---") surviving as paragraphs.
+  for (const para of text.split('\n\n')) {
+    if (para.trim() && ![...para].some((c) => /[a-zA-Z0-9]/.test(c))) {
+      fail('pure-punctuation paragraph', `${date} (${JSON.stringify(para.trim())})`);
+      break;
+    }
+  }
+
   if (/\n{3,}/.test(text)) fail('blank-line run', date);
   if (/[ \t]\n|\n[ \t]/.test(text)) fail('whitespace around newline', date);
   if (text !== text.trim()) fail('untrimmed', date);

@@ -12,7 +12,7 @@
  */
 const fs = require('fs');
 const {
-  RATINGS_PATH, loadRatings, loadCuratedTiers,
+  RATINGS_PATH, loadNotes, loadRatings, loadCuratedTiers,
   DEFAULT_CUTS, tierForScore, scoreEntry, renderRatings, REVIEWED_DISPUTES,
 } = require('./lib');
 
@@ -34,6 +34,19 @@ if (!(cuts.t1 > cuts.t2 && cuts.t2 > cuts.t3)) {
 
 const ratings = loadRatings();
 const curated = loadCuratedTiers();
+
+// The ratings must cover exactly the dates SHOW_NOTES covers (enforced by
+// src/data/__tests__/compendiumRatings.test.ts). When a regeneration of the
+// notes drops a date — e.g. its "note" turned out to be OCR debris — the
+// stored entry for it is orphaned; drop it rather than ship a rating whose
+// evidence no longer exists.
+const notes = loadNotes();
+for (const date of Object.keys(ratings)) {
+  if (!(date in notes)) {
+    console.log(`dropping ${date}: no show note carries it any more`);
+    delete ratings[date];
+  }
+}
 
 const before = { 1: 0, 2: 0, 3: 0, none: 0 };
 const after = { 1: 0, 2: 0, 3: 0, none: 0 };

@@ -9,7 +9,7 @@
  *   node scripts/compendiumRatings/verifyQuotes.js
  * Every quote here is an exact substring of that date's note.
  *
- * 1554 shows judged; 269 carry a tier; 1496 carry highlights.
+ * 1553 shows judged; 269 carry a tier; 1496 carry highlights.
  * Tier cutoffs on the evidence score: 4.8 / 4 / 3.3.
  * Tier 1 = 3 stars, matching ClassicTier elsewhere.
  *
@@ -3155,15 +3155,6 @@ export const COMPENDIUM_RATINGS: Record<string, CompendiumEntry> = {
         quote: "On only the fourth time the song's been played, the pace is cautious and has clearly not developed.",
       },
     ],
-  },
-  "1970-02-11": {
-    verdict: "insufficient",
-    confidence: "high",
-    score: null,
-    tier: null,
-    tapeOnly: false,
-    caveat: "note is only a photo caption listing musicians pictured, with no assessable performance content",
-    highlights: [],
   },
   "1970-02-14": {
     verdict: "excellent",
