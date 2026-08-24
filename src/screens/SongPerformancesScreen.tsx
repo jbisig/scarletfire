@@ -125,6 +125,14 @@ export function SongPerformancesScreen() {
   // animate it to zero instead of leaving a blank band under the compact title.
   const [titleLineHeight, setTitleLineHeight] = useState(0);
 
+  // The header is an absolute overlay: its collapse animations must never
+  // resize the list, or the layout shift feeds back into scroll events as
+  // phantom deltas (the popping this replaces). The list instead carries a
+  // CONSTANT top padding equal to the fully-expanded header height —
+  // correct at the top (where the header is always expanded), and irrelevant
+  // once scrolled, where content simply slides under the opaque backdrop.
+  const [listTopPadding, setListTopPadding] = useState(0);
+
   // Collapsing header (ShowDetail's sticky-title pattern): the big title
   // crossfades into a compact centered one as the list scrolls, and the
   // sort/search/filter bar collapses away on scroll-down, sliding back down
@@ -422,8 +430,23 @@ export function SongPerformancesScreen() {
 
   return (
     <View style={[styles.container, isDesktop && styles.containerDesktop]}>
-      {/* Header */}
-      <View style={[styles.header, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]} onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
+      {/* Header — absolute overlay above the list (see listTopPadding) */}
+      <View
+        style={[styles.header, styles.headerOverlay, isDesktop && styles.headerDesktop, { paddingTop: isDesktop ? 16 : insets.top + 8 }]}
+        onLayout={(e) => {
+          setHeaderWidth(e.nativeEvent.layout.width);
+          // Only trust the measurement when fully expanded and at rest —
+          // mid-animation heights would poison the list's constant padding.
+          if (
+            !titleCollapsedRef.current &&
+            controlsShownRef.current &&
+            !titleAnimatingRef.current &&
+            !controlsAnimatingRef.current
+          ) {
+            setListTopPadding(e.nativeEvent.layout.height);
+          }
+        }}
+      >
         {/* Blurred gradient video backdrop — the show detail header's layer
             stack (video, dark blur, scrim, fade into the page), behind the
             unchanged header layout. pointerEvents="none" keeps the back
@@ -590,7 +613,7 @@ export function SongPerformancesScreen() {
         scrollEventThrottle={16}
         renderItem={renderPerformanceItem}
         keyExtractor={(item) => item.identifier}
-        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
+        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop, { paddingTop: listTopPadding }]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           debouncedSearchQuery.trim() || hasActiveFilters(appliedFilters) ? (
@@ -623,6 +646,13 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
     gap: SPACING.sm,
     overflow: 'hidden',
+  },
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
   },
   headerDesktop: {
     paddingHorizontal: 32,
