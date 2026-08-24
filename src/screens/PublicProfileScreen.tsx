@@ -759,7 +759,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
   },
   mobileHorizontalPad: {
-    paddingHorizontal: SPACING.lg,
+    // Margin, not padding: with the toggle-style SegmentedTabs this spacing
+    // must sit OUTSIDE the container — padding would land inside it and
+    // skew the sliding thumb's inset math.
+    marginHorizontal: SPACING.lg,
   },
   profileHeader: {
     flexDirection: 'row',

@@ -8,9 +8,15 @@ import { ProfileImage } from '../components/ProfileImage';
 import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ActivityList } from '../components/feed/ActivityList';
 import { PeopleList } from '../components/feed/PeopleList';
+import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
 
 type Segment = 'activity' | 'people';
+
+const FEED_TABS: SegmentedTabItem<Segment>[] = [
+  { key: 'activity', label: 'Activity' },
+  { key: 'people', label: 'People' },
+];
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -84,24 +90,13 @@ export function FeedScreen() {
         onViewProfile={handleViewProfile}
       />
 
-      <View style={styles.tabContainer} accessibilityRole="tablist">
-        {(['activity', 'people'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, segment === tab ? styles.activeTab : styles.inactiveTab]}
-            onPress={() => setSegment(tab)}
-            activeOpacity={0.7}
-            accessibilityRole="tab"
-            accessibilityLabel={`${tab === 'activity' ? 'Activity' : 'People'} tab`}
-            accessibilityState={{ selected: segment === tab }}
-            accessibilityHint={`Double tap to view ${tab}`}
-          >
-            <Text style={segment === tab ? styles.activeTabText : styles.inactiveTabText}>
-              {tab === 'activity' ? 'Activity' : 'People'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <SegmentedTabs
+        tabs={FEED_TABS}
+        activeTab={segment}
+        onTabChange={setSegment}
+        containerStyle={styles.tabContainer}
+        getAccessibilityHint={(tab) => `Double tap to view ${tab}`}
+      />
 
       <View style={{ flex: 1 }}>
         {segment === 'activity'
@@ -153,33 +148,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabContainer: {
-    flexDirection: 'row',
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.sm,
-    gap: SPACING.sm,
-  },
-  tab: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.xl,
-  },
-  activeTab: { backgroundColor: COLORS.accent },
-  inactiveTab: { backgroundColor: COLORS.cardBackground },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: FONTS.primarySemiBold,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    ...(Platform.OS === 'android' && { paddingTop: 2 }),
-  },
-  inactiveTabText: {
-    fontSize: 16,
-    fontFamily: FONTS.primarySemiBold,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    ...(Platform.OS === 'android' && { paddingTop: 2 }),
   },
 });
