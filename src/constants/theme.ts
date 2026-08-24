@@ -310,7 +310,9 @@ export const LAYOUT = {
   miniPlayerHeight: 72,
   /** Horizontal show card dimensions */
   horizontalCardWidth: 224,
-  horizontalCardHeight: 112,
+  // Sized so a two-line venue + date row + location sits with equal breathing
+  // room above and below: ~76px of content + 12px padding top and bottom.
+  horizontalCardHeight: 100,
   /** Standard screen horizontal padding (headers, lists, page content) */
   HORIZONTAL_PADDING: SPACING.xl,
 } as const;

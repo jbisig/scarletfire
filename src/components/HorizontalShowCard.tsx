@@ -129,13 +129,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label,
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 5,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 1,
+    marginBottom: 3,
   },
   date: {
     ...TYPOGRAPHY.caption,

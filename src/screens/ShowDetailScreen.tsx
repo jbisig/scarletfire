@@ -1383,6 +1383,11 @@ export function ShowDetailScreen() {
         accessibilityRole="button"
         accessibilityLabel="Collapse the show notes"
       >
+        {Platform.OS !== 'web' && (
+          // Web gets its blur from GLASS_PILL_BLUR's backdrop-filter below;
+          // native needs a real BlurView behind the pill content.
+          <BlurBackground intensity={25} tint="dark" style={styles.floatingCollapseBlur} />
+        )}
         <Ionicons name="chevron-up" size={15} color={COLORS.textPrimary} />
         <Text style={styles.floatingCollapseText}>Collapse</Text>
       </TouchableOpacity>
@@ -1819,13 +1824,23 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     ...GLASS_PILL,
-    backgroundColor: BRAND_COLORS.tabBarBackground,
+    borderWidth: 0,
+    // Clip the BlurView to the pill's rounded shape on native.
+    overflow: 'hidden',
     ...SHADOWS.lg,
     ...(Platform.OS === 'web' ? {
+      backgroundColor: BRAND_COLORS.tabBarBackground,
       ...webStyle(GLASS_PILL_BLUR),
       // @ts-ignore
       cursor: 'pointer',
-    } : {}),
+    } : {
+      // Lighter wash than the web's solid tabBarBackground — the BlurView
+      // behind the content provides the body, this just deepens the tint.
+      backgroundColor: 'rgba(18, 18, 18, 0.35)',
+    }),
+  },
+  floatingCollapseBlur: {
+    ...StyleSheet.absoluteFillObject,
   },
   floatingCollapseDesktop: {
     bottom: SPACING.xl,

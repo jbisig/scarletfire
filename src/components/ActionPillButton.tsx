@@ -36,7 +36,7 @@ export const ActionPillButton = React.memo<ActionPillButtonProps>(function Actio
         <ActivityIndicator size="small" color={COLORS.textPrimary} />
       ) : (
         <View style={styles.content}>
-          <Ionicons name={icon} size={20} color={COLORS.textPrimary} />
+          <Ionicons name={icon} size={20} color={COLORS.accent} />
           <Text style={styles.label}>{label}</Text>
         </View>
       )}
@@ -49,9 +49,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    // COLORS.accent at 33%, so the button reads as a tinted surface over the
-    // page rather than a solid fill.
-    backgroundColor: 'rgba(229, 76, 79, 0.33)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingVertical: SPACING.md + 2,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md,

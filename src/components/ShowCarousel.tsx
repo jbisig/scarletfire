@@ -100,7 +100,7 @@ const ItemSeparator = () => <View style={styles.separator} />;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xxxl,
   },
   header: {
     marginBottom: SPACING.md,
@@ -111,7 +111,9 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading4,
   },
   subtitle: {
-    ...TYPOGRAPHY.bodySmall,
+    // Same 13px the show cards use for their date/location lines.
+    ...TYPOGRAPHY.caption,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   listContent: {
