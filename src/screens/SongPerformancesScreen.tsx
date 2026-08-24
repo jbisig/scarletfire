@@ -42,7 +42,7 @@ import { SortDropdown } from '../components/SortDropdown';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, FONTS } from '../constants/theme';
 import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
@@ -340,36 +340,32 @@ export function SongPerformancesScreen() {
           <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
         </TouchableOpacity>
 
-        {/* Title */}
-        <Text style={[styles.songTitle, isDesktop && styles.songTitleDesktop]} numberOfLines={1}>
-          {songTitle}
-        </Text>
+        {/* Title with performance count */}
+        <View style={[styles.titleLine, isDesktop && styles.titleLineDesktop]}>
+          <Text style={styles.songTitle} numberOfLines={1}>
+            {songTitle}
+          </Text>
+          <Text style={styles.performanceCount}>
+            ({performances.length})
+          </Text>
+        </View>
 
-        {/* Info block, ShowDetail-style: performance count over the sort
-            control at left; search + filter across from them at right. */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoLeft}>
-            <Text style={styles.performanceCount}>
-              {performances.length} performance{performances.length !== 1 ? 's' : ''}
-            </Text>
-
-            {/* Sort Row */}
-            <View style={styles.sortRow}>
-              <View ref={sortDropdown.buttonRef} collapsable={false}>
-                <TouchableOpacity
-                  style={styles.sortLabel}
-                  onPress={sortDropdown.open}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        {/* Controls row: sort at left, vertically centered with the search +
+            filter buttons across from it. */}
+        <View style={styles.controlsRow}>
+          <View ref={sortDropdown.buttonRef} collapsable={false}>
+            <TouchableOpacity
+              style={styles.sortLabel}
+              onPress={sortDropdown.open}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Search + Filter (absolute so the expanding search bar overlays
-              the count/sort column instead of pushing it) */}
+              the sort control instead of pushing it) */}
           <View style={styles.infoActions}>
             <AnimatedSearchBar
               isExpanded={isSearchExpanded}
@@ -472,25 +468,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  titleLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+  },
+  titleLineDesktop: {
+    marginTop: 8,
+  },
   songTitle: {
     ...TYPOGRAPHY.heading2,
     flexShrink: 1,
   },
-  songTitleDesktop: {
-    marginTop: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-  },
-  infoLeft: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  // Same voice as the date on the Show screen.
   performanceCount: {
-    ...TYPOGRAPHY.body,
-    color: BRAND_COLORS.textSoft,
+    fontSize: 26,
+    fontFamily: FONTS.primaryRegular,
+    fontWeight: '400',
+    color: COLORS.textTertiary,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: LAYOUT.headerButtonSize,
   },
   infoActions: {
     position: 'absolute',
@@ -517,10 +516,6 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: COLORS.accent,
-  },
-  sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   sortLabel: {
     flexDirection: 'row',
