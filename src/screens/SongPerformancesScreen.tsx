@@ -129,6 +129,17 @@ export function SongPerformancesScreen() {
     [scrollY]
   );
 
+  // The expanded search field is translucent glass — the sort control would
+  // show through it, so it fades out while the search is open.
+  const sortOpacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.timing(sortOpacity, {
+      toValue: isSearchExpanded ? 0 : 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [isSearchExpanded, sortOpacity]);
+
   // Search bar handlers
   const handleSearchExpand = useCallback(() => {
     setIsSearchExpanded(true);
@@ -386,6 +397,10 @@ export function SongPerformancesScreen() {
 
         {/* Controls row: sort at left, search + filter across from it */}
         <View style={styles.controlsRow}>
+          <Animated.View
+            style={{ opacity: sortOpacity }}
+            pointerEvents={isSearchExpanded ? 'none' : 'auto'}
+          >
           <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabel}
@@ -396,6 +411,7 @@ export function SongPerformancesScreen() {
               <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
             </TouchableOpacity>
           </View>
+          </Animated.View>
 
           {/* Search + Filter (absolute so the expanding search bar overlays
               the sort control instead of pushing it) */}
