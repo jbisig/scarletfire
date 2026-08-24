@@ -113,6 +113,7 @@ export type RootStackParamList = {
   Home: { sort?: string; years?: string; tags?: string } | undefined;
   ShowDetail: { identifier: string; trackTitle?: string; venue?: string; date?: string; location?: string; classicTier?: 1 | 2 | 3; sourceConstraint?: string };
   Favorites: undefined;
+  Feed: undefined;
   DiscoverLanding: undefined;
   SongList: undefined;
   SongPerformances: {
@@ -334,6 +335,65 @@ function FavoritesStack() {
   );
 }
 
+// Stack navigator for the Feed tab. Without it, the feed's
+// navigate('ShowDetail') calls bubbled up to the ROOT stack's registration,
+// which sits outside MainTabsWithPlayer — so the show screen rendered with no
+// tab bar or mini player, and the notes collapse pill (which offsets itself by
+// tab bar height) floated too high.
+function FeedStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: COLORS.background,
+        },
+        headerTintColor: COLORS.textPrimary,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontFamily: FONTS.primary,
+          fontSize: 18,
+        },
+        cardStyle: webCardStyle,
+      }}
+    >
+      <Stack.Screen
+        name="Feed"
+        component={FeedScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ShowDetail"
+        component={ShowDetailScreen}
+        options={{
+          title: '',
+          headerShown: Platform.OS !== 'web',
+          // Render the header inside this screen's card, not the stack's
+          // floating shared header — the float layer kept the transparent
+          // header's buttons hovering over the previous screen during the
+          // back transition.
+          headerMode: 'screen',
+          headerBackTitle: ' ',
+        }}
+      />
+      <Stack.Screen
+        name="PublicProfile"
+        component={PublicProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CollectionDetail"
+        component={CollectionDetailScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // Stack navigator for Discover tab
 function DiscoverStack() {
   return (
@@ -434,7 +494,7 @@ function MainTabsWithPlayer() {
         />
         <Tab.Screen
           name="FeedTab"
-          component={FeedScreen}
+          component={FeedStack}
           options={{ tabBarLabel: 'Feed' }}
         />
       </Tab.Navigator>
