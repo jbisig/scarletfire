@@ -448,10 +448,12 @@ const styles = StyleSheet.create({
   },
   actionBarGradient: {
     position: 'absolute',
-    bottom: -30,
+    // Matches FavoritesScreen: short enough that the resting first item
+    // clears the fade; scrolled content still dissolves under the bar.
+    bottom: -12,
     left: 0,
     right: 0,
-    height: 30,
+    height: 12,
   },
   actionBarGradientDesktop: {
     display: 'none',
@@ -478,7 +480,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   listContent: {
-    paddingTop: SPACING.sm + 8,
+    // The action bar above carries its own bottom padding, so the list only
+    // needs a sliver before the first item — same treatment as FavoritesScreen.
+    paddingTop: SPACING.xs,
     paddingBottom: LAYOUT.listBottomPadding,
   },
   listContentDesktop: {

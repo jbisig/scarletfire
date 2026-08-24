@@ -925,10 +925,12 @@ const styles = StyleSheet.create({
   },
   actionBarGradient: {
     position: 'absolute',
-    bottom: -30,
+    // Short enough that the first list item (now only SPACING.xs below the
+    // bar) rests clear of the fade; scrolled content still dissolves under it.
+    bottom: -12,
     left: 0,
     right: 0,
-    height: 30,
+    height: 12,
   },
   actionBarGradientDesktop: {
     display: 'none',
@@ -979,7 +981,9 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   listContent: {
-    paddingTop: SPACING.sm + 8,
+    // The sort/action row above already carries SPACING.md of bottom padding,
+    // so the list itself only needs a sliver before the first item.
+    paddingTop: SPACING.xs,
     paddingBottom: LAYOUT.listBottomPadding,
   },
   listContentDesktop: {
