@@ -63,26 +63,13 @@ type SongPerformancesRouteProp = RouteProp<RootStackParamList, 'SongPerformances
 type SongPerformancesNavigationProp = StackNavigationProp<RootStackParamList, 'SongPerformances'>;
 type SortType = PerformanceSortType;
 
-// Title collapse is a discrete, hysteretic toggle, NOT a continuous map of
-// scroll offset: collapsing the header shifts the list under the user's
-// finger, which drags the offset back and re-grows the header — a feedback
-// oscillation. The gap between these thresholds exceeds the title line's
-// height (~42px), so the collapse's own offset drift can never reach the
-// opposite threshold.
+// The header collapse is one discrete, hysteretic toggle: collapse past 72,
+// expand back under 12. The header is an absolute overlay, so toggling can
+// never resize the list; the hysteresis just keeps slow scrolling near the
+// boundary from flip-flopping the animation.
 const TITLE_COLLAPSE_AT = 72;
 const TITLE_EXPAND_AT = 12;
 const CONTROLS_ROW_HEIGHT = LAYOUT.headerButtonSize;
-// Never hide the bar closer to the top than this: hiding shrinks the header
-// by the bar's height, and the resulting offset drift must not be able to
-// land in the force-show zone near zero.
-const CONTROLS_MIN_HIDE_Y = 64;
-// Ignore sub-slop scroll jitter when deciding direction.
-const SCROLL_DIRECTION_SLOP = 2;
-// Require this much deliberate travel in one direction before toggling the
-// controls bar — a lone jittery delta (or a layout-compensation event) is
-// never enough to flip it.
-const CONTROLS_HIDE_TRAVEL = 16;
-const CONTROLS_SHOW_TRAVEL = 8;
 
 interface Performance {
   date: string;
@@ -138,15 +125,9 @@ export function SongPerformancesScreen() {
   // sort/search/filter bar collapses away on scroll-down, sliding back down
   // as soon as the user scrolls up.
   const scrollY = useRef(new Animated.Value(0)).current;
-  const controlsAnim = useRef(new Animated.Value(1)).current; // 1 = bar shown
-  const collapseAnim = useRef(new Animated.Value(0)).current; // 1 = title collapsed
-  const controlsShownRef = useRef(true);
-  const controlsAnimatingRef = useRef(false);
+  const collapseAnim = useRef(new Animated.Value(0)).current; // 1 = header collapsed
   const titleCollapsedRef = useRef(false);
   const titleAnimatingRef = useRef(false);
-  const lastOffsetYRef = useRef(0);
-  const scrollTravelRef = useRef(0);
-  const scrollDirRef = useRef(0);
   const isSearchExpandedRef = useRef(false);
 
   const bigTitleOpacity = collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
@@ -162,36 +143,13 @@ export function SongPerformancesScreen() {
       useNativeDriver: false, // animates the title line's height
     }).start(() => {
       titleAnimatingRef.current = false;
-      scrollTravelRef.current = 0;
-      scrollDirRef.current = 0;
     });
   }, [collapseAnim]);
 
-  const setControlsShown = useCallback((shown: boolean) => {
-    if (controlsShownRef.current === shown) return;
-    controlsShownRef.current = shown;
-    // The height change below shifts the list and fires a compensating
-    // scroll event in the OPPOSITE direction — without this flag the
-    // listener would read that as intent and toggle right back (visible as
-    // the header popping between two heights).
-    controlsAnimatingRef.current = true;
-    Animated.timing(controlsAnim, {
-      toValue: shown ? 1 : 0,
-      duration: 220,
-      useNativeDriver: false, // animates the bar's height
-    }).start(() => {
-      controlsAnimatingRef.current = false;
-      scrollTravelRef.current = 0;
-      scrollDirRef.current = 0;
-    });
-  }, [controlsAnim]);
 
-  // While the search field is open, pin the bar — hiding the control the
-  // user is typing into would be hostile.
   useEffect(() => {
     isSearchExpandedRef.current = isSearchExpanded;
-    if (isSearchExpanded) setControlsShown(true);
-  }, [isSearchExpanded, setControlsShown]);
+  }, [isSearchExpanded]);
 
   const handleScroll = useMemo(
     () =>
@@ -199,38 +157,16 @@ export function SongPerformancesScreen() {
         useNativeDriver: false,
         listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
           const y = event.nativeEvent.contentOffset.y;
-          const delta = y - lastOffsetYRef.current;
-          lastOffsetYRef.current = y;
+          // The header must not change under the user while they're typing
+          // into the search field.
           if (isSearchExpandedRef.current) return;
-
-          // Title: discrete + hysteretic (see the threshold comments above).
+          // One discrete, hysteretic state for the whole header — title and
+          // controls bar together (see the threshold comments above).
           if (y >= TITLE_COLLAPSE_AT) setTitleCollapsed(true);
           else if (y <= TITLE_EXPAND_AT) setTitleCollapsed(false);
-
-          // Events while either piece is animating are layout compensation
-          // (the header changing size under a stationary finger), not user
-          // intent — this must also shield the force-show rule below.
-          if (controlsAnimatingRef.current || titleAnimatingRef.current) return;
-          if (y <= 8) {
-            setControlsShown(true);
-            scrollTravelRef.current = 0;
-            return;
-          }
-          if (Math.abs(delta) <= SCROLL_DIRECTION_SLOP) return;
-          const dir = delta > 0 ? 1 : -1;
-          if (dir !== scrollDirRef.current) {
-            scrollDirRef.current = dir;
-            scrollTravelRef.current = 0;
-          }
-          scrollTravelRef.current += delta;
-          if (dir === 1 && scrollTravelRef.current > CONTROLS_HIDE_TRAVEL && y > CONTROLS_MIN_HIDE_Y) {
-            setControlsShown(false);
-          } else if (dir === -1 && -scrollTravelRef.current > CONTROLS_SHOW_TRAVEL) {
-            setControlsShown(true);
-          }
         },
       }),
-    [scrollY, setControlsShown, setTitleCollapsed]
+    [scrollY, setTitleCollapsed]
   );
 
   // Search bar handlers
@@ -437,12 +373,7 @@ export function SongPerformancesScreen() {
           setHeaderWidth(e.nativeEvent.layout.width);
           // Only trust the measurement when fully expanded and at rest —
           // mid-animation heights would poison the list's constant padding.
-          if (
-            !titleCollapsedRef.current &&
-            controlsShownRef.current &&
-            !titleAnimatingRef.current &&
-            !controlsAnimatingRef.current
-          ) {
+          if (!titleCollapsedRef.current && !titleAnimatingRef.current) {
             setListTopPadding(e.nativeEvent.layout.height);
           }
         }}
@@ -532,12 +463,12 @@ export function SongPerformancesScreen() {
         </Animated.View>
 
         {/* Controls row: sort at left, vertically centered with the search +
-            filter buttons across from it. Collapses on scroll-down; slides
-            back down when the user scrolls up. */}
+            filter buttons across from it. Rides the header collapse — only
+            visible with the full header at the top. */}
         <Animated.View
           style={{
-            height: controlsAnim.interpolate({ inputRange: [0, 1], outputRange: [0, CONTROLS_ROW_HEIGHT] }),
-            opacity: controlsAnim,
+            height: collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [CONTROLS_ROW_HEIGHT, 0] }),
+            opacity: bigTitleOpacity,
             overflow: 'hidden',
           }}
         >
