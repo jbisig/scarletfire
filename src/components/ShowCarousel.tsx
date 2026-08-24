@@ -111,7 +111,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.heading4,
   },
   subtitle: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
   },
   listContent: {
     paddingHorizontal: SPACING.xl,

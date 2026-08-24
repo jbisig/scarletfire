@@ -33,11 +33,12 @@ import { StarRating } from '../components/StarRating';
 import { ActionPillButton } from '../components/ActionPillButton';
 import { ShowCarousel, ShowCarouselRef } from '../components/ShowCarousel';
 import { radioService } from '../services/radioService';
-import { GRATEFUL_DEAD_101_DATES } from '../constants/classicShows';
 import { useShowRatingsVersion, useResolvedShowRating } from '../contexts/UserRatingsContext';
-import { collectResolvedClassics, mergeCuratedClassics } from '../utils/classicShowsPool';
-import { CURATED_COLLECTIONS, CLASSIC_SHOWS_DESCRIPTION } from '../data/curatedCollections';
-import { resolveCollectionShows } from '../utils/curatedCollectionsPool';
+import { CURATED_COLLECTIONS, CLASSIC_SHOWS } from '../data/curatedCollections';
+import {
+  resolveCollectionShows,
+  resolveCollectionShowsRanked,
+} from '../utils/curatedCollectionsPool';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAppActiveState } from '../hooks/useAppActiveState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, BRAND_COLORS, CARD_SCRIM } from '../constants/theme';
@@ -150,24 +151,13 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
     return shows;
   }, [playCounts, showsByYear]);
 
-  // Classic Shows: All classicTier shows merged with the curated Grateful Dead 101
-  // list. Deduped by primary identifier; sorted by tier (1 = best), then date.
-  const classicShows = useMemo(() => {
-    const allClassics = mergeCuratedClassics(
-      showsByYear,
-      GRATEFUL_DEAD_101_DATES,
-      collectResolvedClassics(showsByYear),
-    );
-    const topDownloads = (s: GratefulDeadShow) =>
-      s.versions.reduce((max, v) => Math.max(max, v.downloads || 0), 0);
-    return allClassics
-      .sort((a, b) => {
-        const diff = topDownloads(b) - topDownloads(a);
-        if (diff !== 0) return diff;
-        return a.date.localeCompare(b.date);
-      })
-      .slice(0, 25);
-  }, [showsByYear, ratingsVersion]);
+  // Classic Shows: a hand-curated, ranked list of 12 community-consensus
+  // essentials (CLASSIC_SHOWS). ratingsVersion is a dep so a user's 0-star
+  // ejection takes effect without a reload.
+  const classicShows = useMemo(
+    () => resolveCollectionShowsRanked(showsByYear, CLASSIC_SHOWS.dates),
+    [showsByYear, ratingsVersion], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   // Legendary Runs: hand-curated date lists resolved to shows. ratingsVersion
   // is a dep so a user's 0-star ejection takes effect without a reload.
@@ -358,7 +348,7 @@ export const DiscoverLandingScreen = React.memo(function DiscoverLandingScreen()
         <ShowCarousel
           ref={classicsRef}
           title="Classic Shows"
-          subtitle={CLASSIC_SHOWS_DESCRIPTION}
+          subtitle={CLASSIC_SHOWS.description}
           shows={classicShows}
           onShowPress={handleShowPress}
         />

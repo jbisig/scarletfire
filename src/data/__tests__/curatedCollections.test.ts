@@ -1,6 +1,6 @@
 import {
   CURATED_COLLECTIONS,
-  CLASSIC_SHOWS_DESCRIPTION,
+  CLASSIC_SHOWS,
 } from '../curatedCollections';
 import showsJson from '../shows.json';
 
@@ -46,6 +46,13 @@ describe('CURATED_COLLECTIONS data integrity', () => {
     expect(missing).toEqual([]);
   });
 
+  it('every collection is a strict curation — at most 12 shows', () => {
+    const oversized = CURATED_COLLECTIONS
+      .filter(c => c.dates.length > 12)
+      .map(c => `${c.id} (${c.dates.length})`);
+    expect(oversized).toEqual([]);
+  });
+
   it('dates within a collection are unique and sorted ascending', () => {
     for (const c of CURATED_COLLECTIONS) {
       const sorted = [...c.dates].sort();
@@ -55,8 +62,25 @@ describe('CURATED_COLLECTIONS data integrity', () => {
   });
 });
 
-describe('CLASSIC_SHOWS_DESCRIPTION', () => {
-  it('is a non-empty one-liner', () => {
-    expect(CLASSIC_SHOWS_DESCRIPTION.trim()).not.toBe('');
+describe('CLASSIC_SHOWS', () => {
+  it('is a hand-curated list of exactly 12 shows', () => {
+    expect(CLASSIC_SHOWS.dates).toHaveLength(12);
+  });
+
+  it('has a title and a non-empty description', () => {
+    expect(CLASSIC_SHOWS.title).toBe('Classic Shows');
+    expect(CLASSIC_SHOWS.description.trim()).not.toBe('');
+  });
+
+  it('every date is valid, unique, and resolves to a real show', () => {
+    expect(new Set(CLASSIC_SHOWS.dates).size).toBe(CLASSIC_SHOWS.dates.length);
+    for (const d of CLASSIC_SHOWS.dates) {
+      expect(d).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(KNOWN_DATES.has(d)).toBe(true);
+    }
+  });
+
+  it('leads with Cornell — the list is ranked, not chronological', () => {
+    expect(CLASSIC_SHOWS.dates[0]).toBe('1977-05-08');
   });
 });
