@@ -195,7 +195,11 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
               <Text style={styles.venue} numberOfLines={1}>
                 {getVenueFromShow(show)}
               </Text>
-              <PlayCountBadge count={playCount} size="small" />
+              {/* Optical alignment: the pill's center rides a touch high
+                  against the title's baseline. */}
+              <View style={styles.playCountNudge}>
+                <PlayCountBadge count={playCount} size="small" />
+              </View>
             </View>
           </Passive>
 
@@ -366,6 +370,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginBottom: SPACING.xs,
+  },
+  playCountNudge: {
+    marginTop: 2,
   },
   downloadedBadge: {
     width: 16,
