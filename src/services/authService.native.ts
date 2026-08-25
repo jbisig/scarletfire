@@ -81,10 +81,15 @@ class AuthService {
     }
 
     // Try both possible response structures (types vary between library versions)
-    const idToken = (userInfo as { idToken?: string }).idToken || (userInfo as { data?: { idToken?: string } }).data?.idToken;
+    const info = userInfo as { type?: string; idToken?: string; data?: { idToken?: string } | null };
+    const idToken = info.idToken || info.data?.idToken;
 
     if (!idToken) {
-      throw new Error('No ID token present');
+      // Diagnostic detail (no PII): the SDK's response shape tells us WHY the
+      // token is missing — reported broken on TestFlight build 92 with the
+      // bare message, which hid the cause.
+      const shape = `type=${info.type ?? 'none'} dataKeys=${info.data ? Object.keys(info.data).join(',') : 'null'}`;
+      throw new Error(`No ID token present (${shape})`);
     }
 
     const { data, error } = await this.supabase.auth.signInWithIdToken({
