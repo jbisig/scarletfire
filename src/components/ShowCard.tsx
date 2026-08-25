@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GratefulDeadShow } from '../types/show.types';
-import { formatDate, getVenueFromShow } from '../utils/formatters';
+import { formatCount, formatDate, getVenueFromShow } from '../utils/formatters';
 import { usePlayCounts } from '../contexts/PlayCountsContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { useCollections } from '../contexts/CollectionsContext';
@@ -12,7 +12,6 @@ import { archiveApi } from '../services/archiveApi';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
 import { OfficialReleaseModal } from './OfficialReleaseModal';
-import { PlayCountBadge } from './PlayCountBadge';
 import { AddToCollectionPicker } from './collections/AddToCollectionPicker';
 import { getOfficialReleasesForDate, pickDisplayRelease } from '../data/officialReleases';
 import { COLORS, TYPOGRAPHY, SPACING, GLASS_PILL } from '../constants/theme';
@@ -60,7 +59,7 @@ function Passive({ children, hideFromA11y }: { children: React.ReactNode; hideFr
  * Memoized to prevent unnecessary re-renders in lists
  */
 export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideResolvedRating, onRatingPress, overridePlayCount, hideSaveBadge, trailingText, downloaded, dimmed }) => {
-  const { hasShowBeenPlayed, getShowPlayCount } = usePlayCounts();
+  const { hasShowBeenPlayed, getShowPlayCount, getShowPlayCountLoose } = usePlayCounts();
   const { isShowFavorite, addFavoriteShow, removeFavoriteShow } = useFavorites();
   const { itemCountsByIdentifier } = useCollections();
   const collectionCount = itemCountsByIdentifier[show.primaryIdentifier] ?? 0;
@@ -87,15 +86,16 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
       return 0;
     }
 
-    // Only calculate if details are cached (no API fetch)
+    // Exact denominator when the show's track list is cached (no API fetch)…
     const cachedDetails = archiveApi.getCachedShowDetail(show.primaryIdentifier);
     if (cachedDetails) {
       return getShowPlayCount(show.primaryIdentifier, cachedDetails.tracks.length);
     }
 
-    // Details not cached - don't show play count yet (will appear after user opens show)
-    return 0;
-  }, [show.primaryIdentifier, hasShowBeenPlayed, getShowPlayCount, overridePlayCount]);
+    // …otherwise approximate from the observed played tracks, so counts
+    // still show on fresh sessions before any show detail is cached.
+    return getShowPlayCountLoose(show.primaryIdentifier);
+  }, [show.primaryIdentifier, hasShowBeenPlayed, getShowPlayCount, getShowPlayCountLoose, overridePlayCount]);
 
   // Use override rating if provided, otherwise resolve the show's rating
   // (user override wins over the system classicTier, per ratingResolver).
@@ -144,7 +144,7 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
       accessibilityLabel={`Released as ${displayRelease.release.name}${displayRelease.more ? ` and ${displayRelease.more} more` : ''}`}
       accessibilityHint="Double tap to view release details"
     >
-      <Ionicons name="disc-outline" size={12} color={COLORS.textSecondary} />
+      <Ionicons name="disc-outline" size={13} color={COLORS.textSecondary} />
       <Text style={styles.releaseNoteText} numberOfLines={1}>
         Released as {displayRelease.release.name}
         {displayRelease.more ? ` +${displayRelease.more}` : ''}
@@ -195,11 +195,6 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
               <Text style={styles.venue} numberOfLines={1}>
                 {getVenueFromShow(show)}
               </Text>
-              {/* Optical alignment: the pill's center rides a touch high
-                  against the title's baseline. */}
-              <View style={styles.playCountNudge}>
-                <PlayCountBadge count={playCount} size="small" />
-              </View>
             </View>
           </Passive>
 
@@ -235,6 +230,14 @@ export const ShowCard = React.memo<ShowCardProps>(({ show, onPress, overrideReso
                   <Text style={styles.location} numberOfLines={1}>
                     {show.location}
                   </Text>
+                </Passive>
+              )}
+
+              {/* Play count as a quiet line under the location, same voice
+                  (matches SongCard). */}
+              {playCount > 0 && (
+                <Passive hideFromA11y>
+                  <Text style={styles.location}>{formatCount(playCount, 'play')}</Text>
                 </Passive>
               )}
               {releaseNote}
@@ -371,9 +374,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: SPACING.xs,
   },
-  playCountNudge: {
-    marginTop: 2,
-  },
   downloadedBadge: {
     width: 16,
     height: 16,
@@ -423,12 +423,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: SPACING.xs,
-    marginTop: 2,
-    // 12px glyph + this padding ≈ a 24pt strip; hitSlop brings it to 36pt.
+    // Visual gap above = marginTop + top padding = 2, matching the
+    // date→location gap (dateRow's marginBottom: 2).
+    marginTop: -1,
+    // 13px glyph + this padding ≈ a 24pt strip; hitSlop brings it to 36pt.
     paddingVertical: 3,
   },
   releaseNoteText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
   },
   savePill: {

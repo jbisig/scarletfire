@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, StyleProp, ViewStyle } from 'react-native';
 import { FavoriteSong } from '../contexts/FavoritesContext';
-import { formatDate } from '../utils/formatters';
+import { formatCount, formatDate } from '../utils/formatters';
 import { getCorrectVenue } from '../utils/showLookup';
 import { useResponsive } from '../hooks/useResponsive';
 import { StarRating } from './StarRating';
-import { PlayCountBadge } from './PlayCountBadge';
 import { useResolvedPerformanceRating } from '../contexts/UserRatingsContext';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
 
@@ -78,9 +77,12 @@ export const SongCard = React.memo<SongCardProps>(function SongCard({
               {venue}
             </Text>
           )}
-        </View>
 
-        <PlayCountBadge count={playCount} size="small" />
+          {/* Play count as a quiet line under the location, same voice. */}
+          {playCount > 0 && (
+            <Text style={styles.songVenue}>{formatCount(playCount, 'play')}</Text>
+          )}
+        </View>
       </View>
     </Pressable>
   );

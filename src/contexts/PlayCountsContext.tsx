@@ -40,6 +40,13 @@ interface PlayCountsContextType {
   isLoading: boolean;
   hasShowBeenPlayed: (showIdentifier: string) => boolean;
   getShowPlayCount: (showIdentifier: string, totalTracks: number) => number;
+  /**
+   * Show-level count when the track total isn't known: uses the observed
+   * played tracks as the denominator (the same approximation the
+   * listened-show detection uses). For list surfaces where the show's
+   * track list isn't cached.
+   */
+  getShowPlayCountLoose: (showIdentifier: string) => number;
 }
 
 const PlayCountsContext = createContext<PlayCountsContextType | undefined>(undefined);
@@ -240,6 +247,11 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     return computeShowPlayCount(showPlayCounts, totalTracks);
   }, [showPlayCountsIndex]);
 
+  const getShowPlayCountLoose = useCallback((showIdentifier: string): number => {
+    const showPlayCounts = showPlayCountsIndex.get(showIdentifier) ?? [];
+    return computeShowPlayCount(showPlayCounts, showPlayCounts.length);
+  }, [showPlayCountsIndex]);
+
   // Keep auth state in a ref so recordTrackPlay doesn't need authState as a dependency
   const authStateRef = useRef(authState);
   useEffect(() => {
@@ -334,7 +346,8 @@ export function PlayCountsProvider({ children }: { children: React.ReactNode }) 
     isLoading,
     hasShowBeenPlayed,
     getShowPlayCount,
-  }), [playCountsArray, getPlayCount, getPlayCountStable, recordTrackPlay, isLoading, hasShowBeenPlayed, getShowPlayCount]);
+    getShowPlayCountLoose,
+  }), [playCountsArray, getPlayCount, getPlayCountStable, recordTrackPlay, isLoading, hasShowBeenPlayed, getShowPlayCount, getShowPlayCountLoose]);
 
   return (
     <PlayCountsContext.Provider value={contextValue}>
