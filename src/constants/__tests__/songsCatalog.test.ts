@@ -63,7 +63,26 @@ describe('song catalog integrity', () => {
     expect(findSongByTitle("Truckin'")?.performanceCount).toBe(506);
     expect(findSongByTitle("Uncle John's Band")?.performanceCount).toBe(307);
     expect(findSongByTitle('Playing in the Band')?.performanceCount).toBe(576);
-    expect(GRATEFUL_DEAD_SONGS.length).toBe(364);
+    // 364 after the orphan merges; 363 since the standalone "Satisfaction"
+    // entry folded into "I Can't Get No Satisfaction" (2026-08-25).
+    expect(GRATEFUL_DEAD_SONGS.length).toBe(363);
+  });
+
+  it('carries the 2026-08-25 editorial renames and the Satisfaction fold', () => {
+    // "& We Bid You Goodnight" -> "And We Bid You Goodnight"; the old
+    // spelling still resolves (loose index: & -> and).
+    const goodnight = findSongByTitle('And We Bid You Goodnight');
+    expect(goodnight?.title).toBe('And We Bid You Goodnight');
+    expect(findSongByTitle('& We Bid You Goodnight')).toBe(goodnight);
+
+    // "(i Can't Get No) Satisfaction" -> "I Can't Get No Satisfaction", with
+    // the standalone "Satisfaction" entry (24 perfs) folded in beside the
+    // original 5 — and both former spellings still resolving.
+    const satisfaction = findSongByTitle("I Can't Get No Satisfaction");
+    expect(satisfaction?.performanceCount).toBe(29);
+    expect(findSongByTitle("(I Can't Get No) Satisfaction")).toBe(satisfaction);
+    expect(findSongByTitle('Satisfaction')).toBe(satisfaction);
+    expect(GRATEFUL_DEAD_SONGS.filter(s => /satisfaction/i.test(s.title))).toHaveLength(1);
   });
 
   it('names Estimated Prophet in full', () => {

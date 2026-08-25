@@ -24,8 +24,8 @@ import type { SongTagId } from '../constants/tags';
 export type CuratedSongTag = Exclude<SongTagId, 'rare'>;
 
 export const SONG_TAGS: Record<string, readonly CuratedSongTag[]> = {
-  "(i Can't Get No) Satisfaction": ['cover'],
-  "& We Bid You Goodnight": ['traditional', 'gospel', 'acoustic'],
+  "I Can't Get No Satisfaction": ['cover'],
+  "And We Bid You Goodnight": ['traditional', 'gospel', 'acoustic'],
   "A Voice From on High": ['cover', 'gospel'],
   "Alabama Getaway": ['original', 'huntergarcia'],
   "All Along the Watchtower": ['cover'],
@@ -268,7 +268,6 @@ export const SONG_TAGS: Record<string, readonly CuratedSongTag[]> = {
   "Samba in the Rain": ['original'],
   "Same Thing": ['cover', 'blues', 'pigpen'],
   "Samson & Delilah": ['traditional', 'gospel'],
-  "Satisfaction": ['cover'],
   "Saw Mill": ['cover', 'cowboy'],
   "Scarlet Begonias": ['original', 'huntergarcia', 'jamvehicle'],
   "Searchin'": ['cover'],

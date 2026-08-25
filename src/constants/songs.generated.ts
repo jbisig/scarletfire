@@ -23,288 +23,6 @@ export interface Song {
 
 export const GRATEFUL_DEAD_SONGS: Song[] = [
   {
-    title: "(i Can't Get No) Satisfaction",
-    performanceCount: 5,
-    performances: [
-      {
-        date: "1981-05-17",
-        identifier: "gd1981-05-17.aud.munder.9000.sbeok.shnf",
-        venue: "Onongada County War Memorial",
-      },
-      {
-        date: "1981-11-29",
-        identifier: "gd1981-11-29.sbd.miller.108844.flac16",
-        venue: "Civic Arena",
-      },
-      {
-        date: "1982-04-09",
-        identifier: "gd1982-04-09.sbd.miller.32716.sbeok.flac16",
-        venue: "War Memorial Auditorium",
-      },
-      {
-        date: "1983-04-09",
-        identifier: "gd83-04-09.sbd.miller.27703.sbeok.shnf",
-        venue: "Hampton Coliseum",
-      },
-      {
-        date: "1992-06-18",
-        identifier: "gd92-06-18.schoeps.wier.4674.sbeok.shnf",
-        venue: "Charlotte Coliseum",
-      },
-    ],
-  },
-  {
-    title: "& We Bid You Goodnight",
-    performanceCount: 47,
-    performances: [
-      {
-        date: "1968-03-16",
-        identifier: "gd1968-03-16.sbd.miller.109944.flac16",
-        venue: "Carousel Ballroom",
-      },
-      {
-        date: "1968-03-31",
-        identifier: "gd68-03-31.aud.cotsman.14913.sbeok.shnf",
-        venue: "Carousel Ballroom",
-      },
-      {
-        date: "1968-08-22",
-        identifier: "gd68-08-22.sbd.cotsman.14915.sbeok.shnf",
-        venue: "Fillmore West",
-      },
-      {
-        date: "1968-11-01",
-        identifier: "gd68-11-01.sbd.cotsman.18100.sbeok.shnf",
-        venue: "The Silver Dollar Fair",
-      },
-      {
-        date: "1968-11-22",
-        identifier: "gd68-11-22.aud.cotsman.10088.sbeok.shnf",
-        venue: "Columbus Veterans Hall",
-      },
-      {
-        date: "1968-12-07",
-        identifier: "gd68-12-07.sbd.naines.16944.sbeok.shnf",
-        venue: "Bellarmine College",
-      },
-      {
-        date: "1968-12-21",
-        identifier: "gd1968-12-21.sbd.miller.89718.sbeok.flac16",
-        venue: "Shrine Exhibition Hall",
-      },
-      {
-        date: "1968-12-29",
-        identifier: "gd68-12-29.sbd.cotsman.5425.sbeok.shnf",
-        venue: "Gulfstream Park Racetrack",
-      },
-      {
-        date: "1969-01-25",
-        identifier: "gd69-01-25.sbd.kaplan.7923.sbeok.shnf",
-        venue: "Avalon Ballroom",
-      },
-      {
-        date: "1969-02-05",
-        identifier: "gd69-02-05.sbd.cotsman.8993.sbeok.shnf",
-        venue: "Soldiers & Sailors Memorial Auditorium",
-      },
-      {
-        date: "1969-02-06",
-        identifier: "gd69-02-06.sbd.cotsman.6284.sbeok.shnf",
-        venue: "Kiel Auditorium",
-      },
-      {
-        date: "1969-02-07",
-        identifier: "gd69-02-07.late.sbd.wiley.14471.sbeok.shnf",
-        venue: "Stanley Theater",
-      },
-      {
-        date: "1969-02-12",
-        identifier: "gd69-02-12.late.sbd.kaplan.9072.sbeok.shnf",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1969-02-15",
-        identifier: "gd69-02-15.sbd.winters.16664.sbeok.shnf",
-        venue: "Electric Factory",
-      },
-      {
-        date: "1969-03-02",
-        identifier: "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
-        venue: "Fillmore West",
-      },
-      {
-        date: "1969-04-05",
-        identifier: "gd69-04-05.sbd.miller.18701.sbesok.shnf",
-        venue: "Avalon Ballroom",
-      },
-      {
-        date: "1969-04-23",
-        identifier: "gd69-04-23.sbd.wise.70.sbeok.shnf",
-        venue: "The Ark",
-      },
-      {
-        date: "1969-04-26",
-        identifier: "gd1969-04-26.sbd.miller.97393.sbeok.flac16",
-        venue: "Electric Theater",
-        rating: 2,
-      },
-      {
-        date: "1969-05-24",
-        identifier: "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
-        venue: "Seminole Indian Village",
-        rating: 2,
-      },
-      {
-        date: "1969-05-31",
-        identifier: "gd69-05-31.sbd.oleynick.76.sbeok.shnf",
-        venue: "Mcarthur Court, University of Oregon",
-      },
-      {
-        date: "1969-08-03",
-        identifier: "gd1969-08-03.sbd.miller.30652.sbeok.flac16",
-        venue: "Family Dog at the Great Highway",
-      },
-      {
-        date: "1969-11-08",
-        identifier: "gd1969-11-08.sbd.wise.17433.shnf",
-        venue: "Fillmore Auditorium",
-      },
-      {
-        date: "1969-12-12",
-        identifier: "gd69-12-12.sbd.gerland.10988.sbeok.shnf",
-        venue: "Thelma Theater",
-      },
-      {
-        date: "1969-12-30",
-        identifier: "gd69-12-30.sbd.miller.28469.sbeok.shnf",
-        venue: "Boston Tea Party",
-      },
-      {
-        date: "1970-02-13",
-        identifier: "gd1970-02-13.sbd.miller.fix-97613.97639.sbeok.flac16",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1970-02-14",
-        identifier: "gd70-02-14.early-late.sbd.cotsman.18115.sbeok.shnf",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1970-03-20",
-        identifier: "gd70-03-20.sbd.late.hamilton.14287.sbeok.shnf",
-        venue: "Capitol Theater",
-      },
-      {
-        date: "1970-05-02",
-        identifier: "gd1970-05-02.138227.sbd.miller.flac1648",
-        venue: "Harpur College",
-        rating: 1,
-      },
-      {
-        date: "1970-09-18",
-        identifier: "gd70-09-18.set2.aud-sbd.sirmick.sbeok.30882.flacf",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1970-09-20",
-        identifier: "gd70-09-20.aud.remaster.sirmick.27583.sbeok.shnf",
-        venue: "Fillmore East",
-      },
-      {
-        date: "1971-04-29",
-        identifier: "gd71-04-29.sbd.frisco.16782.sbeok.shnf",
-        venue: "Fillmore East",
-        rating: 1,
-      },
-      {
-        date: "1971-08-15",
-        identifier: "gd71-08-15.sbd.ladner.21780.sbeok.shnf",
-        venue: "Berkeley Community Theater",
-      },
-      {
-        date: "1973-11-11",
-        identifier: "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
-        venue: "Winterland Arena",
-        rating: 2,
-      },
-      {
-        date: "1973-11-25",
-        identifier: "gd73-11-25.sbd.sacks.2213.sbeok.shnf",
-        venue: "Feyline Field",
-      },
-      {
-        date: "1974-02-23",
-        identifier: "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
-        venue: "Winterland Arena",
-      },
-      {
-        date: "1974-10-20",
-        identifier: "gd1974-10-20.sbd.smith-lee.GEMS.97193.flac16",
-        venue: "Winterland Arena",
-      },
-      {
-        date: "1976-12-31",
-        identifier: "gd76-12-31.preFM.warner.18524.20760.sbeok.shnf",
-        venue: "Cow Palace",
-        rating: 1,
-      },
-      {
-        date: "1989-07-17",
-        identifier: "gd89-07-17.sbd.unknown.17702.sbeok.shnf",
-        venue: "Alpine Valley Music Theatre",
-        rating: 2,
-      },
-      {
-        date: "1989-08-06",
-        identifier: "gd89-08-06.sbd.12831.sbeok.shnf",
-        venue: "Cal Expo",
-      },
-      {
-        date: "1989-08-18",
-        identifier: "gd89-08-18.sbd.bertha.9964.sbefail.shnf",
-        venue: "Greek Theatre, U. of California",
-      },
-      {
-        date: "1989-10-08",
-        identifier: "gd89-10-08.sbd.unknown.8365.sbeok.shnf",
-        venue: "Hampton Coliseum",
-        rating: 2,
-      },
-      {
-        date: "1989-10-16",
-        identifier: "gd89-10-16.dsbd.barrick.446.sbeok.shnf",
-        venue: "Meadowlands Arena",
-        rating: 2,
-      },
-      {
-        date: "1989-10-26",
-        identifier: "gd89-10-26.set2.dsbd.miller.18664.shnf",
-        venue: "Miami Arena",
-      },
-      {
-        date: "1990-02-27",
-        identifier: "gd90-02-27.sbd.ladner.8569.sbeok.shnf",
-        venue: "Oakland-alameda County Coliseum",
-      },
-      {
-        date: "1990-03-24",
-        identifier: "gd90-03-24.schoeps.wiley.11806.sbeok.shnf",
-        venue: "Knickerbocker Arena",
-        rating: 2,
-      },
-      {
-        date: "1990-04-03",
-        identifier: "gd90-04-03.sbd.hinko.17811.sbeok.shnf",
-        venue: "The Omni",
-      },
-      {
-        date: "1991-09-26",
-        identifier: "gd91-09-26.sbd.fishman.21242.sbeok.shnf",
-        venue: "Boston Garden",
-      },
-    ],
-  },
-  {
     title: "A Voice From on High",
     performanceCount: 3,
     performances: [
@@ -3334,6 +3052,257 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         date: "1995-07-08",
         identifier: "gd95-07-08.sbd.10071.sbeok.shnf",
         venue: "Soldier Field",
+      },
+    ],
+  },
+  {
+    title: "And We Bid You Goodnight",
+    performanceCount: 47,
+    performances: [
+      {
+        date: "1968-03-16",
+        identifier: "gd1968-03-16.sbd.miller.109944.flac16",
+        venue: "Carousel Ballroom",
+      },
+      {
+        date: "1968-03-31",
+        identifier: "gd68-03-31.aud.cotsman.14913.sbeok.shnf",
+        venue: "Carousel Ballroom",
+      },
+      {
+        date: "1968-08-22",
+        identifier: "gd68-08-22.sbd.cotsman.14915.sbeok.shnf",
+        venue: "Fillmore West",
+      },
+      {
+        date: "1968-11-01",
+        identifier: "gd68-11-01.sbd.cotsman.18100.sbeok.shnf",
+        venue: "The Silver Dollar Fair",
+      },
+      {
+        date: "1968-11-22",
+        identifier: "gd68-11-22.aud.cotsman.10088.sbeok.shnf",
+        venue: "Columbus Veterans Hall",
+      },
+      {
+        date: "1968-12-07",
+        identifier: "gd68-12-07.sbd.naines.16944.sbeok.shnf",
+        venue: "Bellarmine College",
+      },
+      {
+        date: "1968-12-21",
+        identifier: "gd1968-12-21.sbd.miller.89718.sbeok.flac16",
+        venue: "Shrine Exhibition Hall",
+      },
+      {
+        date: "1968-12-29",
+        identifier: "gd68-12-29.sbd.cotsman.5425.sbeok.shnf",
+        venue: "Gulfstream Park Racetrack",
+      },
+      {
+        date: "1969-01-25",
+        identifier: "gd69-01-25.sbd.kaplan.7923.sbeok.shnf",
+        venue: "Avalon Ballroom",
+      },
+      {
+        date: "1969-02-05",
+        identifier: "gd69-02-05.sbd.cotsman.8993.sbeok.shnf",
+        venue: "Soldiers & Sailors Memorial Auditorium",
+      },
+      {
+        date: "1969-02-06",
+        identifier: "gd69-02-06.sbd.cotsman.6284.sbeok.shnf",
+        venue: "Kiel Auditorium",
+      },
+      {
+        date: "1969-02-07",
+        identifier: "gd69-02-07.late.sbd.wiley.14471.sbeok.shnf",
+        venue: "Stanley Theater",
+      },
+      {
+        date: "1969-02-12",
+        identifier: "gd69-02-12.late.sbd.kaplan.9072.sbeok.shnf",
+        venue: "Fillmore East",
+      },
+      {
+        date: "1969-02-15",
+        identifier: "gd69-02-15.sbd.winters.16664.sbeok.shnf",
+        venue: "Electric Factory",
+      },
+      {
+        date: "1969-03-02",
+        identifier: "gd69-03-02.sbd.16track.kaplan.3344.sbeok.shnf",
+        venue: "Fillmore West",
+      },
+      {
+        date: "1969-04-05",
+        identifier: "gd69-04-05.sbd.miller.18701.sbesok.shnf",
+        venue: "Avalon Ballroom",
+      },
+      {
+        date: "1969-04-23",
+        identifier: "gd69-04-23.sbd.wise.70.sbeok.shnf",
+        venue: "The Ark",
+      },
+      {
+        date: "1969-04-26",
+        identifier: "gd1969-04-26.sbd.miller.97393.sbeok.flac16",
+        venue: "Electric Theater",
+        rating: 2,
+      },
+      {
+        date: "1969-05-24",
+        identifier: "gd69-05-24.sbd.kpfa.16177.sbeok.shnf",
+        venue: "Seminole Indian Village",
+        rating: 2,
+      },
+      {
+        date: "1969-05-31",
+        identifier: "gd69-05-31.sbd.oleynick.76.sbeok.shnf",
+        venue: "Mcarthur Court, University of Oregon",
+      },
+      {
+        date: "1969-08-03",
+        identifier: "gd1969-08-03.sbd.miller.30652.sbeok.flac16",
+        venue: "Family Dog at the Great Highway",
+      },
+      {
+        date: "1969-11-08",
+        identifier: "gd1969-11-08.sbd.wise.17433.shnf",
+        venue: "Fillmore Auditorium",
+      },
+      {
+        date: "1969-12-12",
+        identifier: "gd69-12-12.sbd.gerland.10988.sbeok.shnf",
+        venue: "Thelma Theater",
+      },
+      {
+        date: "1969-12-30",
+        identifier: "gd69-12-30.sbd.miller.28469.sbeok.shnf",
+        venue: "Boston Tea Party",
+      },
+      {
+        date: "1970-02-13",
+        identifier: "gd1970-02-13.sbd.miller.fix-97613.97639.sbeok.flac16",
+        venue: "Fillmore East",
+      },
+      {
+        date: "1970-02-14",
+        identifier: "gd70-02-14.early-late.sbd.cotsman.18115.sbeok.shnf",
+        venue: "Fillmore East",
+      },
+      {
+        date: "1970-03-20",
+        identifier: "gd70-03-20.sbd.late.hamilton.14287.sbeok.shnf",
+        venue: "Capitol Theater",
+      },
+      {
+        date: "1970-05-02",
+        identifier: "gd1970-05-02.138227.sbd.miller.flac1648",
+        venue: "Harpur College",
+        rating: 1,
+      },
+      {
+        date: "1970-09-18",
+        identifier: "gd70-09-18.set2.aud-sbd.sirmick.sbeok.30882.flacf",
+        venue: "Fillmore East",
+      },
+      {
+        date: "1970-09-20",
+        identifier: "gd70-09-20.aud.remaster.sirmick.27583.sbeok.shnf",
+        venue: "Fillmore East",
+      },
+      {
+        date: "1971-04-29",
+        identifier: "gd71-04-29.sbd.frisco.16782.sbeok.shnf",
+        venue: "Fillmore East",
+        rating: 1,
+      },
+      {
+        date: "1971-08-15",
+        identifier: "gd71-08-15.sbd.ladner.21780.sbeok.shnf",
+        venue: "Berkeley Community Theater",
+      },
+      {
+        date: "1973-11-11",
+        identifier: "gd73-11-11.sbd.schlissel.14105.sbeok.shnf",
+        venue: "Winterland Arena",
+        rating: 2,
+      },
+      {
+        date: "1973-11-25",
+        identifier: "gd73-11-25.sbd.sacks.2213.sbeok.shnf",
+        venue: "Feyline Field",
+      },
+      {
+        date: "1974-02-23",
+        identifier: "gd74-02-23.sbd.bertha-ashley.26362.sbeok.shnf",
+        venue: "Winterland Arena",
+      },
+      {
+        date: "1974-10-20",
+        identifier: "gd1974-10-20.sbd.smith-lee.GEMS.97193.flac16",
+        venue: "Winterland Arena",
+      },
+      {
+        date: "1976-12-31",
+        identifier: "gd76-12-31.preFM.warner.18524.20760.sbeok.shnf",
+        venue: "Cow Palace",
+        rating: 1,
+      },
+      {
+        date: "1989-07-17",
+        identifier: "gd89-07-17.sbd.unknown.17702.sbeok.shnf",
+        venue: "Alpine Valley Music Theatre",
+        rating: 2,
+      },
+      {
+        date: "1989-08-06",
+        identifier: "gd89-08-06.sbd.12831.sbeok.shnf",
+        venue: "Cal Expo",
+      },
+      {
+        date: "1989-08-18",
+        identifier: "gd89-08-18.sbd.bertha.9964.sbefail.shnf",
+        venue: "Greek Theatre, U. of California",
+      },
+      {
+        date: "1989-10-08",
+        identifier: "gd89-10-08.sbd.unknown.8365.sbeok.shnf",
+        venue: "Hampton Coliseum",
+        rating: 2,
+      },
+      {
+        date: "1989-10-16",
+        identifier: "gd89-10-16.dsbd.barrick.446.sbeok.shnf",
+        venue: "Meadowlands Arena",
+        rating: 2,
+      },
+      {
+        date: "1989-10-26",
+        identifier: "gd89-10-26.set2.dsbd.miller.18664.shnf",
+        venue: "Miami Arena",
+      },
+      {
+        date: "1990-02-27",
+        identifier: "gd90-02-27.sbd.ladner.8569.sbeok.shnf",
+        venue: "Oakland-alameda County Coliseum",
+      },
+      {
+        date: "1990-03-24",
+        identifier: "gd90-03-24.schoeps.wiley.11806.sbeok.shnf",
+        venue: "Knickerbocker Arena",
+        rating: 2,
+      },
+      {
+        date: "1990-04-03",
+        identifier: "gd90-04-03.sbd.hinko.17811.sbeok.shnf",
+        venue: "The Omni",
+      },
+      {
+        date: "1991-09-26",
+        identifier: "gd91-09-26.sbd.fishman.21242.sbeok.shnf",
+        venue: "Boston Garden",
       },
     ],
   },
@@ -67005,6 +66974,164 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
     ],
   },
   {
+    title: "I Can't Get No Satisfaction",
+    performanceCount: 29,
+    performances: [
+      {
+        date: "1980-11-26",
+        identifier: "gd80-11-26.sbd.clugston.3380.sbeok.shnf",
+        venue: "The Sportatorium",
+      },
+      {
+        date: "1980-12-31",
+        identifier: "gd80-12-31.sbd.gorinsky.6391.sbeok.shnf",
+        venue: "Oakland Auditorium Arena",
+      },
+      {
+        date: "1981-05-11",
+        identifier: "gd81-05-11.aud.unknown.4142.sbefail.shnf",
+        venue: "Veterans' Memorial Coliseum",
+      },
+      {
+        date: "1981-05-17",
+        identifier: "gd1981-05-17.aud.munder.9000.sbeok.shnf",
+        venue: "Onongada County War Memorial",
+      },
+      {
+        date: "1981-07-13",
+        identifier: "gd81-07-13.sbd.lai.3903.sbefail.shnf",
+        venue: "Mcnichols Sports Arena",
+      },
+      {
+        date: "1981-09-13",
+        identifier: "gd81-09-13.wise.munder.7092.sbeok.shnf",
+        venue: "Greek Theatre, U. of California",
+      },
+      {
+        date: "1981-10-13",
+        identifier: "gd81-10-13.sbd.jim.13143.sbefail.shnf",
+        venue: "Walter Koebel Halle",
+      },
+      {
+        date: "1981-11-29",
+        identifier: "gd1981-11-29.sbd.miller.108844.flac16",
+        venue: "Civic Arena",
+      },
+      {
+        date: "1981-12-09",
+        identifier: "gd81-12-09.sbd.clugston.13061.sbeok.shnf",
+        venue: "Events Center, U of Colorado",
+        rating: 1,
+      },
+      {
+        date: "1982-02-17",
+        identifier: "gd82-02-17.sbd-patched.warner.23221.sbeok.shnf",
+        venue: "Warfield Theater",
+        rating: 2,
+      },
+      {
+        date: "1982-04-09",
+        identifier: "gd1982-04-09.sbd.miller.32716.sbeok.flac16",
+        venue: "War Memorial Auditorium",
+      },
+      {
+        date: "1982-04-12",
+        identifier: "gd82-04-12.aud.glyde.9508.sbeok.shnf",
+        venue: "Nassau Coliseum",
+      },
+      {
+        date: "1982-05-23",
+        identifier: "gd82-05-23.sbd.gorinsky.5058.sbeok.shnf",
+        venue: "Greek Theatre, U. of California",
+      },
+      {
+        date: "1982-07-18",
+        identifier: "gd82-07-18.fob-senn441-weinberg.unknown.17030.sbeok.shnf",
+        venue: "Ventura County Fairgrounds",
+      },
+      {
+        date: "1982-08-08",
+        identifier: "gd82-08-08.sbd-wise.unknown.7690.sbeok.shnf",
+        venue: "Alpine Valley Music Theatre",
+        rating: 2,
+      },
+      {
+        date: "1982-09-05",
+        identifier: "gd82-09-05.sbd-patched.warner.5490.sbeok.shnf",
+        venue: "Glen Helen Regional Park",
+      },
+      {
+        date: "1982-12-28",
+        identifier: "gd82-12-28.sbd.hinko.18980.sbeok.shnf",
+        venue: "Oakland Auditorium Arena",
+      },
+      {
+        date: "1983-04-09",
+        identifier: "gd83-04-09.sbd.miller.27703.sbeok.shnf",
+        venue: "Hampton Coliseum",
+      },
+      {
+        date: "1983-04-25",
+        identifier: "gd83-04-25.sennheiser.dodd.9763.sbeok.shnf",
+        venue: "The Spectrum",
+        rating: 2,
+      },
+      {
+        date: "1983-08-31",
+        identifier: "gd83-08-31.sennheiser.dodd.12486.sbeok.shnf",
+        venue: "Silva Hall, Hult Center",
+      },
+      {
+        date: "1984-06-24",
+        identifier: "gd84-06-24.nak.connor.4628.sbeok.shnf",
+        venue: "Saratoga Performing Arts Center",
+      },
+      {
+        date: "1984-10-31",
+        identifier: "gd84-10-31.senn.14947.sbeok.shnf",
+        venue: "Berkeley Community Theater",
+      },
+      {
+        date: "1985-07-01",
+        identifier: "gd85-07-01.composite.torbjorn.17350.sbeok.shnf",
+        venue: "Merriweather Post Pavilion",
+      },
+      {
+        date: "1985-09-15",
+        identifier: "gd85-09-15.aud.zelner.13600.sbeok.shnf",
+        venue: "Devore Field, Southwestern U",
+        rating: 2,
+      },
+      {
+        date: "1985-11-08",
+        identifier: "gd85-11-08.sbd.clugston.5301.sbeok.shnf",
+        venue: "Community War Memorial Auditorium",
+        rating: 2,
+      },
+      {
+        date: "1986-07-07",
+        identifier: "gd86-07-07.schoeps.conner.7001.sbeok.shnf",
+        venue: "Robert F. Kennedy Stadium",
+        rating: 1,
+      },
+      {
+        date: "1992-03-09",
+        identifier: "gd92-03-09.sbd.braverman.9755.sbeok.shnf",
+        venue: "Capitol Centre",
+      },
+      {
+        date: "1992-06-18",
+        identifier: "gd92-06-18.schoeps.wier.4674.sbeok.shnf",
+        venue: "Charlotte Coliseum",
+      },
+      {
+        date: "1994-08-01",
+        identifier: "gd94-08-01.neumann.nawrocki.12522.sbeok.shnf",
+        venue: "The Palace",
+      },
+    ],
+  },
+  {
     title: "I Don't Know You",
     performanceCount: 6,
     performances: [
@@ -124871,139 +124998,6 @@ export const GRATEFUL_DEAD_SONGS: Song[] = [
         date: "1995-07-09",
         identifier: "gd95-07-09.sbd.7233.sbeok.shnf",
         venue: "Soldier Field",
-      },
-    ],
-  },
-  {
-    title: "Satisfaction",
-    performanceCount: 24,
-    performances: [
-      {
-        date: "1980-11-26",
-        identifier: "gd80-11-26.sbd.clugston.3380.sbeok.shnf",
-        venue: "The Sportatorium",
-      },
-      {
-        date: "1980-12-31",
-        identifier: "gd80-12-31.sbd.gorinsky.6391.sbeok.shnf",
-        venue: "Oakland Auditorium Arena",
-      },
-      {
-        date: "1981-05-11",
-        identifier: "gd81-05-11.aud.unknown.4142.sbefail.shnf",
-        venue: "Veterans' Memorial Coliseum",
-      },
-      {
-        date: "1981-07-13",
-        identifier: "gd81-07-13.sbd.lai.3903.sbefail.shnf",
-        venue: "Mcnichols Sports Arena",
-      },
-      {
-        date: "1981-09-13",
-        identifier: "gd81-09-13.wise.munder.7092.sbeok.shnf",
-        venue: "Greek Theatre, U. of California",
-      },
-      {
-        date: "1981-10-13",
-        identifier: "gd81-10-13.sbd.jim.13143.sbefail.shnf",
-        venue: "Walter Koebel Halle",
-      },
-      {
-        date: "1981-12-09",
-        identifier: "gd81-12-09.sbd.clugston.13061.sbeok.shnf",
-        venue: "Events Center, U of Colorado",
-        rating: 1,
-      },
-      {
-        date: "1982-02-17",
-        identifier: "gd82-02-17.sbd-patched.warner.23221.sbeok.shnf",
-        venue: "Warfield Theater",
-        rating: 2,
-      },
-      {
-        date: "1982-04-12",
-        identifier: "gd82-04-12.aud.glyde.9508.sbeok.shnf",
-        venue: "Nassau Coliseum",
-      },
-      {
-        date: "1982-05-23",
-        identifier: "gd82-05-23.sbd.gorinsky.5058.sbeok.shnf",
-        venue: "Greek Theatre, U. of California",
-      },
-      {
-        date: "1982-07-18",
-        identifier: "gd82-07-18.fob-senn441-weinberg.unknown.17030.sbeok.shnf",
-        venue: "Ventura County Fairgrounds",
-      },
-      {
-        date: "1982-08-08",
-        identifier: "gd82-08-08.sbd-wise.unknown.7690.sbeok.shnf",
-        venue: "Alpine Valley Music Theatre",
-        rating: 2,
-      },
-      {
-        date: "1982-09-05",
-        identifier: "gd82-09-05.sbd-patched.warner.5490.sbeok.shnf",
-        venue: "Glen Helen Regional Park",
-      },
-      {
-        date: "1982-12-28",
-        identifier: "gd82-12-28.sbd.hinko.18980.sbeok.shnf",
-        venue: "Oakland Auditorium Arena",
-      },
-      {
-        date: "1983-04-25",
-        identifier: "gd83-04-25.sennheiser.dodd.9763.sbeok.shnf",
-        venue: "The Spectrum",
-        rating: 2,
-      },
-      {
-        date: "1983-08-31",
-        identifier: "gd83-08-31.sennheiser.dodd.12486.sbeok.shnf",
-        venue: "Silva Hall, Hult Center",
-      },
-      {
-        date: "1984-06-24",
-        identifier: "gd84-06-24.nak.connor.4628.sbeok.shnf",
-        venue: "Saratoga Performing Arts Center",
-      },
-      {
-        date: "1984-10-31",
-        identifier: "gd84-10-31.senn.14947.sbeok.shnf",
-        venue: "Berkeley Community Theater",
-      },
-      {
-        date: "1985-07-01",
-        identifier: "gd85-07-01.composite.torbjorn.17350.sbeok.shnf",
-        venue: "Merriweather Post Pavilion",
-      },
-      {
-        date: "1985-09-15",
-        identifier: "gd85-09-15.aud.zelner.13600.sbeok.shnf",
-        venue: "Devore Field, Southwestern U",
-        rating: 2,
-      },
-      {
-        date: "1985-11-08",
-        identifier: "gd85-11-08.sbd.clugston.5301.sbeok.shnf",
-        venue: "Community War Memorial Auditorium",
-        rating: 2,
-      },
-      {
-        date: "1986-07-07",
-        identifier: "gd86-07-07.schoeps.conner.7001.sbeok.shnf",
-        venue: "Robert F. Kennedy Stadium",
-        rating: 1,
-      },
-      {
-        date: "1992-03-09",
-        identifier: "gd92-03-09.sbd.braverman.9755.sbeok.shnf",
-        venue: "Capitol Centre",
-      },
-      {
-        date: "1994-08-01",
-        identifier: "gd94-08-01.neumann.nawrocki.12522.sbeok.shnf",
-        venue: "The Palace",
       },
     ],
   },

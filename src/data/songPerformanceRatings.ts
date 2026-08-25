@@ -22123,6 +22123,10 @@ export function normalizeSongTitleForLookup(title: string): string {
     .replace(/&/g, 'and')
     .replace(/'/g, '')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+    // Canonical alias: the catalog folded the standalone "Satisfaction"
+    // entry into the full title (2026-08-25), so ratings and compendium
+    // rows stored under the short spelling keep matching.
+    .replace(/^satisfaction$/, 'i cant get no satisfaction');
 }
 

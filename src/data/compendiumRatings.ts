@@ -37460,7 +37460,7 @@ export const COMPENDIUM_RATINGS: Record<string, CompendiumEntry> = {
       },
       {
         song: "And We Bid You Goodnight",
-        canonicalTitle: "& We Bid You Goodnight",
+        canonicalTitle: "And We Bid You Goodnight",
         assessment: "excellent",
         reason: "a fitting a cappella finale to one of the most memorable shows in band history",
         quote: "A fitting finale to one of the most memorable shows, and tours, in Grateful Dead history",
@@ -48337,7 +48337,7 @@ export const COMPENDIUM_RATINGS: Record<string, CompendiumEntry> = {
       },
       {
         song: "(I Can't Get No) Satisfaction",
-        canonicalTitle: "Satisfaction",
+        canonicalTitle: "I Can't Get No Satisfaction",
         assessment: "rare",
         reason: "surprise cover, only the third time played in the nineties",
         quote: "actually June '92, but still one of three times in the nineties",

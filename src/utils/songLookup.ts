@@ -39,6 +39,14 @@ function looseKey(title: string): string {
 const FORMER_TITLES: Record<string, string> = {
   estimated: 'Estimated Prophet',
   mindleftbody: 'Mind Left Body Jam',
+  // 2026-08-25 renames. Both are loose-key-preserving ("&"→"and" and
+  // punctuation-stripping already happen in looseKey), so old references
+  // resolve through the loose index anyway — listed for the record.
+  andwebidyougoodnight: 'And We Bid You Goodnight',
+  icantgetnosatisfaction: "I Can't Get No Satisfaction",
+  // The standalone "Satisfaction" entry was folded into the full title
+  // (2026-08-25), so references holding the short spelling resolve here.
+  satisfaction: "I Can't Get No Satisfaction",
 };
 
 function buildIndexes(): void {

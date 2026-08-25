@@ -56,6 +56,25 @@ const CANONICAL_TITLE = {
 const RENAME = {
   Estimated: 'Estimated Prophet',
   'Mind Left Body': 'Mind Left Body Jam',
+  // Editorial renames (2026-08-25): spell out the ampersand, drop the
+  // parenthetical (and its stray lowercase "i").
+  '& We Bid You Goodnight': 'And We Bid You Goodnight',
+  "(i Can't Get No) Satisfaction": "I Can't Get No Satisfaction",
+};
+
+/**
+ * Distinct catalog entries that are the same song under two spellings the
+ * mergeKey can't unify (one carried a parenthetical the other lacked). The
+ * source entry's performances fold into the target entry, deduped by
+ * identifier|date, and the source entry is dropped. Idempotent: once folded,
+ * the source title no longer exists and the mapping is a no-op.
+ *
+ * Downstream keyed data must follow a fold — see songTags.ts (key removed),
+ * songLookup.ts FORMER_TITLES, and normalizeSongTitleForLookup's canonical
+ * alias in songPerformanceRatings.ts.
+ */
+const MERGE_INTO = {
+  Satisfaction: "I Can't Get No Satisfaction",
 };
 
 /**
@@ -187,6 +206,27 @@ for (const song of out) {
   renamed++;
 }
 if (renamed) console.log('\ncatalog titles renamed:', renamed);
+
+// ---- fold distinct-spelling duplicates into their canonical entry ----------
+for (const [from, to] of Object.entries(MERGE_INTO)) {
+  const srcIdx = out.findIndex(s => s.title === from);
+  const dst = out.find(s => s.title === to);
+  if (srcIdx < 0 || !dst) continue; // already folded on a previous run
+  const src = out[srcIdx];
+  const seen = new Set(dst.performances.map(p => `${p.identifier}|${p.date}`));
+  let added = 0;
+  for (const p of src.performances) {
+    const id = `${p.identifier}|${p.date}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    dst.performances.push(p);
+    added++;
+  }
+  dst.performances.sort((a, b) => a.date.localeCompare(b.date) || a.identifier.localeCompare(b.identifier));
+  dst.performanceCount = dst.performances.length;
+  out.splice(srcIdx, 1);
+  console.log(`\nfolded "${from}" (${src.performances.length} perfs, ${added} new) into "${to}" -> ${dst.performances.length} perfs`);
+}
 
 // ---- give segue-only songs a standalone entry ----------------------------
 if (SPLIT_COMPOSITES) {
