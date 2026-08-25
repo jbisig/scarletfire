@@ -27,13 +27,26 @@ let cachedFeed: {
 
 // The cache is identity-scoped: without this, signing out (or switching
 // accounts) would hand the next viewer the previous user's personalized
-// feed until the silent refresh landed. Any auth-state change clears it —
-// over-clearing only costs one spinner. Registered once for module lifetime.
-authService.onAuthStateChanged(() => { cachedFeed = null; });
+// feed until the silent refresh landed. Armed lazily on first mount —
+// NEVER at module scope, where it would call getSession() during bundle
+// evaluation, before the app has initialized — and it clears only when the
+// user actually changes (token refreshes for the same user keep the cache).
+let cacheListenerArmed = false;
+let cacheUserId: string | null | undefined; // undefined = not yet observed
+function armCacheListener() {
+  if (cacheListenerArmed) return;
+  cacheListenerArmed = true;
+  authService.onAuthStateChanged((user) => {
+    const id = user?.id ?? null;
+    if (cacheUserId !== undefined && cacheUserId !== id) cachedFeed = null;
+    cacheUserId = id;
+  });
+}
 
 type LoadMode = 'initial' | 'refresh' | 'silent';
 
 export function ActivityList({ onSwitchToPeople }: { onSwitchToPeople: () => void }) {
+  armCacheListener();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { isDesktop } = useResponsive();
   const [events, setEvents] = useState<ActivityEvent[]>(() => cachedFeed?.events ?? []);
