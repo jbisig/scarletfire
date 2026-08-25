@@ -71,6 +71,15 @@ class AuthService {
     await GoogleSignin.hasPlayServices();
     const userInfo = await GoogleSignin.signIn();
 
+    // v13+ RESOLVES (not rejects) on user cancellation with { type: 'cancelled' }.
+    // Without this check a cancelled/interrupted flow fell through to the
+    // "No ID token present" error alert.
+    if ((userInfo as { type?: string }).type === 'cancelled') {
+      const cancelled = new Error('Sign-in was cancelled') as Error & { code: string };
+      cancelled.code = 'ERR_REQUEST_CANCELED';
+      throw cancelled;
+    }
+
     // Try both possible response structures (types vary between library versions)
     const idToken = (userInfo as { idToken?: string }).idToken || (userInfo as { data?: { idToken?: string } }).data?.idToken;
 

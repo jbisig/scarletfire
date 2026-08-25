@@ -22,6 +22,8 @@ export function SocialAuthButtons({ disabled }: SocialAuthButtonsProps) {
       await loginWithGoogle();
     } catch (error) {
       const authError = error as AuthError;
+      // Same silent treatment as Apple: a user-cancelled sheet is not an error.
+      if (authError.code === 'ERR_REQUEST_CANCELED') return;
       Alert.alert('Google Sign-In Failed', authError.message || 'An error occurred');
     }
   };
