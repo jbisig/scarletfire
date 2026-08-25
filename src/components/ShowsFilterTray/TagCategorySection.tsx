@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { FilterPill } from './FilterPill';
 import type { TagCategory, TagDef, TagId } from '../../constants/tags';
@@ -20,7 +21,9 @@ interface TagCategorySectionProps {
 export function TagCategorySection({ category, tags, selected, counts, noun = 'shows', expanded, onToggleExpanded, onToggleTag }: TagCategorySectionProps) {
   const activeCount = tags.filter(t => selected.includes(t.id)).length;
   return (
-    <View style={styles.section}>
+    // The layout transition animates this section's size change (and lets the
+    // sections below it slide) when the pills grid mounts/unmounts.
+    <Animated.View style={styles.section} layout={LinearTransition.duration(220)}>
       <TouchableOpacity
         testID={`tag-section-${category.id}`}
         style={styles.header}
@@ -38,7 +41,11 @@ export function TagCategorySection({ category, tags, selected, counts, noun = 's
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
       {expanded && (
-        <View style={styles.pillsGrid}>
+        <Animated.View
+          style={styles.pillsGrid}
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(120)}
+        >
           {tags.map(tag => {
             const isSelected = selected.includes(tag.id);
             const count = counts[tag.id] ?? 0;
@@ -56,9 +63,9 @@ export function TagCategorySection({ category, tags, selected, counts, noun = 's
               />
             );
           })}
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

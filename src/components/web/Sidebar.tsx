@@ -6,7 +6,8 @@ import { navigationRef } from '../../navigation/navigationRef';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileService, UserProfile } from '../../services/profileService';
 import { useWebAuthModal } from './WebAuthModal';
-import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY, WEB_LAYOUT } from '../../constants/theme';
+import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY, WEB_LAYOUT, GLASS_PILL_BLUR } from '../../constants/theme';
+import { webStyle } from '../../utils/webStyle';
 
 interface SidebarItem {
   key: string;
@@ -266,10 +267,14 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
+    // Same glass recipe as SortDropdown: dark wash over a blur (web-only
+    // component, so the backdrop-filter applies unconditionally).
+    backgroundColor: 'rgba(20, 20, 20, 0.5)',
+    ...webStyle(GLASS_PILL_BLUR),
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
     minWidth: 150,
+    overflow: 'hidden',
     ...SHADOWS.lg,
   },
   dropdownItem: {

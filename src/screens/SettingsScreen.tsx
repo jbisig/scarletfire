@@ -27,6 +27,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { SourcePreferencePicker } from '../components/SourcePreferencePicker';
 import { useResponsive } from '../hooks/useResponsive';
 import { DownloadsSettingsSection } from '../components/DownloadsSettingsSection';
+import { ActionSheet } from '../components/ActionSheet';
 import { logger } from '../utils/logger';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -48,8 +49,7 @@ export function SettingsScreen() {
       <View style={styles.toggleInfo}>
         <Text style={styles.toggleLabel}>Skip Tuning Tracks</Text>
         <Text style={styles.toggleHint}>
-          Roll past tracks that are only the band tuning up. Tapping one still plays it,
-          and tuning that runs into a song is left alone.
+          Roll past tracks that are only the band tuning up. Tapping one still plays it.
         </Text>
       </View>
       <Switch
@@ -67,6 +67,8 @@ export function SettingsScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  // The avatar's single entry point: a tray with Change / Remove.
+  const [photoTrayVisible, setPhotoTrayVisible] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -322,31 +324,19 @@ export function SettingsScreen() {
     }
   };
 
-  const handleRemovePhoto = () => {
+  // Direct removal — the tray's explicit destructive row is the deliberate
+  // step, so no second confirm (same policy as the collection item trays).
+  const handleRemovePhoto = async () => {
     if (!authState.user?.id || !avatarUrl) return;
-
-    Alert.alert(
-      'Remove Photo',
-      'Are you sure you want to remove your profile photo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            setIsRemoving(true);
-            try {
-              await profileService.removeAvatar(authState.user!.id);
-              await refreshUser();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove profile photo. Please try again.');
-            } finally {
-              setIsRemoving(false);
-            }
-          },
-        },
-      ]
-    );
+    setIsRemoving(true);
+    try {
+      await profileService.removeAvatar(authState.user.id);
+      await refreshUser();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove profile photo. Please try again.');
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -463,7 +453,17 @@ export function SettingsScreen() {
       {/* Profile Section */}
       <View style={styles.section}>
         <View style={styles.profileContainer}>
-          <View style={styles.avatarContainer}>
+          {/* One affordance for the photo: the avatar (and its camera badge)
+              opens a Change/Remove tray. The old "Change Photo" and "Remove"
+              buttons said the same thing twice more. */}
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => setPhotoTrayVisible(true)}
+            disabled={isUploading || isRemoving}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile photo"
+          >
             <ProfileImage
               uri={avatarUrl}
               style={styles.avatar}
@@ -473,40 +473,12 @@ export function SettingsScreen() {
                 <ActivityIndicator size="large" color={COLORS.textPrimary} />
               </View>
             )}
-            <TouchableOpacity
-              style={styles.cameraBadge}
-              onPress={handleChangePhoto}
-              disabled={isUploading || isRemoving}
-            >
+            <View style={styles.cameraBadge}>
               <Ionicons name="camera" size={16} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
           <Text style={styles.email}>{authState.user?.email}</Text>
-
-          <View style={styles.photoButtons}>
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={handleChangePhoto}
-              disabled={isUploading || isRemoving}
-            >
-              <Text style={styles.photoButtonText}>
-                {isUploading ? 'Uploading...' : 'Change Photo'}
-              </Text>
-            </TouchableOpacity>
-
-            {avatarUrl && (
-              <TouchableOpacity
-                style={[styles.photoButton, styles.removeButton]}
-                onPress={handleRemovePhoto}
-                disabled={isUploading || isRemoving}
-              >
-                <Text style={styles.removeButtonText}>
-                  {isRemoving ? 'Removing...' : 'Remove'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
       </View>
 
@@ -619,21 +591,17 @@ export function SettingsScreen() {
                   </View>
                 </View>
 
-                {/* View Profile + URL */}
+                {/* Public URL. (An in-app "View Profile" button used to sit
+                    above this, but the avatar menu already offers it — the
+                    URL is the one piece of information only this screen has.) */}
                 {profile.username && (
                   <View style={styles.profileLinkSection}>
-                    <TouchableOpacity
-                      style={styles.viewProfileButton}
-                      onPress={() => navigation.navigate('PublicProfile', { username: profile.username })}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="person-outline" size={16} color={COLORS.textPrimary} />
-                      <Text style={styles.viewProfileText}>View Profile</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.profileUrlContainer}
                       onPress={() => RNLinking.openURL(`https://www.scarletfire.app/profile/${profile.username}`)}
                       activeOpacity={0.7}
+                      accessibilityRole="link"
+                      accessibilityLabel={`Open your public profile at scarletfire.app/profile/${profile.username}`}
                     >
                       <Ionicons name="link-outline" size={16} color={COLORS.accent} />
                       <Text style={styles.profileUrl}>
@@ -648,9 +616,10 @@ export function SettingsScreen() {
         )}
       </View>
 
-      {/* Danger Zone */}
+      {/* Account. ("Danger Zone" was developer jargon, and the standing
+          warning repeated what the two confirmation dialogs already say.) */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Danger Zone</Text>
+        <Text style={styles.sectionTitle}>Account</Text>
 
         <TouchableOpacity
           style={styles.deleteButton}
@@ -662,16 +631,31 @@ export function SettingsScreen() {
             {isDeleting ? 'Deleting...' : 'Delete Account'}
           </Text>
         </TouchableOpacity>
-
-        <Text style={styles.deleteWarning}>
-          This will permanently delete your account and all associated data.
-        </Text>
       </View>
 
       <Text style={styles.versionText}>
         Version {Constants.expoConfig?.version ?? ''}
       </Text>
       </ScrollView>
+
+      <ActionSheet
+        visible={photoTrayVisible}
+        onClose={() => setPhotoTrayVisible(false)}
+        title="Profile Photo"
+        actions={[
+          { label: 'Change Photo', icon: 'camera-outline' as const, onPress: handleChangePhoto },
+          ...(avatarUrl
+            ? [
+                {
+                  label: 'Remove Photo',
+                  icon: 'trash-outline' as const,
+                  destructive: true,
+                  onPress: handleRemovePhoto,
+                },
+              ]
+            : []),
+        ]}
+      />
 
       <BottomSheet
         visible={editingField !== null}
@@ -836,30 +820,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: SPACING.xl,
   },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  photoButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: 10,
-    borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.cardBackground,
-  },
-  photoButtonText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
-  },
-  removeButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  removeButtonText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -869,12 +829,6 @@ const styles = StyleSheet.create({
   deleteText: {
     ...TYPOGRAPHY.labelLarge,
     color: COLORS.error,
-  },
-  deleteWarning: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '400',
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
   },
   versionText: {
     ...TYPOGRAPHY.labelSmall,
@@ -1023,19 +977,6 @@ const styles = StyleSheet.create({
   profileLinkSection: {
     gap: SPACING.sm,
     marginTop: SPACING.sm,
-  },
-  viewProfileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.xl,
-  },
-  viewProfileText: {
-    ...TYPOGRAPHY.label,
-    fontWeight: '600',
   },
   profileUrlContainer: {
     flexDirection: 'row',

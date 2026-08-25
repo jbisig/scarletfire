@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  Pressable,
-  TouchableOpacity,
-} from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { ActionSheet, ActionSheetAction } from './ActionSheet';
 import { ProfileDropdownState } from '../hooks/useProfileDropdown';
 
 interface ProfileDropdownProps {
@@ -21,6 +13,12 @@ interface ProfileDropdownProps {
   onViewProfile?: (() => void) | null;
 }
 
+/**
+ * Avatar menu as a bottom tray (the positioned dropdown became an
+ * ActionSheet along with the app's other menus). The prop surface is
+ * unchanged so call sites didn't move; `state.position` is simply unused
+ * now — the tray anchors to the bottom, not the avatar.
+ */
 export const ProfileDropdown = React.memo<ProfileDropdownProps>(function ProfileDropdown({
   state,
   isAuthenticated,
@@ -31,128 +29,30 @@ export const ProfileDropdown = React.memo<ProfileDropdownProps>(function Profile
   onSupport,
   onViewProfile,
 }) {
-  return (
-    <Modal
-      visible={state.isVisible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={[
-            styles.container,
-            { top: state.position.top, left: 16 }
-          ]}
-        >
-          {isAuthenticated ? (
-            <>
-              {onViewProfile && (
-                <>
-                  <TouchableOpacity
-                    style={styles.item}
-                    onPress={onViewProfile}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel="View Profile"
-                    accessibilityHint="Double tap to view your public profile"
-                  >
-                    <Text style={styles.itemText}>View Profile</Text>
-                  </TouchableOpacity>
-                  <View style={styles.divider} />
-                </>
-              )}
-              <TouchableOpacity
-                style={styles.item}
-                onPress={onSettings}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Settings"
-                accessibilityHint="Double tap to open settings"
-              >
-                <Text style={styles.itemText}>Settings</Text>
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.item}
-                onPress={onSupport}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Support"
-                accessibilityHint="Double tap to contact support"
-              >
-                <Text style={styles.itemText}>Support</Text>
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.item}
-                onPress={onLogout}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Log Out"
-                accessibilityHint="Double tap to log out of your account"
-              >
-                <Text style={styles.itemTextRed}>Log Out</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={styles.item}
-                onPress={onLogin}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Log In"
-                accessibilityHint="Double tap to log in to your account"
-              >
-                <Text style={styles.itemText}>Log In</Text>
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.item}
-                onPress={onSupport}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel="Support"
-                accessibilityHint="Double tap to contact support"
-              >
-                <Text style={styles.itemText}>Support</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </Pressable>
-    </Modal>
-  );
-});
+  const actions: ActionSheetAction[] = isAuthenticated
+    ? [
+        ...(onViewProfile
+          ? [
+              {
+                label: 'View Profile',
+                icon: 'person-circle-outline' as const,
+                onPress: onViewProfile,
+              },
+            ]
+          : []),
+        { label: 'Settings', icon: 'settings-outline' as const, onPress: onSettings },
+        { label: 'Support', icon: 'help-circle-outline' as const, onPress: onSupport },
+        {
+          label: 'Log Out',
+          icon: 'log-out-outline' as const,
+          destructive: true,
+          onPress: onLogout,
+        },
+      ]
+    : [
+        { label: 'Log In', icon: 'log-in-outline' as const, onPress: onLogin },
+        { label: 'Support', icon: 'help-circle-outline' as const, onPress: onSupport },
+      ];
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  container: {
-    position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: RADIUS.md,
-    paddingVertical: SPACING.sm,
-    minWidth: 150,
-    ...SHADOWS.lg,
-  },
-  item: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  itemText: {
-    ...TYPOGRAPHY.body,
-  },
-  itemTextRed: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.accent,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: SPACING.lg,
-  },
+  return <ActionSheet visible={state.isVisible} onClose={onClose} actions={actions} />;
 });

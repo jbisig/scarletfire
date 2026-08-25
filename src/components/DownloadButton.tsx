@@ -114,12 +114,12 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
 
   let label = 'Download show';
   let dimmed = !show;
-  let glyph: React.ReactNode = <Ionicons name="arrow-down-circle-outline" size={26} color={COLORS.textPrimary} />;
+  let glyph: React.ReactNode = <Ionicons name="arrow-down-circle-outline" size={24} color={COLORS.textPrimary} />;
 
   if (streamOnly) {
     label = 'Streaming only';
     dimmed = true;
-    glyph = <Ionicons name="cloud-offline-outline" size={26} color={COLORS.textPrimary} />;
+    glyph = <Ionicons name="cloud-offline-outline" size={24} color={COLORS.textPrimary} />;
   } else if (inFlight || paused) {
     label = inFlight
       ? `Downloading, ${percent}%`
@@ -128,7 +128,7 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
     // the show waits for Wi-Fi/connectivity.
     glyph = (
       <ProgressRing
-        size={26}
+        size={24}
         thickness={2.5}
         progress={progress.fraction}
         color={inFlight ? COLORS.accent : COLORS.textSecondary}
@@ -146,7 +146,7 @@ export function DownloadButton({ show, identifier }: DownloadButtonProps) {
     );
   } else if (entry?.status === 'failed') {
     label = 'Download failed';
-    glyph = <Ionicons name="alert-circle-outline" size={26} color={COLORS.textPrimary} />;
+    glyph = <Ionicons name="alert-circle-outline" size={24} color={COLORS.textPrimary} />;
   }
 
   return (
@@ -175,9 +175,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   completeCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',

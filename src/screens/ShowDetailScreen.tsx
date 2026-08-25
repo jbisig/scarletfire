@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
-  Alert,
   Animated,
   View,
   Text,
@@ -33,6 +32,7 @@ import { ShowCard } from '../components/ShowCard';
 import { ShowDetail, Track, GratefulDeadShow } from '../types/show.types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { AddToCollectionPicker } from '../components/collections/AddToCollectionPicker';
+import { ActionSheet } from '../components/ActionSheet';
 import { useCollections } from '../contexts/CollectionsContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, SHADOWS, GLASS_PILL, GLASS_PILL_BLUR, BRAND_COLORS } from '../constants/theme';
@@ -552,17 +552,9 @@ export function ShowDetailScreen() {
     (track: Track) => {
       if (Platform.OS === 'web') return;
       if (!show) return;
-      const saved = isSongFavorite(track.id, show.identifier);
-      Alert.alert(track.title, undefined, [
-        { text: 'Add to Playlist', onPress: () => setPickerTrack(track) },
-        {
-          text: saved ? 'Remove from Favorites' : 'Add to Favorites',
-          onPress: () => handleToggleSaveSong(track),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      setActionTrack(track);
     },
-    [show, isSongFavorite, handleToggleSaveSong],
+    [show],
   );
 
   const handleNextShowPress = useCallback((nextShow: GratefulDeadShow) => {
@@ -598,6 +590,8 @@ export function ShowDetailScreen() {
   // between versions or previews, or updates their rating).
   const [addToCollectionVisible, setAddToCollectionVisible] = useState(false);
   const [pickerTrack, setPickerTrack] = useState<Track | null>(null);
+  // Track whose "…" action tray is open (three-dot button or long-press).
+  const [actionTrack, setActionTrack] = useState<Track | null>(null);
   const { itemCountsByIdentifier } = useCollections();
 
   const handleAddToPlaylist = useCallback((track: Track) => {
@@ -982,7 +976,7 @@ export function ShowDetailScreen() {
                           accessibilityRole="button"
                           accessibilityLabel="Add to collection"
                         >
-                          <Ionicons name="add" size={28} color={COLORS.textPrimary} />
+                          <Ionicons name="add" size={26} color={COLORS.textPrimary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.showActionBtn}
@@ -994,7 +988,7 @@ export function ShowDetailScreen() {
                         >
                           <Ionicons
                             name={isSaved ? 'heart' : 'heart-outline'}
-                            size={26}
+                            size={24}
                             color={isSaved ? COLORS.accent : COLORS.textPrimary}
                           />
                         </TouchableOpacity>
@@ -1140,7 +1134,7 @@ export function ShowDetailScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Add to collection"
               >
-                <Ionicons name="add" size={28} color={COLORS.textPrimary} />
+                <Ionicons name="add" size={26} color={COLORS.textPrimary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.showActionBtn}
@@ -1152,7 +1146,7 @@ export function ShowDetailScreen() {
               >
                 <Ionicons
                   name={isSaved ? 'heart' : 'heart-outline'}
-                  size={26}
+                  size={24}
                   color={isSaved ? COLORS.accent : COLORS.textPrimary}
                 />
               </TouchableOpacity>
@@ -1351,6 +1345,35 @@ export function ShowDetailScreen() {
           type="playlist"
           itemIdentifier={`${show.identifier}::${pickerTrack.id}`}
           itemMetadata={toFavoriteSong(pickerTrack, show)}
+        />
+      )}
+
+      {/* Track "…" tray (three-dot button or long-press on a row). */}
+      {show && (
+        <ActionSheet
+          visible={!!actionTrack}
+          onClose={() => setActionTrack(null)}
+          title={actionTrack?.title}
+          actions={
+            actionTrack
+              ? [
+                  {
+                    label: 'Add to Playlist',
+                    icon: 'add-circle-outline' as const,
+                    onPress: () => setPickerTrack(actionTrack),
+                  },
+                  {
+                    label: isSongFavorite(actionTrack.id, show.identifier)
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites',
+                    icon: isSongFavorite(actionTrack.id, show.identifier)
+                      ? ('heart-dislike-outline' as const)
+                      : ('heart-outline' as const),
+                    onPress: () => handleToggleSaveSong(actionTrack),
+                  },
+                ]
+              : []
+          }
         />
       )}
     </Animated.ScrollView>

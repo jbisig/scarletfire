@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated as RNAnimated } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { ShowsByYear, FILTER_ERA_GROUPS } from './types';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
@@ -30,10 +31,10 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
   justify,
   onPress,
 }) {
-  const checkmarkOpacity = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+  const checkmarkOpacity = useRef(new RNAnimated.Value(isSelected ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.timing(checkmarkOpacity, {
+    RNAnimated.timing(checkmarkOpacity, {
       toValue: isSelected ? 1 : 0,
       duration: 200,
       useNativeDriver: true,
@@ -61,9 +62,9 @@ const YearButton = React.memo<YearButtonProps>(function YearButton({
       </Text>
       {/* Fixed-width slot so a button's width is identical selected or not —
           keeps the wrapped rows from reflowing when a year is toggled. */}
-      <Animated.View style={[styles.checkmark, { opacity: checkmarkOpacity }]}>
+      <RNAnimated.View style={[styles.checkmark, { opacity: checkmarkOpacity }]}>
         <Ionicons name="checkmark" size={16} color={COLORS.accent} />
-      </Animated.View>
+      </RNAnimated.View>
     </TouchableOpacity>
   );
 });
@@ -106,7 +107,9 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
   const activeCount = selectedYears.length;
 
   return (
-    <View style={styles.section}>
+    // The layout transition animates the section's size change (and lets the
+    // sections below it slide) when the era groups mount/unmount.
+    <Animated.View style={styles.section} layout={LinearTransition.duration(220)}>
       {/* Header mirrors TagCategorySection so Years reads as one more accordion. */}
       <TouchableOpacity
         testID="years-section-header"
@@ -127,7 +130,9 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
 
-      {expanded && eraGroups.map(({ name, years }) => {
+      {expanded && (
+      <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)}>
+      {eraGroups.map(({ name, years }) => {
         const eraFullySelected = isEraFullySelected(years);
         const hasEnabledYears = years.some(y => !disabledYears.has(y));
 
@@ -165,7 +170,9 @@ export const YearsSection = React.memo<YearsSectionProps>(function YearsSection(
           </View>
         );
       })}
-    </View>
+      </Animated.View>
+      )}
+    </Animated.View>
   );
 });
 

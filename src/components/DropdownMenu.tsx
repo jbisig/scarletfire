@@ -3,12 +3,15 @@ import {
   View,
   Text,
   Modal,
+  Platform,
   TouchableOpacity,
   Pressable,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { BlurBackground } from './shared/BlurBackground';
+import { webStyle } from '../utils/webStyle';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GLASS_PILL_BLUR } from '../constants/theme';
 import { haptics } from '../services/hapticService';
 
 export interface DropdownOption<T extends string = string> {
@@ -96,6 +99,7 @@ function DropdownMenuInner<T extends string = string>({
               { top: position.top, right: position.right, minWidth },
             ]}
           >
+            {Platform.OS !== 'web' && <BlurBackground intensity={40} tint="dark" />}
             {options.map((option, index) => {
               const isSelected = option.value === selectedValue;
               return (
@@ -152,9 +156,12 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
+    // Same glass recipe as SortDropdown: dark wash over a blur.
+    backgroundColor: 'rgba(20, 20, 20, 0.5)',
+    ...(Platform.OS === 'web' && webStyle(GLASS_PILL_BLUR)),
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
+    overflow: 'hidden',
     ...SHADOWS.lg,
   },
   item: {

@@ -39,7 +39,7 @@ import { WebVideoBackground } from '../components/shared/WebVideoBackground';
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { SortDropdown } from '../components/SortDropdown';
+import { SortTray } from '../components/SortTray';
 import { NoResultsState } from '../components/StateViews';
 import { useDebounce } from '../hooks/useDebounce';
 import { useResponsive } from '../hooks/useResponsive';
@@ -49,9 +49,8 @@ import {
   PerformanceSortType,
   PERFORMANCE_SORT_OPTIONS,
   getPerformanceSortLabel,
-  getPerformanceSortIcon,
+  getSortOptionIcon,
 } from '../constants/sortOptions';
-import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 import { compareByResolvedRating } from '../utils/performanceSort';
 import { usePerformanceRatingsVersion } from '../contexts/UserRatingsContext';
@@ -88,7 +87,7 @@ export function SongPerformancesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 150);
   const flatListRef = useRef<FlatList<Performance>>(null);
-  const sortDropdown = useSortDropdown();
+  const [sortTrayVisible, setSortTrayVisible] = useState(false);
   const ratingsVersion = usePerformanceRatingsVersion();
   const { openRatingOverlay } = useRatingOverlay();
 
@@ -401,16 +400,14 @@ export function SongPerformancesScreen() {
             style={{ opacity: sortOpacity }}
             pointerEvents={isSearchExpanded ? 'none' : 'auto'}
           >
-          <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabel}
-              onPress={sortDropdown.open}
+              onPress={() => setSortTrayVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name={getPerformanceSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Ionicons name={getSortOptionIcon(PERFORMANCE_SORT_OPTIONS, sortType)} size={16} color={COLORS.textSecondary} />
               <Text style={styles.sortLabelText}>{getPerformanceSortLabel(sortType)}</Text>
             </TouchableOpacity>
-          </View>
           </Animated.View>
 
           {/* Search + Filter (absolute so the expanding search bar overlays
@@ -492,11 +489,10 @@ export function SongPerformancesScreen() {
         showsByYear={songShowsByYear}
       />
 
-      {/* Sort Dropdown */}
-      <SortDropdown
-        visible={sortDropdown.visible}
-        onClose={sortDropdown.close}
-        position={sortDropdown.position}
+      {/* Sort Tray */}
+      <SortTray
+        visible={sortTrayVisible}
+        onClose={() => setSortTrayVisible(false)}
         options={PERFORMANCE_SORT_OPTIONS}
         selectedValue={sortType}
         onSelect={setSortType}

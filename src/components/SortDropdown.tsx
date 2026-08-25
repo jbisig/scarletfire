@@ -17,6 +17,8 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GLASS_PILL_BLUR } from '.
 export interface SortOption<T extends string> {
   value: T;
   label: string;
+  /** Row icon shown by <SortTray>; the sort key's visual (calendar, star, …). */
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 interface SortDropdownProps<T extends string> {

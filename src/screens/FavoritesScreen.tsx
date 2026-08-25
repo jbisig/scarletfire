@@ -20,7 +20,8 @@ import { ProfileDropdown } from '../components/ProfileDropdown';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { AnimatedSearchBar } from '../components/AnimatedSearchBar';
-import { SortDropdown } from '../components/SortDropdown';
+import { SortTray } from '../components/SortTray';
+import { getShowDownloadsByDate } from '../utils/showLookup';
 import { ShowCard } from '../components/ShowCard';
 import { ShowsFilterTray, ShowsFilterState, createEmptyFilterState, hasActiveFilters } from '../components/ShowsFilterTray';
 import { GratefulDeadShow } from '../types/show.types';
@@ -53,9 +54,8 @@ import {
   SAVED_SHOW_SORT_OPTIONS,
   SAVED_SONG_SORT_OPTIONS,
   getSavedItemSortLabel,
-  getSavedItemSortIcon,
+  getSortOptionIcon,
 } from '../constants/sortOptions';
-import { useSortDropdown } from '../hooks/useSortDropdown';
 import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 import { useDownloads } from '../contexts/DownloadsContext';
@@ -103,8 +103,8 @@ export function FavoritesScreen() {
   const [filterTrayOpen, setFilterTrayOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(createEmptyFilterState);
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const showSortDropdown = useSortDropdown();
-  const songSortDropdown = useSortDropdown();
+  const [showSortTrayVisible, setShowSortTrayVisible] = useState(false);
+  const [songSortTrayVisible, setSongSortTrayVisible] = useState(false);
   const showsListRef = useRef<FlatList>(null);
   const songsListRef = useRef<FlatList>(null);
 
@@ -352,6 +352,11 @@ export function FavoritesScreen() {
           s => downloadsByDate.get(s.date.slice(0, 10)),
         );
 
+      case 'mostPopular':
+        return shows.sort(
+          (a, b) => getShowDownloadsByDate(b.date) - getShowDownloadsByDate(a.date),
+        );
+
       default:
         return shows;
     }
@@ -461,19 +466,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={showSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={showSortDropdown.open}
+                onPress={() => setShowSortTrayVisible(true)}
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={`Sort shows by ${getSavedItemSortLabel(showSortType, 'show')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getSavedItemSortIcon(showSortType)} size={16} color={COLORS.textSecondary} />
+                <Ionicons name={getSortOptionIcon(SAVED_SHOW_SORT_OPTIONS, showSortType)} size={16} color={COLORS.textSecondary} />
                 <Text style={styles.sortLabelText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
               </TouchableOpacity>
-            </View>
 
             {/* Play button */}
             <TouchableOpacity
@@ -559,19 +562,17 @@ export function FavoritesScreen() {
         <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
           <View style={styles.actionRow}>
             {/* Sort label with arrow */}
-            <View ref={songSortDropdown.buttonRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.sortLabelButton}
-                onPress={songSortDropdown.open}
+                onPress={() => setSongSortTrayVisible(true)}
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={`Sort songs by ${getSavedItemSortLabel(songSortType, 'song')}`}
                 accessibilityHint="Double tap to change sort order"
               >
-                <Ionicons name={getSavedItemSortIcon(songSortType)} size={16} color={COLORS.textSecondary} />
+                <Ionicons name={getSortOptionIcon(SAVED_SONG_SORT_OPTIONS, songSortType)} size={16} color={COLORS.textSecondary} />
                 <Text style={styles.sortLabelText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
               </TouchableOpacity>
-            </View>
 
             {/* Play button */}
             <TouchableOpacity
@@ -826,21 +827,19 @@ export function FavoritesScreen() {
         />
       )}
 
-      {/* Song Sort Dropdown */}
-      <SortDropdown
-        visible={songSortDropdown.visible}
-        onClose={songSortDropdown.close}
-        position={songSortDropdown.position}
+      {/* Song Sort Tray */}
+      <SortTray
+        visible={songSortTrayVisible}
+        onClose={() => setSongSortTrayVisible(false)}
         options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
       />
 
-      {/* Show Sort Dropdown */}
-      <SortDropdown
-        visible={showSortDropdown.visible}
-        onClose={showSortDropdown.close}
-        position={showSortDropdown.position}
+      {/* Show Sort Tray */}
+      <SortTray
+        visible={showSortTrayVisible}
+        onClose={() => setShowSortTrayVisible(false)}
         options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   View,
   Text,
   TouchableOpacity,
@@ -7,8 +8,9 @@ import {
   StyleSheet,
   TextInput,
   Platform,
-  ImageBackground,
-  Modal,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { RouteProp, StackActions, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,25 +38,32 @@ import { SongCard } from '../components/SongCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorState, LoadingState } from '../components/StateViews';
 import { BottomSheet } from '../components/BottomSheet';
-import { SortDropdown } from '../components/SortDropdown';
+import { SortTray } from '../components/SortTray';
 import { SortableTrackList } from '../components/collections/SortableTrackList';
 import { ReorderableScrollView } from '../components/collections/ReorderableScrollView';
 import { BlurBackground } from '../components/shared/BlurBackground';
 import { GlassHeader } from '../components/web/GlassHeader';
-import { MiniSwitch } from '../components/MiniSwitch';
 import { getShareBackground, shareBackgroundIndexForId } from '../components/share/shareBackgrounds';
+import { LinearGradient } from 'expo-linear-gradient';
+import { WebVideoBackground } from '../components/shared/WebVideoBackground';
+import { useVideoBackground } from '../contexts/VideoBackgroundContext';
+import { useAppActiveState } from '../hooks/useAppActiveState';
+import { resolveVideoUri } from '../utils/resolveVideoUri';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { ActionSheet, ActionSheetAction } from '../components/ActionSheet';
 import { formatCount } from '../utils/formatters';
 import { showDetailParams } from '../utils/showDetailParams';
 import {
   CollectionSortType,
   COLLECTION_SHOW_SORT_OPTIONS,
   getCollectionSortLabel,
-  getCollectionSortIcon,
+  getSortOptionIcon,
 } from '../constants/sortOptions';
-import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
+
+/** Height of the sticky nav row (back chevron / title bar) on native. */
+const STICKY_NAV_HEIGHT = 44;
 
 
 type Nav = StackNavigationProp<RootStackParamList, 'CollectionDetail'>;
@@ -116,11 +125,78 @@ export function CollectionDetailScreen() {
   const [saveCount, setSaveCount] = useState<number | null>(null);
   const [showSort, setShowSort] = useState<ShowSortType>('dateAddedNewest');
   const [reorderMode, setReorderMode] = useState(false);
-  const showSortDropdown = useSortDropdown();
+  const [showSortTrayVisible, setShowSortTrayVisible] = useState(false);
+  const [visibilityTrayVisible, setVisibilityTrayVisible] = useState(false);
+
+  // ——— Show-detail-style header: shared background video + sticky nav ———
+  const { videoSource, videoId, resetToFallback } = useVideoBackground();
+  const appState = useAppActiveState();
+  const videoUri = useMemo(
+    () => (Platform.OS === 'web' ? resolveVideoUri(videoSource) : ''),
+    [videoSource],
+  );
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const lastScrollYRef = useRef(0);
+  const scrollRef = useRef<any>(null);
+  const [heroHeight, setHeroHeight] = useState(0);
+  const [heroOnScreen, setHeroOnScreen] = useState(true);
+
+  const handleScrollUpdate = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      lastScrollYRef.current = y;
+      if (heroHeight > 0) {
+        const visible = y < heroHeight;
+        setHeroOnScreen((prev) => (prev === visible ? prev : visible));
+      }
+    },
+    [heroHeight],
+  );
+
+  // In reorder mode the Nestable container owns onScroll (it silently drops
+  // the prop), so scrollY only updates when a drag or momentum ends — coarse,
+  // but enough to keep the sticky backdrop roughly honest while reordering.
+  const handleCoarseScrollUpdate = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      scrollY.setValue(e.nativeEvent.contentOffset.y);
+      handleScrollUpdate(e);
+    },
+    [scrollY, handleScrollUpdate],
+  );
+
+  const onScrollEvent = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+        listener: handleScrollUpdate,
+      }),
+    [scrollY, handleScrollUpdate],
+  );
+
+  // Toggling reorder mode swaps the scroll container (Animated.ScrollView ↔
+  // NestableScrollContainer), which resets the scroll position — restore it.
+  useEffect(() => {
+    const y = lastScrollYRef.current;
+    if (y > 0) {
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: false }));
+    }
+  }, [reorderMode]);
+
+  /**
+   * The sticky nav's backdrop (video + blur + gradient) fades in as the hero
+   * header scrolls away — same curve as ShowDetailScreen.
+   */
+  const headerBackdropOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [Math.max(0, heroHeight - 140), Math.max(1, heroHeight - 40)],
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, heroHeight],
+  );
 
   const [menuVisible, setMenuVisible] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const menuButtonRef = useRef<View>(null);
 
   const [removeTarget, setRemoveTarget] = useState<CollectionItem | null>(null);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -128,13 +204,7 @@ export function CollectionDetailScreen() {
   const pendingAuthActionRef = useRef<'save' | 'duplicate' | null>(null);
   const wasSignedInRef = useRef(false);
 
-  const handleMenuPress = () => {
-    menuButtonRef.current?.measure((_x, _y, _width, height, pageX, pageY) => {
-      // Left-align the menu with the button so it sits directly under it.
-      setMenuPosition({ top: pageY + height + 4, left: pageX });
-      setMenuVisible(true);
-    });
-  };
+  const handleMenuPress = () => setMenuVisible(true);
 
   const routeReadOnly = !!route.params?.readOnly;
   const isPublicLink = !!route.params?.username && !!route.params?.slug;
@@ -311,12 +381,13 @@ export function CollectionDetailScreen() {
     }
   }, [collection, items.length, openShareTray, ownerUsername, showToast]);
 
-  // Owner-only Public/Private toggle. Optimistic via the context (the sync
+  // Owner-only Public/Private picker. Optimistic via the context (the sync
   // effect above pushes the new value into `collection`); on failure the
   // context reverts and we explain.
-  const handleToggleVisibility = useCallback(async () => {
+  const handleSelectVisibility = useCallback(async (value: 'public' | 'private') => {
     if (!collection) return;
-    const next = !collection.isPublic;
+    const next = value === 'public';
+    if (next === collection.isPublic) return;
     try {
       await setCollectionPublic(collection.id, next);
       showToast(
@@ -405,6 +476,19 @@ export function CollectionDetailScreen() {
     await removeItem(collection.id, target.itemIdentifier);
     setItems((prev) => prev.filter((i) => i.id !== target.id));
   }, [collection, removeItem, removeTarget]);
+
+  // Item whose "…" tray is open. Its Remove acts directly — the tray's
+  // explicit destructive row is the deliberate step, so no second confirm.
+  const [itemActionTarget, setItemActionTarget] = useState<CollectionItem | null>(null);
+
+  const removeItemDirect = useCallback(
+    async (target: CollectionItem) => {
+      if (!collection) return;
+      await removeItem(collection.id, target.itemIdentifier);
+      setItems((prev) => prev.filter((i) => i.id !== target.id));
+    },
+    [collection, removeItem],
+  );
 
   const performDelete = useCallback(async () => {
     if (!collection) return;
@@ -592,12 +676,47 @@ export function CollectionDetailScreen() {
   const bgSource = getShareBackground(shareBackgroundIndexForId(collection.id));
 
   const header = (
+    <View onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}>
     <GlassHeader
-      background={<ImageBackground source={bgSource} style={styles.webHeaderBg} />}
+      background={
+        Platform.OS === 'web' ? (
+          videoUri ? (
+            <WebVideoBackground uri={videoUri} videoId={videoId} onError={resetToFallback} />
+          ) : undefined
+        ) : (
+          /* Same family as ShowDetail's native hero: the shared background
+             video over the artwork (the fallback for the moment before the
+             video is ready, and for when it fails and resetToFallback fires),
+             under a dark blur. GlassHeader adds the dark wash + bottom fade. */
+          <View style={styles.headerVideoStack}>
+            <Image source={bgSource} style={styles.headerArtImage} resizeMode="cover" />
+            {(() => {
+              const { Video, ResizeMode } = require('expo-av');
+              return (
+                <Video
+                  key={`collection-header-video-${videoId}`}
+                  source={videoSource}
+                  style={StyleSheet.absoluteFillObject}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={appState === 'active' && heroOnScreen}
+                  isLooping
+                  isMuted
+                  onError={resetToFallback}
+                />
+              );
+            })()}
+            <BlurBackground intensity={30} tint="dark" />
+          </View>
+        )
+      }
       onBackPress={() => navigation.goBack()}
       isDesktop={isDesktop}
       contentGap={20}
-      contentStyle={Platform.OS !== 'web' && { paddingTop: insets.top + 8 }}
+      fadeToBackground
+      hideNav={Platform.OS !== 'web'}
+      contentStyle={
+        Platform.OS !== 'web' && { paddingTop: insets.top + STICKY_NAV_HEIGHT + 8 }
+      }
     >
         <View style={styles.webInfoSection}>
           <View style={styles.webTitleBlock}>
@@ -663,24 +782,28 @@ export function CollectionDetailScreen() {
                 </TouchableOpacity>
               )}
               {collection && isOwner && (
-                /* Label + switch, nothing else: the switch is the affordance,
-                   so a pill container and icon only made it read as a badge. */
+                /* Tray trigger styled like the Share pill: state icon on the
+                   left, chevron on the right as the menu affordance. */
                 <TouchableOpacity
-                  style={styles.visibilityToggle}
-                  onPress={handleToggleVisibility}
+                  style={styles.pill}
+                  onPress={() => setVisibilityTrayVisible(true)}
                   activeOpacity={0.7}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  accessibilityRole="switch"
-                  accessibilityLabel={collection.isPublic ? 'Public' : 'Private'}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Visibility: ${collection.isPublic ? 'Public' : 'Private'}`}
                   accessibilityHint={
                     collection.isPublic
-                      ? 'Listed on your profile and shared with followers. Double tap to make private'
-                      : 'Only people with the link can open it. Double tap to make public'
+                      ? 'Listed on your profile and shared with followers. Double tap to change'
+                      : 'Only people with the link can open it. Double tap to change'
                   }
-                  accessibilityState={{ checked: collection.isPublic }}
                 >
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons
+                    name={collection.isPublic ? 'globe-outline' : 'lock-closed-outline'}
+                    size={17}
+                    color={COLORS.textPrimary}
+                  />
                   <Text style={styles.pillText}>{collection.isPublic ? 'Public' : 'Private'}</Text>
-                  <MiniSwitch value={collection.isPublic} />
+                  <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
                 </TouchableOpacity>
               )}
               {collection && ownerUsername && (
@@ -691,50 +814,160 @@ export function CollectionDetailScreen() {
                 </TouchableOpacity>
               )}
               {collection && (
-                <View ref={menuButtonRef} collapsable={false}>
-                  <TouchableOpacity
-                    style={styles.menuCircleBtn}
-                    activeOpacity={0.7}
-                    onPress={handleMenuPress}
-                    accessibilityRole="button"
-                    accessibilityLabel="More actions"
-                  >
-                    <BlurBackground intensity={25} tint="default" />
-                    <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={styles.menuCircleBtn}
+                  activeOpacity={0.7}
+                  onPress={handleMenuPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="More actions"
+                >
+                  <BlurBackground intensity={25} tint="default" />
+                  <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textPrimary} />
+                </TouchableOpacity>
               )}
             </View>
           )}
 
         </View>
     </GlassHeader>
+    </View>
   );
+
+  // Native-only sticky nav over the scroll view: back chevron always visible,
+  // title + video/blur/gradient backdrop fading in as the hero scrolls away —
+  // the same treatment as ShowDetailScreen's transparent nav header.
+  const stickyHeader =
+    Platform.OS !== 'web' ? (
+      <View style={[styles.stickyHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { opacity: headerBackdropOpacity }]}
+        >
+          {(() => {
+            const { Video, ResizeMode } = require('expo-av');
+            return (
+              <Video
+                key={`collection-sticky-video-${videoId}`}
+                source={videoSource}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={appState === 'active' && !heroOnScreen}
+                isLooping
+                isMuted
+                onError={resetToFallback}
+              />
+            );
+          })()}
+          <BlurBackground intensity={40} tint="dark" />
+          <LinearGradient
+            colors={['rgba(18, 18, 18, 0.35)', 'rgba(18, 18, 18, 0.92)']}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        <View style={styles.stickyNavRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.stickyNavButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={22} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          <Animated.Text
+            style={[styles.stickyNavTitle, { opacity: headerBackdropOpacity }]}
+            numberOfLines={1}
+            accessibilityRole="header"
+          >
+            {collection.name}
+          </Animated.Text>
+          <View style={styles.stickyNavSpacer} />
+        </View>
+      </View>
+    ) : null;
+
+  // Actions for the "…" tray (Spotify-style bottom sheet).
+  const menuActions: ActionSheetAction[] = [
+    ...(isOwner
+      ? [
+          {
+            label: 'Rename',
+            icon: 'pencil-outline' as const,
+            onPress: () => {
+              setRenameText(collection.name);
+              setRenameOpen(true);
+            },
+          },
+        ]
+      : []),
+    ...(isOwner && collection.type === 'playlist' && items.length >= 2
+      ? [
+          {
+            label: 'Reorder',
+            icon: 'swap-vertical-outline' as const,
+            onPress: () => setReorderMode(true),
+          },
+        ]
+      : []),
+    { label: 'Duplicate', icon: 'copy-outline' as const, onPress: handleDuplicate },
+    ...(isOwner
+      ? [
+          {
+            label: 'Delete',
+            icon: 'trash-outline' as const,
+            destructive: true,
+            onPress: handleDelete,
+          },
+        ]
+      : []),
+    ...(isNonOwnerViewer && isSignedIn && saved
+      ? [
+          {
+            label: 'Unsave',
+            icon: 'bookmark-outline' as const,
+            destructive: true,
+            onPress: handleToggleSave,
+          },
+        ]
+      : []),
+  ];
 
   // Sort bar rendered directly above the list for show collections.
   const sortBar = collection.type === 'show_collection' && items.length > 0 ? (
     <View style={[styles.sortBar, isDesktop && styles.sortBarDesktop]}>
-      <View ref={showSortDropdown.buttonRef} collapsable={false}>
         <TouchableOpacity
           style={styles.sortLabelButton}
-          onPress={showSortDropdown.open}
+          onPress={() => setShowSortTrayVisible(true)}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={`Sort shows by ${getCollectionSortLabel(showSort)}`}
           accessibilityHint="Double tap to change sort order"
         >
-          <Ionicons name={getCollectionSortIcon(showSort)} size={16} color={COLORS.textSecondary} />
+          <Ionicons name={getSortOptionIcon(COLLECTION_SHOW_SORT_OPTIONS, showSort)} size={16} color={COLORS.textSecondary} />
           <Text style={styles.sortLabelText}>{getCollectionSortLabel(showSort)}</Text>
         </TouchableOpacity>
-      </View>
     </View>
   ) : null;
 
+  // The Nestable container is only needed while a NestableDraggableFlatList
+  // is mounted (playlist reorder mode) — and it silently swallows onScroll,
+  // so outside reorder mode a plain Animated.ScrollView drives the sticky
+  // header at full scroll-event resolution.
+  const ScrollContainer: React.ComponentType<any> = reorderMode
+    ? ReorderableScrollView
+    : Animated.ScrollView;
+
   return (
-    <ReorderableScrollView
-      style={[styles.container, isDesktop && styles.containerDesktop]}
+    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+    <ScrollContainer
+      ref={scrollRef}
+      style={styles.container}
       contentContainerStyle={{ paddingBottom: 120 }}
       keyboardShouldPersistTaps="handled"
+      scrollEventThrottle={16}
+      onScroll={reorderMode ? undefined : onScrollEvent}
+      onScrollEndDrag={reorderMode ? handleCoarseScrollUpdate : undefined}
+      onMomentumScrollEnd={reorderMode ? handleCoarseScrollUpdate : undefined}
     >
       {header}
       {sortBar}
@@ -754,10 +987,11 @@ export function CollectionDetailScreen() {
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
-                    onPress={() => confirmRemoveItem(item)}
-                    accessibilityLabel="Remove from collection"
+                    onPress={() => setItemActionTarget(item)}
+                    accessibilityLabel="More options"
+                    accessibilityHint="Opens actions for this show"
                   >
-                    <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+                    <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -779,10 +1013,11 @@ export function CollectionDetailScreen() {
                 {isOwner && (
                   <TouchableOpacity
                     style={styles.removeIconBtn}
-                    onPress={() => confirmRemoveItem(item)}
-                    accessibilityLabel="Remove from playlist"
+                    onPress={() => setItemActionTarget(item)}
+                    accessibilityLabel="More options"
+                    accessibilityHint="Opens actions for this song"
                   >
-                    <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+                    <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -791,98 +1026,69 @@ export function CollectionDetailScreen() {
         </View>
       )}
 
-      <SortDropdown
-        visible={showSortDropdown.visible}
-        onClose={showSortDropdown.close}
-        position={showSortDropdown.position}
+      <SortTray
+        visible={showSortTrayVisible}
+        onClose={() => setShowSortTrayVisible(false)}
         options={COLLECTION_SHOW_SORT_OPTIONS}
         selectedValue={showSort}
         onSelect={setShowSort}
       />
 
-      <Modal
+      <ActionSheet
+        visible={visibilityTrayVisible}
+        onClose={() => setVisibilityTrayVisible(false)}
+        title="Visibility"
+        actions={[
+          {
+            label: 'Public',
+            icon: 'globe-outline' as const,
+            detail: 'Listed on your profile and shared with followers',
+            selected: collection.isPublic,
+            onPress: () => handleSelectVisibility('public'),
+          },
+          {
+            label: 'Private',
+            icon: 'lock-closed-outline' as const,
+            detail: 'Only people with the link can open it',
+            selected: !collection.isPublic,
+            onPress: () => handleSelectVisibility('private'),
+          },
+        ]}
+      />
+
+      <ActionSheet
         visible={menuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.menuBackdrop}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View
-            style={[styles.menu, { top: menuPosition.top, left: menuPosition.left }]}
-            onStartShouldSetResponder={() => true}
-          >
-            {isOwner && (
-              <>
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => {
-                    setMenuVisible(false);
-                    setRenameText(collection.name);
-                    setRenameOpen(true);
-                  }}
-                >
-                  <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
-                  <Text style={styles.menuItemText}>Rename</Text>
-                </TouchableOpacity>
-              </>
-            )}
+        onClose={() => setMenuVisible(false)}
+        title={collection.name}
+        actions={menuActions}
+      />
 
-            {isOwner && collection.type === 'playlist' && items.length >= 2 && (
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  setReorderMode(true);
-                }}
-              >
-                <Ionicons name="swap-vertical-outline" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.menuItemText}>Reorder</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                handleDuplicate();
-              }}
-            >
-              <Ionicons name="copy-outline" size={16} color={COLORS.textPrimary} />
-              <Text style={styles.menuItemText}>Duplicate</Text>
-            </TouchableOpacity>
-
-            {isOwner && (
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  handleDelete();
-                }}
-              >
-                <Ionicons name="trash-outline" size={16} color={COLORS.error} />
-                <Text style={[styles.menuItemText, { color: COLORS.error }]}>Delete</Text>
-              </TouchableOpacity>
-            )}
-
-            {isNonOwnerViewer && isSignedIn && saved && (
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  handleToggleSave();
-                }}
-              >
-                <Ionicons name="bookmark-outline" size={16} color={COLORS.error} />
-                <Text style={[styles.menuItemText, { color: COLORS.error }]}>Unsave</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <ActionSheet
+        visible={!!itemActionTarget}
+        onClose={() => setItemActionTarget(null)}
+        title={
+          itemActionTarget
+            ? collection.type === 'playlist'
+              ? (itemActionTarget.itemMetadata as PlaylistItemMetadata).trackTitle
+              : (itemActionTarget.itemMetadata as ShowCollectionItemMetadata).title
+            : undefined
+        }
+        actions={
+          itemActionTarget
+            ? [
+                {
+                  label:
+                    collection.type === 'playlist'
+                      ? 'Remove from playlist'
+                      : 'Remove from collection',
+                  icon: 'trash-outline' as const,
+                  destructive: true,
+                  onPress: () => removeItemDirect(itemActionTarget),
+                },
+              ]
+            : []
+        }
+      />
 
       <ConfirmModal
         visible={!!removeTarget}
@@ -959,7 +1165,9 @@ export function CollectionDetailScreen() {
           </>
         )}
       </BottomSheet>
-    </ReorderableScrollView>
+    </ScrollContainer>
+    {stickyHeader}
+    </View>
   );
 }
 
@@ -974,8 +1182,41 @@ const styles = StyleSheet.create({
 
   // Web header shell (wrapper/opacity/blur/nav row) now lives in <GlassHeader>;
   // this just needs to fill the background layer <GlassHeader> provides.
-  webHeaderBg: {
+  headerVideoStack: {
     flex: 1,
+  },
+  headerArtImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
+  stickyNavRow: {
+    height: STICKY_NAV_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stickyNavButton: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+  },
+  stickyNavTitle: {
+    flex: 1,
+    textAlign: 'center',
+    ...TYPOGRAPHY.body,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  // Mirrors the back button's footprint so the title centres truly.
+  stickyNavSpacer: {
+    width: 22 + SPACING.lg * 2,
   },
   webInfoSection: {
     gap: 16,
@@ -1052,14 +1293,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  // Same height as the pills it sits beside, without their surface.
-  visibilityToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
 
   sortBar: {
     paddingHorizontal: 24,
@@ -1081,31 +1314,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  menuBackdrop: {
-    flex: 1,
-  },
-  menu: {
-    position: 'absolute',
-    minWidth: 180,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 8,
-    paddingVertical: 6,
-    // @ts-ignore web only
-    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-    elevation: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  menuItemText: {
-    color: COLORS.textPrimary,
-    fontSize: 14,
-  },
-
   // List bodies. Native cards (ShowCard/SongCard) already have their own
   // horizontal padding (SPACING.xxl), so we don't add any on native. On web,
   // ShowCard uses 16px internal padding and we offset the wrapper by 8/24
@@ -1123,7 +1331,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   playlistBody: {
-    paddingTop: 8,
+    // No top padding: the song rows carry their own vertical padding, so the
+    // first row already clears the header comfortably.
+    paddingTop: 0,
   },
   playlistRow: {
     flexDirection: 'row',

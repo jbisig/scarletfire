@@ -16,6 +16,7 @@ interface Props {
   onEntryLongPress?: (entry: LibraryCollectionEntry) => void;
   onRemoveTombstone?: (savedId: string) => void;
   onCreate?: (type: CollectionType) => void;
+  /** Overrides the per-type default empty line when provided. */
   emptyMessage?: string;
 }
 
@@ -61,7 +62,7 @@ export function CollectionsTab({
   onEntryLongPress,
   onRemoveTombstone,
   onCreate,
-  emptyMessage = 'No collections yet.',
+  emptyMessage,
 }: Props) {
   const showEntries = entries.filter((e) => entryType(e) === 'show_collection');
   const playlistEntries = entries.filter((e) => entryType(e) === 'playlist');
@@ -86,7 +87,10 @@ export function CollectionsTab({
         )}
       </View>
       {items.length === 0 ? (
-        <Text style={styles.empty}>{emptyMessage}</Text>
+        <Text style={styles.empty}>
+          {emptyMessage ??
+            (type === 'playlist' ? 'No playlists yet.' : 'No show collections yet.')}
+        </Text>
       ) : (
         items.map((e) => (
           <CollectionCard

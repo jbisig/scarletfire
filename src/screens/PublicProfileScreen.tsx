@@ -25,7 +25,10 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { showDetailParams } from '../utils/showDetailParams';
 import { GratefulDeadShow } from '../types/show.types';
 import { Ionicons } from '@expo/vector-icons';
-import { SortDropdown } from '../components/SortDropdown';
+import { SortTray } from '../components/SortTray';
+import { ActionSheet } from '../components/ActionSheet';
+import { useToast } from '../contexts/ToastContext';
+import { getShowDownloadsByDate } from '../utils/showLookup';
 import { SegmentedTabs, SegmentedTabItem } from '../components/SegmentedTabs';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import { ErrorState } from '../components/StateViews';
@@ -36,9 +39,8 @@ import {
   SAVED_SHOW_SORT_OPTIONS,
   SAVED_SONG_SORT_OPTIONS,
   getSavedItemSortLabel,
-  getSavedItemSortIcon,
+  getSortOptionIcon,
 } from '../constants/sortOptions';
-import { useSortDropdown } from '../hooks/useSortDropdown';
 import { usePlaySavedSong } from '../hooks/usePlaySavedSong';
 import { compareBySavedAt, compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
@@ -91,8 +93,9 @@ export function PublicProfileScreen() {
   const currentUser = authState.user;
   const isOwnProfile = !!currentUser && currentUser.id === data?.profile?.id;
   const { collections: ownedCollections } = useCollections();
-  const showSortDropdown = useSortDropdown();
-  const songSortDropdown = useSortDropdown();
+  const [showSortTrayVisible, setShowSortTrayVisible] = useState(false);
+  const [songSortTrayVisible, setSongSortTrayVisible] = useState(false);
+  const [visibilityTrayVisible, setVisibilityTrayVisible] = useState(false);
 
   useEffect(() => {
     if (!username) {
@@ -245,6 +248,7 @@ export function PublicProfileScreen() {
   const displayName = data?.profile.display_name || username;
 
   const { openShareTray } = useShareSheet();
+  const { showToast } = useToast();
   const handleShareProfile = useCallback(() => {
     if (!data) return;
     openShareTray({
@@ -255,6 +259,26 @@ export function PublicProfileScreen() {
       songCount: data.favorites.songs.length,
     });
   }, [data, displayName, openShareTray]);
+
+  // Owner-only Public/Private picker (the badge in the header). Optimistic:
+  // flip locally, revert with a toast if the server write fails.
+  const handleSelectProfileVisibility = useCallback(
+    async (value: 'public' | 'private') => {
+      if (!data?.profile || !isOwnProfile || !currentUser) return;
+      const next = value === 'public';
+      if (next === data.profile.is_public) return;
+      const prev = data;
+      setData({ ...data, profile: { ...data.profile, is_public: next } });
+      try {
+        await profileService.setProfilePublic(currentUser.id, next);
+        showToast(next ? 'Profile is now public' : 'Profile is now private', 'success');
+      } catch (e) {
+        setData(prev);
+        showToast("Couldn't update visibility. Please try again.", 'error');
+      }
+    },
+    [data, isOwnProfile, currentUser, showToast],
+  );
 
   // Sorted favorite shows. Missing-savedAt policy intentionally matches
   // FavoritesScreen's canonical tri-state (see compareBySavedAt) instead of
@@ -274,6 +298,10 @@ export function PublicProfileScreen() {
         return shows.sort((a, b) => compareByDate(a.date, b.date, 'oldest'));
       case 'performanceDateNewest':
         return shows.sort((a, b) => compareByDate(a.date, b.date, 'newest'));
+      case 'mostPopular':
+        return shows.sort(
+          (a, b) => getShowDownloadsByDate(b.date) - getShowDownloadsByDate(a.date),
+        );
       default:
         return shows;
     }
@@ -430,23 +458,20 @@ export function PublicProfileScreen() {
           <Text style={styles.sectionTitle}>
             Favorites ({data.favorites.shows.length})
           </Text>
-          <View ref={showSortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortButton}
-              onPress={showSortDropdown.open}
+              onPress={() => setShowSortTrayVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name={getSavedItemSortIcon(showSortType)} size={14} color={COLORS.textSecondary} />
+              <Ionicons name={getSortOptionIcon(SAVED_SHOW_SORT_OPTIONS, showSortType)} size={14} color={COLORS.textSecondary} />
               <Text style={styles.sortButtonText}>{getSavedItemSortLabel(showSortType, 'show')}</Text>
             </TouchableOpacity>
-          </View>
         </View>
       )}
 
-      <SortDropdown
-        visible={showSortDropdown.visible}
-        onClose={showSortDropdown.close}
-        position={showSortDropdown.position}
+      <SortTray
+        visible={showSortTrayVisible}
+        onClose={() => setShowSortTrayVisible(false)}
         options={SAVED_SHOW_SORT_OPTIONS}
         selectedValue={showSortType}
         onSelect={setShowSortType}
@@ -493,23 +518,20 @@ export function PublicProfileScreen() {
           <Text style={styles.sectionTitle}>
             Favorites ({data.favorites.songs.length})
           </Text>
-          <View ref={songSortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortButton}
-              onPress={songSortDropdown.open}
+              onPress={() => setSongSortTrayVisible(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name={getSavedItemSortIcon(songSortType)} size={14} color={COLORS.textSecondary} />
+              <Ionicons name={getSortOptionIcon(SAVED_SONG_SORT_OPTIONS, songSortType)} size={14} color={COLORS.textSecondary} />
               <Text style={styles.sortButtonText}>{getSavedItemSortLabel(songSortType, 'song')}</Text>
             </TouchableOpacity>
-          </View>
         </View>
       )}
 
-      <SortDropdown
-        visible={songSortDropdown.visible}
-        onClose={songSortDropdown.close}
-        position={songSortDropdown.position}
+      <SortTray
+        visible={songSortTrayVisible}
+        onClose={() => setSongSortTrayVisible(false)}
         options={SAVED_SONG_SORT_OPTIONS}
         selectedValue={songSortType}
         onSelect={setSongSortType}
@@ -530,16 +552,37 @@ export function PublicProfileScreen() {
           )}
           <View style={styles.headerRight}>
             {data?.profile && (
-              <View style={styles.visibilityBadge}>
-                <Ionicons
-                  name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
-                  size={14}
-                  color={COLORS.textPrimary}
-                />
-                <Text style={styles.visibilityBadgeText}>
-                  {data.profile.is_public ? 'Public' : 'Private'}
-                </Text>
-              </View>
+              isOwnProfile ? (
+                <TouchableOpacity
+                  style={styles.visibilityBadge}
+                  onPress={() => setVisibilityTrayVisible(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Visibility: ${data.profile.is_public ? 'Public' : 'Private'}`}
+                  accessibilityHint="Double tap to change who can see your profile"
+                >
+                  <Ionicons
+                    name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
+                    size={14}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.visibilityBadgeText}>
+                    {data.profile.is_public ? 'Public' : 'Private'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.visibilityBadge}>
+                  <Ionicons
+                    name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
+                    size={14}
+                    color={COLORS.textPrimary}
+                  />
+                  <Text style={styles.visibilityBadgeText}>
+                    {data.profile.is_public ? 'Public' : 'Private'}
+                  </Text>
+                </View>
+              )
             )}
             {data?.profile && (
               <TouchableOpacity
@@ -626,11 +669,13 @@ export function PublicProfileScreen() {
                 )}
               </View>
               {isDesktop && isOwnProfile && data?.profile && (
-                <View
-                  style={[
-                    styles.visibilityBadge,
-                    { height: 40, backgroundColor: COLORS.cardBackground },
-                  ]}
+                <TouchableOpacity
+                  style={styles.visibilityBadge}
+                  onPress={() => setVisibilityTrayVisible(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Visibility: ${data.profile.is_public ? 'Public' : 'Private'}`}
+                  accessibilityHint="Double tap to change who can see your profile"
                 >
                   <Ionicons
                     name={data.profile.is_public ? 'globe-outline' : 'lock-closed'}
@@ -640,7 +685,8 @@ export function PublicProfileScreen() {
                   <Text style={styles.visibilityBadgeText}>
                     {data.profile.is_public ? 'Public' : 'Private'}
                   </Text>
-                </View>
+                  <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+                </TouchableOpacity>
               )}
               {isDesktop && (
                 <TouchableOpacity
@@ -695,6 +741,32 @@ export function PublicProfileScreen() {
           </View>
         }
       />
+
+      {/* Owner-only visibility tray. Mounted at the screen level (NOT inside
+          a tab header render, where it would only exist on that tab). */}
+      {isOwnProfile && data?.profile && (
+        <ActionSheet
+          visible={visibilityTrayVisible}
+          onClose={() => setVisibilityTrayVisible(false)}
+          title="Visibility"
+          actions={[
+            {
+              label: 'Public',
+              icon: 'globe-outline' as const,
+              detail: 'Others can see your favorites and listening history',
+              selected: data.profile.is_public,
+              onPress: () => handleSelectProfileVisibility('public'),
+            },
+            {
+              label: 'Private',
+              icon: 'lock-closed-outline' as const,
+              detail: 'Only you can see your profile',
+              selected: !data.profile.is_public,
+              onPress: () => handleSelectProfileVisibility('private'),
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -732,13 +804,15 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   visibilityBadge: {
-    height: 32,
+    // Same height as the share button beside it.
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceMedium,
+    // Same fill as the share button beside it.
+    backgroundColor: COLORS.cardBackground,
   },
   visibilityBadgeText: {
     ...TYPOGRAPHY.label,

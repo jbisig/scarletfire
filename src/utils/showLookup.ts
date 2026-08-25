@@ -64,6 +64,19 @@ export function getCorrectVenue(date: string): string | undefined {
 }
 
 /**
+ * Archive.org popularity (primary recording's download count) for the show
+ * on `date`, or 0 when the date isn't in the catalog. Lets saved/favorite
+ * item shapes — which carry only a date, not the full catalog record — sort
+ * by the same popularity signal HomeScreen uses.
+ */
+export function getShowDownloadsByDate(date: string): number {
+  const show = findShowByDate(date);
+  if (!show) return 0;
+  const primaryVersion = show.versions.find(v => v.identifier === show.primaryIdentifier);
+  return primaryVersion?.downloads ?? 0;
+}
+
+/**
  * If `id` looks like a "YYYY-MM-DD" date, resolve it to that show's
  * primaryIdentifier. Otherwise (or if there's no matching show), return
  * `id` unchanged.

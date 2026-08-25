@@ -452,16 +452,23 @@ const styles = StyleSheet.create({
   listContentDesktop: {
     padding: 16,
   },
+  // The letter divider speaks the app's section-header grammar (the quiet
+  // uppercase label used by SHOW COLLECTIONS, YEARS, the filter categories)
+  // instead of shouting: the old 2px accent-red underline put 26 red rules
+  // on one page and spent the accent color — reserved for rating moments —
+  // on chrome. Generous space above, tight below, hairline rule.
   sectionHeader: {
     paddingTop: SPACING.xxl,
     paddingBottom: SPACING.sm,
     paddingHorizontal: SPACING.xl,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.accent,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
   },
   sectionHeaderText: {
-    ...TYPOGRAPHY.heading4,
-    color: COLORS.accent,
+    ...TYPOGRAPHY.label,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    letterSpacing: 1,
   },
   songItem: {
     flexDirection: 'row',

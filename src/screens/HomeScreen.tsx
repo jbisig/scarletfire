@@ -31,7 +31,7 @@ import { parseTagsParam, stringifyTagsParam } from '../navigation/tagsParam';
 import { isSongTagId } from '../constants/tags';
 import { useDebounce } from '../hooks/useDebounce';
 import { useProfileDropdown } from '../hooks/useProfileDropdown';
-import { SortDropdown } from '../components/SortDropdown';
+import { SortTray } from '../components/SortTray';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, LAYOUT, GLASS_PILL_BLUR } from '../constants/theme';
@@ -42,9 +42,8 @@ import {
   HOME_SORT_VALID_TYPES,
   HOME_SORT_OPTIONS,
   getHomeSortLabel,
-  getHomeSortIcon,
+  getSortOptionIcon,
 } from '../constants/sortOptions';
-import { useSortDropdown } from '../hooks/useSortDropdown';
 import { compareByDate, compareAlphabetical } from '../utils/sortComparators';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -138,7 +137,7 @@ export function HomeScreen() {
       ? (urlSort as ShowSortType)
       : 'mostPopular';
   });
-  const sortDropdown = useSortDropdown();
+  const [sortTrayVisible, setSortTrayVisible] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ShowsFilterState>(() => {
     const urlYears = route.params?.years;
     return {
@@ -353,19 +352,17 @@ export function HomeScreen() {
       {/* Action Bar Section with Sort */}
       <View style={[styles.actionBarSection, isDesktop && styles.actionBarSectionDesktop]}>
         <View style={[styles.actionRow, isDesktop && styles.actionRowDesktop]}>
-          <View ref={sortDropdown.buttonRef} collapsable={false}>
             <TouchableOpacity
               style={styles.sortLabelButton}
-              onPress={sortDropdown.open}
+              onPress={() => setSortTrayVisible(true)}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={`Sort shows by ${getHomeSortLabel(sortType)}`}
               accessibilityHint="Double tap to change sort order"
             >
-              <Ionicons name={getHomeSortIcon(sortType)} size={16} color={COLORS.textSecondary} />
+              <Ionicons name={getSortOptionIcon(HOME_SORT_OPTIONS, sortType)} size={16} color={COLORS.textSecondary} />
               <Text style={styles.sortLabelText}>{getHomeSortLabel(sortType)}</Text>
             </TouchableOpacity>
-          </View>
         </View>
 
         <LinearGradient
@@ -420,11 +417,10 @@ export function HomeScreen() {
         />
       )}
 
-      {/* Sort Dropdown */}
-      <SortDropdown
-        visible={sortDropdown.visible}
-        onClose={sortDropdown.close}
-        position={sortDropdown.position}
+      {/* Sort Tray */}
+      <SortTray
+        visible={sortTrayVisible}
+        onClose={() => setSortTrayVisible(false)}
         options={HOME_SORT_OPTIONS}
         selectedValue={sortType}
         onSelect={setSortType}

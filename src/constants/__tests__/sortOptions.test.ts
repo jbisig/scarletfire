@@ -1,12 +1,8 @@
 import {
   getSavedItemSortLabel,
-  getSavedItemSortIcon,
   getCollectionSortLabel,
-  getCollectionSortIcon,
   getHomeSortLabel,
-  getHomeSortIcon,
   getPerformanceSortLabel,
-  getPerformanceSortIcon,
   SAVED_SHOW_SORT_OPTIONS,
   SAVED_SONG_SORT_OPTIONS,
 } from '../sortOptions';
@@ -32,16 +28,19 @@ describe('getSavedItemSortLabel', () => {
   });
 });
 
-describe('getSavedItemSortIcon', () => {
-  it('points up for the "oldest"/ascending variants', () => {
-    expect(getSavedItemSortIcon('dateSavedOldest')).toBe('arrow-up');
-    expect(getSavedItemSortIcon('performanceDateOldest')).toBe('arrow-up');
-  });
-
-  it('points down otherwise', () => {
-    expect(getSavedItemSortIcon('dateSavedNewest')).toBe('arrow-down');
-    expect(getSavedItemSortIcon('performanceDateNewest')).toBe('arrow-down');
-    expect(getSavedItemSortIcon('alphabetical')).toBe('arrow-down');
+// The sort trigger pill mirrors the selected option's tray icon (via
+// getSortOptionIcon); dated options carry direction arrows.
+describe('tray option direction arrows', () => {
+  it('dated options point down for oldest-first and up for newest-first', () => {
+    for (const options of [SAVED_SHOW_SORT_OPTIONS, SAVED_SONG_SORT_OPTIONS]) {
+      for (const option of options) {
+        if (option.label.includes('Oldest First')) {
+          expect(option.icon).toBe('arrow-down');
+        } else if (option.label.includes('Newest First')) {
+          expect(option.icon).toBe('arrow-up');
+        }
+      }
+    }
   });
 });
 
@@ -65,15 +64,6 @@ describe('getCollectionSortLabel', () => {
   });
 });
 
-describe('getCollectionSortIcon', () => {
-  it('points up for oldest variants, down otherwise', () => {
-    expect(getCollectionSortIcon('dateAddedOldest')).toBe('arrow-up');
-    expect(getCollectionSortIcon('performanceDateOldest')).toBe('arrow-up');
-    expect(getCollectionSortIcon('dateAddedNewest')).toBe('arrow-down');
-    expect(getCollectionSortIcon('alphabetical')).toBe('arrow-down');
-  });
-});
-
 describe('getHomeSortLabel', () => {
   it('labels the default (oldest) and explicit-newest sorts both as "Show Date"', () => {
     expect(getHomeSortLabel('default')).toBe('Show Date');
@@ -86,28 +76,11 @@ describe('getHomeSortLabel', () => {
   });
 });
 
-describe('getHomeSortIcon', () => {
-  it('points up only for "default" (oldest-first)', () => {
-    expect(getHomeSortIcon('default')).toBe('arrow-up');
-    expect(getHomeSortIcon('performanceDateNewest')).toBe('arrow-down');
-    expect(getHomeSortIcon('mostPopular')).toBe('arrow-down');
-    expect(getHomeSortIcon('alphabetical')).toBe('arrow-down');
-  });
-});
-
 describe('getPerformanceSortLabel', () => {
   it('labels performance-date, rating, and alphabetical sorts', () => {
     expect(getPerformanceSortLabel('performanceDateOldest')).toBe('Performance Date');
     expect(getPerformanceSortLabel('performanceDateNewest')).toBe('Performance Date');
     expect(getPerformanceSortLabel('ratingHighest')).toBe('Rating');
     expect(getPerformanceSortLabel('alphabetical')).toBe('Alphabetical');
-  });
-});
-
-describe('getPerformanceSortIcon', () => {
-  it('points up only for performanceDateOldest', () => {
-    expect(getPerformanceSortIcon('performanceDateOldest')).toBe('arrow-up');
-    expect(getPerformanceSortIcon('performanceDateNewest')).toBe('arrow-down');
-    expect(getPerformanceSortIcon('ratingHighest')).toBe('arrow-down');
   });
 });

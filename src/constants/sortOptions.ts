@@ -1,6 +1,15 @@
 import { SortOption } from '../components/SortDropdown';
 
 /**
+ * Icon for a sort trigger pill: the selected option's own tray icon, so the
+ * collapsed pill mirrors the row the user picked. Falls back to the generic
+ * sort glyph if the value has no icon.
+ */
+export function getSortOptionIcon<T extends string>(options: SortOption<T>[], value: T) {
+  return options.find((o) => o.value === value)?.icon ?? ('swap-vertical' as const);
+}
+
+/**
  * Shared sort option arrays + label/icon lookups for every <SortDropdown>
  * consumer: FavoritesScreen, PublicProfileScreen, CollectionDetailScreen,
  * HomeScreen, and SongPerformancesScreen.
@@ -42,23 +51,26 @@ export type SavedItemSortType =
   | 'performanceDateNewest'
   // Shows dropdown only (never offered for songs): downloaded shows first,
   // most recently saved on top. Auto-selected when the device goes offline.
-  | 'downloadedFirst';
+  | 'downloadedFirst'
+  // Shows dropdown only: Archive.org popularity (downloads), highest first.
+  | 'mostPopular';
 
 export const SAVED_SHOW_SORT_OPTIONS: SortOption<SavedItemSortType>[] = [
-  { value: 'downloadedFirst', label: 'Downloaded' },
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+  { value: 'mostPopular', label: 'Most Popular', icon: 'flame-outline' },
+  { value: 'alphabetical', label: 'Alphabetical', icon: 'text-outline' },
+  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)', icon: 'arrow-down' },
+  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)', icon: 'arrow-up' },
+  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)', icon: 'arrow-down' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)', icon: 'arrow-up' },
+  { value: 'downloadedFirst', label: 'Downloaded', icon: 'download-outline' },
 ];
 
 export const SAVED_SONG_SORT_OPTIONS: SortOption<SavedItemSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)' },
-  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
+  { value: 'alphabetical', label: 'Alphabetical', icon: 'text-outline' },
+  { value: 'dateSavedOldest', label: 'Date Saved (Oldest First)', icon: 'arrow-down' },
+  { value: 'dateSavedNewest', label: 'Date Saved (Newest First)', icon: 'arrow-up' },
+  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)', icon: 'arrow-down' },
+  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)', icon: 'arrow-up' },
 ];
 
 /**
@@ -77,13 +89,11 @@ export function getSavedItemSortLabel(sortType: SavedItemSortType, itemKind: 'sh
       return itemKind === 'show' ? 'Show Date' : 'Performance Date';
     case 'downloadedFirst':
       return 'Downloaded';
+    case 'mostPopular':
+      return 'Most Popular';
     default:
       return 'Sort';
   }
-}
-
-export function getSavedItemSortIcon(sortType: SavedItemSortType): 'arrow-up' | 'arrow-down' {
-  return sortType === 'dateSavedOldest' || sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
 }
 
 // ---------------------------------------------------------------------------
@@ -103,11 +113,11 @@ export type CollectionSortType =
   | 'performanceDateNewest';
 
 export const COLLECTION_SHOW_SORT_OPTIONS: SortOption<CollectionSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'dateAddedOldest', label: 'Date Added (Oldest First)' },
-  { value: 'dateAddedNewest', label: 'Date Added (Newest First)' },
-  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
+  { value: 'alphabetical', label: 'Alphabetical', icon: 'text-outline' },
+  { value: 'dateAddedOldest', label: 'Date Added (Oldest First)', icon: 'arrow-down' },
+  { value: 'dateAddedNewest', label: 'Date Added (Newest First)', icon: 'arrow-up' },
+  { value: 'performanceDateOldest', label: 'Show Date (Oldest First)', icon: 'arrow-down' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)', icon: 'arrow-up' },
 ];
 
 export function getCollectionSortLabel(sortType: CollectionSortType): string {
@@ -120,18 +130,6 @@ export function getCollectionSortLabel(sortType: CollectionSortType): string {
     case 'performanceDateOldest':
     case 'performanceDateNewest':
       return 'Show Date';
-  }
-}
-
-export function getCollectionSortIcon(sortType: CollectionSortType): 'arrow-up' | 'arrow-down' {
-  switch (sortType) {
-    case 'dateAddedOldest':
-    case 'performanceDateOldest':
-      return 'arrow-up';
-    case 'alphabetical':
-      return 'arrow-down';
-    default:
-      return 'arrow-down';
   }
 }
 
@@ -150,10 +148,10 @@ export const HOME_SORT_VALID_TYPES: HomeSortType[] = [
 ];
 
 export const HOME_SORT_OPTIONS: SortOption<HomeSortType>[] = [
-  { value: 'default', label: 'Show Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Show Date (Newest First)' },
-  { value: 'mostPopular', label: 'Most Popular' },
-  { value: 'alphabetical', label: 'Alphabetical' },
+  { value: 'default', label: 'Show Date (Oldest First)', icon: 'arrow-down' },
+  { value: 'performanceDateNewest', label: 'Show Date (Newest First)', icon: 'arrow-up' },
+  { value: 'mostPopular', label: 'Most Popular', icon: 'flame-outline' },
+  { value: 'alphabetical', label: 'Alphabetical', icon: 'text-outline' },
 ];
 
 export function getHomeSortLabel(sortType: HomeSortType): string {
@@ -170,10 +168,6 @@ export function getHomeSortLabel(sortType: HomeSortType): string {
   }
 }
 
-export function getHomeSortIcon(sortType: HomeSortType): 'arrow-up' | 'arrow-down' {
-  return sortType === 'default' ? 'arrow-up' : 'arrow-down';
-}
-
 // ---------------------------------------------------------------------------
 // SongPerformancesScreen: every performance of a single song across shows.
 // ---------------------------------------------------------------------------
@@ -185,10 +179,10 @@ export type PerformanceSortType =
   | 'ratingHighest';
 
 export const PERFORMANCE_SORT_OPTIONS: SortOption<PerformanceSortType>[] = [
-  { value: 'alphabetical', label: 'Alphabetical' },
-  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)' },
-  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)' },
-  { value: 'ratingHighest', label: 'Rating (Highest First)' },
+  { value: 'alphabetical', label: 'Alphabetical', icon: 'text-outline' },
+  { value: 'performanceDateOldest', label: 'Performance Date (Oldest First)', icon: 'arrow-down' },
+  { value: 'performanceDateNewest', label: 'Performance Date (Newest First)', icon: 'arrow-up' },
+  { value: 'ratingHighest', label: 'Rating (Highest First)', icon: 'star-outline' },
 ];
 
 export function getPerformanceSortLabel(sortType: PerformanceSortType): string {
@@ -203,8 +197,4 @@ export function getPerformanceSortLabel(sortType: PerformanceSortType): string {
     default:
       return 'Sort';
   }
-}
-
-export function getPerformanceSortIcon(sortType: PerformanceSortType): 'arrow-up' | 'arrow-down' {
-  return sortType === 'performanceDateOldest' ? 'arrow-up' : 'arrow-down';
 }

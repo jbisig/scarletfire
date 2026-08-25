@@ -31,6 +31,11 @@ export interface GlassHeaderProps {
   fadeToBackground?: boolean;
   /** Trailing control(s) in the nav row, opposite the back chevron. */
   navRight?: React.ReactNode;
+  /**
+   * Hide the built-in back-chevron nav row — for screens that render their own
+   * sticky nav bar over the header (e.g. CollectionDetailScreen on native).
+   */
+  hideNav?: boolean;
 }
 
 /**
@@ -50,6 +55,7 @@ export function GlassHeader({
   children,
   fadeToBackground = false,
   navRight,
+  hideNav = false,
 }: GlassHeaderProps) {
   return (
     <View style={styles.wrapper}>
@@ -70,12 +76,14 @@ export function GlassHeader({
           contentStyle,
         ]}
       >
-        <View style={styles.navRow}>
-          <TouchableOpacity onPress={onBackPress} activeOpacity={0.7} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          {navRight}
-        </View>
+        {!hideNav && (
+          <View style={styles.navRow}>
+            <TouchableOpacity onPress={onBackPress} activeOpacity={0.7} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={28} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            {navRight}
+          </View>
+        )}
         {children}
       </View>
     </View>

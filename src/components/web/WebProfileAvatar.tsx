@@ -6,7 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { profileService } from '../../services/profileService';
 import { useWebAuthModal } from './WebAuthModal';
 import { ProfileImage } from '../ProfileImage';
-import { COLORS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY, GLASS_PILL_BLUR } from '../../constants/theme';
+import { webStyle } from '../../utils/webStyle';
 
 export const WebProfileAvatar = React.memo(function WebProfileAvatar() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -114,10 +115,14 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: COLORS.cardBackground,
+    // Same glass recipe as SortDropdown: dark wash over a blur (web-only
+    // component, so the backdrop-filter applies unconditionally).
+    backgroundColor: 'rgba(20, 20, 20, 0.5)',
+    ...webStyle(GLASS_PILL_BLUR),
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm,
     minWidth: 150,
+    overflow: 'hidden',
     ...SHADOWS.lg,
   },
   dropdownItem: {
